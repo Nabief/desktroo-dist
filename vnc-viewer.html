@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Console VM</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: system-ui, sans-serif; }
+
+    #screen {
+      position: fixed; inset: 0;
+      width: 100vw; height: 100vh;
+    }
+
+    /* Overlays : pointer-events none sur le conteneur, auto sur les boutons */
+    #bar {
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.82); color: #fff; font-size: 13px;
+      padding: 5px 18px; border-radius: 20px; z-index: 500;
+      border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(8px);
+      display: flex; align-items: center; gap: 10px;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.4s;
+    }
+    #bar.show { opacity: 1; }
+    #bar .dot { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; flex-shrink: 0; }
+    #bar.connected .dot { background: #34d399; }
+    #bar.error .dot     { background: #f87171; }
+
+    #ctrl {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; align-items: center;
+      z-index: 500;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    #ctrl.show { opacity: 1; }
+
+    .ctrl-btn {
+      pointer-events: auto;
+      background: rgba(0,0,0,0.82); color: #fff;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 8px; padding: 6px 13px; font-size: 12px;
+      cursor: pointer; backdrop-filter: blur(8px); white-space: nowrap;
+    }
+    .ctrl-btn:hover { background: rgba(255,255,255,0.18); }
+    .ctrl-btn.active { background: rgba(99,102,241,0.45); border-color: rgba(99,102,241,0.7); }
+  </style>
+</head>
+<body>
+  <div id="screen"></div>
+
+  <div id="bar">
+    <span class="dot"></span>
+    <span id="msg">Connexion en cours…</span>
+  </div>
+
+  <div id="ctrl">
+    <span style="font-size:11px;color:#888;" id="vm-label"></span>
+    <button class="ctrl-btn" id="btn-lock"       onclick="toggleLock()">🖱 Capturer souris</button>
+    <button class="ctrl-btn" id="btn-fullscreen" onclick="toggleFullscreen()">⛶ Plein écran</button>
+    <button class="ctrl-btn"                     onclick="sendCtrlAltDel()">Ctrl+Alt+Suppr</button>
+    <button class="ctrl-btn"                     onclick="window.close()">✕ Fermer</button>
+  </div>
+
+  <script type="module">
+    import RFB from 'https://cdn.jsdelivr.net/npm/@novnc/novnc@1.4.0/core/rfb.js';
+
+    // Maximise la fenêtre au chargement
+    try { window.resizeTo(screen.availWidth, screen.availHeight); window.moveTo(0, 0); } catch(e) {}
+
+    const params  = new URLSearchParams(location.search);
+    const wsUrl   = params.get('ws');
+    const vmName  = params.get('vm') || 'VM';
+    const bar     = document.getElementById('bar');
+    const ctrl    = document.getElementById('ctrl');
+    const msg     = document.getElementById('msg');
+
+    document.title = 'Console — ' + vmName;
+    document.getElementById('vm-label').textContent = vmName;
+
+    // ── Overlays selon position souris ────────────────────────────────────
+    let barTimer = null, ctrlTimer = null;
+
+    document.addEventListener('mousemove', (e) => {
+      const h = window.innerHeight;
+      if (e.clientY < 50) {
+        bar.classList.add('show');
+        clearTimeout(barTimer);
+        barTimer = setTimeout(() => bar.classList.remove('show'), 2500);
+      }
+      if (e.clientY > h - 60) {
+        ctrl.classList.add('show');
+        clearTimeout(ctrlTimer);
+        ctrlTimer = setTimeout(() => ctrl.classList.remove('show'), 3000);
+      }
+    });
+
+    document.getElementById('ctrl').addEventListener('mouseenter', () => {
+      clearTimeout(ctrlTimer); ctrl.classList.add('show');
+    });
+    document.getElementById('ctrl').addEventListener('mouseleave', () => {
+      ctrlTimer = setTimeout(() => ctrl.classList.remove('show'), 800);
+    });
+
+    // ── Pointer lock ──────────────────────────────────────────────────────
+    let locked = false;
+    const btnLock = document.getElementById('btn-lock');
+
+    document.addEventListener('pointerlockchange', () => {
+      locked = !!document.pointerLockElement;
+      btnLock.textContent = locked ? '🔒 Souris capturée  (Échap)' : '🖱 Capturer souris';
+      btnLock.classList.toggle('active', locked);
+    });
+
+    window.toggleLock = () => {
+      const canvas = document.querySelector('#screen canvas');
+      if (!canvas) return;
+      locked ? document.exitPointerLock() : canvas.requestPointerLock();
+    };
+
+    // ── noVNC ─────────────────────────────────────────────────────────────
+    if (!wsUrl) {
+      bar.className = 'error show';
+      msg.textContent = '❌ Paramètre ws manquant';
+    } else {
+      const rfb = new RFB(document.getElementById('screen'), wsUrl, {
+        credentials: { password: '' }
+      });
+
+      // resizeSession : demande à la VM d'adapter sa résolution au viewport
+      // → élimine tout letterbox et toute zone morte
+      rfb.resizeSession = true;
+      rfb.scaleViewport = true;   // fallback si la VM ne supporte pas le resize
+      rfb.clipViewport  = false;
+
+      rfb.addEventListener('connect', () => {
+        bar.className = 'connected show';
+        msg.textContent = '✓ Connecté — ' + vmName;
+        clearTimeout(barTimer);
+        barTimer = setTimeout(() => bar.classList.remove('show'), 3000);
+        rfb.focus();
+      });
+
+      rfb.addEventListener('disconnect', (e) => {
+        bar.className = 'error show';
+        msg.textContent = e.detail.clean
+          ? '⏹ Déconnecté — ' + vmName
+          : '⚠ Connexion perdue — ' + vmName;
+      });
+
+      rfb.addEventListener('credentialsrequired', () => {
+        const pwd = prompt('Mot de passe VNC :');
+        if (pwd !== null) rfb.sendCredentials({ password: pwd });
+      });
+
+      window._rfb = rfb;
+    }
+
+    window.sendCtrlAltDel = () => window._rfb?.sendCtrlAltDel();
+
+    window.toggleFullscreen = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+        document.getElementById('btn-fullscreen').textContent = '✕ Quitter plein écran';
+      } else {
+        document.exitFullscreen();
+        document.getElementById('btn-fullscreen').textContent = '⛶ Plein écran';
+      }
+    };
+  </script>
+</body>
+</html>
