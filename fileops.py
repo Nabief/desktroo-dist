@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '1.10.2'
+APP_VERSION = '1.10.3'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/truenas-desktop-dist/main').rstrip('/')
 
@@ -5990,8 +5990,11 @@ def _lic_verify(token):
         return None
 
 
-def _lic_install_id():
-    """Identifiant d'installation stable (pour lier une licence à un NAS)."""
+INSTALL_ID_FILE = os.path.join(ACCESS_DATA_DIR, 'install-id')
+
+
+def _lic_compute_install_id():
+    """Ancienne logique deterministe — sert uniquement de graine initiale."""
     parts = []
     try:
         if SSH_HOST:
@@ -6011,6 +6014,28 @@ def _lic_install_id():
         pass
     raw = '|'.join([x for x in parts if x]) or 'truenas-desktop'
     return _lic_hashlib.sha256(raw.encode('utf-8')).hexdigest()[:16]
+
+
+def _lic_install_id():
+    """Identifiant d'installation STABLE, persiste dans le volume de donnees.
+    Genere une seule fois puis relu : survit a la recreation du conteneur (et
+    donc aux mises a jour), contrairement au hostname du conteneur qui change
+    a chaque recreation. ACCESS_DATA_DIR est un volume hote (/mnt/...)."""
+    try:
+        with open(INSTALL_ID_FILE, 'r', encoding='utf-8') as fh:
+            v = fh.read().strip()
+            if v:
+                return v
+    except Exception:
+        pass
+    v = _lic_compute_install_id()
+    try:
+        os.makedirs(os.path.dirname(INSTALL_ID_FILE), exist_ok=True)
+        with open(INSTALL_ID_FILE, 'w', encoding='utf-8') as fh:
+            fh.write(v)
+    except Exception as e:
+        log.warning('install-id persist failed: %s', e)
+    return v
 
 
 def _lic_read_json(path):
