@@ -4478,13 +4478,43 @@ function loadLicense(){
       + '<div class="lic-row"><b>ID installation</b><span style="font-family:monospace;user-select:all">' + (s.install_id || '') + '</span></div>'
       + '<div class="lic-row"><b>Tarif</b><span>' + (s.price || '3.99') + ' €/mois</span></div>'
       + '</div>'
-      + '<div class="lic-sub">Pour vous abonner, contactez <b>goassistance.informatique</b> en indiquant votre <b>ID installation</b>. Vous recevrez un jeton de licence à coller ci-dessous.</div>'
-      + '<label class="lic-lbl">Jeton de licence</label>'
-      + '<textarea id="lic-token" rows="4" placeholder="Collez ici le jeton reçu…" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;padding:8px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(255,255,255,.06);color:var(--text);"></textarea>'
-      + '<div style="margin-top:10px;"><button class="fstb-btn primary" onclick="licActivate()">Activer la licence</button></div>'
+      + (s.state !== 'active'
+          ? ('<div class="lic-sub">Abonnez-vous pour débloquer toutes les fonctions. Après paiement, vous recevez par email une <b>clé d\'activation</b> à coller ci-dessous — la licence se lie automatiquement à ce serveur.</div>'
+             + '<div style="margin:4px 0 16px;"><button class="fstb-btn primary" onclick="licSubscribe()">S\'abonner — ' + (s.price||'3.99') + ' €/mois</button></div>')
+          : '<div class="lic-sub">Abonnement actif. Collez une nouvelle clé ci-dessous uniquement pour changer de licence.</div>')
+      + '<label class="lic-lbl">Clé d\'activation</label>'
+      + '<input id="lic-key" type="text" placeholder="DKTR-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:14px;letter-spacing:1px;text-transform:uppercase;padding:10px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(255,255,255,.06);color:var(--text);" />'
+      + '<div style="margin-top:10px;"><button class="fstb-btn primary" onclick="licActivateKey()">Activer</button></div>'
+      + '<details class="lic-adv" style="margin-top:14px;"><summary style="cursor:pointer;color:#8a9bbf;font-size:12.5px;">Activation avancée (jeton brut)</summary>'
+        + '<label class="lic-lbl" style="margin-top:10px;">Jeton de licence</label>'
+        + '<textarea id="lic-token" rows="4" placeholder="Collez ici un jeton signé…" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:11px;padding:8px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(255,255,255,.06);color:var(--text);"></textarea>'
+        + '<div style="margin-top:10px;"><button class="fstb-btn" onclick="licActivate()">Activer le jeton</button></div>'
+      + '</details>'
       + '<div id="lic-msg" style="margin-top:10px;font-size:13px;min-height:18px;"></div>';
     el.innerHTML = html;
   });
+}
+function licSubscribe(){
+  var url = (_licInfo && _licInfo.subscribe_url) ? _licInfo.subscribe_url : '';
+  if (!url) { try { toast('Lien d\'abonnement indisponible.'); } catch(_){} return; }
+  try { window.open(url, '_blank', 'noopener'); } catch(_){ location.href = url; }
+}
+async function licActivateKey(){
+  var inp = document.getElementById('lic-key'), msg = document.getElementById('lic-msg');
+  var key = ((inp && inp.value) || '').trim().toUpperCase();
+  if (!key) { if (msg) { msg.style.color = '#f87171'; msg.textContent = 'Saisissez une clé d\'activation.'; } return; }
+  if (msg) { msg.style.color = '#8a9bbf'; msg.textContent = 'Activation…'; }
+  try {
+    var r = await fetch('/fileops/license/activate-key', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Fileops-Token': getFileopsToken() }, body: JSON.stringify({ key: key }) });
+    var j = await r.json().catch(function(){ return {}; });
+    if (r.ok && j.ok) {
+      if (msg) { msg.style.color = '#3ecf8e'; msg.textContent = '✅ Licence activée.'; }
+      await licRefresh(); loadLicense();
+      try { toast('✅ Licence activée'); } catch(_){}
+    } else {
+      if (msg) { msg.style.color = '#f87171'; msg.textContent = '❌ ' + (j.error || ('HTTP ' + r.status)); }
+    }
+  } catch(e){ if (msg) { msg.style.color = '#f87171'; msg.textContent = '❌ ' + e.message; } }
 }
 async function licActivate(){
   var ta = document.getElementById('lic-token'), msg = document.getElementById('lic-msg');

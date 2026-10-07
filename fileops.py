@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '1.10.4'
+APP_VERSION = '1.11.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/truenas-desktop-dist/main').rstrip('/')
 
@@ -5978,6 +5978,15 @@ GRACE_DAYS    = int(os.environ.get('GRACE_DAYS', '3'))   # tolérance après exp
 LICENSE_PRICE = os.environ.get('LICENSE_PRICE', '3.99')
 LICENSE_FILE  = os.path.join(ACCESS_DATA_DIR, 'license.json')
 TRIAL_FILE    = os.path.join(ACCESS_DATA_DIR, 'trial.json')
+ACTIVATION_KEY_FILE = os.path.join(ACCESS_DATA_DIR, 'activation-key')
+LIC_REFRESH_FILE    = os.path.join(ACCESS_DATA_DIR, 'license-refresh.json')
+
+# Serveur de licences (émission/refresh en ligne) + page d'abonnement Stripe.
+# NOTE : SUBSCRIBE_URL est le Payment Link Stripe — en mode TEST pour l'instant,
+# à remplacer par le lien LIVE au lancement (ou via la variable d'environnement).
+LICENSE_SERVER = os.environ.get('LICENSE_SERVER', 'https://desktroo.fr/wp-json/desktroo/v1').rstrip('/')
+SUBSCRIBE_URL  = os.environ.get('SUBSCRIBE_URL', 'https://buy.stripe.com/test_bJe4gy5Z0eCxbFZdbh38400')
+LIC_REFRESH_INTERVAL = int(os.environ.get('LIC_REFRESH_INTERVAL', '43200'))  # 12 h entre deux refresh auto
 
 # Clé publique de licence (RSA-2048). La clé privée reste hors dépôt chez l'éditeur.
 LICENSE_PUBKEY_N_HEX = (
@@ -6152,6 +6161,98 @@ def license_activate(token):
     return (200, {'ok': True, 'status': license_status()})
 
 
+def _lic_server_post(ep, payload, timeout=20):
+    """POST JSON vers le serveur de licences. Retourne un dict (corps JSON) ou None."""
+    import urllib.request
+    url = LICENSE_SERVER + '/' + ep.lstrip('/')
+    data = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(url, data=data, method='POST',
+                                 headers={'Content-Type': 'application/json',
+                                          'User-Agent': 'TrueNAS-Desktop'})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode('utf-8', 'replace'))
+    except Exception as e:
+        body = getattr(e, 'read', None)
+        if body:
+            try:
+                return json.loads(e.read().decode('utf-8', 'replace'))
+            except Exception:
+                pass
+        log.warning('license server call failed (%s): %s', ep, e)
+        return None
+
+
+def _lic_save_activation_key(key):
+    try:
+        os.makedirs(os.path.dirname(ACTIVATION_KEY_FILE), exist_ok=True)
+        with open(ACTIVATION_KEY_FILE, 'w', encoding='utf-8') as fh:
+            fh.write((key or '').strip())
+    except Exception as e:
+        log.warning('activation-key persist failed: %s', e)
+
+
+def _lic_read_activation_key():
+    try:
+        with open(ACTIVATION_KEY_FILE, 'r', encoding='utf-8') as fh:
+            return fh.read().strip()
+    except Exception:
+        return ''
+
+
+def license_activate_key(key):
+    """Active via le serveur : clé d'activation -> liaison install_id -> jeton signé."""
+    key = (key or '').strip().upper()
+    if not key:
+        return (400, {'ok': False, 'error': "Saisissez une clé d'activation."})
+    install = _lic_install_id()
+    resp = _lic_server_post('activate', {'activation_key': key, 'install_id': install})
+    if resp is None:
+        return (502, {'ok': False, 'error': 'Serveur de licences injoignable. Vérifiez la connexion et réessayez.'})
+    if not resp.get('ok') or not resp.get('token'):
+        return (400, {'ok': False, 'error': resp.get('error', "Échec de l'activation.")})
+    code, out = license_activate(str(resp['token']))
+    if code == 200 and out.get('ok'):
+        _lic_save_activation_key(key)
+        _lic_write_json(LIC_REFRESH_FILE, {'ts': int(_lic_time.time())})
+    return (code, out)
+
+
+def license_do_refresh():
+    """Rafraîchit le jeton depuis le serveur si une clé d'activation est connue."""
+    key = _lic_read_activation_key()
+    if not key:
+        return False
+    install = _lic_install_id()
+    resp = _lic_server_post('refresh', {'activation_key': key, 'install_id': install})
+    _lic_write_json(LIC_REFRESH_FILE, {'ts': int(_lic_time.time())})
+    if resp and resp.get('ok') and resp.get('token'):
+        code, _out = license_activate(str(resp['token']))
+        return code == 200
+    return False
+
+
+def license_maybe_refresh():
+    """Déclenche un refresh en tâche de fond, au plus une fois par LIC_REFRESH_INTERVAL."""
+    if not _lic_read_activation_key():
+        return
+    rec = _lic_read_json(LIC_REFRESH_FILE) or {}
+    last = rec.get('ts', 0)
+    last = int(last) if isinstance(last, (int, float)) else 0
+    now = int(_lic_time.time())
+    if now - last < LIC_REFRESH_INTERVAL:
+        return
+    _lic_write_json(LIC_REFRESH_FILE, {'ts': now})  # jalon posé tout de suite (évite les doublons)
+    try:
+        import threading
+        threading.Thread(target=license_do_refresh, daemon=True).start()
+    except Exception:
+        try:
+            license_do_refresh()
+        except Exception:
+            pass
+
+
 def _lic_is_readonly():
     try:
         return bool(license_status().get('readonly'))
@@ -6160,7 +6261,7 @@ def _lic_is_readonly():
 
 
 # Routes POST dont l'écriture reste autorisée même en lecture seule.
-_LIC_READONLY_ALLOW_POST = {'/license/activate'}
+_LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh'}
 
 
 class FileOpsHandler(BaseHTTPRequestHandler):
@@ -6301,7 +6402,13 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         # MDM-LICENSE-V1 : état de la licence / essai
         if path == '/license/status':
             try:
-                self._json(200, license_status())
+                try:
+                    license_maybe_refresh()   # refresh en ligne en tâche de fond (throttlé)
+                except Exception:
+                    pass
+                st = license_status()
+                st['subscribe_url'] = SUBSCRIBE_URL
+                self._json(200, st)
             except Exception as e:
                 self._json(500, {'error': str(e)})
             return
@@ -6783,6 +6890,25 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(code, resp)
             except Exception as e:
                 self._json(500, {'error': str(e)})
+            return
+        # MDM-LICENSE-V1 : activation par clé (émission en ligne via le serveur)
+        if path == '/license/activate-key':
+            try:
+                b = self._body()
+                code, resp = license_activate_key(str(b.get('key', '')))
+                self._json(code, resp)
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
+            return
+        # MDM-LICENSE-V1 : refresh manuel du jeton depuis le serveur
+        if path == '/license/refresh':
+            try:
+                ok = license_do_refresh()
+                st = license_status()
+                st['subscribe_url'] = SUBSCRIBE_URL
+                self._json(200, {'ok': bool(ok), 'status': st})
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
             return
         if path not in _LIC_READONLY_ALLOW_POST and _lic_is_readonly():
             self._json(402, {'error': 'license_readonly',
