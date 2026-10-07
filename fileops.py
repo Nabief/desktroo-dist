@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '1.10.3'
+APP_VERSION = '1.10.4'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/truenas-desktop-dist/main').rstrip('/')
 
@@ -5350,9 +5350,37 @@ def _dl_probe(url):
     return (int(clen) if clen else 0), (ar == 'bytes'), fn, ct
 
 
-def _dl_maybe_rename(it, fn):
-    if fn and it.get('filename', '').startswith('download'):
+_DL_CT_EXT = {
+    'application/zip': '.zip', 'application/x-zip-compressed': '.zip',
+    'application/x-rar-compressed': '.rar', 'application/vnd.rar': '.rar',
+    'application/x-7z-compressed': '.7z', 'application/x-tar': '.tar',
+    'application/gzip': '.gz', 'application/x-gzip': '.gz',
+}
+
+
+def _dl_has_ext(name):
+    base = str(name or '')
+    dot = base.rfind('.')
+    if dot <= 0 or dot >= len(base) - 1:
+        return False
+    ext = base[dot + 1:]
+    return 1 <= len(ext) <= 6 and ext.isalnum()
+
+
+def _dl_maybe_rename(it, fn, ctype=None):
+    """Donne un nom correct au fichier. Beaucoup d'hebergeurs resolus renvoient
+    un lien direct dont le basename est un id sans extension (ex. p2211932672) :
+    on prefere alors le nom fourni par Content-Disposition ; a defaut on deduit
+    au moins l'extension du Content-Type, pour que l'extraction auto fonctionne."""
+    cur = it.get('filename', '')
+    if fn and (cur.startswith('download') or (not _dl_has_ext(cur) and _dl_has_ext(fn))):
         newpath = _dl_pick_path(it['dir'], fn)
+        with _dl_lock:
+            it['filename'] = os.path.basename(newpath)
+            it['path'] = newpath
+        cur = os.path.basename(newpath)
+    if not _dl_has_ext(cur) and ctype in _DL_CT_EXT:
+        newpath = _dl_pick_path(it['dir'], cur + _DL_CT_EXT[ctype])
         with _dl_lock:
             it['filename'] = os.path.basename(newpath)
             it['path'] = newpath
@@ -5557,6 +5585,18 @@ def _dl_is_archive(name):
                        '.rar', '.7z'))
 
 
+def _dl_sniff_archive(path):
+    """Detecte une archive par ses octets de tete (si l'extension manque ou ment)."""
+    try:
+        with open(path, 'rb') as fh:
+            head = fh.read(8)
+    except OSError:
+        return False
+    sigs = (b'PK\x03\x04', b'PK\x05\x06', b'Rar!\x1a\x07',
+            b'7z\xbc\xaf\x27\x1c', b'\x1f\x8b', b'\xfd7zXZ\x00', b'BZh')
+    return any(head.startswith(s) for s in sigs)
+
+
 def _dl_extract_external(src, d):
     """Extrait rar/7z via un binaire externe. Essaie tous les outils disponibles
     (7z/7za/bsdtar/unrar/unar) jusqu'à réussite. Ces outils assainissent les
@@ -5669,7 +5709,7 @@ def _dl_postprocess(did):
         it = _dl_items.get(did)
     if not it:
         return
-    if it.get('auto_extract') and _dl_is_archive(it.get('filename', '')):
+    if it.get('auto_extract') and (_dl_is_archive(it.get('filename', '')) or _dl_sniff_archive(it.get('path', ''))):
         with _dl_lock:
             it['status'] = 'extracting'; it['speed'] = 0
         _dl_save()
@@ -5727,7 +5767,7 @@ def _dl_worker(did):
                         it['path'] = newpath
                 _dl_save()
                 total, ranges, fn, ctype = _dl_probe(it['url'])
-            _dl_maybe_rename(it, fn)
+            _dl_maybe_rename(it, fn, ctype)
             n = int(it.get('connections') or _DL_CONNECTIONS)
             if ranges and total and total > _DL_MIN_SEG and n > 1:
                 n = max(1, min(n, total // _DL_MIN_SEG))
