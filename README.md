@@ -1,3 +1,3 @@
 # truenas-desktop-dist
 
-Canal de distribution de TrueNAS Desktop.
+Canal de distribution de Desktroo.
