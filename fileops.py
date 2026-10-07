@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '1.11.0'
+APP_VERSION = '1.11.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/truenas-desktop-dist/main').rstrip('/')
 
@@ -5981,11 +5981,12 @@ TRIAL_FILE    = os.path.join(ACCESS_DATA_DIR, 'trial.json')
 ACTIVATION_KEY_FILE = os.path.join(ACCESS_DATA_DIR, 'activation-key')
 LIC_REFRESH_FILE    = os.path.join(ACCESS_DATA_DIR, 'license-refresh.json')
 
-# Serveur de licences (émission/refresh en ligne) + page d'abonnement Stripe.
-# NOTE : SUBSCRIBE_URL est le Payment Link Stripe — en mode TEST pour l'instant,
-# à remplacer par le lien LIVE au lancement (ou via la variable d'environnement).
+# Serveur de licences (émission/refresh en ligne) + liens Stripe.
+# NOTE : SUBSCRIBE_URL (Payment Link) et MANAGE_URL (portail client) sont en mode
+# TEST pour l'instant — à remplacer par les liens LIVE au lancement (ou via env).
 LICENSE_SERVER = os.environ.get('LICENSE_SERVER', 'https://desktroo.fr/wp-json/desktroo/v1').rstrip('/')
 SUBSCRIBE_URL  = os.environ.get('SUBSCRIBE_URL', 'https://buy.stripe.com/test_bJe4gy5Z0eCxbFZdbh38400')
+MANAGE_URL     = os.environ.get('MANAGE_URL', 'https://billing.stripe.com/p/login/test_bJe4gy5Z0eCxbFZdbh38400')
 LIC_REFRESH_INTERVAL = int(os.environ.get('LIC_REFRESH_INTERVAL', '43200'))  # 12 h entre deux refresh auto
 
 # Clé publique de licence (RSA-2048). La clé privée reste hors dépôt chez l'éditeur.
@@ -6408,6 +6409,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     pass
                 st = license_status()
                 st['subscribe_url'] = SUBSCRIBE_URL
+                st['manage_url'] = MANAGE_URL
                 self._json(200, st)
             except Exception as e:
                 self._json(500, {'error': str(e)})
@@ -6906,6 +6908,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 ok = license_do_refresh()
                 st = license_status()
                 st['subscribe_url'] = SUBSCRIBE_URL
+                st['manage_url'] = MANAGE_URL
                 self._json(200, {'ok': bool(ok), 'status': st})
             except Exception as e:
                 self._json(500, {'ok': False, 'error': str(e)})

@@ -4481,7 +4481,8 @@ function loadLicense(){
       + (s.state !== 'active'
           ? ('<div class="lic-sub">Abonnez-vous pour débloquer toutes les fonctions. Après paiement, vous recevez par email une <b>clé d\'activation</b> à coller ci-dessous — la licence se lie automatiquement à ce serveur.</div>'
              + '<div style="margin:4px 0 16px;"><button class="fstb-btn primary" onclick="licSubscribe()">S\'abonner — ' + (s.price||'3.99') + ' €/mois</button></div>')
-          : '<div class="lic-sub">Abonnement actif. Collez une nouvelle clé ci-dessous uniquement pour changer de licence.</div>')
+          : ('<div class="lic-sub">Abonnement actif. Gérez votre moyen de paiement, vos factures ou l\'annulation depuis le portail client. Collez une nouvelle clé ci-dessous uniquement pour changer de licence.</div>'
+             + '<div style="margin:4px 0 16px;"><button class="fstb-btn primary" onclick="licManage()">Gérer mon abonnement</button></div>'))
       + '<label class="lic-lbl">Clé d\'activation</label>'
       + '<input id="lic-key" type="text" placeholder="DKTR-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:14px;letter-spacing:1px;text-transform:uppercase;padding:10px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(255,255,255,.06);color:var(--text);" />'
       + '<div style="margin-top:10px;"><button class="fstb-btn primary" onclick="licActivateKey()">Activer</button></div>'
@@ -4497,6 +4498,11 @@ function loadLicense(){
 function licSubscribe(){
   var url = (_licInfo && _licInfo.subscribe_url) ? _licInfo.subscribe_url : '';
   if (!url) { try { toast('Lien d\'abonnement indisponible.'); } catch(_){} return; }
+  try { window.open(url, '_blank', 'noopener'); } catch(_){ location.href = url; }
+}
+function licManage(){
+  var url = (_licInfo && _licInfo.manage_url) ? _licInfo.manage_url : '';
+  if (!url) { try { toast('Portail client indisponible.'); } catch(_){} return; }
   try { window.open(url, '_blank', 'noopener'); } catch(_){ location.href = url; }
 }
 async function licActivateKey(){
