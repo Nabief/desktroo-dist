@@ -224,7 +224,7 @@ def run_install(config):
         token        = config['token'] or generate_token()
         db_pass      = config.get('db_pass') or generate_token()
 
-        # ── Sécurité : identifiants du bureau + 2FA optionnelle ──
+        # ── Sécurité : 2FA optionnelle ; desk_user / desk_pass sont le compte du portail (Authelia) ──
         desk_user   = config.get('desk_user') or 'admin'
         desk_pass   = config.get('desk_pass') or secrets.token_urlsafe(12)
         enable_2fa  = bool(config.get('enable_2fa'))
@@ -243,7 +243,7 @@ def run_install(config):
         #   2 hôtes proxy dans NPM + les redirections DNS (affichés à la fin).
         #   Les 2 domaines doivent partager le même domaine parent.
         if enable_2fa and (not domain_desktop or not domain_auth or '.' not in domain_desktop):
-            emit('⚠ 2FA demandée mais domaines manquants/invalides — 2FA désactivée (barrière simple conservée).', 'warn')
+            emit('⚠ 2FA demandée mais domaines manquants/invalides — 2FA désactivée.', 'warn')
             enable_2fa = False
         domain_parent = domain_desktop.split('.', 1)[1] if (enable_2fa and '.' in domain_desktop) else ''
         if enable_2fa and domain_parent and not domain_auth.endswith(domain_parent):
@@ -432,7 +432,6 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
       - {install_dir}/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - {install_dir}/desktroo.html:/usr/share/nginx/html/index.html:ro
       - {install_dir}/vnc-viewer.html:/usr/share/nginx/html/vnc-viewer.html:ro
-      - {install_dir}/.htpasswd:/etc/nginx/.htpasswd:ro
 
     depends_on:
       - fileops
@@ -635,40 +634,13 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
             f.write(nginx)
         emit('✓ nginx.conf', 'ok')
 
-        # ── .htpasswd (barrière d'auth du bureau) ──────────────
-        emit('▸ Génération de .htpasswd (barrière d\'auth)...', 'step')
-        _htpasswd_ok = False
-        _htp = os.path.join(install_dir, '.htpasswd')
+        # La barrière « Basic auth » du bureau n'existe plus (l'écran de connexion du bureau
+        # authentifie auprès de TrueNAS ; la 2FA, optionnelle, passe par Authelia). On efface
+        # le .htpasswd qu'une installation antérieure a pu laisser.
         try:
-            _h = subprocess.check_output(['openssl', 'passwd', '-apr1', desk_pass]).decode().strip()
-            if not _h:
-                raise RuntimeError('openssl a renvoyé un hash vide')
-            with open(_htp, 'w') as f:
-                f.write('%s:%s\n' % (desk_user, _h))
-            try:
-                os.chmod(_htp, 0o644)  # lisible par nginx (worker non-root du conteneur) — hash uniquement
-            except OSError:
-                pass  # chmod refusé sur ZFS (ACL) — non bloquant
-            _htpasswd_ok = os.path.getsize(_htp) > 0
-            emit('✓ Accès bureau — utilisateur: %s  mot de passe: %s' % (desk_user, desk_pass), 'ok', secret=True)
-        except Exception as e:
-            emit('⚠ .htpasswd non généré: %s' % e, 'warn')
-
-        # Filet de sécurité : barrière simple demandée mais .htpasswd absent.
-        # On RETIRE la barrière du nginx.conf déjà écrit, sinon nginx renvoie
-        # un 500 (fichier d'auth introuvable) et le bureau est inaccessible.
-        if not enable_2fa and not _htpasswd_ok:
-            try:
-                _np = os.path.join(install_dir, 'nginx.conf')
-                _nc = open(_np).read()
-                _nc = _nc.replace(_srv_auth, "    # Barriere login desactivee : .htpasswd non genere (voir SECURITE.md)")
-                with open(_np, 'w') as f:
-                    f.write(_nc)
-            except Exception:
-                pass
-            emit('⚠ BARRIÈRE LOGIN NON POSÉE : le bureau sera accessible SANS mot de passe. '
-                 'Génère le .htpasswd à la main (openssl passwd -apr1) dans %s, remets auth_basic '
-                 'dans nginx.conf, puis « docker restart desktroo » — voir SECURITE.md.' % install_dir, 'warn')
+            os.remove(os.path.join(install_dir, '.htpasswd'))
+        except OSError:
+            pass
 
         # ── Authelia (2FA) : secrets + hash + fichiers de config ──
         if enable_2fa:
@@ -812,6 +784,7 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                     "client_max_body_size 20g;\n"
                 )
             emit('✓ Authelia configuré (utilisateur: %s) — conteneur publié sur le port 9091' % desk_user, 'ok')
+            emit('✓ Compte du portail 2FA — utilisateur: %s  mot de passe: %s' % (desk_user, desk_pass), 'ok', secret=True)
             emit('✓ Snippets NPM écrits dans %s' % npmd, 'ok')
             _npm = npm_ip or '<IP_de_NPM>'
             emit('===== A FAIRE DANS NPM (une seule fois) =====', 'step')
@@ -1052,6 +1025,26 @@ HTML = """<!DOCTYPE html>
   .form-group input:focus { border-color: var(--accent); background: rgba(var(--accent-rgb),.08); }
   .hint { font-size: 11px; color: var(--dim); margin-top: 4px; }
 
+  /* Configuration écran par écran */
+  .cfg-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .cfg-bar { flex: 1; display: flex; gap: 6px; }
+  .cfg-bar span { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.1); transition: background .2s; }
+  .cfg-bar span.done { background: rgba(var(--accent-rgb),.45); }
+  .cfg-bar span.on   { background: var(--accent); }
+  .cfg-count { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .slides { min-height: 248px; }
+  .slide { animation: slide-in .22s ease both; }
+  .slide.back { animation-name: slide-back; }
+  @keyframes slide-in   { from { opacity: 0; transform: translateX(14px); }  to { opacity: 1; transform: none; } }
+  @keyframes slide-back { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .slide { animation: none; } }
+  .slide-title { font-family: var(--font-display); font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 18px; }
+  .slide-title:has(+ .slide-lead) { margin-bottom: 6px; }
+  .slide-lead { font-size: 13px; line-height: 1.5; color: var(--dim); margin-bottom: 20px; }
+  .form-group input.invalid { border-color: var(--error); }
+  .cfg-error { font-size: 13px; color: #ff8585; }
+  .cfg-error:empty { display: none; }
+
   /* Log */
   .log { background: #070d18; border: 1px solid var(--border); border-radius: var(--radius-sm);
           padding: 16px; font-family: var(--font-mono);
@@ -1179,7 +1172,14 @@ HTML = """<!DOCTYPE html>
 
     <!-- Étape 2 : Configuration -->
     <div id="page2" hidden>
-      <div class="section-title">📁 Chemins</div>
+      <div class="cfg-progress">
+        <div class="cfg-bar" id="cfg-bar" role="progressbar" aria-valuemin="1"></div>
+        <span class="cfg-count" id="cfg-count" translate="no"></span>
+      </div>
+      <div class="slides">
+      <section class="slide" data-slide="paths">
+        <h2 class="slide-title">📁 Chemins</h2>
+        <p class="slide-lead">Les dossiers du NAS où Desktroo range ses fichiers, ses machines virtuelles et ses images ISO.</p>
       <div class="form-group">
         <label>Répertoire d'installation</label>
         <div class="input-browse">
@@ -1204,8 +1204,11 @@ HTML = """<!DOCTYPE html>
           </div>
         </div>
       </div>
+      </section>
 
-      <div class="section-title">🌐 Réseau</div>
+      <section class="slide" data-slide="network" hidden>
+        <h2 class="slide-title">🌐 Réseau</h2>
+        <p class="slide-lead">L'adresse du NAS et le port sur lequel le bureau répondra.</p>
       <div class="form-row">
         <div class="form-group">
           <label>IP du TrueNAS</label>
@@ -1221,8 +1224,11 @@ HTML = """<!DOCTYPE html>
         <input id="truenas_host" placeholder="même que l'IP si vide" />
         <div class="hint">Utilisé dans les en-têtes nginx. Laissez vide pour utiliser l'IP.</div>
       </div>
+      </section>
 
-      <div class="section-title">🔐 Accès SSH</div>
+      <section class="slide" data-slide="ssh" hidden>
+        <h2 class="slide-title">🔐 Accès SSH</h2>
+        <p class="slide-lead">Le compte TrueNAS avec lequel le bureau exécute ses commandes sur le NAS.</p>
       <div class="form-row">
         <div class="form-group">
           <label>Utilisateur SSH</label>
@@ -1233,8 +1239,10 @@ HTML = """<!DOCTYPE html>
           <input id="ssh_pass" type="password" placeholder="••••••••" />
         </div>
       </div>
+      </section>
 
-      <div class="section-title">🔑 Sécurité</div>
+      <section class="slide" data-slide="security" hidden>
+        <h2 class="slide-title">🔑 Sécurité</h2>
       <div class="form-group">
         <label>Token sidecar</label>
         <input id="token" placeholder="Laissez vide pour générer automatiquement" />
@@ -1242,19 +1250,32 @@ HTML = """<!DOCTYPE html>
       </div>
 
       <div class="form-group">
-        <label>Accès au bureau — identifiant</label>
-        <input id="desk_user" value="admin" />
-        <div class="hint">Login exigé avant d'accéder au bureau (barrière serveur).</div>
+        <label class="switch"><input type="checkbox" id="enable_2fa" onchange="cfgShow(cfgIndex)" /><span class="slider"></span><span class="switch-label">Activer la double authentification (2FA / Authelia)</span></label>
+        <div class="hint">Ajoute un code TOTP. Nécessite 2 domaines locaux, demandés à l'étape suivante.</div>
       </div>
-      <div class="form-group">
-        <label>Accès au bureau — mot de passe</label>
-        <input id="desk_pass" type="password" placeholder="Laissez vide pour générer" />
-      </div>
-      <div class="form-group">
-        <label class="switch"><input type="checkbox" id="enable_2fa" onchange="document.getElementById('twofa').hidden=!this.checked;updateInstallBtn()" /><span class="slider"></span><span class="switch-label">Activer la double authentification (2FA / Authelia)</span></label>
-        <div class="hint">Ajoute un code TOTP. Nécessite 2 domaines locaux (ci-dessous).</div>
-      </div>
-      <div id="twofa" hidden>
+      </section>
+
+      <section class="slide" data-slide="twofa" data-if="2fa" hidden>
+        <h2 class="slide-title">🛡️ Double authentification</h2>
+        <p class="slide-lead">Le compte avec lequel vous vous connecterez au portail de double authentification.</p>
+        <div class="form-group">
+          <label>Compte du portail 2FA — identifiant</label>
+          <input id="desk_user" value="admin" />
+        </div>
+        <div class="form-group">
+          <label>Compte du portail 2FA — mot de passe</label>
+          <input id="desk_pass" type="password" placeholder="Laissez vide pour générer" />
+          <div class="hint">Sans mot de passe saisi, l'assistant en génère un et l'affiche pendant l'installation.</div>
+        </div>
+        <div class="form-group">
+          <label>E-mail administrateur</label>
+          <input id="admin_email" placeholder="admin@exemple.fr" />
+        </div>
+      </section>
+
+      <section class="slide" data-slide="domains" data-if="2fa" hidden>
+        <h2 class="slide-title">🌍 Domaines</h2>
+        <p class="slide-lead">Les deux adresses locales par lesquelles on atteint le bureau et le portail.</p>
         <div class="form-group">
           <label>Domaine du bureau</label>
           <input id="domain_desktop" placeholder="desktop.exemple.fr" />
@@ -1264,15 +1285,16 @@ HTML = """<!DOCTYPE html>
           <input id="domain_auth" placeholder="auth.exemple.fr" />
         </div>
         <div class="form-group">
-          <label>E-mail administrateur</label>
-          <input id="admin_email" placeholder="admin@exemple.fr" />
-        </div>
-        <div class="form-group">
           <label>IP de Nginx Proxy Manager (NPM)</label>
           <input id="npm_ip" placeholder="192.168.1.2" />
           <div class="hint">Le HTTPS de la 2FA passe par NPM. Les 2 domaines pointeront vers cette IP.</div>
         </div>
-        <div class="form-group" style="margin-top:10px;">
+        <div class="hint">L'assistant configure tout le côté NAS. Il reste ensuite à créer 2 hôtes proxy dans NPM + les redirections DNS vers l'IP de NPM — l'assistant affiche les valeurs exactes à la fin. L'enrôlement TOTP se fait après l'installation.</div>
+      </section>
+
+      <section class="slide" data-slide="mail" data-if="2fa" hidden>
+        <h2 class="slide-title">✉️ Codes 2FA par e-mail</h2>
+        <div class="form-group">
           <label class="switch"><input type="checkbox" id="enable_email" onchange="document.getElementById('emailfields').hidden=!this.checked;updateInstallBtn()" /><span class="slider"></span><span class="switch-label">Envoyer les codes 2FA par email (SMTP)</span></label>
           <div class="hint">Décoché : les codes 2FA sont écrits dans un fichier local (authelia/notification.txt) — le plus simple. Coché : renseigne et teste le SMTP ci-dessous.</div>
         </div>
@@ -1302,12 +1324,14 @@ HTML = """<!DOCTYPE html>
           <div class="hint">Le test doit réussir avant de pouvoir installer (sinon l'enrôlement 2FA par email serait impossible).</div>
         </div>
         </div><!-- /emailfields -->
-        <div class="hint">L'assistant configure tout le côté NAS. Il reste ensuite à créer 2 hôtes proxy dans NPM + les redirections DNS vers l'IP de NPM — l'assistant affiche les valeurs exactes à la fin. L'enrôlement TOTP se fait après l'installation.</div>
-      </div>
+      </section>
+      </div><!-- /slides -->
 
+      <div class="cfg-error" id="cfg-error" role="alert"></div>
       <div class="actions">
-        <button class="btn btn-secondary" onclick="goTo(1)">← Retour</button>
-        <button class="btn btn-primary" id="btn-install" onclick="startInstall()">Installer →</button>
+        <button class="btn btn-secondary" onclick="cfgBack()">← Retour</button>
+        <button class="btn btn-primary" id="cfg-next" onclick="cfgNext()">Continuer →</button>
+        <button class="btn btn-primary" id="btn-install" onclick="startInstall()" hidden>Installer →</button>
       </div>
     </div>
 
@@ -1359,8 +1383,80 @@ function goTo(n) {
   currentPage = n;
   document.getElementById('page' + n).hidden = false;
   document.getElementById('s'    + n).classList.add('active');
-  if (n === 2) updateInstallBtn();
+  if (n === 2) cfgShow(cfgIndex);
 }
+
+// ── Étape 2 : la configuration se déroule écran par écran ─────
+// Chaque <section class="slide"> est un écran ; ceux marqués data-if="2fa" ne font
+// partie du parcours que si la double authentification est activée.
+var cfgIndex = 0;
+function cfgSlides() {
+  var twofa = document.getElementById('enable_2fa').checked;
+  return Array.prototype.filter.call(document.querySelectorAll('#page2 .slide'), function (sl) {
+    return sl.getAttribute('data-if') !== '2fa' || twofa;
+  });
+}
+function cfgShow(i) {
+  var list = cfgSlides(), all = document.querySelectorAll('#page2 .slide'), k, h = '';
+  i = Math.max(0, Math.min(i, list.length - 1));
+  list[i].classList.toggle('back', i < cfgIndex);
+  cfgIndex = i;
+  for (k = 0; k < all.length; k++) all[k].hidden = all[k] !== list[i];
+  for (k = 0; k < list.length; k++) h += '<span class="' + (k < i ? 'done' : k === i ? 'on' : '') + '"></span>';
+  var bar = document.getElementById('cfg-bar');
+  bar.innerHTML = h;
+  bar.setAttribute('aria-valuenow', i + 1); bar.setAttribute('aria-valuemax', list.length);
+  document.getElementById('cfg-count').textContent = (i + 1) + ' / ' + list.length;
+  var last = i === list.length - 1;
+  document.getElementById('cfg-next').hidden = last;
+  document.getElementById('btn-install').hidden = !last;
+  cfgError('');
+  updateInstallBtn();
+}
+// Ce qui manque sur un écran : [identifiant du champ, message], ou null si tout y est.
+function cfgCheck(slide) {
+  var name = slide.getAttribute('data-slide');
+  if (name === 'paths' && !_v('install_dir')) return ['install_dir', T("Répertoire d'installation obligatoire")];
+  if (name === 'network' && !_v('truenas_ip')) return ['truenas_ip', T('IP TrueNAS obligatoire')];
+  if (name === 'ssh' && !_v('ssh_pass')) return ['ssh_pass', T('Mot de passe SSH obligatoire')];
+  if (name === 'domains') {
+    var miss = ['domain_desktop', 'domain_auth'].filter(function (id) { return _v(id).indexOf('.') === -1; })[0];
+    if (miss) return [miss, T('Les deux domaines sont obligatoires pour la double authentification.')];
+  }
+  return null;
+}
+function cfgError(msg, id) {
+  var marked = document.querySelectorAll('#page2 input.invalid'), k;
+  for (k = 0; k < marked.length; k++) marked[k].classList.remove('invalid');
+  document.getElementById('cfg-error').textContent = msg || '';
+  var el = id && document.getElementById(id);
+  if (el) { el.classList.add('invalid'); el.focus(); }
+}
+function cfgFocus() {
+  var el = cfgSlides()[cfgIndex].querySelector('input:not([type=checkbox])');
+  if (el) el.focus();
+}
+function cfgNext() {
+  var bad = cfgCheck(cfgSlides()[cfgIndex]);
+  if (bad) { cfgError(bad[1], bad[0]); return; }
+  cfgShow(cfgIndex + 1); cfgFocus();
+}
+function cfgBack() {
+  if (cfgIndex === 0) { goTo(1); return; }
+  cfgShow(cfgIndex - 1); cfgFocus();
+}
+document.addEventListener('DOMContentLoaded', function () {
+  var page = document.getElementById('page2');
+  // Entrée dans un champ : écran suivant (jamais le lancement de l'installation).
+  page.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT' || e.target.type === 'checkbox') return;
+    e.preventDefault();
+    if (!document.getElementById('cfg-next').hidden) cfgNext();
+  });
+  page.addEventListener('input', function (e) {
+    if (e.target.classList && e.target.classList.contains('invalid')) cfgError('');
+  });
+});
 
 // ── Vérification SMTP avant install (2FA par email) ───────────
 var smtpState = 'untested';
@@ -1519,8 +1615,12 @@ fetch('/check').then(r => r.json()).then(data => {
 function startInstall() {
   const ip   = document.getElementById('truenas_ip').value.trim();
   const pass = document.getElementById('ssh_pass').value.trim();
-  if (!ip)   { alert(T('IP TrueNAS obligatoire')); return; }
-  if (!pass) { alert(T('Mot de passe SSH obligatoire')); return; }
+  // Dernier contrôle de tous les écrans : on revient sur le premier qui est incomplet.
+  var list = cfgSlides(), bad, k;
+  for (k = 0; k < list.length; k++) {
+    bad = cfgCheck(list[k]);
+    if (bad) { cfgShow(k); cfgError(bad[1], bad[0]); return; }
+  }
   if (document.getElementById('enable_2fa').checked && smtpUsesEmail() && smtpState !== 'ok') {
     alert(T('Teste le SMTP (il doit réussir) avant de lancer, ou laisse le mot de passe SMTP vide pour utiliser le fichier local.'));
     return;
@@ -1640,12 +1740,22 @@ I18N_EN = r"""{
 "🔑 Sécurité": "🔑 Security",
 "Laissez vide pour générer automatiquement": "Leave empty to generate automatically",
 "Clé secrète entre le navigateur et le service fileops.": "Secret key shared between the browser and the fileops service.",
-"Accès au bureau — identifiant": "Desktop access — username",
-"Login exigé avant d'accéder au bureau (barrière serveur).": "Login required before reaching the desktop (server-side barrier).",
-"Accès au bureau — mot de passe": "Desktop access — password",
+"Compte du portail 2FA — identifiant": "2FA portal account — username",
+"Sans mot de passe saisi, l'assistant en génère un et l'affiche pendant l'installation.": "If you enter no password, the wizard generates one and shows it during the installation.",
+"Compte du portail 2FA — mot de passe": "2FA portal account — password",
 "Laissez vide pour générer": "Leave empty to generate",
 "Activer la double authentification (2FA / Authelia)": "Enable two-factor authentication (2FA / Authelia)",
-"Ajoute un code TOTP. Nécessite 2 domaines locaux (ci-dessous).": "Adds a TOTP code. Requires 2 local domains (below).",
+"Ajoute un code TOTP. Nécessite 2 domaines locaux, demandés à l'étape suivante.": "Adds a TOTP code. Requires 2 local domains, asked for in the next step.",
+"Les dossiers du NAS où Desktroo range ses fichiers, ses machines virtuelles et ses images ISO.": "The NAS folders where Desktroo keeps its files, its virtual machines and its ISO images.",
+"L'adresse du NAS et le port sur lequel le bureau répondra.": "The address of the NAS and the port the desktop will answer on.",
+"Le compte TrueNAS avec lequel le bureau exécute ses commandes sur le NAS.": "The TrueNAS account the desktop uses to run its commands on the NAS.",
+"🛡️ Double authentification": "🛡️ Two-factor authentication",
+"Le compte avec lequel vous vous connecterez au portail de double authentification.": "The account you will sign in with on the two-factor authentication portal.",
+"🌍 Domaines": "🌍 Domains",
+"Les deux adresses locales par lesquelles on atteint le bureau et le portail.": "The two local addresses used to reach the desktop and the portal.",
+"✉️ Codes 2FA par e-mail": "✉️ 2FA codes by email",
+"Répertoire d'installation obligatoire": "Installation directory is required",
+"Les deux domaines sont obligatoires pour la double authentification.": "Both domains are required for two-factor authentication.",
 "Domaine du bureau": "Desktop domain",
 "Domaine du portail 2FA": "2FA portal domain",
 "E-mail administrateur": "Administrator email",
@@ -1683,17 +1793,15 @@ I18N_EN = r"""{
 "▸ Génération de docker-compose.yml...": "▸ Generating docker-compose.yml...",
 "✓ docker-compose.yml (stack complète)": "✓ docker-compose.yml (full stack)",
 "▸ Génération de nginx.conf...": "▸ Generating nginx.conf...",
-"▸ Génération de .htpasswd (barrière d'auth)...": "▸ Generating .htpasswd (auth barrier)...",
 "▸ Nettoyage des anciennes modifications systemd/libvirt...": "▸ Cleaning up old systemd/libvirt changes...",
 "▸ Configuration du démarrage automatique (POSTINIT)...": "▸ Configuring automatic startup (POSTINIT)...",
 "▸ Démarrage de la stack Docker...": "▸ Starting the Docker stack...",
 "⚠ Reglage password_login_groups ignore ({0}).": "⚠ password_login_groups setting skipped ({0}).",
 "⚠ {0} existe déjà en dossier — conservé tel quel.": "⚠ {0} already exists as a folder — kept as is.",
 "⚠ Dataset {0} non créé ({1}) — dossier simple utilisé.": "⚠ Dataset {0} not created ({1}) — plain folder used.",
-"⚠ 2FA demandée mais domaines manquants/invalides — 2FA désactivée (barrière simple conservée).": "⚠ 2FA requested but domains are missing or invalid — 2FA disabled (simple barrier kept).",
+"⚠ 2FA demandée mais domaines manquants/invalides — 2FA désactivée.": "⚠ 2FA requested but domains are missing or invalid — 2FA disabled.",
 "⚠ Les 2 domaines doivent partager le même domaine parent ({0}) — 2FA désactivée.": "⚠ Both domains must share the same parent domain ({0}) — 2FA disabled.",
-"✓ Accès bureau — utilisateur: {0} mot de passe: {1}": "✓ Desktop access — user: {0} password: {1}",
-"⚠ BARRIÈRE LOGIN NON POSÉE : le bureau sera accessible SANS mot de passe. Génère le .htpasswd à la main (openssl passwd -apr1) dans {0}, remets auth_basic dans nginx.conf, puis « docker restart desktroo » — voir SECURITE.md.": "⚠ LOGIN BARRIER NOT SET: the desktop will be reachable WITHOUT a password. Generate the .htpasswd by hand (openssl passwd -apr1) in {0}, put auth_basic back in nginx.conf, then run “docker restart desktroo” — see SECURITE.md.",
+"✓ Compte du portail 2FA — utilisateur: {0} mot de passe: {1}": "✓ 2FA portal account — user: {0} password: {1}",
 "▸ Configuration Authelia (2FA)...": "▸ Configuring Authelia (2FA)...",
 "✓ Authelia configuré (utilisateur: {0}) — conteneur publié sur le port 9091": "✓ Authelia configured (user: {0}) — container published on port 9091",
 "✓ Snippets NPM écrits dans {0}": "✓ NPM snippets written to {0}",
@@ -1711,7 +1819,6 @@ I18N_EN = r"""{
 "✓ SSH : groupe {0} deja autorise (mot de passe)": "✓ SSH: group {0} already allowed (password)",
 "✓ Token injecté dans desktroo.html": "✓ Token injected into desktroo.html",
 "⚠ Token non trouvé dans le HTML (variable FILEOPS_TOKEN_DEFAULT absente)": "⚠ Token not found in the HTML (FILEOPS_TOKEN_DEFAULT variable missing)",
-"⚠ .htpasswd non généré: {0}": "⚠ .htpasswd not generated: {0}",
 "✓ Email (SMTP) configuré : {0} via {1}:{2}": "✓ Email (SMTP) configured: {0} via {1}:{2}",
 "➤ Enrôlement TOTP : ouvre https://{0} , connecte-toi ({1}) ; le code de vérification est envoyé par email à {2}.": "➤ TOTP enrollment: open https://{0} , sign in ({1}); the verification code is sent by email to {2}.",
 "➤ Enrôlement TOTP : ouvre https://{0} , connecte-toi ({1}), scanne le QR — le code est dans {2}/authelia/notification.txt": "➤ TOTP enrollment: open https://{0} , sign in ({1}), scan the QR code — the code is in {2}/authelia/notification.txt",
