@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.0.0'
+APP_VERSION = '2.0.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -48,10 +48,54 @@ import tempfile as _tempfile
 import threading as _access_threading
 from datetime import datetime as _access_datetime, timezone as _access_timezone
 
-ACCESS_DATA_DIR = os.environ.get(
-    'ACCESS_DATA_DIR',
-    '/mnt/Truenas_Stockage/apps/desktop/data'
-)
+# Données de l'application (droits d'accès, partages, sites, licence, identifiant
+# d'installation…) : elles vivent dans le dossier d'installation, sous « data ».
+# Jusqu'à la 2.0.0, faute de réglage, ce dossier retombait sur un chemin écrit en dur
+# (_LEGACY_DATA_DIR) quel que soit le NAS : une installation faite ailleurs y a rangé
+# ses données. On les rapatrie une fois, au démarrage. Sans APP_DIR (aucun installeur
+# ne le laisse vide), l'ancien chemin reste le repli.
+_LEGACY_DATA_DIR = '/mnt/Truenas_Stockage/apps/desktop/data'
+ACCESS_DATA_DIR = (os.environ.get('ACCESS_DATA_DIR')
+                   or (os.path.join(APP_DIR, 'data') if APP_DIR else _LEGACY_DATA_DIR))
+
+
+def _access_migrate_legacy_data(new=None, old=None):
+    """Copie les données de l'ancien emplacement vers le nouveau, puis retire l'ancien.
+    Ne fait rien si le nouvel emplacement contient déjà quelque chose."""
+    new = new or ACCESS_DATA_DIR
+    old = old or _LEGACY_DATA_DIR
+    try:
+        if os.path.realpath(new) == os.path.realpath(old) or not os.path.isdir(old):
+            return False
+        if os.path.isdir(new) and os.listdir(new):
+            return False
+        import shutil
+        names = os.listdir(old)
+        os.makedirs(new, exist_ok=True)
+        for name in names:
+            src, dst = os.path.join(old, name), os.path.join(new, name)
+            if os.path.isdir(src):
+                shutil.copytree(src, dst)
+            else:
+                shutil.copy2(src, dst)
+        # Tout est copié : l'ancien dossier ne sert plus. On remonte en retirant les
+        # dossiers restés vides (un vrai pool monté là n'est jamais vide : il reste).
+        shutil.rmtree(old)
+        parent = os.path.dirname(old)
+        while parent not in ('/mnt', '/', ''):
+            try:
+                os.rmdir(parent)
+            except OSError:
+                break
+            parent = os.path.dirname(parent)
+        log.info('Données rapatriées de %s vers %s (%d élément(s))', old, new, len(names))
+        return True
+    except Exception as exc:
+        log.warning('Rapatriement des données de %s vers %s impossible : %s', old, new, exc)
+        return False
+
+
+_access_migrate_legacy_data()
 ACCESS_POLICY_FILE = os.path.join(ACCESS_DATA_DIR, 'access-policy.json')
 ACCESS_HISTORY_FILE = os.path.join(ACCESS_DATA_DIR, 'access-history.json')
 _access_lock = _access_threading.RLock()
