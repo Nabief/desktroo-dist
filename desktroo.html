@@ -2463,6 +2463,7 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"erreur — cliquer pour réessayer": "error — click to retry",
 "Session expirée : reconnecte-toi.": "Session expired: sign in again.",
 "⚠️ Service de fichiers indisponible :": "⚠️ File service unavailable:",
 "Trop de tentatives de connexion. Réessaie dans quelques minutes.": "Too many sign-in attempts. Try again in a few minutes.",
@@ -5627,7 +5628,7 @@ function fsTreeNode(path, name, depth, icon) {
   wrap.appendChild(row); wrap.appendChild(kids);
   return wrap;
 }
-async function fsTreeLoad(container, path, depth) {
+async function fsTreeLoad(container, path, depth, attempt) {
   const pad = (6 + depth * 12) + 'px';
   container.innerHTML = '<div style="padding-left:' + pad + ';font-size:11px;color:var(--text-dim);">…</div>';
   try {
@@ -5636,7 +5637,19 @@ async function fsTreeLoad(container, path, depth) {
     container.innerHTML = '';
     if (!dirs.length) { container.innerHTML = '<div style="padding-left:' + pad + T(';font-size:11px;color:var(--text-dim);">(aucun sous-dossier)</div>'); return; }
     dirs.forEach(function(d){ container.appendChild(fsTreeNode(path.replace(/\/$/, '') + '/' + d.name, d.name, depth)); });
-  } catch(e) { container.innerHTML = '<div style="padding-left:' + pad + T(';font-size:11px;color:#f87171;">erreur</div>'); }
+  } catch(e) {
+    // Le service de fichiers peut ne pas répondre un instant (redémarrage après une mise à
+    // jour) : on réessaie seul quelques fois, et un clic relance le chargement.
+    attempt = attempt || 0;
+    const err = document.createElement('div');
+    err.style.cssText = 'padding-left:' + pad + ';font-size:11px;color:#f87171;cursor:pointer;';
+    err.textContent = T('erreur — cliquer pour réessayer');
+    err.title = (e && e.message) ? Tdyn(e.message) : '';
+    err.onclick = function(ev){ ev.stopPropagation(); fsTreeLoad(container, path, depth, 0); };
+    container.innerHTML = '';
+    container.appendChild(err);
+    if (attempt < 4) setTimeout(function(){ if (err.isConnected) fsTreeLoad(container, path, depth, attempt + 1); }, 5000);
+  }
 }
 
 async function loadPools() {
