@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-TrueNAS Desktop – File-ops & PTY terminal sidecar
+Desktroo – File-ops & PTY terminal sidecar
 HTTP  → port FILEOPS_PORT   (default 8765)
 WS    → port FILEOPS_WS_PORT (default 8766)
 
@@ -39,9 +39,9 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '1.11.2'
+APP_VERSION = '2.0.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
-GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/truenas-desktop-dist/main').rstrip('/')
+GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
 # MDM-ACCESS-POLICY-V1-BEGIN
 import tempfile as _tempfile
@@ -376,7 +376,7 @@ def _host_bootstrap():
 # ── MDM-SELF-UPDATE-V1 : version & mise à jour depuis GitHub ──────────────────
 def _fetch_text(url, timeout=15):
     import urllib.request
-    req = urllib.request.Request(url, headers={'User-Agent': 'TrueNAS-Desktop'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'Desktroo'})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read().decode('utf-8', 'replace').strip()
 
@@ -471,9 +471,9 @@ def _do_update():
         raise RuntimeError("APP_DIR introuvable — impossible de localiser l'installation.")
     import urllib.request
     updated = []
-    for f in ('fileops.py', 'truenas-desktop.html', 'vnc-viewer.html'):
+    for f in ('fileops.py', 'desktroo.html', 'vnc-viewer.html'):
         dst = os.path.join(APP_DIR, f)
-        req = urllib.request.Request(GITHUB_RAW + '/' + f, headers={'User-Agent': 'TrueNAS-Desktop'})
+        req = urllib.request.Request(GITHUB_RAW + '/' + f, headers={'User-Agent': 'Desktroo'})
         with urllib.request.urlopen(req, timeout=60) as r:
             data = r.read()
         # Écriture SUR PLACE (même inode) : indispensable pour que les bind-mounts
@@ -481,7 +481,7 @@ def _do_update():
         with open(dst, 'wb') as fh:
             fh.write(data)
         updated.append(f)
-    html = os.path.join(APP_DIR, 'truenas-desktop.html')
+    html = os.path.join(APP_DIR, 'desktroo.html')
     try:
         with open(html, 'r', encoding='utf-8') as fh:
             s = fh.read()
@@ -500,7 +500,7 @@ def _schedule_self_restart():
             # Redémarre le bureau (nginx) puis le sidecar. Avec l'écriture sur place
             # ce n'est plus strictement nécessaire pour le HTML, mais garantit la
             # prise en compte du nouveau fileops.py.
-            ssh_exec("sudo -n docker restart truenas-desktop truenas-fileops", timeout=45)
+            ssh_exec("sudo -n docker restart desktroo desktroo-fileops", timeout=45)
         except Exception:
             pass
     _threading.Thread(target=_r, daemon=True).start()
@@ -3200,7 +3200,7 @@ def _share_page(inner, title='Partage'):
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<title>' + _sh_html.escape(title) + '</title>' + _SHARE_CSS +
         '</head><body><div class="card">' + inner +
-        '<div class="foot">TrueNAS Desktop</div></div></body></html>'
+        '<div class="foot">Desktroo</div></div></body></html>'
     )
 
 
@@ -3260,19 +3260,19 @@ def _share_landing_page(rec):
 
 
 # ── MDM-WEBSITES-V1-BEGIN ───────────────────────────────────────────────────
-# Sites web servis par le conteneur nginx dédié 'truenas-websites'.
+# Sites web servis par le conteneur nginx dédié 'desktroo-websites'.
 # Types : static | php | proxy. Accès par port (8100-8130) et/ou server_name.
 WEB_FILE = os.path.join(ACCESS_DATA_DIR, 'sites.json')
 WEB_CONF_DIR = os.environ.get('WEB_CONF_DIR', '/mnt/Truenas_Stockage/apps/desktop/websites/conf.d')
 WEB_LOG_DIR = os.environ.get('WEB_LOG_DIR') or os.path.join(os.path.dirname(WEB_CONF_DIR.rstrip('/')), 'logs')
-DB_CONTAINER = os.environ.get('DB_CONTAINER', 'truenas-mariadb')
-WEB_PHP_UPSTREAM = os.environ.get('WEB_PHP_UPSTREAM', 'truenas-php82:9000')
+DB_CONTAINER = os.environ.get('DB_CONTAINER', 'desktroo-mariadb')
+WEB_PHP_UPSTREAM = os.environ.get('WEB_PHP_UPSTREAM', 'desktroo-php82:9000')
 # Versions PHP disponibles : {version: upstream fastcgi}. Un conteneur php-fpm par version.
 _WEB_PHP_DEFAULTS = {
-    '8.3': 'truenas-php83:9000',
-    '8.2': 'truenas-php82:9000',
-    '8.1': 'truenas-php81:9000',
-    '7.4': 'truenas-php74:9000',
+    '8.3': 'desktroo-php83:9000',
+    '8.2': 'desktroo-php82:9000',
+    '8.1': 'desktroo-php81:9000',
+    '7.4': 'desktroo-php74:9000',
 }
 try:
     WEB_PHP_VERSIONS = json.loads(os.environ.get('WEB_PHP_VERSIONS', '') or '{}')
@@ -3414,7 +3414,7 @@ def _web_write_user_ini(root, ini):
         except OSError:
             pass
         return
-    lines = ['; Généré par TrueNAS Desktop — réglages PHP du site']
+    lines = ['; Généré par Desktroo — réglages PHP du site']
     for k, v in ini.items():
         lines.append('%s = %s' % (k, v))
     with open(path, 'w', encoding='utf-8') as f:
@@ -3624,7 +3624,7 @@ def _web_regenerate():
     # Rechargement direct et fiable via le host (indépendant du watcher interne du
     # conteneur, qui peut être cassé selon l'échappement de la compose).
     try:
-        ssh_exec("sudo -n docker exec truenas-websites sh -c "
+        ssh_exec("sudo -n docker exec desktroo-websites sh -c "
                  + shq("nginx -t && nginx -s reload"), timeout=30)
     except Exception as e:
         log.warning('web nginx reload (ssh) error: %s', e)
@@ -3720,7 +3720,7 @@ def _php_write_conf(ver, bump_ext=False):
     base = os.path.join(WEB_PHP_DIR, ver)
     ini_dir = os.path.join(base, 'ini')
     os.makedirs(ini_dir, exist_ok=True)
-    lines = ['; Généré par TrueNAS Desktop — ne pas éditer']
+    lines = ['; Généré par Desktroo — ne pas éditer']
     for k, v in prof['ini'].items():
         lines.append('%s = %s' % (k, v))
     with open(os.path.join(ini_dir, 'zz-truenas.ini'), 'w', encoding='utf-8') as f:
@@ -3766,7 +3766,7 @@ def _php_save(version, ini, extensions):
     # Applique directement via le host (le watcher interne du conteneur peut être
     # cassé selon l'échappement de la compose). install-php-extensions compile :
     # on lance en tâche de fond puis on recharge php-fpm (kill -USR2 1).
-    cont = 'truenas-php' + version.replace('.', '')
+    cont = 'desktroo-php' + version.replace('.', '')
 
     def _php_apply_bg():
         try:
@@ -3929,7 +3929,7 @@ def _app_fetch_into(url, dest, strip):
     tmpd = tempfile.mkdtemp(prefix='appdl-')
     try:
         arch = os.path.join(tmpd, 'archive')
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 TrueNAS-Desktop'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 Desktroo'})
         with urllib.request.urlopen(req, timeout=300) as resp:
             with open(arch, 'wb') as f:
                 _sh_shutil.copyfileobj(resp, f)
@@ -3993,7 +3993,7 @@ def _app_wp_config(root, db):
     # aussi bien en IP:port qu'en domaine, sans redirection canonique (évite le timeout
     # quand on accède par IP alors que le domaine est enregistré en base).
     proxy_fix = (
-        "\n/* Accès multi-hôte + reverse-proxy HTTPS (TrueNAS Desktop) */\n"
+        "\n/* Accès multi-hôte + reverse-proxy HTTPS (Desktroo) */\n"
         "if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {\n"
         "    $_SERVER['HTTPS'] = 'on';\n"
         "}\n"
@@ -4085,7 +4085,7 @@ def _install_profile_save(p):
 
 
 def _php_container(ver):
-    return 'truenas-php' + str(ver).replace('.', '')
+    return 'desktroo-php' + str(ver).replace('.', '')
 
 
 def _docker_exec(container, inner_cmd, timeout=240, user=None):
@@ -4107,7 +4107,7 @@ def _wp_cli_ensure():
     if not os.path.exists(phar) or os.path.getsize(phar) < 1000000:
         import urllib.request
         url = 'https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar'
-        req = urllib.request.Request(url, headers={'User-Agent': 'TrueNAS-Desktop'})
+        req = urllib.request.Request(url, headers={'User-Agent': 'Desktroo'})
         with urllib.request.urlopen(req, timeout=120) as resp:
             with open(phar, 'wb') as f:
                 _sh_shutil.copyfileobj(resp, f)
@@ -4859,7 +4859,7 @@ def _prem_http(method, url, headers=None, data=None, timeout=45):
     if isinstance(data, dict):
         data = urllib.parse.urlencode(data).encode()
     req = urllib.request.Request(url, data=data, method=method, headers=headers or {})
-    req.add_header('User-Agent', 'TrueNAS-Desktop')
+    req.add_header('User-Agent', 'Desktroo')
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             raw = r.read().decode('utf-8', 'replace')
@@ -4894,7 +4894,7 @@ def _resolve_alldebrid(url, cfg):
     key = cfg.get('apikey')
     if not key:
         raise ValueError('AllDebrid non configuré.')
-    j = _prem_http('GET', 'https://api.alldebrid.com/v4/link/unlock?agent=TrueNAS-Desktop&apikey='
+    j = _prem_http('GET', 'https://api.alldebrid.com/v4/link/unlock?agent=Desktroo&apikey='
                    + urllib.parse.quote(key) + '&link=' + urllib.parse.quote(url, safe=''))
     if j.get('status') == 'success':
         dd = j.get('data') or {}
@@ -4933,7 +4933,7 @@ def _resolve_onefichier(url, cfg):
     req = urllib.request.Request('https://api.1fichier.com/v1/download/get_token.cgi',
                                  data=json.dumps({'url': url}).encode(), method='POST',
                                  headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
-                                          'User-Agent': 'TrueNAS-Desktop'})
+                                          'User-Agent': 'Desktroo'})
     with urllib.request.urlopen(req, timeout=45) as r:
         j = json.loads(r.read().decode('utf-8', 'replace'))
     if j.get('status') == 'OK' and j.get('url'):
@@ -5086,7 +5086,7 @@ def _prem_test(provider):
     if provider == 'alldebrid':
         if not cfg.get('apikey'):
             raise ValueError('Clé API manquante.')
-        j = _prem_http('GET', 'https://api.alldebrid.com/v4/user?agent=TrueNAS-Desktop&apikey=' + urllib.parse.quote(cfg['apikey']))
+        j = _prem_http('GET', 'https://api.alldebrid.com/v4/user?agent=Desktroo&apikey=' + urllib.parse.quote(cfg['apikey']))
         if j.get('status') == 'success':
             u = (j.get('data') or {}).get('user') or {}
             return {'ok': True, 'account': u.get('username'), 'premium': bool(u.get('isPremium')), 'until': u.get('premiumUntil')}
@@ -5110,7 +5110,7 @@ def _prem_test(provider):
         if not cfg.get('apikey'):
             raise ValueError('Clé API manquante.')
         req = urllib.request.Request('https://api.1fichier.com/v1/user/info.cgi', data=b'{}', method='POST',
-                                     headers={'Authorization': 'Bearer ' + cfg['apikey'], 'Content-Type': 'application/json', 'User-Agent': 'TrueNAS-Desktop'})
+                                     headers={'Authorization': 'Bearer ' + cfg['apikey'], 'Content-Type': 'application/json', 'User-Agent': 'Desktroo'})
         with urllib.request.urlopen(req, timeout=30) as r:
             j = json.loads(r.read().decode('utf-8', 'replace'))
         if j.get('email') or j.get('status') == 'OK':
@@ -5332,7 +5332,7 @@ def _dl_probe(url):
     """Sonde l'URL (GET Range 0-0) : retourne (total, ranges_ok, filename_cd)."""
     import urllib.request
     from urllib.parse import unquote
-    req = urllib.request.Request(url, headers={'User-Agent': 'TrueNAS-Desktop', 'Range': 'bytes=0-0'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'Desktroo', 'Range': 'bytes=0-0'})
     with urllib.request.urlopen(req, timeout=45) as r:
         status = getattr(r, 'status', None) or r.getcode()
         cr = r.headers.get('Content-Range') or ''
@@ -5392,7 +5392,7 @@ def _dl_single(it, fl, total):
     path = it['path']
     part = path + '.part'
     existing = os.path.getsize(part) if os.path.exists(part) else 0
-    req = urllib.request.Request(it['url'], headers={'User-Agent': 'TrueNAS-Desktop'})
+    req = urllib.request.Request(it['url'], headers={'User-Agent': 'Desktroo'})
     if existing > 0:
         req.add_header('Range', 'bytes=%d-' % existing)
     resp = urllib.request.urlopen(req, timeout=60)
@@ -5502,7 +5502,7 @@ def _dl_multi(it, fl, total, n):
             return
         try:
             req = urllib.request.Request(it['url'], headers={
-                'User-Agent': 'TrueNAS-Desktop',
+                'User-Agent': 'Desktroo',
                 'Range': 'bytes=%d-%d' % (start + done, end - 1)})
             resp = urllib.request.urlopen(req, timeout=60)
             with open(path, 'r+b') as f:
@@ -6061,6 +6061,8 @@ def _lic_compute_install_id():
         parts.append(os.uname().nodename)
     except Exception:
         pass
+    # NB : 'truenas-desktop' est une graine de hachage historique, pas un nom affiche.
+    # Ne PAS la renommer : elle entre dans la derivation de l'install_id (licences liees).
     raw = '|'.join([x for x in parts if x]) or 'truenas-desktop'
     return _lic_hashlib.sha256(raw.encode('utf-8')).hexdigest()[:16]
 
@@ -6168,7 +6170,7 @@ def _lic_server_post(ep, payload, timeout=20):
     data = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(url, data=data, method='POST',
                                  headers={'Content-Type': 'application/json',
-                                          'User-Agent': 'TrueNAS-Desktop'})
+                                          'User-Agent': 'Desktroo'})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode('utf-8', 'replace'))
@@ -6262,6 +6264,75 @@ def _lic_is_readonly():
 
 # Routes POST dont l'écriture reste autorisée même en lecture seule.
 _LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh'}
+
+
+# ── MDM-WALLPAPERS-V1 : dossier de fonds d'écran ─────────────────────────────
+# Les images vivent dans <install>/wallpapers (volume hôte, donc conservées aux
+# mises à jour). Le bureau les liste, les lit et en ajoute par les routes
+# /wallpapers* ; on peut aussi y déposer des fichiers directement.
+WALLPAPER_DIR = os.environ.get('WALLPAPER_DIR') or (os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '')
+WALLPAPER_MAX_BYTES = int(os.environ.get('WALLPAPER_MAX_BYTES', str(20 * 1024 * 1024)))
+_WALLPAPER_TYPES = {
+    '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+    '.webp': 'image/webp', '.avif': 'image/avif', '.gif': 'image/gif',
+}
+
+
+def _wallpaper_dir(create=False):
+    """Chemin réel du dossier de fonds d'écran ; le crée à la demande."""
+    if not WALLPAPER_DIR:
+        raise RuntimeError("Dossier de fonds d'écran indisponible (APP_DIR non défini).")
+    if create:
+        os.makedirs(WALLPAPER_DIR, exist_ok=True)
+    return os.path.realpath(WALLPAPER_DIR)
+
+
+def _wallpaper_name(name):
+    """Valide un nom de fichier : pas de sous-dossier, pas de fichier caché, image connue."""
+    name = os.path.basename(str(name or '').replace('\\', '/')).strip()
+    if not name or name.startswith('.') or len(name) > 120 or any(ord(c) < 32 for c in name):
+        raise ValueError('Nom de fichier invalide.')
+    if os.path.splitext(name)[1].lower() not in _WALLPAPER_TYPES:
+        raise ValueError('Format non pris en charge : JPG, PNG, WebP, AVIF ou GIF.')
+    return name
+
+
+def _wallpaper_path(name):
+    """Chemin d'une image existante du dossier, sans jamais en sortir (liens compris)."""
+    base = _wallpaper_dir()
+    full = os.path.realpath(os.path.join(base, _wallpaper_name(name)))
+    if os.path.dirname(full) != base or not os.path.isfile(full):
+        raise FileNotFoundError('Image introuvable.')
+    return full
+
+
+def _wallpaper_item(full):
+    st = os.stat(full)
+    return {'name': os.path.basename(full), 'size': st.st_size, 'mtime': int(st.st_mtime)}
+
+
+def _wallpaper_list():
+    base = _wallpaper_dir(create=True)
+    items = []
+    for fn in os.listdir(base):
+        full = os.path.join(base, fn)
+        if fn.startswith('.') or os.path.splitext(fn)[1].lower() not in _WALLPAPER_TYPES:
+            continue
+        # isfile suit les liens : on écarte ceux qui pointent hors du dossier.
+        if os.path.isfile(full) and os.path.dirname(os.path.realpath(full)) == base:
+            items.append(_wallpaper_item(full))
+    items.sort(key=lambda it: it['name'].lower())
+    return {'ok': True, 'dir': WALLPAPER_DIR, 'max_bytes': WALLPAPER_MAX_BYTES, 'items': items}
+
+
+def _wallpaper_free_name(base, name):
+    """Évite d'écraser une image existante : photo.jpg → photo-2.jpg."""
+    stem, ext = os.path.splitext(name)
+    candidate, n = name, 2
+    while os.path.exists(os.path.join(base, candidate)):
+        candidate = '%s-%d%s' % (stem, n, ext)
+        n += 1
+    return candidate
 
 
 class FileOpsHandler(BaseHTTPRequestHandler):
@@ -6480,6 +6551,35 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, _web_credentials(sid))
             except (ValueError, PermissionError) as e:
                 self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        # MDM-WALLPAPERS-V1 : liste des fonds d'écran du dossier
+        if path == '/wallpapers':
+            try:
+                self._json(200, _wallpaper_list())
+            except Exception as e:
+                self._json(200, {'ok': False, 'items': [], 'error': str(e)})
+            return
+        # MDM-WALLPAPERS-V1 : contenu d'une image (le bureau la charge en blob)
+        if path == '/wallpapers/file':
+            try:
+                full = _wallpaper_path(qs.get('name', ''))
+                size = os.path.getsize(full)
+                self.send_response(200)
+                self.send_header('Content-Type', _WALLPAPER_TYPES[os.path.splitext(full)[1].lower()])
+                self.send_header('Content-Length', str(size))
+                self.send_header('X-Content-Type-Options', 'nosniff')
+                # L'URL porte la date de modification (?v=) : le cache navigateur reste juste.
+                self.send_header('Cache-Control', 'private, max-age=86400')
+                self.end_headers()
+                with open(full, 'rb') as fh:
+                    _sh_shutil.copyfileobj(fh, self.wfile, 256 * 1024)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            except (FileNotFoundError, ValueError) as e:
+                self._json(404, {'error': str(e)})
             except Exception as e:
                 self._json(500, {'error': str(e)})
             return
@@ -6915,6 +7015,58 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         if path not in _LIC_READONLY_ALLOW_POST and _lic_is_readonly():
             self._json(402, {'error': 'license_readonly',
                              'message': 'Abonnement requis — mode lecture seule.'})
+            return
+
+        # MDM-WALLPAPERS-V1 : ajout d'une image (corps binaire, nom en paramètre)
+        if path == '/wallpapers/upload':
+            tmp_path = None
+            try:
+                qs = dict(parse_qsl(p.query, keep_blank_values=True))
+                name = _wallpaper_name(qs.get('name', ''))
+                total = int(self.headers.get('Content-Length') or -1)
+                if total <= 0:
+                    raise ValueError('Fichier vide ou taille absente.')
+                if total > WALLPAPER_MAX_BYTES:
+                    raise ValueError('Image trop lourde : %d Mo au plus.' % (WALLPAPER_MAX_BYTES // (1024 * 1024)))
+                base = _wallpaper_dir(create=True)
+                name = _wallpaper_free_name(base, name)
+                target = os.path.join(base, name)
+                tmp_path = os.path.join(base, '.upload-%d-%d' % (os.getpid(), _threading.get_ident()))
+                remaining = total
+                with open(tmp_path, 'wb') as out:
+                    while remaining > 0:
+                        chunk = self.rfile.read(min(1024 * 1024, remaining))
+                        if not chunk:
+                            raise IOError('Envoi interrompu avant la fin.')
+                        out.write(chunk)
+                        remaining -= len(chunk)
+                os.replace(tmp_path, target)
+                tmp_path = None
+                try:
+                    os.chmod(target, 0o644)
+                except OSError:
+                    pass
+                self._json(200, {'ok': True, 'item': _wallpaper_item(target)})
+            except ValueError as e:
+                self._json(400, {'ok': False, 'error': str(e)})
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
+            finally:
+                if tmp_path:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
+            return
+        # MDM-WALLPAPERS-V1 : suppression d'une image du dossier
+        if path == '/wallpapers/delete':
+            try:
+                os.unlink(_wallpaper_path(self._body().get('name', '')))
+                self._json(200, {'ok': True})
+            except (FileNotFoundError, ValueError) as e:
+                self._json(404, {'ok': False, 'error': str(e)})
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
             return
 
         # MDM-APPS-V1 : bases de données + installation d'applications
@@ -8287,7 +8439,7 @@ if __name__ == '__main__':
 
 
 # MDM-LIBVIRT2-SAFE-COPY-SNAPSHOTS-20260710
-# Snapshots sûrs TrueNAS Desktop.
+# Snapshots sûrs Desktroo.
 # Principe : VM arrêtée uniquement, copie qcow2/XML/NVRAM dans /mnt/Truenas_Stockage/vms/_snapshots/<VM>/<snapshot-id>/
 # Pas de virsh snapshot-delete, pas de qemu-img snapshot -d.
 
