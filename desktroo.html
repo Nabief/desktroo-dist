@@ -2463,6 +2463,12 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Session expirée : reconnecte-toi.": "Session expired: sign in again.",
+"⚠️ Service de fichiers indisponible :": "⚠️ File service unavailable:",
+"Trop de tentatives de connexion. Réessaie dans quelques minutes.": "Too many sign-in attempts. Try again in a few minutes.",
+"TrueNAS injoignable : vérification des identifiants impossible.": "TrueNAS unreachable: the credentials could not be checked.",
+"Ce compte TrueNAS n'a pas les pleins droits d'administration.": "This TrueNAS account does not have full administrator rights.",
+"Requête invalide.": "Invalid request.",
 "Passer en clair": "Switch to light mode",
 "Passer en sombre": "Switch to dark mode",
 "Chargement...": "Loading...",
@@ -4577,10 +4583,6 @@ document.addEventListener('DOMContentLoaded', function () {
       <label>Clé API (optionnel — remplace le mot de passe)</label>
       <input type="password" id="login-apikey" placeholder="1-xxxxxxxxxxxx" />
     </div>
-    <div class="form-group" style="display:none;">
-      <label>Token sidecar</label>
-      <input type="password" id="login-fileops-token" autocomplete="off" />
-    </div>
     <button class="btn-login" id="login-btn">Se connecter</button>
     <div class="login-error" id="login-error"></div>
     <p class="login-info">⚙️ Clé API : TrueNAS → Paramètres → API Keys</p>
@@ -4984,7 +4986,6 @@ document.addEventListener('DOMContentLoaded', function () {
 // Même origine pour le navigateur = zéro CORS
 const NAS_URL = '';
 const TRUENAS_UI = 'http://TRUENAS_IP'; // placeholder : dérivé de l'hôte si non injecté
-const FILEOPS_TOKEN_DEFAULT = 'FILEOPS_TOKEN_PLACEHOLDER'; // injecté par install.sh / update.sh
 let authToken = null;
 let apiKey = null;
 let basicAuth = null;  // base64(user:pass), utilisé pour auth.login sur le socket
@@ -5309,11 +5310,6 @@ function errHtml(msg) {
 // LOGIN
 // ===========================
 document.getElementById('login-btn').addEventListener('click', doLogin);
-(function() {
-  var fti = document.getElementById('login-fileops-token');
-  var saved = localStorage.getItem('fileops_token');
-  if (fti && saved) fti.value = saved;
-})();
 document.addEventListener('keydown', e => { if(e.key === 'Enter') { if(!document.getElementById('login-screen').classList.contains('fade-out')) doLogin(); }});
 
 async function doLogin() {
@@ -5355,11 +5351,11 @@ async function doLogin() {
     currentUser = user || info.hostname || 'admin';
     sessionStorage.setItem('tn_user', currentUser);
 
-    var fTok = document.getElementById('login-fileops-token');
-    if (fTok && fTok.value.trim()) {
-      localStorage.setItem('fileops_token', fTok.value.trim());
-      localStorage.setItem('tn_saved_ftoken', fTok.value.trim());
-    }
+    // fileops vérifie à son tour ces identifiants auprès de TrueNAS et remet son jeton.
+    // S'il refuse ou ne répond pas, le bureau s'ouvre quand même (les modules TrueNAS
+    // fonctionnent) et on dit pourquoi les fichiers, le terminal et les VM manquent.
+    var fileopsRefus = '';
+    try { await fileopsLogin(true); } catch (e2) { fileopsRefus = e2.message || String(e2); }
 
     localStorage.setItem('tn_saved_user', user);
 
@@ -5372,6 +5368,7 @@ async function doLogin() {
     }
 
     enterDesktop(info);
+    if (fileopsRefus) setTimeout(function() { toast(T('⚠️ Service de fichiers indisponible : ') + fileopsRefus, 9000); }, 4200);
   } catch (e) {
     err.textContent = '⚠️ ' + (e.message || T('Identifiants incorrects ou NAS inaccessible.'));
     wsDisconnect();
@@ -6603,16 +6600,47 @@ async function fetchFileViaSocket(path, filename, buffered) {
   return response;
 }
 // ── Sidecar fileops (delete/rename/copy — non disponibles dans l'API TrueNAS) ──
+// Le jeton n'est pas dans la page : fileops le remet (POST auth/login) après avoir vérifié
+// lui-même les identifiants auprès de TrueNAS. Il est gardé dans le navigateur jusqu'à
+// la déconnexion.
 function getFileopsToken() {
-  const stored = localStorage.getItem('fileops_token');
-  // Si le token injecté à l'install diffère de celui en localStorage, le nouveau gagne
-  if (stored && stored !== FILEOPS_TOKEN_DEFAULT && FILEOPS_TOKEN_DEFAULT !== 'FILEOPS_TOKEN_PLACEHOLDER') {
-    localStorage.setItem('fileops_token', FILEOPS_TOKEN_DEFAULT);
-    return FILEOPS_TOKEN_DEFAULT;
-  }
-  return stored || FILEOPS_TOKEN_DEFAULT;
+  return localStorage.getItem('fileops_token') || '';
 }
-async function fileops(method, endpoint, body) {
+var _fileopsLoginPending = null;
+// Dernier refus : un refus net (identifiants, droits) vaut jusqu'à la prochaine connexion,
+// une panne passagère (TrueNAS injoignable, trop de tentatives) pendant 20 s. Sans cela,
+// chaque appel de fond relancerait une vérification auprès de TrueNAS.
+var _fileopsLoginRefus = null;
+function fileopsLogin(force) {
+  if (_fileopsLoginPending) return _fileopsLoginPending;
+  if (force) _fileopsLoginRefus = null;
+  if (_fileopsLoginRefus && Date.now() < _fileopsLoginRefus.until) return Promise.reject(new Error(_fileopsLoginRefus.msg));
+  var body;
+  if (apiKey) {
+    body = { apikey: apiKey };
+  } else if (basicAuth) {
+    var creds = atob(basicAuth), i = creds.indexOf(':');
+    body = { username: creds.slice(0, i), password: creds.slice(i + 1) };
+  } else {
+    return Promise.reject(new Error(T('Session expirée : reconnecte-toi.')));
+  }
+  _fileopsLoginPending = fetch('/fileops/auth/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  }).then(function(r) {
+    return r.json().catch(function() { return {}; }).then(function(d) {
+      if (!r.ok || !d.token) {
+        var msg = d.error || 'HTTP ' + r.status;
+        _fileopsLoginRefus = { msg: msg, until: (r.status === 401 || r.status === 403) ? Infinity : Date.now() + 20000 };
+        throw new Error(msg);
+      }
+      _fileopsLoginRefus = null;
+      localStorage.setItem('fileops_token', d.token);
+      return d.token;
+    });
+  }).finally(function() { _fileopsLoginPending = null; });
+  return _fileopsLoginPending;
+}
+async function fileops(method, endpoint, body, _retried) {
   if (_licReadonly && method !== 'GET' && String(endpoint).split('?')[0].replace(/^\/+/, '') !== 'license/activate') {
     licBlockToast();
     throw new Error('LICENSE_READONLY');
@@ -6624,6 +6652,11 @@ async function fileops(method, endpoint, body) {
   }
   const resp = await fetch('/fileops/' + endpoint, opts);
   const data = await resp.json().catch(() => ({}));
+  // Jeton absent ou périmé (première visite, réinstallation) : on en redemande un, une fois.
+  if (resp.status === 403 && data.error === 'Unauthorized' && !_retried && (apiKey || basicAuth)) {
+    await fileopsLogin();
+    return fileops(method, endpoint, body, true);
+  }
   if (!resp.ok) throw new Error(data.error || 'HTTP ' + resp.status);
   return data;
 }
@@ -9210,24 +9243,15 @@ function setupResizeHandle(handle) {
   });
 }
 
-// Sync token localStorage avec le token injecté à l'install
-if (FILEOPS_TOKEN_DEFAULT !== 'FILEOPS_TOKEN_PLACEHOLDER') {
-  localStorage.setItem('fileops_token', FILEOPS_TOKEN_DEFAULT);
-  localStorage.setItem('tn_saved_ftoken', FILEOPS_TOKEN_DEFAULT);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   // Restaurer les champs du formulaire de login
   (function() {
     var u = localStorage.getItem('tn_saved_user');
     var k = localStorage.getItem('tn_saved_apikey');
-    var f = localStorage.getItem('tn_saved_ftoken');
     var uEl = document.getElementById('login-user');
     var kEl = document.getElementById('login-apikey');
-    var fEl = document.getElementById('login-fileops-token');
     if (u && uEl) uEl.value = u;
     if (k && kEl) kEl.value = k;
-    if (f && fEl) fEl.value = f;
   })();
   // Restaurer session après rafraîchissement via JSON-RPC
   (function() {
@@ -9246,6 +9270,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     wsEnsureAuthenticated().then(function() {
       return wsCall('system.info', []);
+    }).then(function(info) {
+      // Pas encore de jeton fileops dans ce navigateur : on le demande avant d'ouvrir le bureau.
+      if (getFileopsToken()) return info;
+      return fileopsLogin().then(function() { return info; }, function() { return info; });
     }).then(function(info) {
       enterDesktop(info);
     }).catch(function() {
@@ -10755,6 +10783,9 @@ function logout() {
   localStorage.removeItem('tn_apikey');
   localStorage.removeItem('tn_basic');
   localStorage.removeItem('tn_saved_basic');
+  localStorage.removeItem('fileops_token');
+  localStorage.removeItem('tn_saved_ftoken');
+  _fileopsLoginRefus = null;
   localStorage.removeItem('tn-apikey');
   localStorage.removeItem('tn-basic');
   localStorage.removeItem('tn-user');
@@ -12878,7 +12909,7 @@ async function loadTerminal() {
   _term.writeln('');
 
   // Utilise le fileops_token (même sidecar)
-  var token = localStorage.getItem('fileops_token') || 'changeme-secret-token';
+  var token = getFileopsToken();
 
   var wsProto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   var wsUrl = wsProto + '//' + location.host + '/truenas-shell?token=' + encodeURIComponent(token);

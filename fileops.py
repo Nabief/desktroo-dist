@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.0.1'
+APP_VERSION = '2.1.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -228,6 +228,108 @@ def access_policy_set(subject, applications, actor='unknown'):
 # ── Threading HTTP server ─────────────────────────────────────────────────────
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
+
+
+# ── MDM-SERVER-LOGIN-V1 : connexion vérifiée par le serveur ──────────────────
+# Le jeton (TOKEN) n'est plus écrit dans la page du bureau. Le navigateur l'obtient
+# en présentant des identifiants TrueNAS à POST /auth/login ; fileops les vérifie
+# lui-même auprès de TrueNAS (même appel JSON-RPC que le bureau) et ne remet le jeton
+# qu'à un compte ayant les pleins droits d'administration.
+import threading as _login_threading
+import time as _login_time
+import hmac as _login_hmac
+
+TRUENAS_API_HOST = os.environ.get('TRUENAS_API_HOST') or SSH_HOST
+LOGIN_MAX_FAILURES = 10      # échecs tolérés…
+LOGIN_WINDOW = 300           # …sur cette durée (secondes), tous clients confondus
+_login_lock = _login_threading.Lock()
+_login_failures = []
+
+
+def _login_blocked():
+    now = _login_time.time()
+    with _login_lock:
+        _login_failures[:] = [t for t in _login_failures if now - t < LOGIN_WINDOW]
+        return len(_login_failures) >= LOGIN_MAX_FAILURES
+
+
+def _login_note_failure():
+    with _login_lock:
+        _login_failures.append(_login_time.time())
+
+
+async def _truenas_verify_async(username, password, apikey):
+    """Ouvre une session JSON-RPC sur TrueNAS avec ces identifiants.
+    Rend (identifiants_valides, résultat de auth.me ou None)."""
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False          # certificat auto-signé du NAS, comme côté nginx
+    ctx.verify_mode = ssl.CERT_NONE
+    uri = 'wss://%s/api/current' % TRUENAS_API_HOST
+    async with websockets.connect(uri, ssl=ctx, open_timeout=10, max_size=4 * 1024 * 1024) as ws:
+        async def call(ident, method, params):
+            await ws.send(json.dumps({'jsonrpc': '2.0', 'id': ident, 'method': method, 'params': params}))
+            while True:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), 12))
+                if isinstance(msg, dict) and msg.get('id') == ident:
+                    return msg
+        if apikey:
+            r = await call(1, 'auth.login_with_api_key', [apikey])
+        else:
+            r = await call(1, 'auth.login', [username, password, None])
+        if r.get('error') or r.get('result') is not True:
+            return False, None
+        me = await call(2, 'auth.me', [])
+        return True, (None if me.get('error') else me.get('result'))
+
+
+def _truenas_verify(username, password, apikey):
+    return asyncio.run(asyncio.wait_for(_truenas_verify_async(username, password, apikey), 30))
+
+
+def _truenas_is_full_admin(me):
+    """Le compte a-t-il les pleins droits ? fileops donne un accès root (fichiers,
+    terminal) : un compte TrueNAS aux droits restreints ne doit pas l'obtenir.
+    Si TrueNAS ne renvoie aucune information de privilège, on ne bloque pas."""
+    if not isinstance(me, dict) or not isinstance(me.get('privilege'), dict):
+        return True
+    priv = me['privilege']
+    roles = priv.get('roles')
+    if isinstance(roles, dict):
+        roles = roles.get('$set')
+    if isinstance(roles, (list, tuple)) and 'FULL_ADMIN' in roles:
+        return True
+    for rule in priv.get('allowlist') or []:
+        if isinstance(rule, dict) and rule.get('method') == '*' and rule.get('resource') == '*':
+            return True
+    return False
+
+
+def auth_login(body):
+    """Traite POST /auth/login. Rend (code HTTP, réponse JSON)."""
+    if _login_blocked():
+        return 429, {'error': 'Trop de tentatives de connexion. Réessaie dans quelques minutes.'}
+    body = body if isinstance(body, dict) else {}
+    apikey = str(body.get('apikey') or '').strip()
+    username = str(body.get('username') or '').strip()
+    password = str(body.get('password') or '')
+    if not apikey and not (username and password):
+        return 400, {'error': 'Identifiants manquants.'}
+    try:
+        ok, me = _truenas_verify(username, password, apikey)
+    except Exception as exc:
+        log.warning('Connexion : TrueNAS injoignable (%s) : %s', TRUENAS_API_HOST, exc)
+        return 502, {'error': 'TrueNAS injoignable : vérification des identifiants impossible.'}
+    if not ok:
+        _login_note_failure()
+        log.warning('Connexion refusée : identifiants TrueNAS incorrects')
+        return 401, {'error': 'Identifiants TrueNAS incorrects.'}
+    if not _truenas_is_full_admin(me):
+        log.warning('Connexion refusée : compte sans les pleins droits (%s)',
+                    (me or {}).get('pw_name') or username or 'clé API')
+        return 403, {'error': "Ce compte TrueNAS n'a pas les pleins droits d'administration."}
+    return 200, {'ok': True, 'token': TOKEN}
+# ── MDM-SERVER-LOGIN-V1 (fin) ────────────────────────────────────────────────
 
 
 # ── SSH connection pool ───────────────────────────────────────────────────────
@@ -509,8 +611,8 @@ def _version_status():
 
 
 def _do_update():
-    """Télécharge la dernière version des fichiers dans APP_DIR et ré-injecte le
-    token. Le HTML est servi à chaud ; fileops.py nécessite un redémarrage."""
+    """Télécharge la dernière version des fichiers dans APP_DIR.
+    Le HTML est servi à chaud ; fileops.py nécessite un redémarrage."""
     if not APP_DIR or not os.path.isdir(APP_DIR):
         raise RuntimeError("APP_DIR introuvable — impossible de localiser l'installation.")
     import urllib.request
@@ -525,15 +627,6 @@ def _do_update():
         with open(dst, 'wb') as fh:
             fh.write(data)
         updated.append(f)
-    html = os.path.join(APP_DIR, 'desktroo.html')
-    try:
-        with open(html, 'r', encoding='utf-8') as fh:
-            s = fh.read()
-        s = s.replace('FILEOPS_TOKEN_PLACEHOLDER', TOKEN)
-        with open(html, 'w', encoding='utf-8') as fh:
-            fh.write(s)
-    except Exception:
-        pass
     return updated
 
 
@@ -6386,10 +6479,27 @@ class FileOpsHandler(BaseHTTPRequestHandler):
     def _auth(self):
         tok = (self.headers.get('X-Token', '')
                or self.headers.get('X-Fileops-Token', ''))
-        if tok != TOKEN:
+        if not _login_hmac.compare_digest(str(tok).encode('utf-8'), TOKEN.encode('utf-8')):
             self._json(403, {'error': 'Unauthorized'})
             return False
         return True
+
+    def _auth_login(self):
+        """POST /auth/login : seule route d'écriture ouverte sans jeton. La réponse ne
+        porte pas d'en-tête CORS : une page d'un autre site ne peut pas la lire."""
+        try:
+            n = int(self.headers.get('Content-Length', 0) or 0)
+            raw = self.rfile.read(min(n, 8192)) if n > 0 else b''
+            code, resp = auth_login(json.loads(raw.decode('utf-8')) if raw else {})
+        except Exception:
+            code, resp = 400, {'error': 'Requête invalide.'}
+        body = json.dumps(resp, ensure_ascii=False).encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def _json(self, code, obj):
         body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
@@ -6494,6 +6604,10 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             self._stream_file(rec['path'], rec.get('name', 'download'))
 
     def do_OPTIONS(self):
+        if urlparse(self.path).path.rstrip('/') == '/auth/login':
+            self.send_response(204)     # pas de CORS sur la connexion
+            self.end_headers()
+            return
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -7022,6 +7136,8 @@ class FileOpsHandler(BaseHTTPRequestHandler):
 
     # ── POST ──────────────────────────────────────────────────────────────────
     def do_POST(self):
+        if urlparse(self.path).path.rstrip('/') == '/auth/login':
+            return self._auth_login()
         if not self._auth():
             return
         p    = urlparse(self.path)

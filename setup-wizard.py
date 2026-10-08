@@ -275,7 +275,7 @@ def run_install(config):
                 "      disable: true\n"
             )
         else:
-            # Basic auth retirée (doublon avec Authelia) — protection via Authelia 2FA, optionnelle.
+            # Pas de barrière nginx : la connexion est vérifiée par fileops (voir SECURITE.md).
             _srv_auth = ""
             _s_exempt = ""
             _server_name = "_"
@@ -375,23 +375,8 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                     emit(f'✗ Échec récupération {fname} : {e}', 'error')
                     raise RuntimeError(f'Impossible de récupérer {fname} depuis {github_raw}')
 
-        # ── 4. Injection token dans le HTML ───────────────────
-        html_path = os.path.join(install_dir, 'desktroo.html')
-        if os.path.exists(html_path):
-            with open(html_path, 'r') as f:
-                html = f.read()
-            # Remplace le token quel que soit sa valeur actuelle (placeholder ou ancien token)
-            html, n = re.subn(
-                r"(FILEOPS_TOKEN_DEFAULT\s*=\s*')[^']*(')",
-                lambda m: m.group(1) + token + m.group(2),
-                html
-            )
-            if n:
-                with open(html_path, 'w') as f:
-                    f.write(html)
-                emit('✓ Token injecté dans desktroo.html', 'ok')
-            else:
-                emit('⚠ Token non trouvé dans le HTML (variable FILEOPS_TOKEN_DEFAULT absente)', 'warn')
+        # (4. Le jeton n'est plus inscrit dans la page : fileops le remet au navigateur
+        #     après avoir vérifié les identifiants TrueNAS — voir SECURITE.md.)
 
         # ── 5. Génération docker-compose.yml ──────────────────
         emit('▸ Génération de docker-compose.yml...', 'step')
@@ -634,9 +619,9 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
             f.write(nginx)
         emit('✓ nginx.conf', 'ok')
 
-        # La barrière « Basic auth » du bureau n'existe plus (l'écran de connexion du bureau
-        # authentifie auprès de TrueNAS ; la 2FA, optionnelle, passe par Authelia). On efface
-        # le .htpasswd qu'une installation antérieure a pu laisser.
+        # La barrière « Basic auth » du bureau n'existe plus : fileops vérifie lui-même les
+        # identifiants TrueNAS avant de remettre son jeton (la 2FA, optionnelle, passe par
+        # Authelia). On efface le .htpasswd qu'une installation antérieure a pu laisser.
         try:
             os.remove(os.path.join(install_dir, '.htpasswd'))
         except OSError:
@@ -1246,7 +1231,7 @@ HTML = """<!DOCTYPE html>
       <div class="form-group">
         <label>Token sidecar</label>
         <input id="token" placeholder="Laissez vide pour générer automatiquement" />
-        <div class="hint">Clé secrète entre le navigateur et le service fileops.</div>
+        <div class="hint">Clé secrète du service fileops, remise au navigateur après la connexion.</div>
       </div>
 
       <div class="form-group">
@@ -1739,7 +1724,7 @@ I18N_EN = r"""{
 "Mot de passe SSH": "SSH password",
 "🔑 Sécurité": "🔑 Security",
 "Laissez vide pour générer automatiquement": "Leave empty to generate automatically",
-"Clé secrète entre le navigateur et le service fileops.": "Secret key shared between the browser and the fileops service.",
+"Clé secrète du service fileops, remise au navigateur après la connexion.": "Secret key of the fileops service, handed to the browser after sign-in.",
 "Compte du portail 2FA — identifiant": "2FA portal account — username",
 "Sans mot de passe saisi, l'assistant en génère un et l'affiche pendant l'installation.": "If you enter no password, the wizard generates one and shows it during the installation.",
 "Compte du portail 2FA — mot de passe": "2FA portal account — password",
@@ -1817,8 +1802,6 @@ I18N_EN = r"""{
 "➤ Rapport d'installation complet : {0}": "➤ Full installation report: {0}",
 "➤ Rapport d'installation complet (à envoyer en cas de souci) : {0}": "➤ Full installation report (send it if something goes wrong): {0}",
 "✓ SSH : groupe {0} deja autorise (mot de passe)": "✓ SSH: group {0} already allowed (password)",
-"✓ Token injecté dans desktroo.html": "✓ Token injected into desktroo.html",
-"⚠ Token non trouvé dans le HTML (variable FILEOPS_TOKEN_DEFAULT absente)": "⚠ Token not found in the HTML (FILEOPS_TOKEN_DEFAULT variable missing)",
 "✓ Email (SMTP) configuré : {0} via {1}:{2}": "✓ Email (SMTP) configured: {0} via {1}:{2}",
 "➤ Enrôlement TOTP : ouvre https://{0} , connecte-toi ({1}) ; le code de vérification est envoyé par email à {2}.": "➤ TOTP enrollment: open https://{0} , sign in ({1}); the verification code is sent by email to {2}.",
 "➤ Enrôlement TOTP : ouvre https://{0} , connecte-toi ({1}), scanne le QR — le code est dans {2}/authelia/notification.txt": "➤ TOTP enrollment: open https://{0} , sign in ({1}), scan the QR code — the code is in {2}/authelia/notification.txt",
