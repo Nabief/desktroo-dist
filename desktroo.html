@@ -85,7 +85,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   input[type="checkbox"]:checked { background:var(--accent); border-color:var(--accent); }
   input[type="checkbox"]:checked::before { transform:translateX(18px); }
   input[type="checkbox"]:focus-visible { box-shadow:0 0 0 2px rgba(var(--accent2-rgb),0.40); }
-  [data-theme="light"] input[type="checkbox"] { background:rgba(0,0,0,0.14); }
+  [data-theme="light"] input[type="checkbox"]:not(:checked) { background:rgba(0,0,0,0.14); }
   /* Compat : ancien composant .tnd-switch (le slider n'est plus nécessaire) */
   .tnd-switch { display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--text-dim); }
   .tnd-switch .tnd-slider { display:none; }
@@ -601,6 +601,142 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-act:hover { background:rgba(var(--accent-rgb),0.16); border-color:rgba(var(--accent2-rgb),0.45); color:var(--accent2); }
   .web-act.danger { color:#f87171; }
   .web-act.danger:hover { background:rgba(224,82,82,0.16); border-color:rgba(224,82,82,0.45); color:#f87171; }
+  /* ===== Sites Web — fenêtre à deux volets : colonne de navigation à gauche (comme Fichiers), contenu à droite.
+     La fenêtre s'élargit d'elle-même tant qu'elle contient « .web-shell » ; les autres écrans de la modale ne changent pas. ===== */
+  #modal-create-app:has(.web-shell) > div {
+    width:min(1040px,95vw) !important; max-width:95vw !important;
+    height:min(740px,90vh) !important; max-height:90vh !important;
+    padding:0 !important; overflow:hidden;
+  }
+  #modal-create-app:has(.web-shell) > div > div:first-child {
+    margin:0 !important; padding:14px 18px 14px 22px; border-bottom:1px solid var(--glass-border);
+  }
+  #modal-create-app:has(.web-shell) #create-app-form { flex:1 1 auto; min-height:0; display:flex; }
+  .web-shell { display:flex; flex:1 1 auto; min-width:0; min-height:0; }
+  .web-side {
+    width:236px; flex-shrink:0; display:flex; flex-direction:column; gap:2px;
+    padding:10px 10px 14px; overflow-y:auto; scrollbar-width:none;
+    background:rgba(0,0,0,0.18); border-right:1px solid rgba(255,255,255,0.07);
+  }
+  .web-side::-webkit-scrollbar { display:none; }
+  .web-side-title {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 10px 6px; font-size:10px; font-weight:700; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:0.8px;
+  }
+  .web-count {
+    padding:1px 7px; border-radius:999px; background:rgba(255,255,255,0.08);
+    font-size:10px; font-weight:600; letter-spacing:0; color:var(--text-dim);
+  }
+  .web-side-empty { padding:4px 10px 8px; font-size:12px; color:var(--text-dim); }
+  .web-side-sep { height:1px; flex-shrink:0; margin:10px 10px 4px; background:rgba(255,255,255,0.07); }
+  .web-nav {
+    display:flex; align-items:center; gap:10px; width:100%; flex-shrink:0;
+    padding:8px 10px; border:0; border-radius:var(--radius-sm); background:none;
+    color:var(--text); font:inherit; font-size:13px; text-align:left; cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .web-nav:hover { background:rgba(255,255,255,0.07); }
+  .web-nav.active { background:rgba(var(--accent-rgb),0.18); color:var(--accent2); }
+  .web-nav svg { width:16px; height:16px; flex-shrink:0; opacity:.7; }
+  .web-nav:hover svg, .web-nav.active svg { opacity:1; }
+  .web-nav.add { color:var(--accent2); }
+  .web-nav-text { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .web-nav-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .web-nav-text .web-nav-name { font-weight:500; }
+  .web-nav-meta { font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .web-nav.active .web-nav-meta { color:inherit; opacity:.75; }
+  .web-dot {
+    width:8px; height:8px; margin:0 4px; border-radius:50%; flex-shrink:0;
+    background:var(--success); box-shadow:0 0 0 3px rgba(62,207,142,0.16);
+  }
+  .web-dot.off { background:none; box-shadow:inset 0 0 0 1.5px var(--text-dim); }
+  .web-main { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; }
+  .web-head { display:flex; align-items:center; gap:14px; flex-shrink:0; padding:20px 28px 14px; }
+  .web-head-text { flex:1; min-width:0; }
+  .web-crumb {
+    display:inline-flex; align-items:center; gap:5px; max-width:100%; margin:0 0 4px; padding:0;
+    border:0; background:none; color:var(--text-dim); font:inherit; font-size:12px; cursor:pointer;
+  }
+  .web-crumb:hover { color:var(--accent2); }
+  .web-title {
+    margin:0; font-family:var(--font-display); font-size:21px; font-weight:700; letter-spacing:-0.01em;
+    color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .web-sub { margin-top:3px; font-size:12.5px; color:var(--text-dim); line-height:1.45; }
+  .web-head-actions { display:flex; align-items:center; gap:14px; flex-shrink:0; }
+  .web-body { flex:1 1 auto; min-height:0; overflow:auto; padding:6px 28px 28px; }
+  .web-body.narrow > * { max-width:660px; }
+  .web-body .mono { font-family:var(--font-mono); font-size:12px; }
+  .web-online { display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); cursor:pointer; white-space:nowrap; }
+  .web-open {
+    display:inline-flex; align-items:center; gap:7px; padding:8px 15px; border:0; border-radius:999px;
+    background:var(--accent); color:var(--accent-ink); font:inherit; font-size:12.5px; font-weight:600;
+    text-decoration:none; white-space:nowrap; cursor:pointer; transition:background .15s;
+  }
+  .web-open:hover { background:var(--accent2); }
+  .web-open svg { width:14px; height:14px; }
+  .web-open.off { background:rgba(255,255,255,0.08); color:var(--text-dim); pointer-events:none; }
+  .web-facts { display:grid; grid-template-columns:132px minmax(0,1fr); gap:10px 16px; margin:6px 0 4px; font-size:13px; }
+  .web-facts dt { padding-top:1px; font-size:12px; color:var(--text-dim); }
+  .web-facts dd { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0; min-width:0; word-break:break-all; }
+  .web-facts a { color:var(--accent2); text-decoration:none; }
+  .web-facts a:hover { text-decoration:underline; }
+  .web-mini {
+    padding:3px 9px; border-radius:999px; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border);
+    color:var(--text-dim); font:inherit; font-size:11px; white-space:nowrap; word-break:normal; cursor:pointer;
+    transition:color .15s, border-color .15s;
+  }
+  .web-mini:hover { color:var(--accent2); border-color:rgba(var(--accent2-rgb),0.45); }
+  .web-group-title { margin:22px 0 8px; font-size:12px; font-weight:600; color:var(--text-dim); }
+  .web-group { border:1px solid var(--glass-border); border-radius:12px; background:rgba(255,255,255,0.03); overflow:hidden; }
+  .web-row {
+    display:flex; align-items:center; gap:14px; width:100%; padding:12px 14px;
+    border:0; border-top:1px solid rgba(255,255,255,0.06); background:none;
+    color:var(--text); font:inherit; text-align:left;
+  }
+  .web-row:first-child { border-top:0; }
+  button.web-row, label.web-row { cursor:pointer; transition:background .15s; }
+  button.web-row:hover { background:rgba(var(--accent-rgb),0.09); }
+  .web-row-text { flex:1; min-width:0; }
+  .web-row-name { display:block; font-size:13px; font-weight:500; }
+  .web-row-desc { display:block; margin-top:2px; font-size:12px; color:var(--text-dim); line-height:1.45; word-break:break-word; }
+  .web-row-chev { flex-shrink:0; font-size:17px; line-height:1; color:var(--text-dim); }
+  button.web-row:hover .web-row-chev { color:var(--accent2); }
+  .web-row.danger .web-row-name { color:#f87171; }
+  /* Variante sur une ligne : nom à gauche, explication à la suite (actions d'un site). */
+  .web-row.line { padding:11px 14px; }
+  .web-row.line .web-row-text { display:flex; align-items:baseline; gap:14px; }
+  .web-row.line .web-row-name { flex:0 0 172px; }
+  .web-row.line .web-row-desc { flex:1; min-width:0; margin:0; }
+  .web-dbrow { padding:9px 14px; border-top:1px solid rgba(255,255,255,0.06); }
+  .web-dbrow:first-child { border-top:0; }
+  button.web-row.danger:hover { background:rgba(224,82,82,0.10); }
+  button.web-row.danger:hover .web-row-chev { color:#f87171; }
+  .web-note { margin:14px 0 0; font-size:12px; color:var(--text-dim); line-height:1.55; }
+  .web-body > div > button.fs-btn { align-self:flex-start; }
+  .web-foot { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:6px; }
+  /* Bouton principal des formulaires de la fenêtre : aplat d'accent, comme « Ouvrir le site ». */
+  .web-body #web-create-btn, .web-body #app-install-btn, .web-body #php-save-btn, .web-body #db-new-btn, .web-body .web-primary {
+    background:var(--accent) !important; border-color:transparent !important; color:var(--accent-ink) !important; font-weight:600;
+  }
+  .web-body #web-create-btn:hover, .web-body #app-install-btn:hover, .web-body #php-save-btn:hover, .web-body #db-new-btn:hover, .web-body .web-primary:hover {
+    background:var(--accent2) !important;
+  }
+  .web-empty-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .web-nav:focus-visible, .web-crumb:focus-visible, .web-open:focus-visible, .web-mini:focus-visible, button.web-row:focus-visible {
+    outline:2px solid var(--accent2); outline-offset:-2px;
+  }
+  @media (max-width:760px) {
+    .web-shell { flex-direction:column; }
+    .web-side { width:auto; max-height:36%; border-right:0; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .web-head { flex-wrap:wrap; padding:14px 16px 10px; }
+    .web-body { padding:4px 16px 20px; }
+    .web-facts { grid-template-columns:1fr; gap:2px 0; }
+    .web-facts dd { margin-bottom:8px; }
+    .web-row.line .web-row-text { display:block; }
+    .web-row.line .web-row-desc { margin-top:2px; }
+  }
   /* ===== Barre d'outils — boutons pilule translucides ===== */
   .fs-toolbar { gap:5px; padding:8px 12px; }
   .fstb-btn {
@@ -852,6 +988,22 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] .tnd-btn.primary { background:rgba(62,207,142,0.16); border-color:rgba(62,207,142,0.45); color:#0e9d63; }
   [data-theme="light"] .tnd-btn.danger,
   [data-theme="light"] .web-act.danger { color:#dc2626; border-color:rgba(220,38,38,0.35); }
+  [data-theme="light"] .web-side { background:rgba(13,27,53,0.045); border-right-color:rgba(0,0,0,0.09); }
+  [data-theme="light"] .web-side-sep { background:rgba(0,0,0,0.09); }
+  [data-theme="light"] .web-count { background:rgba(0,0,0,0.07); }
+  [data-theme="light"] .web-nav:hover { background:rgba(0,0,0,0.055); }
+  [data-theme="light"] .web-nav.active { background:rgba(var(--accent-rgb),0.2); color:#0b7a4c; }
+  [data-theme="light"] .web-nav.add,
+  [data-theme="light"] .web-crumb:hover,
+  [data-theme="light"] .web-facts a { color:#0b7a4c; }
+  [data-theme="light"] .web-group { background:rgba(255,255,255,0.8); border-color:rgba(0,0,0,0.12); }
+  [data-theme="light"] .web-row,
+  [data-theme="light"] .web-dbrow { border-top-color:rgba(0,0,0,0.08); }
+  [data-theme="light"] .web-row.danger .web-row-name { color:#dc2626; }
+  [data-theme="light"] .web-mini { background:#ffffff; border-color:rgba(0,0,0,0.14); }
+  [data-theme="light"] .web-open.off { background:rgba(0,0,0,0.07); }
+  [data-theme="light"] .web-body input:not([type="checkbox"]),
+  [data-theme="light"] .web-body textarea { background:#ffffff !important; border-color:rgba(0,0,0,0.16) !important; color:#1a2440 !important; }
   [data-theme="light"] body,
   [data-theme="light"] html { background:#dde8f5; }
   /* Fonds intégrés, déclinaison claire (les libellés d'icônes restent blancs : fond en demi-teinte). */
@@ -2716,29 +2868,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Adresse des liens de sites (IP ou hôte du NAS, ex: 192.168.1.10) :": "Address for site links (NAS IP or host, e.g. 192.168.1.10):",
 "🌐 Adresse mise à jour": "🌐 Address updated",
 "Sites Web": "Websites",
-"Adresse utilisée pour les liens (IP du NAS)": "Address used for links (NAS IP)",
-"Reverse-proxy intégré (routage par domaine sur le port": "Built-in reverse proxy (domain-based routing on port",
-"Domaines & reverse-proxy externe (NPMplus)": "Domains & external reverse proxy (NPMplus)",
-"Créer le dataset Web avec les bonnes permissions": "Create the Web dataset with the right permissions",
-"Bases de données MariaDB": "MariaDB databases",
-"🛢 Bases": "🛢 Databases",
-"Installer WordPress, Nextcloud…": "Install WordPress, Nextcloud…",
-"📦 Installer une app": "📦 Install an app",
-"Recréer les entrées à partir des dossiers présents dans le dataset Web": "Recreate the entries from the folders found in the Web dataset",
-"♻ Ré-importer": "♻ Re-import",
-"Aucun site — cliquez « Nouveau site »": "No sites — click “New site”",
 "Statique": "Static",
-"Fiche proxy host (NPMplus)": "Proxy host details (NPMplus)",
-"Réglages PHP de ce site (.user.ini)": "PHP settings for this site (.user.ini)",
-"Logs (accès / erreurs)": "Logs (access / errors)",
-"Identifiants de connexion (admin + base)": "Login credentials (admin + database)",
-"🔑 Identifiants": "🔑 Credentials",
-"Cloner ce site (fichiers + base)": "Clone this site (files + database)",
 "⧉ Cloner": "⧉ Clone",
-"Mettre à jour l'application (": "Update the application (",
-"⬆ Màj": "⬆ Update",
-"Activer le SSL PrestaShop (derrière proxy)": "Enable PrestaShop SSL (behind a proxy)",
-"▶ Activer": "▶ Enable",
 "🗑 Suppr": "🗑 Delete",
 "Nouveau site web": "New website",
 "Site statique (HTML/CSS/JS)": "Static site (HTML/CSS/JS)",
@@ -2763,17 +2894,14 @@ select option{ background:#101b2e; color:#e9eef7; }
 "— configuration régénérée, les logs apparaîtront après les prochaines requêtes": "— configuration regenerated, logs will appear after the next requests",
 "Mettre à jour «": "Update “",
 "» ? Sauvegardez d'abord (fichiers + base) par précaution.": "”?\nBack up first (files + database) as a precaution.",
-"Mise à jour —": "Update —",
 "Mise à jour en cours… (peut prendre une minute)": "Update in progress… (may take a minute)",
 "✅ Mise à jour terminée": "✅ Update complete",
 "⚠️ Terminé avec remarques": "⚠️ Completed with warnings",
 "Nom du site cloné :": "Name of the cloned site:",
-"Clonage —": "Cloning —",
 "Copie des fichiers": "Copying the files",
 "et de la base": "and the database",
 "… (peut prendre du temps)": "… (may take a while)",
 "✅ Site cloné": "✅ Site cloned",
-"SSL PrestaShop —": "PrestaShop SSL —",
 "Force le HTTPS de la boutique (PS_SSL_ENABLED). À \u003cb>activer\u003c/b> uniquement si le site est servi derrière un reverse-proxy HTTPS (NPMplus) et consulté via \u003ccode>https://": "Forces HTTPS for the shop (PS_SSL_ENABLED). \u003cb>Enable\u003c/b> it only if the site is served behind an HTTPS reverse proxy (NPMplus) and accessed via \u003ccode>https://",
 "En cas de \u003cb>boucle de redirection\u003c/b> (« too many redirects »), \u003cb>désactive\u003c/b>-le.": "If you get a \u003cb>redirect loop\u003c/b> (“too many redirects”), \u003cb>disable\u003c/b> it.",
 "🔒 Activer le SSL": "🔒 Enable SSL",
@@ -2783,7 +2911,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Réinitialiser le mot de passe administrateur ? Un nouveau mot de passe sera généré, appliqué et affiché.": "Reset the administrator password?\nA new password will be generated, applied and displayed.",
 "🔄 Réinitialisation…": "🔄 Resetting…",
 "✅ Mot de passe réinitialisé": "✅ Password reset",
-"Identifiants —": "Credentials —",
 "utilisateur": "user",
 "mot de passe": "password",
 "Mot de passe admin non enregistré (généré à l'installation). Utilisez « Réinitialiser » pour en définir un nouveau.": "Admin password not saved (generated at installation). Use “Reset” to set a new one.",
@@ -2824,7 +2951,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "✓ Enregistrer PHP": "✓ Save PHP",
 "Préréglage": "Preset",
 "appliqué — pensez à Enregistrer": "applied — remember to Save",
-"Réglages PHP du site —": "Site PHP settings —",
 "Ces options ne s'appliquent qu'à \u003cb>ce site\u003c/b> (fichier \u003ccode>.user.ini\u003c/code>) et priment sur le profil de la version (PHP": "These options apply only to \u003cb>this site\u003c/b> (\u003ccode>.user.ini\u003c/code> file) and override the version profile (PHP",
 "). Idéal si deux sites partagent une version mais ont des besoins différents.": "). Ideal when two sites share a version but have different needs.",
 "Directives avancées (une par ligne : clé = valeur)": "Advanced directives (one per line: key = value)",
@@ -2836,7 +2962,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nom du site": "Site name",
 "Dossier d'installation": "Installation folder",
 "Créer un dossier": "Create a folder",
-"Pour un accès en https://domaine, renseigne-le puis configure ton reverse-proxy (bouton 🔐 NPMplus). Sinon le site reste accessible en IP:port.": "For access via https://domain, enter it then configure your reverse proxy (🔐 NPMplus button). Otherwise the site remains accessible via IP:port.",
 "Créer automatiquement la base de données": "Create the database automatically",
 "Crée une base MariaDB + un utilisateur dédiés et injecte les identifiants dans l'appli (WordPress). Décoche si tu utilises une base existante.": "Creates a dedicated MariaDB database + user and injects the credentials into the app (WordPress). Uncheck if you use an existing database.",
 "Nom de la base": "Database name",
@@ -2901,10 +3026,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Supprimer la base": "Delete database",
 "et son utilisateur ? Irréversible.": "and its user? Irreversible.",
 "Base supprimée": "Database deleted",
-"Domaines & reverse-proxy (NPMplus)": "Domains & reverse proxy (NPMplus)",
 "✅ Reverse-proxy détecté :": "✅ Reverse proxy detected:",
 "Ouvre l'admin NPMplus (souvent \u003cb>https://": "Open the NPMplus admin (usually \u003cb>https://",
-":81\u003c/b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont dans la fiche de chaque site (bouton 🔐 dans la liste des sites).": ":81\u003c/b>) and add a “Proxy Host” for each site that has a domain. The exact values are in each site’s details (🔐 button in the site list).",
 "/apps/npmplus # remplace": "/apps/npmplus   # replace",
 "par ton pool": "with your pool",
 "# Éditez TZ, ACME_EMAIL et — pour éviter le conflit 80/443 de TrueNAS —": "# Edit TZ, ACME_EMAIL and — to avoid the TrueNAS 80/443 conflict —",
@@ -4168,12 +4291,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "24 heures": "24 hours",
 "7 jours": "7 days",
 "30 jours": "30 days",
-"● actif": "● active",
-"○ inactif": "○ inactive",
 "(copie)": "(copy)",
 "+ dossier": "+ folder",
 "+ base": "+ database",
-"base(s)": "database(s)",
 "fichier(s) →": "file(s) →",
 "Sous-dataset": "Child dataset",
 "Auto-demarrage": "Autostart",
@@ -4240,7 +4360,52 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Taille reçue incorrecte : {0} au lieu de {1}": "Incorrect size received: {0} instead of {1}",
 "Disque \"{0}\" existe deja": "Disk \"{0}\" already exists",
 "Déplacement incomplet : la source subsiste ({0})": "Move incomplete: the source still exists ({0})",
-"La taille finale doit être au moins de {0} Go": "The final size must be at least {0} GB"
+"La taille finale doit être au moins de {0} Go": "The final size must be at least {0} GB",
+"En ligne": "Online",
+"En pause": "Paused",
+"Aucun site": "No sites",
+"Nouveau site": "New site",
+"Domaines et proxy": "Domains and proxy",
+"Réessayer": "Retry",
+"Aucun site pour l'instant": "No sites yet",
+"Publiez un dossier du NAS, ou installez une application prête à l'emploi comme WordPress ou Nextcloud.": "Publish a folder from the NAS, or install a ready-to-use application such as WordPress or Nextcloud.",
+"Créer un site": "Create a site",
+"Ouvrir le site": "Open site",
+"Adresse": "Address",
+"Cible": "Target",
+"Ouvrir dans Fichiers": "Open in Files",
+"Journaux": "Logs",
+"Accès et erreurs du serveur web": "Web server access and errors",
+"Identifiants": "Credentials",
+"Compte administrateur et base de données": "Administrator account and database",
+"Limites propres à ce site (.user.ini)": "Limits specific to this site (.user.ini)",
+"Fiche proxy": "Proxy host details",
+"Valeurs à saisir dans NPMplus pour ce domaine": "Values to enter in NPMplus for this domain",
+"Gérer": "Manage",
+"Cloner": "Clone",
+"Copie du dossier et de la base": "Copies the folder and the database",
+"Copie du dossier du site": "Copies the site folder",
+"Forcer le HTTPS derrière un reverse-proxy": "Force HTTPS behind a reverse proxy",
+"Avec ou sans son dossier et sa base de données": "With or without its folder and database",
+"Comment vos sites sont joints, sur le réseau local ou par un nom de domaine.": "How your sites are reached, on the local network or through a domain name.",
+"Adresse des liens": "Link address",
+"Adresse du NAS utilisée pour ouvrir les sites sans nom de domaine :": "NAS address used to open sites that have no domain name:",
+"Proxy intégré": "Built-in proxy",
+"Certificats HTTPS et domaines publics, avec un reverse-proxy externe": "HTTPS certificates and public domains, with an external reverse proxy",
+"Où sont rangés les fichiers de vos sites.": "Where your sites' files are stored.",
+"Dataset Web": "Web dataset",
+"Créé s'il manque ; s'il existe, les droits d'hébergement sont réappliqués.": "Created if missing; if it exists, hosting permissions are reapplied.",
+"Préparer": "Prepare",
+"Ré-importer les sites": "Re-import sites",
+"Recrée les sites à partir des dossiers présents dans le dataset.": "Recreates sites from the folders found in the dataset.",
+"Analyser": "Scan",
+"Clonage": "Cloning",
+"Réglages et extensions de chaque version, communs à tous les sites qui l'utilisent.": "Settings and extensions for each version, shared by every site that uses it.",
+"Installer la dernière version de {0}": "Install the latest version of {0}",
+"Route chaque nom de domaine vers son site, sur le port {0}.": "Routes each domain name to its site, on port {0}.",
+"Ports réservés aux sites : {0} à {1}.": "Ports reserved for sites: {0} to {1}.",
+"Pour un accès en https://domaine, renseigne-le puis configure ton reverse-proxy (rubrique « Domaines et proxy »). Sinon le site reste accessible en IP:port.": "For access via https://domain, enter it then configure your reverse proxy (“Domains and proxy” section). Otherwise the site remains accessible via IP:port.",
+":81\u003c/b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont sur la page de chaque site, sous « Fiche proxy ».": ":81\u003c/b>) and add a “Proxy Host” for each site that has a domain. The exact values are on each site’s page, under “Proxy host details”."
 }
 </script>
 <script id="dk-i18n">
@@ -7572,8 +7737,8 @@ async function webProxyToggle() {
     const r = await fileops('POST', 'websites/proxy', { enabled: !cur });
     _webProxy = { enabled: r.enabled, port: r.port };
     toast(r.enabled ? (T('🔀 Reverse-proxy activé (port ') + r.port + ')') : T('Reverse-proxy désactivé'));
-    webRenderList();
   } catch(e) { toast('❌ ' + e.message); }
+  if (_webNav === 'proxy') webProxyPanel();
 }
 async function webSetHost() {
   const v = await showPrompt(T('Adresse des liens de sites (IP ou hôte du NAS, ex: 192.168.1.10) :'), webSiteHost());
@@ -7582,80 +7747,204 @@ async function webSetHost() {
   if (val && val !== window.location.hostname) { localStorage.setItem('web_site_host', val); _webSiteHost = val; }
   else { localStorage.removeItem('web_site_host'); _webSiteHost = ''; }
   toast(T('🌐 Adresse mise à jour'));
-  if (document.getElementById('create-app-title').textContent === T('Sites Web')) webRenderList();
+  if (_webNav === 'proxy') webProxyPanel();
+}
+// ── Fenêtre à deux volets : colonne de navigation à gauche, contenu à droite ──
+// Chaque écran appelle webHead() (titre + repère dans la colonne) puis écrit dans webBody().
+let _webSel = null, _webNav = 'site', _webLoaded = false, _webLoading = null, _webPorts = null;
+const WEB_ICONS = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  install: '<path d="M12 3v12M7 10l5 5 5-5M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>',
+  db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>',
+  php: '<path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/>',
+  proxy: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9s1.3-6.4 3.9-9z"/>',
+  storage: '<rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5.5 13l2.3-7.3a1 1 0 011-.7h6.4a1 1 0 011 .7L18.5 13M7 16.5h.01M10.5 16.5h.01"/>',
+  out: '<path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4"/>'
+};
+function webIcon(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + WEB_ICONS[k] + '</svg>'; }
+function webEsc(v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function webSite(id) { return (_webSites || []).find(function(x){ return x.id === id; }) || null; }
+const WEB_APP_NAMES = { wordpress:'WordPress', nextcloud:'Nextcloud', prestashop:'PrestaShop', joomla:'Joomla', phpmyadmin:'phpMyAdmin' };
+function webTypeLabel(s) {
+  const parts = [];
+  if (s.app && WEB_APP_NAMES[s.app]) parts.push(WEB_APP_NAMES[s.app]);
+  if (s.type === 'php') parts.push('PHP ' + (s.php_version || ''));
+  else if (s.type === 'static') parts.push(T('Statique'));
+  else if (s.type === 'proxy') parts.push('Reverse proxy');
+  else if (s.type) parts.push(s.type);
+  return parts.join(', ');
+}
+function webShell() {
+  const form = document.getElementById('create-app-form');
+  document.getElementById('create-app-title').textContent = T('Sites Web');
+  if (!form.querySelector('.web-shell')) {
+    form.innerHTML = '<div class="web-shell">'
+      + '<nav class="web-side" id="web-side" aria-label="' + webEsc(T('Sites Web')) + '"></nav>'
+      + '<section class="web-main"><header class="web-head" id="web-head"></header><div class="web-body narrow" id="web-body"></div></section>'
+      + '</div>';
+    webSideRender();
+    if (!_webLoaded) webLoad().catch(function(){});
+  }
+  document.getElementById('modal-create-app').style.display = 'flex';
+}
+function webBody() { webShell(); return document.getElementById('web-body'); }
+// o.site : écran d'un site (repère sur le site, retour vers sa page) — o.root : c'est la page du site elle-même.
+// o.nav : rubrique de la colonne — o.back : [libellé, appel] d'un écran parent — o.sub, o.actions : HTML — o.wide : pleine largeur.
+function webHead(title, o) {
+  o = o || {};
+  webShell();
+  if (o.site && o.site.id) { _webNav = 'site'; _webSel = o.site.id; }
+  else if (o.nav) _webNav = o.nav;
+  let crumb = '';
+  if (o.site && o.site.id && !o.root) crumb = '<button class="web-crumb" onclick="webSiteView()">&lsaquo; ' + webEsc(o.site.name) + '</button>';
+  else if (o.back) crumb = '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>';
+  document.getElementById('web-head').innerHTML = '<div class="web-head-text">' + crumb
+    + '<h4 class="web-title">' + webEsc(title) + '</h4>'
+    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
+    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+  const body = document.getElementById('web-body');
+  body.classList.toggle('narrow', !o.wide);
+  body.scrollTop = 0;
+  webSideRender();
+}
+function webSideRender() {
+  const el = document.getElementById('web-side');
+  if (!el) return;
+  const nav = function(k, icon, label, cls) {
+    return '<button class="web-nav' + (cls || '') + (_webNav === k ? ' active' : '') + '" onclick="webGo(\'' + k + '\')">' + webIcon(icon) + '<span class="web-nav-name">' + label + '</span></button>';
+  };
+  let h = '<div class="web-side-title"><span>' + T('Sites') + '</span>' + (_webLoaded ? '<span class="web-count">' + _webSites.length + '</span>' : '') + '</div>';
+  (_webSites || []).forEach(function(s){
+    h += '<button class="web-nav' + (_webNav === 'site' && _webSel === s.id ? ' active' : '') + '" onclick="webSiteView(\'' + s.id + '\')">'
+      + '<span class="web-dot' + (s.enabled ? '' : ' off') + '" title="' + webEsc(s.enabled ? T('En ligne') : T('En pause')) + '"></span>'
+      + '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(s.name) + '</span><span class="web-nav-meta">' + webEsc(webTypeLabel(s)) + '</span></span></button>';
+  });
+  if (_webLoaded && !_webSites.length) h += '<div class="web-side-empty">' + T('Aucun site') + '</div>';
+  h += nav('new', 'plus', T('Nouveau site'), ' add') + nav('install', 'install', T('Installer une application'), ' add');
+  h += '<div class="web-side-sep"></div><div class="web-side-title"><span>' + T('Réglages') + '</span></div>';
+  h += nav('db', 'db', T('Bases de données')) + nav('php', 'php', 'PHP') + nav('proxy', 'proxy', T('Domaines et proxy')) + nav('storage', 'storage', T('Stockage'));
+  const st = el.scrollTop;
+  el.innerHTML = h;
+  el.scrollTop = st;
+}
+function webGo(k) {
+  ({ new: webNewForm, install: webAppInstallForm, db: webDbView, php: webPhpSettings, proxy: webProxyPanel, storage: webStoragePanel })[k]();
+}
+// Charge la liste des sites (une seule requête à la fois) et met la colonne à jour.
+function webLoad() {
+  if (_webLoading) return _webLoading;
+  _webLoading = fileops('GET', 'websites').then(function(r) {
+    r = r || {};
+    _webSites = (r.sites || []).slice().sort(function(a, b){ return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity:'base' }); });
+    if (r.php_versions && r.php_versions.length) _webPhpVersions = r.php_versions;
+    if (r.php_default) _webPhpDefault = r.php_default;
+    if (r.web_dataset) _webDataset = r.web_dataset;
+    if (r.proxy) _webProxy = r.proxy;
+    if (r.port_min && r.port_max) _webPorts = [r.port_min, r.port_max];
+    _webLoaded = true;
+    if (!webSite(_webSel)) _webSel = _webSites.length ? _webSites[0].id : null;
+    webSideRender();
+    return r;
+  });
+  const done = function(){ _webLoading = null; };
+  _webLoading.then(done, done);
+  return _webLoading;
 }
 async function openWebsites() {
-  document.getElementById('create-app-title').textContent = T('Sites Web');
-  document.getElementById('modal-create-app').style.display = 'flex';
+  webShell();
+  if (!_webLoaded) {
+    webHead(T('Sites Web'), { nav:'site' });
+    webBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
+  }
   await webRenderList();
 }
+// Recharge la liste puis affiche le site sélectionné.
 async function webRenderList() {
-  const box = document.getElementById('create-app-form');
-  box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
-  try {
-    const r = await fileops('GET', 'websites');
-    const sites = (r && r.sites) || [];
-    _webSites = sites;
-    if (r && r.php_versions && r.php_versions.length) _webPhpVersions = r.php_versions;
-    if (r && r.php_default) _webPhpDefault = r.php_default;
-    if (r && r.web_dataset) _webDataset = r.web_dataset;
-    if (r && r.proxy) _webProxy = r.proxy;
-    let h = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;">'
-      + '<span style="font-size:12px;color:var(--text-dim);">' + sites.length + ' site(s) — ports ' + r.port_min + '–' + r.port_max + '</span>'
-      + '<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">'
-      + T('<button class="fs-btn" onclick="webSetHost()" title="Adresse utilisée pour les liens (IP du NAS)">🌐 ') + webSiteHost() + '</button>'
-      + T('<button class="fs-btn" onclick="webProxyToggle()" title="Reverse-proxy intégré (routage par domaine sur le port ') + (_webProxy.port||8080) + ')" style="' + (_webProxy.enabled?'color:var(--success);':'color:var(--text-dim);') + '">🔀 Proxy ' + (_webProxy.enabled?'ON':'OFF') + '</button>'
-      + T('<button class="fs-btn" onclick="webNpmPanel()" title="Domaines & reverse-proxy externe (NPMplus)">🔐 NPMplus</button>')
-      + T('<button class="fs-btn" onclick="webCreateDataset()" title="Créer le dataset Web avec les bonnes permissions">🗄 Dataset</button>')
-      + T('<button class="fs-btn" onclick="webDbView()" title="Bases de données MariaDB">🛢 Bases</button>')
-      + '<button class="fs-btn" onclick="webPhpSettings()">⚙ PHP</button>'
-      + T('<button class="fs-btn" onclick="webAppInstallForm()" title="Installer WordPress, Nextcloud…">📦 Installer une app</button>')
-      + T('<button class="fs-btn" onclick="webReimport()" title="Recréer les entrées à partir des dossiers présents dans le dataset Web">♻ Ré-importer</button>')
-      + '<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webNewForm()">+ Site</button>'
-      + '</span>'
-      + '</div>';
-    if (!sites.length) {
-      h += T('<div class="empty-state" style="height:120px;"><div class="es-icon">🌐</div><span>Aucun site — cliquez « Nouveau site »</span></div>');
-    } else {
-      h += '<div style="max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:8px;">';
-      sites.forEach(function(s){
-        const url = webUrl(s);
-        const typeLabel = s.type === 'php' ? ('PHP ' + (s.php_version||'')) : (({static:T('Statique'),proxy:'Proxy'})[s.type] || s.type);
-        const target = s.type === 'proxy' ? s.upstream : s.root;
-        h += '<div class="tnd-panel" style="border-radius:10px;padding:8px 10px;opacity:' + (s.enabled?'1':'0.55') + ';">'
-          + '<div style="display:flex;align-items:center;gap:8px;">'
-          + '<span style="font-size:13px;font-weight:600;flex:1;word-break:break-all;">' + (s.name||'').replace(/</g,'&lt;') + '</span>'
-          + '<span style="font-size:11px;padding:4px 9px;border-radius:10px;background:rgba(var(--accent-rgb),0.18);color:var(--accent2);">' + typeLabel + '</span>'
-          + '<span style="font-size:10px;color:' + (s.enabled?'var(--success)':'var(--text-dim)') + ';">' + (s.enabled?T('● actif'):T('○ inactif')) + '</span>'
-          + '</div>'
-          + '<div style="font-size:11px;color:var(--text-dim);margin:3px 0;word-break:break-all;">' + (target||'').replace(/</g,'&lt;') + '</div>'
-          + '<div style="margin:2px 0;"><a href="' + url + '" target="_blank" rel="noopener" style="font-size:11px;color:var(--accent2);text-decoration:none;word-break:break-all;">' + url + '</a></div>'
-          + '<div class="web-act-row">'
-          + (s.server_name ? '<button class="web-act" onclick="webProxyCheat(\'' + s.id + T('\')" title="Fiche proxy host (NPMplus)">🔐 Proxy</button>') : '')
-          + (s.type === 'php' ? '<button class="web-act" onclick="webSitePhp(\'' + s.id + T('\')" title="Réglages PHP de ce site (.user.ini)">⚙ PHP</button>') : '')
-          + '<button class="web-act" onclick="webLogs(\'' + s.id + T('\')" title="Logs (accès / erreurs)">📄 Logs</button>')
-          + (s.has_creds ? '<button class="web-act" onclick="webCreds(\'' + s.id + T('\')" title="Identifiants de connexion (admin + base)">🔑 Identifiants</button>') : '')
-          + (s.root ? '<button class="web-act" onclick="webClone(\'' + s.id + T('\')" title="Cloner ce site (fichiers + base)">⧉ Cloner</button>') : '')
-          + (['wordpress','nextcloud','prestashop','joomla'].indexOf(s.app) >= 0 ? '<button class="web-act" onclick="webUpdate(\'' + s.id + T('\')" title="Mettre à jour l\'application (') + s.app + T(')">⬆ Màj</button>') : '')
-          + (s.app === 'prestashop' ? '<button class="web-act" onclick="webSslPrestashop(\'' + s.id + T('\')" title="Activer le SSL PrestaShop (derrière proxy)">🔒 SSL</button>') : '')
-          + '<button class="web-act" onclick="webToggle(\'' + s.id + '\',' + (!s.enabled) + ')">' + (s.enabled?'⏸ Pause':T('▶ Activer')) + '</button>'
-          + '<button class="web-act danger" onclick="webDelete(\'' + s.id + T('\')">🗑 Suppr</button>')
-          + '</div></div>';
-      });
-      h += '</div>';
+  try { await webLoad(); }
+  catch(e) {
+    if (!_webLoaded) {
+      webHead(T('Sites Web'), { nav:'site' });
+      webBody().innerHTML = errHtml(T('Erreur: ') + e.message) + '<div style="text-align:center;"><button class="fs-btn" onclick="openWebsites()">' + T('Réessayer') + '</button></div>';
+      return;
     }
-    h += T('<div style="text-align:right;margin-top:12px;"><button class="fs-btn" onclick="closeCreateApp()">Fermer</button></div>');
-    box.innerHTML = h;
-  } catch(e) {
-    box.innerHTML = errHtml(T('Erreur: ') + e.message);
+    toast('❌ ' + e.message);
   }
+  webSiteView();
+}
+function webSiteView(id) {
+  if (id) _webSel = id;
+  const s = webSite(_webSel);
+  if (!s) {
+    _webSel = null;
+    webHead(T('Aucun site pour l\'instant'), { nav:'site', sub: T('Publiez un dossier du NAS, ou installez une application prête à l\'emploi comme WordPress ou Nextcloud.') });
+    webBody().innerHTML = '<div class="web-empty-actions"><button class="web-open" onclick="webNewForm()">' + T('Créer un site') + '</button>'
+      + '<button class="fs-btn" onclick="webAppInstallForm()">' + T('Installer une application') + '</button></div>';
+    return;
+  }
+  const url = webUrl(s);
+  const actions = '<label class="web-online"><input type="checkbox"' + (s.enabled ? ' checked' : '') + ' onchange="webToggle(\'' + s.id + '\',this.checked)"><span>' + (s.enabled ? T('En ligne') : T('En pause')) + '</span></label>'
+    + '<a class="web-open' + (s.enabled ? '' : ' off') + '" href="' + webEsc(url) + '" target="_blank" rel="noopener"' + (s.enabled ? '' : ' aria-disabled="true" tabindex="-1"') + '>' + T('Ouvrir le site') + webIcon('out') + '</a>';
+  webHead(s.name, { site:s, root:true, wide:true, sub: webEsc(webTypeLabel(s)), actions: actions });
+  const fact = function(k, v) { return '<dt>' + k + '</dt><dd>' + v + '</dd>'; };
+  const row = function(fn, name, desc, cls) {
+    return '<button class="web-row line' + (cls || '') + '" onclick="' + fn + '(\'' + s.id + '\')"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+  };
+  let h = '<dl class="web-facts">';
+  h += fact(T('Adresse'), '<a href="' + webEsc(url) + '" target="_blank" rel="noopener">' + webEsc(url) + '</a><button class="web-mini" onclick="copyText(\'' + encodeURIComponent(url) + '\')">' + T('Copier') + '</button>');
+  h += fact('Port', '<span class="mono">' + webEsc(s.port) + '</span>');
+  if (s.type === 'proxy') h += fact(T('Cible'), '<span class="mono">' + webEsc(s.upstream || '—') + '</span>');
+  else if (s.root) h += fact(T('Dossier'), '<span class="mono">' + webEsc(s.root) + '</span><button class="web-mini" onclick="webOpenFolder(\'' + encodeURIComponent(s.root) + '\')">' + T('Ouvrir dans Fichiers') + '</button>');
+  if (s.db && s.db.name) h += fact(T('Base de données'), '<span class="mono">' + webEsc(s.db.name) + '</span>');
+  h += '</dl>';
+  let g = row('webLogs', T('Journaux'), T('Accès et erreurs du serveur web'));
+  if (s.has_creds) g += row('webCreds', T('Identifiants'), T('Compte administrateur et base de données'));
+  if (s.type === 'php') g += row('webSitePhp', T('Réglages PHP'), T('Limites propres à ce site (.user.ini)'));
+  if (s.server_name) g += row('webProxyCheat', T('Fiche proxy'), T('Valeurs à saisir dans NPMplus pour ce domaine'));
+  h += '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">' + g + '</div>';
+  g = '';
+  if (['wordpress','nextcloud','prestashop','joomla'].indexOf(s.app) >= 0) g += row('webUpdate', T('Mettre à jour'), Tf('Installer la dernière version de {0}', WEB_APP_NAMES[s.app]));
+  if (s.root) g += row('webClone', T('Cloner'), (s.db && s.db.name) ? T('Copie du dossier et de la base') : T('Copie du dossier du site'));
+  if (s.app === 'prestashop') g += row('webSslPrestashop', T('SSL PrestaShop'), T('Forcer le HTTPS derrière un reverse-proxy'));
+  if (g) h += '<div class="web-group-title">' + T('Maintenance') + '</div><div class="web-group">' + g + '</div>';
+  h += '<div class="web-group" style="margin-top:18px;">' + row('webDelete', T('Supprimer le site'), T('Avec ou sans son dossier et sa base de données'), ' danger') + '</div>';
+  webBody().innerHTML = h;
+}
+// Ferme la fenêtre et ouvre le dossier du site dans Fichiers.
+function webOpenFolder(enc) {
+  const path = decodeURIComponent(enc);
+  closeCreateApp();
+  openApp('fs1');
+  setTimeout(function(){ try { setActiveFsWin('fs1'); fsNavigate(path); } catch(e) {} }, 350);
+}
+function webProxyPanel() {
+  webHead(T('Domaines et proxy'), { nav:'proxy', wide:true, sub: T('Comment vos sites sont joints, sur le réseau local ou par un nom de domaine.') });
+  const port = (_webProxy && _webProxy.port) || 8080;
+  webBody().innerHTML = '<div class="web-group">'
+    + '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + T('Adresse des liens') + '</span><span class="web-row-desc">' + T('Adresse du NAS utilisée pour ouvrir les sites sans nom de domaine :') + ' <span class="mono">' + webEsc(webSiteHost()) + '</span></span></span>'
+    + '<button class="fs-btn" onclick="webSetHost()">' + T('Modifier') + '</button></div>'
+    + '<label class="web-row"><span class="web-row-text"><span class="web-row-name">' + T('Proxy intégré') + '</span><span class="web-row-desc">' + Tf('Route chaque nom de domaine vers son site, sur le port {0}.', port) + '</span></span>'
+    + '<input type="checkbox"' + (_webProxy && _webProxy.enabled ? ' checked' : '') + ' onchange="webProxyToggle()"></label>'
+    + '<button class="web-row" onclick="webNpmPanel()"><span class="web-row-text"><span class="web-row-name">NPMplus</span><span class="web-row-desc">' + T('Certificats HTTPS et domaines publics, avec un reverse-proxy externe') + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>'
+    + '</div>';
+}
+function webStoragePanel() {
+  webHead(T('Stockage'), { nav:'storage', wide:true, sub: T('Où sont rangés les fichiers de vos sites.') });
+  let h = '<div class="web-group">'
+    + '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + T('Dataset Web') + '</span><span class="web-row-desc">'
+    + (_webDataset ? '<span class="mono">' + webEsc(_webDataset) + '</span><br>' : '')
+    + T('Créé s\'il manque ; s\'il existe, les droits d\'hébergement sont réappliqués.') + '</span></span>'
+    + '<button class="fs-btn" onclick="webCreateDataset()">' + T('Préparer') + '</button></div>'
+    + '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + T('Ré-importer les sites') + '</span><span class="web-row-desc">' + T('Recrée les sites à partir des dossiers présents dans le dataset.') + '</span></span>'
+    + '<button class="fs-btn" onclick="webReimport()">' + T('Analyser') + '</button></div>'
+    + '</div>';
+  if (_webPorts) h += '<p class="web-note">' + Tf('Ports réservés aux sites : {0} à {1}.', _webPorts[0], _webPorts[1]) + '</p>';
+  webBody().innerHTML = h;
 }
 function webNewForm(prefill) {
   prefill = prefill || {};
-  document.getElementById('create-app-title').textContent = T('Nouveau site web');
-  document.getElementById('modal-create-app').style.display = 'flex';
+  webHead(T('Nouveau site web'), { nav:'new' });
   _webPrefillRoot = prefill.root || _webDataset || '';
-  const box = document.getElementById('create-app-form');
+  const box = webBody();
   let f = '<div style="display:flex;flex-direction:column;gap:12px;">';
   f += formRow(T('Nom'), '<input id="web-name" value="' + (prefill.name||'').replace(/"/g,'&quot;') + '" style="' + iStyle() + '" />');
   f += formRow('Type', '<select id="web-type" style="' + iStyle() + '" onchange="webTypeFields()">'
@@ -7666,10 +7955,8 @@ function webNewForm(prefill) {
   f += '<div id="web-typefields"></div>';
   f += formRow(T('Port (vide = auto)') + hb(T('Port dédié du site (8100-8130). Laisse vide pour attribution automatique.')), '<input id="web-port" type="number" placeholder="auto" style="' + iStyle() + '" />');
   f += formRow(T('Nom de domaine (optionnel)') + hb(T('Laisse vide pour un accès en IP:port. Renseigne un domaine pour le servir derrière un reverse-proxy (NPMplus) ou le proxy intégré. Le proxy route le domaine vers ce site.')), T('<input id="web-sn" placeholder="ex: monsite.mondomaine.fr" style="') + iStyle() + '" />');
-  f += '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;">'
-    + T('<button class="fs-btn" onclick="openWebsites()">← Retour</button>')
-    + '<span style="flex:1;"></span>'
-    + T('<button class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
+  f += '<div class="web-foot">'
+    + '<button class="fs-btn" onclick="webSiteView()">' + T('Annuler') + '</button>'
     + T('<button class="fs-btn" id="web-create-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webCreate()">✓ Créer</button>')
     + '</div></div>';
   box.innerHTML = f;
@@ -7712,9 +7999,10 @@ async function webCreate() {
   const btn = document.getElementById('web-create-btn');
   btn.disabled = true; btn.textContent = '⏳ …';
   try {
-    await fileops('POST', 'websites/create', payload);
+    const r = await fileops('POST', 'websites/create', payload);
     toast(T('✅ Site créé'));
-    openWebsites();
+    if (r && (r.id || (r.site && r.site.id))) _webSel = r.id || r.site.id;
+    webRenderList();
   } catch(e) {
     toast('❌ ' + e.message);
     btn.disabled = false; btn.textContent = T('✓ Créer');
@@ -7722,7 +8010,7 @@ async function webCreate() {
 }
 async function webToggle(id, enable) {
   try { await fileops('POST', 'websites/toggle', { id:id, enabled:enable }); webRenderList(); }
-  catch(e) { toast('❌ ' + e.message); }
+  catch(e) { toast('❌ ' + e.message); webSiteView(); }
 }
 
 // ── Sites Web : logs / mise à jour / clone / SSL PrestaShop ──────────────────
@@ -7730,23 +8018,22 @@ let _webLogId = null, _webLogKind = 'error';
 function webLogs(id) {
   _webLogId = id; _webLogKind = 'error';
   const s = (_webSites || []).find(function(x){ return x.id === id; }) || {};
-  document.getElementById('create-app-title').textContent = 'Logs — ' + (s.name || '');
-  document.getElementById('modal-create-app').style.display = 'flex';
+  webHead(T('Journaux'), { site:s, wide:true });
   webLogRender();
 }
 function webLogTab(k) { _webLogKind = k; webLogRender(); }
 async function webLogRender() {
-  const box = document.getElementById('create-app-form');
+  const box = webBody();
   const tab = function(k, l){ return '<button class="fs-btn" onclick="webLogTab(\'' + k + '\')" style="' + (_webLogKind===k?'background:rgba(var(--accent-rgb),0.3);color:var(--accent2);':'') + '">' + l + '</button>'; };
   box.innerHTML = '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">'
     + tab('error', T('Erreurs')) + tab('access', T('Accès'))
     + '<span style="flex:1;"></span>'
     + T('<button class="fs-btn" onclick="webLogRender()">↻ Rafraîchir</button>')
-    + T('<button class="fs-btn" onclick="openWebsites()">← Retour</button>')
     + '</div><div id="web-log-body"><div class="fs-loading" style="height:120px;"><div class="spinner"></div></div></div>';
   try {
     const r = await fileops('GET', 'websites/logs?id=' + encodeURIComponent(_webLogId) + '&kind=' + _webLogKind + '&lines=400');
     const body = document.getElementById('web-log-body');
+    if (!body) return;
     if ((!r.lines || !r.lines.length)) {
       body.innerHTML = T('<div class="empty-state" style="height:120px;"><div class="es-icon">📄</div><span>Aucune entrée') + (r.regenerated ? T(' — configuration régénérée, les logs apparaîtront après les prochaines requêtes') : '') + '</span></div>';
       return;
@@ -7754,15 +8041,16 @@ async function webLogRender() {
     const txt = (r.lines || []).join('\n').replace(/&/g,'&amp;').replace(/</g,'&lt;');
     body.innerHTML = '<pre class="tnd-pre">' + txt + '</pre>';
   } catch(e) {
-    document.getElementById('web-log-body').innerHTML = errHtml(T('Erreur: ') + e.message);
+    const body = document.getElementById('web-log-body');
+    if (body) body.innerHTML = errHtml(T('Erreur: ') + e.message);
   }
 }
 async function webUpdate(id) {
   const s = (_webSites || []).find(function(x){ return x.id === id; }) || {};
   const okc = await showConfirm(T('Mettre à jour « ') + (s.name || '') + T(' » ?\nSauvegardez d\'abord (fichiers + base) par précaution.'));
   if (!okc) return;
-  document.getElementById('create-app-title').textContent = T('Mise à jour — ') + (s.name || '');
-  const box = document.getElementById('create-app-form');
+  webHead(T('Mise à jour'), { site:s, wide:true });
+  const box = webBody();
   box.innerHTML = T('<div class="fs-loading" style="height:120px;"><div class="spinner"></div> Mise à jour en cours… (peut prendre une minute)</div>');
   try {
     const r = await fileops('POST', 'websites/update', { id: id });
@@ -7770,39 +8058,37 @@ async function webUpdate(id) {
     h += '<div style="font-size:13px;color:' + (r.ok ? 'var(--success)' : '#f5b74e') + ';">' + (r.ok ? T('✅ Mise à jour terminée') : T('⚠️ Terminé avec remarques')) + (r.app ? (' (' + r.app + ')') : '') + '</div>';
     if (r.message) h += '<div style="font-size:12px;color:var(--text-dim);">' + String(r.message).replace(/</g,'&lt;') + '</div>';
     if (r.log) h += '<pre class="tnd-pre">' + String(r.log).replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</pre>';
-    h += T('<div style="text-align:right;"><button class="fs-btn" onclick="openWebsites()">← Retour</button></div></div>');
+    h += '</div>';
     box.innerHTML = h;
   } catch(e) {
-    box.innerHTML = errHtml(T('Erreur: ') + e.message) + T('<div style="text-align:right;margin-top:10px;"><button class="fs-btn" onclick="openWebsites()">← Retour</button></div>');
+    box.innerHTML = errHtml(T('Erreur: ') + e.message);
   }
 }
 async function webClone(id) {
   const s = (_webSites || []).find(function(x){ return x.id === id; }) || {};
   const nm = await showPrompt(T('Nom du site cloné :'), (s.name || 'Site') + T(' (copie)'));
   if (nm === null || nm === undefined) return;
-  document.getElementById('create-app-title').textContent = T('Clonage — ') + (s.name || '');
-  const box = document.getElementById('create-app-form');
+  webHead(T('Clonage'), { site:s });
+  const box = webBody();
   box.innerHTML = T('<div class="fs-loading" style="height:120px;"><div class="spinner"></div> Copie des fichiers') + (s.db ? T(' et de la base') : '') + T('… (peut prendre du temps)</div>');
   try {
-    await fileops('POST', 'websites/clone', { id: id, name: nm });
+    const r = await fileops('POST', 'websites/clone', { id: id, name: nm });
     toast(T('✅ Site cloné'));
-    openWebsites();
+    if (r && r.site && r.site.id) _webSel = r.site.id;
+    webRenderList();
   } catch(e) {
-    box.innerHTML = errHtml(T('Erreur: ') + e.message) + T('<div style="text-align:right;margin-top:10px;"><button class="fs-btn" onclick="openWebsites()">← Retour</button></div>');
+    box.innerHTML = errHtml(T('Erreur: ') + e.message);
   }
 }
 function webSslPrestashop(id) {
   const s = (_webSites || []).find(function(x){ return x.id === id; }) || {};
-  document.getElementById('create-app-title').textContent = T('SSL PrestaShop — ') + (s.name || '');
-  document.getElementById('modal-create-app').style.display = 'flex';
-  const box = document.getElementById('create-app-form');
+  webHead(T('SSL PrestaShop'), { site:s });
+  const box = webBody();
   box.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;">'
     + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.5;">Force le HTTPS de la boutique (PS_SSL_ENABLED). À <b>activer</b> uniquement si le site est servi derrière un reverse-proxy HTTPS (NPMplus) et consulté via <code>https://') + (s.server_name || 'votre-domaine') + T('</code>.<br>En cas de <b>boucle de redirection</b> (« too many redirects »), <b>désactive</b>-le.</div>')
     + '<div class="web-act-row">'
     + '<button class="web-act" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webSslApply(\'' + id + T('\',true)">🔒 Activer le SSL</button>')
     + '<button class="web-act" style="color:#f5b74e;border-color:rgba(245,183,78,0.4);" onclick="webSslApply(\'' + id + T('\',false)">🔓 Désactiver le SSL</button>')
-    + '<span style="flex:1;"></span>'
-    + T('<button class="web-act" onclick="openWebsites()">← Retour</button>')
     + '</div><div id="web-ssl-result"></div></div>';
 }
 async function webSslApply(id, enable) {
@@ -7826,9 +8112,8 @@ async function webAdminReset(id) {
 }
 async function webCreds(id) {
   const s = (_webSites || []).find(function(x){ return x.id === id; }) || {};
-  document.getElementById('create-app-title').textContent = T('Identifiants — ') + (s.name || '');
-  document.getElementById('modal-create-app').style.display = 'flex';
-  const box = document.getElementById('create-app-form');
+  webHead(T('Identifiants'), { site:s });
+  const box = webBody();
   box.innerHTML = '<div class="fs-loading" style="height:100px;"><div class="spinner"></div></div>';
   try {
     const r = await fileops('GET', 'websites/credentials?id=' + encodeURIComponent(id));
@@ -7858,18 +8143,17 @@ async function webCreds(id) {
     if (!r.login_url && !(r.admin && r.admin.user) && !r.db) {
       h += T('<div class="empty-state" style="height:80px;"><span>Aucun identifiant enregistré pour ce site.</span></div>');
     }
-    h += T('<div style="text-align:right;"><button class="web-act" onclick="openWebsites()">← Retour</button></div></div>');
+    h += '</div>';
     box.innerHTML = h;
   } catch(e) {
-    box.innerHTML = errHtml(T('Erreur: ') + e.message) + T('<div style="text-align:right;margin-top:10px;"><button class="web-act" onclick="openWebsites()">← Retour</button></div>');
+    box.innerHTML = errHtml(T('Erreur: ') + e.message);
   }
 }
 function webDelete(id) {
   const s = (_webSites || []).find(function(x){ return x.id === id; }) || {};
   const hasDb = s.db && s.db.name;
   const isDir = s.type !== 'proxy' && s.root;
-  document.getElementById('create-app-title').textContent = T('Supprimer le site');
-  document.getElementById('modal-create-app').style.display = 'flex';
+  webHead(T('Supprimer le site'), { site:s });
   let h = '<div style="display:flex;flex-direction:column;gap:12px;">';
   h += T('<div style="font-size:13px;">Supprimer le site <strong>') + (s.name||'').replace(/</g,'&lt;') + '</strong> ?</div>';
   h += T('<div style="font-size:12px;color:var(--text-dim);">La configuration du site est retirée. Choisis ce qu\'il faut supprimer en plus :</div>');
@@ -7881,10 +8165,10 @@ function webDelete(id) {
   }
   h += T('<div style="font-size:11px;color:#f7a37a;">⚠ La suppression du dossier et de la base est définitive et irréversible.</div>');
   h += '<div style="display:flex;gap:8px;justify-content:flex-end;">'
-    + T('<button class="fs-btn" onclick="webRenderList()">Annuler</button>')
+    + '<button class="fs-btn" onclick="webSiteView()">' + T('Annuler') + '</button>'
     + '<button class="fs-btn" style="background:rgba(220,38,38,.18);border-color:rgba(220,38,38,.4);color:#f87171;" onclick="webDeleteConfirm(\'' + id + T('\')">🗑 Supprimer</button>')
     + '</div></div>';
-  document.getElementById('create-app-form').innerHTML = h;
+  webBody().innerHTML = h;
 }
 async function webDeleteConfirm(id) {
   const delRoot = !!(document.getElementById('del-root') && document.getElementById('del-root').checked);
@@ -7919,7 +8203,8 @@ async function webReimport() {
     const r = await fileops('POST', 'websites/reimport', {});
     if (r && r.count) toast('✅ ' + r.count + T(' site(s) ré-importé(s) : ') + (r.imported || []).join(', '));
     else toast(T('Aucun nouveau site à importer (déjà tous enregistrés).'));
-    webRenderList();
+    await webLoad().catch(function(){});
+    if (_webNav === 'storage') webStoragePanel();
   } catch (e) { toast('❌ ' + (e && e.message ? e.message : e)); }
 }
 async function webCreateDataset() {
@@ -7930,6 +8215,7 @@ async function webCreateDataset() {
     const r = await fileops('POST', 'websites/dataset', {});
     _webDataset = r.path || _webDataset;
     toast(r.existed ? (T('✅ Dataset déjà présent, permissions appliquées : ') + r.path) : (T('✅ Dataset créé : ') + r.path));
+    if (_webNav === 'storage') webStoragePanel();
   } catch(e) {
     toast('❌ ' + e.message);
   }
@@ -7947,9 +8233,8 @@ const PHP_COMMON_INI = [
 ];
 const PHP_COMMON_EXT = ['mysqli','pdo_mysql','gd','zip','intl','mbstring','exif','bcmath','opcache','redis','imagick','soap','gmp','curl','xml','sockets'];
 async function webPhpSettings() {
-  document.getElementById('create-app-title').textContent = T('Réglages PHP');
-  document.getElementById('modal-create-app').style.display = 'flex';
-  const box = document.getElementById('create-app-form');
+  webHead('PHP', { nav:'php', sub: T('Réglages et extensions de chaque version, communs à tous les sites qui l\'utilisent.') });
+  const box = webBody();
   box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
   try {
     const r = await fileops('GET', 'php/profiles');
@@ -7960,7 +8245,7 @@ async function webPhpSettings() {
   } catch(e) { box.innerHTML = errHtml(T('Erreur: ') + e.message); }
 }
 function webPhpRender() {
-  const box = document.getElementById('create-app-form');
+  const box = webBody();
   const prof = _phpProfiles[_phpCurVer] || {ini:{},extensions:[]};
   const ini = prof.ini || {}, exts = prof.extensions || [];
   let h = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">';
@@ -7995,9 +8280,7 @@ function webPhpRender() {
   const extraExt = exts.filter(function(x){ return PHP_COMMON_EXT.indexOf(x)<0; }).join(' ');
   h += '<input id="php-ext-extra" value="' + extraExt.replace(/"/g,'&quot;') + T('" placeholder="autres extensions (séparées par un espace)" style="') + iStyle() + ';margin-top:6px;" /></div>';
   h += T('<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;">💡 Les extensions se compilent en arrière-plan (1–2 min selon la version). Les réglages ini sont appliqués par rechargement de php-fpm.</div>');
-  h += '<div style="display:flex;gap:8px;align-items:center;margin-top:12px;">'
-    + '<button class="fs-btn" onclick="openWebsites()">← Sites</button><span style="flex:1;"></span>'
-    + T('<button class="fs-btn" onclick="closeCreateApp()">Fermer</button>')
+  h += '<div class="web-foot" style="margin-top:12px;">'
     + T('<button class="fs-btn" id="php-save-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webPhpSave()">✓ Enregistrer PHP ') + _phpCurVer + '</button>'
     + '</div>';
   box.innerHTML = h;
@@ -8027,8 +8310,7 @@ function webSitePhp(id) {
   const s = (_webSites || []).find(function(x){ return x.id === id; });
   if (!s) return;
   const ini = s.php_ini || {};
-  document.getElementById('create-app-title').textContent = T('Réglages PHP du site — ') + (s.name||'');
-  document.getElementById('modal-create-app').style.display = 'flex';
+  webHead(T('Réglages PHP'), { site:s });
   let h = '<div style="display:flex;flex-direction:column;gap:12px;">';
   h += T('<div style="font-size:12px;color:var(--text-dim);line-height:1.6;">Ces options ne s\'appliquent qu\'à <b>ce site</b> (fichier <code>.user.ini</code>) et priment sur le profil de la version (PHP ') + (s.php_version||'') + T('). Idéal si deux sites partagent une version mais ont des besoins différents.</div>');
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
@@ -8040,9 +8322,9 @@ function webSitePhp(id) {
   const extra = Object.keys(ini).filter(function(k){ return known.indexOf(k)<0; }).map(function(k){ return k + ' = ' + ini[k]; }).join('\n');
   h += T('<div><label style="font-size:11px;color:var(--text-dim);">Directives avancées (une par ligne : clé = valeur)</label><textarea id="site-ini-advanced" rows="3" style="') + iStyle() + ';font-family:var(--font-mono);font-size:12px;" placeholder="opcache.revalidate_freq = 60">' + extra.replace(/</g,'&lt;') + '</textarea></div>';
   h += T('<div style="font-size:11px;color:var(--text-dim);">Laisser un champ vide = utiliser la valeur de la version. Prise en compte immédiate (rechargement php-fpm).</div>');
-  h += '<div style="display:flex;gap:8px;justify-content:flex-end;"><button class="fs-btn" onclick="webRenderList()">← Sites</button><button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webSitePhpSave(\'' + id + T('\')">✓ Enregistrer</button></div>');
+  h += '<div class="web-foot"><button class="fs-btn" onclick="webSiteView()">' + T('Annuler') + '</button><button class="fs-btn web-primary" onclick="webSitePhpSave(\'' + id + T('\')">✓ Enregistrer</button></div>');
   h += '</div>';
-  document.getElementById('create-app-form').innerHTML = h;
+  webBody().innerHTML = h;
 }
 async function webSitePhpSave(id) {
   const ini = {};
@@ -8059,9 +8341,8 @@ async function webSitePhpSave(id) {
 let _appsCatalog = {}, _appsDbAvailable = false, _installProfile = {};
 async function webAppInstallForm(prefill) {
   prefill = prefill || {};
-  document.getElementById('create-app-title').textContent = T('Installer une application');
-  document.getElementById('modal-create-app').style.display = 'flex';
-  const box = document.getElementById('create-app-form');
+  webHead(T('Installer une application'), { nav:'install' });
+  const box = webBody();
   box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
   try {
     const r = await fileops('GET', 'apps/catalog');
@@ -8071,7 +8352,7 @@ async function webAppInstallForm(prefill) {
   } catch(e) { box.innerHTML = errHtml(T('Erreur: ') + e.message); }
 }
 function webAppRender(prefill) {
-  const box = document.getElementById('create-app-form');
+  const box = webBody();
   const keys = Object.keys(_appsCatalog);
   let f = '<div style="display:flex;flex-direction:column;gap:12px;">';
   f += formRow('Application', '<select id="app-key" style="' + iStyle() + '" onchange="webAppOnPick()">'
@@ -8086,7 +8367,7 @@ function webAppRender(prefill) {
     + '</div>');
   f += formRow(T('Version PHP'), '<select id="app-php" style="' + iStyle() + '">' + _webPhpVersions.map(function(v){ return '<option value="' + v + '">PHP ' + v + '</option>'; }).join('') + '</select>');
   f += formRow(T('Port (vide = auto)'), '<input id="app-port" type="number" placeholder="auto" style="' + iStyle() + '" />');
-  f += formRow(T('Nom de domaine (optionnel)') + hb(T('Pour un accès en https://domaine, renseigne-le puis configure ton reverse-proxy (bouton 🔐 NPMplus). Sinon le site reste accessible en IP:port.')), T('<input id="app-sn" placeholder="ex: monsite.mondomaine.fr" style="') + iStyle() + '" />');
+  f += formRow(T('Nom de domaine (optionnel)') + hb(T('Pour un accès en https://domaine, renseigne-le puis configure ton reverse-proxy (rubrique « Domaines et proxy »). Sinon le site reste accessible en IP:port.')), T('<input id="app-sn" placeholder="ex: monsite.mondomaine.fr" style="') + iStyle() + '" />');
   f += T('<label id="app-db-row" style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);cursor:pointer;"><input type="checkbox" id="app-db" checked style="width:15px;height:15px;" onchange="var x=document.getElementById(\'app-db-fields\');if(x)x.style.display=this.checked?\'flex\':\'none\';"> Créer automatiquement la base de données') + hb(T('Crée une base MariaDB + un utilisateur dédiés et injecte les identifiants dans l\'appli (WordPress). Décoche si tu utilises une base existante.')) + '</label>';
   f += '<div id="app-db-fields" style="display:flex;flex-direction:column;gap:8px;">'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
@@ -8108,9 +8389,7 @@ function webAppRender(prefill) {
   f += '</div></div>';
   f += T('<details style="font-size:12px;color:var(--text-dim);"><summary style="cursor:pointer;">URL de téléchargement (avancé)</summary><input id="app-url" placeholder="laisser vide = version par défaut" style="') + iStyle() + ';margin-top:6px;" /></details>';
   f += '<div id="app-result" style="display:none;"></div>';
-  f += '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;">'
-    + '<button class="fs-btn" onclick="openWebsites()">← Sites</button><span style="flex:1;"></span>'
-    + T('<button class="fs-btn" onclick="closeCreateApp()">Fermer</button>')
+  f += '<div class="web-foot">'
     + T('<button class="fs-btn" id="app-install-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webAppInstall()">⬇ Installer</button>')
     + '</div></div>';
   box.innerHTML = f;
@@ -8188,32 +8467,32 @@ async function webAppInstall() {
     if (r.ext_installing) h += T('<div style="font-size:11px;color:var(--text-dim);margin-top:8px;">⏳ Extensions PHP en cours de compilation (1-2 min).</div>');
     h += '</div>';
     const box = document.getElementById('app-result'); box.style.display = ''; box.innerHTML = h;
+    box.scrollIntoView({ block:'center' });
     toast(T('✅ Application installée'));
+    if (r.site && r.site.id) _webSel = r.site.id;
+    webLoad().catch(function(){});
   } catch(e) { toast('❌ ' + e.message); }
   finally { btn.disabled = false; btn.textContent = T('⬇ Installer'); }
 }
 let _dbCreds = {};
 async function webDbView() {
-  document.getElementById('create-app-title').textContent = T('Bases de données');
-  document.getElementById('modal-create-app').style.display = 'flex';
-  const box = document.getElementById('create-app-form');
+  webHead(T('Bases de données'), { nav:'db', wide:true, actions:
+      T('<button class="fs-btn" onclick="webPmaQuick()" title="Installer / ouvrir phpMyAdmin">🔧 phpMyAdmin</button>')
+    + T('<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webDbCreate()">+ Nouvelle base</button>') });
+  const box = webBody();
   box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
   try {
     const r = await fileops('GET', 'db/list');
     const cr = await fileops('GET', 'db/credentials').catch(function(){ return { credentials:{} }; });
     _dbCreds = (cr && cr.credentials) || {};
     const dbs = r.databases || [];
-    let h = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--text-dim);">' + dbs.length + T(' base(s)</span>')
-      + '<span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">'
-      + T('<button class="fs-btn" onclick="webPmaQuick()" title="Installer / ouvrir phpMyAdmin">🔧 phpMyAdmin</button>')
-      + T('<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webDbCreate()">+ Nouvelle base</button>')
-      + '</span></div>';
+    let h = '';
     if (!dbs.length) h += T('<div class="empty-state" style="height:100px;"><div class="es-icon">🛢</div><span>Aucune base</span></div>');
     else {
-      h += '<div style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto;">';
+      h += '<div class="web-group">';
       dbs.forEach(function(n){
         const c = _dbCreds[n];
-        h += '<div style="border:1px solid var(--glass-border);border-radius:8px;padding:6px 10px;">'
+        h += '<div class="web-dbrow">'
           + '<div style="display:flex;align-items:center;gap:8px;">'
           + '<span style="flex:1;font-family:var(--font-mono);font-size:12px;">' + n.replace(/</g,'&lt;') + '</span>'
           + (c ? '<button class="fs-btn" style="font-size:11px;padding:4px 9px;" onclick="webDbToggleCreds(\'' + n + T('\')">👁 Identifiants</button>') : T('<span style="font-size:10px;color:var(--text-dim);">non enregistrés</span>'))
@@ -8230,7 +8509,6 @@ async function webDbView() {
       h += '</div>';
     }
     h += T('<div style="font-size:11px;color:var(--text-dim);margin-top:8px;">🔒 Les identifiants sont enregistrés localement sur le NAS (data/databases.json, accessible root uniquement).</div>');
-    h += T('<div style="text-align:right;margin-top:8px;"><button class="fs-btn" onclick="closeCreateApp()">Fermer</button></div>');
     box.innerHTML = h;
   } catch(e) { box.innerHTML = errHtml(T('Erreur: ') + e.message + T('<br><span style="font-size:11px;color:var(--text-dim);">MariaDB est-il démarré ?</span>')); }
 }
@@ -8239,18 +8517,15 @@ function webDbToggleCreds(n) {
   if (el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
 }
 function webDbCreate() {
-  document.getElementById('create-app-title').textContent = T('Nouvelle base de données');
-  document.getElementById('modal-create-app').style.display = 'flex';
-  const box = document.getElementById('create-app-form');
+  webHead(T('Nouvelle base de données'), { nav:'db', back:[T('Bases de données'), 'webDbView()'] });
+  const box = webBody();
   let f = '<div style="display:flex;flex-direction:column;gap:12px;">';
   f += formRow(T('Nom de la base') + hb(T('Lettres, chiffres et « _ » (63 max). Laisser vide = nom généré automatiquement.')), T('<input id="db-new-name" placeholder="ex: ma_boutique" style="') + iStyle() + '" />');
   f += formRow(T('Utilisateur (optionnel)') + hb(T('Par défaut : identique au nom de la base.')), '<input id="db-new-user" placeholder="auto" style="' + iStyle() + '" />');
   f += formRow(T('Mot de passe (optionnel)') + hb(T('Laisser vide = mot de passe fort généré.')), T('<input id="db-new-pass" placeholder="généré" style="') + iStyle() + '" />');
   f += '<div id="db-new-result"></div>';
-  f += '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;">'
-    + T('<button class="fs-btn" onclick="webDbView()">← Retour</button>')
-    + '<span style="flex:1;"></span>'
-    + T('<button class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
+  f += '<div class="web-foot">'
+    + '<button class="fs-btn" onclick="webDbView()">' + T('Annuler') + '</button>'
     + T('<button class="fs-btn" id="db-new-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webDbCreateGo()">✓ Créer</button>')
     + '</div></div>';
   box.innerHTML = f;
@@ -8278,8 +8553,8 @@ async function webDbCreateGo() {
   }
 }
 async function webPmaQuick() {
-  document.getElementById('create-app-title').textContent = 'phpMyAdmin';
-  const box = document.getElementById('create-app-form');
+  webHead('phpMyAdmin', { nav:'db', back:[T('Bases de données'), 'webDbView()'] });
+  const box = webBody();
   box.innerHTML = T('<div class="fs-loading" style="height:100px;"><div class="spinner"></div> Vérification…</div>');
   const openBlock = function(url, title, extra) {
     return '<div style="display:flex;flex-direction:column;gap:12px;">'
@@ -8287,8 +8562,7 @@ async function webPmaQuick() {
       + '<a href="' + url + '" target="_blank" rel="noopener" style="color:var(--accent2);word-break:break-all;">' + String(url).replace(/</g,'&lt;') + '</a>'
       + T('<div style="font-size:12px;color:var(--text-dim);">Connexion avec un utilisateur MariaDB : <code>root</code> (mot de passe du serveur) ou les identifiants d\'une base.</div>')
       + (extra || '')
-      + T('<div style="display:flex;gap:8px;align-items:center;"><button class="fs-btn" onclick="webDbView()">← Retour</button><span style="flex:1;"></span>')
-      + '<a class="fs-btn" href="' + url + T('" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(var(--accent-rgb),0.2);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);">Ouvrir phpMyAdmin</a></div></div>');
+      + '<div class="web-foot" style="justify-content:flex-start;"><a class="web-open" href="' + url + '" target="_blank" rel="noopener">' + T('Ouvrir phpMyAdmin') + webIcon('out') + '</a></div></div>';
   };
   try {
     const w = await fileops('GET', 'websites');
@@ -8305,8 +8579,9 @@ async function webPmaQuick() {
     const extra = r.ext_installing ? T('<div style="font-size:11px;color:var(--text-dim);">⏳ Extensions PHP en cours de compilation (1-2 min) — si erreur au 1er chargement, patiente puis recharge.</div>') : '';
     box.innerHTML = openBlock(webUrl(r.site), T('✅ phpMyAdmin installé'), extra);
     toast(T('✅ phpMyAdmin installé'));
+    webLoad().catch(function(){});
   } catch(e) {
-    box.innerHTML = errHtml(T('Erreur: ') + e.message) + T('<div style="text-align:right;margin-top:10px;"><button class="fs-btn" onclick="webDbView()">← Retour</button></div>');
+    box.innerHTML = errHtml(T('Erreur: ') + e.message);
   }
 }
 async function webDbDelete(name) {
@@ -8317,9 +8592,8 @@ async function webDbDelete(name) {
 
 // ---- NPMplus : détection, install guidée, fiche proxy host ----
 async function webNpmPanel() {
-  document.getElementById('create-app-title').textContent = T('Domaines & reverse-proxy (NPMplus)');
-  document.getElementById('modal-create-app').style.display = 'flex';
-  const box = document.getElementById('create-app-form');
+  webHead('NPMplus', { nav:'proxy', back:[T('Domaines et proxy'), 'webProxyPanel()'] });
+  const box = webBody();
   box.innerHTML = '<div class="fs-loading" style="height:100px;"><div class="spinner"></div></div>';
   let st = {};
   try { st = await fileops('GET', 'proxy/npm/status'); } catch(e) { st = { running:false, error:e.message }; }
@@ -8327,7 +8601,7 @@ async function webNpmPanel() {
   let h = '<div style="display:flex;flex-direction:column;gap:12px;">';
   if (st.running) {
     h += T('<div style="padding:10px;border:1px solid rgba(62,207,142,.35);border-radius:10px;background:rgba(62,207,142,.08);font-size:13px;color:var(--success);">✅ Reverse-proxy détecté : ') + (st.containers||[]).join(', ') + '</div>'
-      + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Ouvre l\'admin NPMplus (souvent <b>https://') + ip + T(':81</b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont dans la fiche de chaque site (bouton 🔐 dans la liste des sites).</div>');
+      + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Ouvre l\'admin NPMplus (souvent <b>https://') + ip + T(':81</b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont sur la page de chaque site, sous « Fiche proxy ».</div>');
   } else {
     const cmds = T('mkdir -p /mnt/<pool>/apps/npmplus && cd /mnt/<pool>/apps/npmplus   # remplace <pool> par ton pool\n')
       + 'curl -fsSL https://raw.githubusercontent.com/ZoeyVid/NPMplus/develop/compose.yaml -o compose.yaml\n'
@@ -8342,7 +8616,6 @@ async function webNpmPanel() {
       + T('<a href="https://github.com/ZoeyVid/NPMplus" target="_blank" rel="noopener" style="color:var(--accent2);font-size:12px;">Documentation officielle NPMplus ↗</a>');
   }
   h += T('<div style="font-size:11px;color:var(--text-dim);line-height:1.7;border-top:1px solid var(--glass-border);padding-top:8px;">Rappel : un reverse-proxy externe (NPMplus) sert à donner des URL propres en <b>https://mondomaine</b> et à gérer les certificats. Nos sites restent servis sur leur port ; le proxy route le domaine vers <b>') + ip + ':&lt;port&gt;</b>.</div>';
-  h += T('<div style="text-align:right;"><button class="fs-btn" onclick="openWebsites()">← Sites</button> <button class="fs-btn" onclick="closeCreateApp()">Fermer</button></div>');
   h += '</div>';
   box.innerHTML = h;
 }
@@ -8351,8 +8624,7 @@ function webProxyCheat(id) {
   if (!s) { toast(T('Site introuvable')); return; }
   const ip = webSiteHost();
   const dom = s.server_name || T('(définissez un domaine sur le site)');
-  document.getElementById('create-app-title').textContent = 'Proxy host — ' + (s.name||'');
-  document.getElementById('modal-create-app').style.display = 'flex';
+  webHead(T('Fiche proxy'), { site:s });
   let h = '<div style="display:flex;flex-direction:column;gap:10px;">';
   h += T('<div style="font-size:12px;color:var(--text-dim);line-height:1.6;">Dans NPMplus → <b>Hosts → Proxy Hosts → Add Proxy Host</b>, saisis :</div>');
   h += '<div style="font-family:var(--font-mono);font-size:12px;background:rgba(0,0,0,0.25);border-radius:8px;padding:10px;line-height:2;">'
@@ -8363,9 +8635,8 @@ function webProxyCheat(id) {
     + T('Block Common Exploits&nbsp;: ✔ &nbsp;·&nbsp; Websockets&nbsp;: ✔</div>');
   h += T('<div style="font-size:11px;color:var(--text-dim);line-height:1.6;">Onglet <b>SSL</b> : « Request a new SSL Certificate » (Let\'s Encrypt) pour ') + dom + T(', puis coche « Force SSL » et « HTTP/2 ».</div>');
   h += '<button class="fs-btn" onclick="shareCopy(\'' + encodeURIComponent('Domain: ' + dom + '\nScheme: http\nForward IP: ' + ip + '\nForward Port: ' + s.port) + T('\')">📋 Copier</button>');
-  h += T('<div style="text-align:right;"><button class="fs-btn" onclick="openWebsites()">← Sites</button> <button class="fs-btn" onclick="closeCreateApp()">Fermer</button></div>');
   h += '</div>';
-  document.getElementById('create-app-form').innerHTML = h;
+  webBody().innerHTML = h;
 }
 async function webPhpSave() {
   const ini = {};
