@@ -647,8 +647,13 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                        'AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET'):
                 if not _sec.get(_k):
                     _sec[_k] = secrets.token_hex(32)
-            if smtp_pass:
+            # Le mot de passe SMTP ne doit exister que si l'envoi par e-mail est configuré :
+            # resté seul (réinstallation sans e-mail), il fait croire à Authelia que deux
+            # modes de notification sont déclarés, et le conteneur refuse de démarrer.
+            if smtp_host and smtp_user and smtp_pass:
                 _sec['AUTHELIA_NOTIFIER_SMTP_PASSWORD'] = smtp_pass
+            else:
+                _sec.pop('AUTHELIA_NOTIFIER_SMTP_PASSWORD', None)
             with open(_sfile, 'w') as f:
                 for _k, _v in _sec.items():
                     f.write('%s=%s\n' % (_k, _v))
@@ -899,6 +904,24 @@ echo "exit docker compose: $?" >> "$LOG"
         rc = run_cmd(f'cd {install_dir} && docker compose up -d --force-recreate')
         if rc == 0:
             emit('✓ Stack Docker démarrée', 'ok')
+            if enable_2fa:
+                # « Started » ne dit pas qu'Authelia tient : une configuration refusée le fait
+                # redémarrer en boucle, et le domaine du bureau répond alors par une erreur 500.
+                time.sleep(8)
+                try:
+                    _st = subprocess.run(['docker', 'inspect', '--format', '{{.State.Status}}|{{.RestartCount}}',
+                                          'desktroo-authelia'], capture_output=True, text=True, timeout=20).stdout.strip()
+                    _status, _, _restarts = _st.partition('|')
+                    if _status == 'running' and _restarts in ('', '0'):
+                        emit('✓ Authelia répond (portail 2FA en service)', 'ok')
+                    else:
+                        emit("✗ Authelia ne démarre pas : l'accès par le domaine du bureau est indisponible. Dernières lignes de son journal :", 'error')
+                        _lg = subprocess.run(['docker', 'logs', '--tail', '6', 'desktroo-authelia'],
+                                             capture_output=True, text=True, timeout=20)
+                        for _l in ((_lg.stdout or '') + (_lg.stderr or '')).strip().splitlines()[-6:]:
+                            emit('    ' + _l[:300], 'error')
+                except Exception as _ae:
+                    emit('⚠ État d\'Authelia non vérifié (%s)' % _ae, 'warn')
         else:
             emit('✗ Erreur démarrage Docker', 'error')
             emit('➤ Rapport d\'installation complet : %s' % INSTALL_LOG, 'error')
@@ -1335,7 +1358,7 @@ HTML = """<!DOCTYPE html>
         <div class="big-icon">🎉</div>
         <h2>Installation réussie !</h2>
         <p>Desktroo est prêt.</p>
-        <a id="open-link" href="#" class="open-btn" target="_blank">Ouvrir le bureau →</a>
+        <a id="open-link" href="#" class="open-btn">Ouvrir le bureau →</a>
       </div>
     </div>
 
@@ -1797,6 +1820,9 @@ I18N_EN = r"""{
 "NPMplus (recommande) : Auth Request = 'authelia (modern)', Auth Request Upstream = http://{0}:9091 (sans chemin). Rien d'autre a monter.": "NPMplus (recommended): Auth Request = 'authelia (modern)', Auth Request Upstream = http://{0}:9091 (no path). Nothing else to mount.",
 "NPM standard : monte {0} sous /snippets dans NPM, puis onglet Advanced :": "Standard NPM: mount {0} as /snippets in NPM, then in the Advanced tab:",
 "━━━━━ DNS — pointer les 2 domaines vers l'accès (comme tes autres services) ━━━━━": "━━━━━ DNS — point both domains to the access point (like your other services) ━━━━━",
+"✓ Authelia répond (portail 2FA en service)": "✓ Authelia is up (2FA portal running)",
+"✗ Authelia ne démarre pas : l'accès par le domaine du bureau est indisponible. Dernières lignes de son journal :": "✗ Authelia does not start: access through the desktop domain is unavailable. Last lines of its log:",
+"⚠ État d'Authelia non vérifié ({0})": "⚠ Authelia status not checked ({0})",
 "✓ Stack Docker démarrée": "✓ Docker stack started",
 "✗ Erreur démarrage Docker": "✗ Docker startup error",
 "➤ Rapport d'installation complet : {0}": "➤ Full installation report: {0}",
