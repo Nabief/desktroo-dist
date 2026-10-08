@@ -2463,6 +2463,10 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Session expirée": "Session expired",
+"Votre session sur le portail d'authentification a expiré. Reconnectez-vous pour retrouver vos fichiers, le terminal et les VM.": "Your session on the authentication portal has expired. Sign in again to get your files, the terminal and the VMs back.",
+"Se reconnecter": "Sign in again",
+"Session du portail d'authentification expirée.": "Authentication portal session expired.",
 "erreur — cliquer pour réessayer": "error — click to retry",
 "Session expirée : reconnecte-toi.": "Session expired: sign in again.",
 "⚠️ Service de fichiers indisponible :": "⚠️ File service unavailable:",
@@ -6653,6 +6657,38 @@ function fileopsLogin(force) {
   }).finally(function() { _fileopsLoginPending = null; });
   return _fileopsLoginPending;
 }
+// ── Portail d'authentification placé devant le bureau (Authelia derrière un proxy) ──
+// Quand sa session expire, il répond aux requêtes de fond par une redirection vers sa page de
+// connexion. Le navigateur n'y voit qu'un échec réseau : fichiers, terminal et VM tombent en
+// erreur sans explication. On reconnaît ce cas et on propose de se reconnecter.
+var _dkPortalExpired = false, _dkPortalLastProbe = 0;
+async function dkPortalSessionExpired() {
+  if (_dkPortalExpired) return true;
+  if (Date.now() - _dkPortalLastProbe < 8000) return false;
+  _dkPortalLastProbe = Date.now();
+  try {
+    // redirect:'manual' : une redirection se voit (opaqueredirect) au lieu d'être suivie.
+    const r = await fetch('/fileops/version', { redirect: 'manual', cache: 'no-store' });
+    if (r.type === 'opaqueredirect') _dkPortalExpired = true;
+    else if (r.status === 401 && !/json/i.test(r.headers.get('content-type') || '')) _dkPortalExpired = true;
+  } catch (_) { /* réseau réellement coupé : ce n'est pas le portail */ }
+  if (_dkPortalExpired) dkShowPortalExpired();
+  return _dkPortalExpired;
+}
+function dkShowPortalExpired() {
+  if (document.getElementById('dk-portal-expired')) return;
+  var box = document.createElement('div');
+  box.id = 'dk-portal-expired';
+  box.setAttribute('role', 'alertdialog');
+  box.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(4,9,18,0.72);backdrop-filter:blur(6px);';
+  box.innerHTML = '<div style="max-width:400px;margin:16px;padding:26px 28px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--glass-border);box-shadow:var(--shadow);text-align:center;">'
+    + T('<div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:8px;">Session expirée</div>')
+    + T('<div style="font-size:13px;line-height:1.5;color:var(--text-dim);margin-bottom:20px;">Votre session sur le portail d\'authentification a expiré. Reconnectez-vous pour retrouver vos fichiers, le terminal et les VM.</div>')
+    + T('<button class="btn-login" style="margin-top:0;" onclick="location.reload()">Se reconnecter</button>')
+    + '</div>';
+  document.body.appendChild(box);
+}
+
 async function fileops(method, endpoint, body, _retried) {
   if (_licReadonly && method !== 'GET' && String(endpoint).split('?')[0].replace(/^\/+/, '') !== 'license/activate') {
     licBlockToast();
@@ -6663,7 +6699,16 @@ async function fileops(method, endpoint, body, _retried) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  const resp = await fetch('/fileops/' + endpoint, opts);
+  let resp;
+  try {
+    resp = await fetch('/fileops/' + endpoint, opts);
+  } catch (netErr) {
+    if (await dkPortalSessionExpired()) throw new Error(T('Session du portail d\'authentification expirée.'));
+    throw netErr;
+  }
+  if (resp.status === 401 && endpoint !== 'auth/login' && !/json/i.test(resp.headers.get('content-type') || '') && await dkPortalSessionExpired()) {
+    throw new Error(T('Session du portail d\'authentification expirée.'));
+  }
   const data = await resp.json().catch(() => ({}));
   // Jeton absent ou périmé (première visite, réinstallation) : on en redemande un, une fois.
   if (resp.status === 403 && data.error === 'Unauthorized' && !_retried && (apiKey || basicAuth)) {
