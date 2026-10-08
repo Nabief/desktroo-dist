@@ -817,6 +817,12 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                 'if docker container inspect "$c" >/dev/null 2>&1; then '
                 'docker stop -t 30 "$c" >/dev/null 2>&1; docker rm "$c" >/dev/null 2>&1; '
                 'echo "  ancien conteneur retiré : $c"; fi; done; true')
+        # L'ancienne page du bureau n'est plus lue par personne.
+        try:
+            os.remove(os.path.join(install_dir, 'truenas-desktop.html'))
+            emit('  ancienne page retirée : truenas-desktop.html')
+        except OSError:
+            pass
         # Les confs nginx des sites existants pointent encore sur les anciens conteneurs PHP :
         # sans cette réécriture, le nginx des sites refuse de démarrer (upstream introuvable).
         _confd = os.path.join(install_dir, 'websites', 'conf.d')
@@ -1823,6 +1829,7 @@ I18N_EN = r"""{
 "✓ Authelia répond (portail 2FA en service)": "✓ Authelia is up (2FA portal running)",
 "✗ Authelia ne démarre pas : l'accès par le domaine du bureau est indisponible. Dernières lignes de son journal :": "✗ Authelia does not start: access through the desktop domain is unavailable. Last lines of its log:",
 "⚠ État d'Authelia non vérifié ({0})": "⚠ Authelia status not checked ({0})",
+"ancienne page retirée : truenas-desktop.html": "old page removed: truenas-desktop.html",
 "✓ Stack Docker démarrée": "✓ Docker stack started",
 "✗ Erreur démarrage Docker": "✗ Docker startup error",
 "➤ Rapport d'installation complet : {0}": "➤ Full installation report: {0}",

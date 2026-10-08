@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.1.0'
+APP_VERSION = '2.1.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -96,6 +96,25 @@ def _access_migrate_legacy_data(new=None, old=None):
 
 
 _access_migrate_legacy_data()
+
+
+def _remove_legacy_page():
+    """Retire l'ancienne page « truenas-desktop.html » (avant le renommage) restée dans le
+    dossier d'installation. On ne la retire que si la nouvelle page est bien là."""
+    if not APP_DIR:
+        return False
+    old, new = os.path.join(APP_DIR, 'truenas-desktop.html'), os.path.join(APP_DIR, 'desktroo.html')
+    try:
+        if os.path.isfile(old) and os.path.isfile(new):
+            os.remove(old)
+            log.info('Ancienne page retirée : %s', old)
+            return True
+    except OSError as exc:
+        log.warning('Ancienne page non retirée (%s) : %s', old, exc)
+    return False
+
+
+_remove_legacy_page()
 ACCESS_POLICY_FILE = os.path.join(ACCESS_DATA_DIR, 'access-policy.json')
 ACCESS_HISTORY_FILE = os.path.join(ACCESS_DATA_DIR, 'access-history.json')
 _access_lock = _access_threading.RLock()
