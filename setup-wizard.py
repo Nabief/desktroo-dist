@@ -706,7 +706,10 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                 "      domain: '%s'\n" % domain_parent +
                 "      authelia_url: 'https://%s'\n" % domain_auth +
                 "      default_redirection_url: 'https://%s'\n" % domain_desktop +
-                "      expiration: '1h'\n      inactivity: '15m'\n"
+                # 12 h pour les deux : le bureau reste ouvert toute la journée. Avec une
+                # inactivité courte, la session tombait au bout de 15 min derrière le proxy
+                # malgré l'activité, et le bureau perdait fichiers, terminal et VM.
+                "      expiration: '12h'\n      inactivity: '12h'\n"
                 "storage:\n  local:\n    path: '/config/db.sqlite3'\n" +
                 _notifier_yaml
             )
