@@ -687,6 +687,19 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     background:var(--success); box-shadow:0 0 0 3px rgba(62,207,142,0.16);
   }
   .web-dot.off { background:none; box-shadow:inset 0 0 0 1.5px var(--text-dim); }
+  .web-dot.warn { background:var(--warning); box-shadow:0 0 0 3px rgba(245,158,11,0.16); }
+  .web-side-list { display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+  /* Onglets d'un élément (sections d'une machine virtuelle…) : sous l'en-tête, hors de la zone qui défile. */
+  .web-tabs { display:flex; gap:24px; flex-shrink:0; padding:0 28px; border-bottom:1px solid rgba(255,255,255,0.07); }
+  .web-tabs:empty { display:none; }
+  .web-tab {
+    margin-bottom:-1px; padding:8px 0 10px; border:0; border-bottom:2px solid transparent; background:none;
+    color:var(--text-dim); font:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:color .15s, border-color .15s;
+  }
+  .web-tab:hover { color:var(--text); }
+  .web-tab.active { color:var(--accent2); border-bottom-color:var(--accent); }
+  .web-tab:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  .web-tabs + .web-body { padding-top:18px; }
   .web-main { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; }
   .web-head { display:flex; align-items:center; gap:14px; flex-shrink:0; padding:20px 28px 14px; }
   .web-head-text { flex:1; min-width:0; }
@@ -1079,6 +1092,8 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] .web-act.danger { color:#dc2626; border-color:rgba(220,38,38,0.35); }
   [data-theme="light"] .web-side { background:rgba(13,27,53,0.045); border-right-color:rgba(0,0,0,0.09); }
   [data-theme="light"] .web-side-sep { background:rgba(0,0,0,0.09); }
+  [data-theme="light"] .web-tabs { border-bottom-color:rgba(0,0,0,0.1); }
+  [data-theme="light"] .web-tab.active { color:#0b7a4c; }
   [data-theme="light"] .web-count { background:rgba(0,0,0,0.07); }
   [data-theme="light"] .web-nav:hover { background:rgba(0,0,0,0.055); }
   [data-theme="light"] .web-nav.active { background:rgba(var(--accent-rgb),0.2); color:#0b7a4c; }
@@ -3740,7 +3755,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Aucun zvol sélectionné": "No zvol selected",
 "Volumes ZFS disponibles": "Available ZFS volumes",
 "Aucun volume ZFS trouvé": "No ZFS volume found",
-"⟳ Test...": "⟳ Testing...",
 "br0 (défaut)": "br0 (default)",
 "— Aucun ISO (boot réseau) —": "— No ISO (network boot) —",
 "ISO(s) trouvé(s)": "ISO(s) found",
@@ -4340,7 +4354,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Oui": "Yes",
 "Non": "No",
 "↺ Nouvelle session": "↺ New session",
-"Rafraîchir ↻": "Refresh ↻",
 "＋ App perso (YAML)": "＋ Custom app (YAML)",
 "⚡ Créer une VM QEMU/KVM": "⚡ Create a QEMU/KVM VM",
 "🖥️ Type de système": "🖥️ System type",
@@ -4508,7 +4521,10 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Plusieurs connexions accélèrent les gros fichiers.": "Several connections speed up large files.",
 "Les suivants attendent dans la file.": "The others wait in the queue.",
 "Les archives sont extraites une fois téléchargées.": "Archives are extracted once downloaded.",
-"L'entrée quitte la liste ; le fichier reste dans son dossier.": "The entry leaves the list; the file stays in its folder."
+"L'entrée quitte la liste ; le fichier reste dans son dossier.": "The entry leaves the list; the file stays in its folder.",
+"Machines virtuelles": "Virtual machines",
+"Nouvelle VM": "New VM",
+"Tester la connexion SSH": "Test the SSH connection"
 }
 </script>
 <script id="dk-i18n">
@@ -14624,14 +14640,17 @@ async function openZvolPicker(targetInputId) {
 // ══════════════════════════════════════════════════════════════════
 async function libvirt2TestSSH() {
   var btn = document.getElementById('lv-test-btn');
-  if (btn) { btn.disabled = true; btn.textContent = T('⟳ Test...'); }
+  var lab = btn && btn.querySelector('.web-nav-name');
+  if (btn) btn.disabled = true;
+  if (lab) lab.textContent = T('Test en cours…');
   try {
     var r = await libvirt2Call('/test');
     toast('✓ SSH OK — virsh ' + (r.message || ''));
   } catch(e) {
     toast('❌ SSH: ' + e.message);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🔌 Test SSH'; }
+    if (btn) btn.disabled = false;
+    if (lab) lab.textContent = T('Tester la connexion SSH');
   }
 }
 function libvirt2OpenConsole(name, port) {
@@ -14932,14 +14951,6 @@ function lv2PrepareUi() {
   var title = document.querySelector('#win-libvirt .window-title');
   if (title) title.textContent = T('VMs QEMU/KVM');
 
-  var testBtn = document.getElementById('lv-test-btn');
-  if (testBtn) {
-    testBtn.textContent = '🔌 Test SSH';
-    testBtn.disabled = false;
-    testBtn.style.opacity = '1';
-    testBtn.style.display = '';
-  }
-
   var btns = document.querySelectorAll('#win-libvirt button');
   btns.forEach(function(btn) {
     var onclick = btn.getAttribute('onclick') || '';
@@ -14956,99 +14967,110 @@ async function loadLibvirt2() {
   await loadLibvirt2List();
 }
 
+function lv2Mem(mb) {
+  mb = Number(mb) || 0;
+  if (!mb) return '';
+  return (mb >= 1024 && mb % 1024 === 0) ? (mb / 1024) + ' GB' : mb + ' MB';
+}
+function lv2Meta(vm) {
+  var res = (vm && vm.resources) || {}, m = [];
+  if (res.vcpus) m.push(res.vcpus + ' vCPU');
+  if (res.memory_mb) m.push(lv2Mem(res.memory_mb));
+  return m.join(', ');
+}
+// Contenu d'une ligne de la colonne : pastille d'état, nom, ressources.
+function lv2SideRowHtml(vm) {
+  var st = String(vm.state || '').toLowerCase();
+  var dot = st === 'running' ? '' : ((st === 'paused' || st === 'pmsuspended') ? ' warn' : ' off');
+  return '<span class="web-dot' + dot + '" title="' + lv2Esc(lv2StateLabel(vm.state)) + '"></span>'
+    + '<span class="web-nav-text"><span class="web-nav-name">' + lv2Esc(vm.name) + '</span>'
+    + '<span class="web-nav-meta">' + lv2Esc(lv2Meta(vm) || lv2StateLabel(vm.state)) + '</span></span>';
+}
+// En-tête de la fenêtre : nom, état et ressources, puis l'action la plus utile selon l'état.
+function lv2Head(vm) {
+  var head = document.getElementById('lv-head');
+  if (!head) return;
+  if (!vm) { head.innerHTML = ''; return; }
+  var name = lv2Esc(vm.name), actions = '', sub = '';
+  if (vm.state !== undefined) {
+    var port = lv2ConsolePort(vm), meta = lv2Meta(vm);
+    sub = '<span style="color:' + lv2StateColor(vm.state) + ';">' + lv2Esc(lv2StateLabel(vm.state)) + '</span>' + (meta ? ', ' + lv2Esc(meta) : '');
+    if (lv2IsStopped(vm)) actions += '<button class="web-open" onclick="libvirt2StateAction(\'' + name + '\',\'start\')">' + T('Démarrer') + '</button>';
+    if (vm.state === 'running' && port) actions += '<button class="web-open" onclick="libvirt2OpenConsole(\'' + name + '\',' + port + ')">Console' + webIcon('out') + '</button>';
+    actions += '<button class="fs-btn" onclick="loadLibvirt2List()">' + T('↻ Rafraîchir') + '</button>';
+  }
+  head.innerHTML = '<div class="web-head-text"><h4 class="web-title">' + name + '</h4>' + (sub ? '<div class="web-sub">' + sub + '</div>' : '') + '</div>'
+    + (actions ? '<div class="web-head-actions">' + actions + '</div>' : '');
+}
+function lv2NoDetail(html) {
+  lv2Head(null);
+  var tabs = document.getElementById('lv-tabs'); if (tabs) tabs.innerHTML = '';
+  var detEl = document.getElementById('lv-detail'); if (detEl) detEl.innerHTML = html;
+}
+
 async function loadLibvirt2List() {
   lv2PrepareUi();
 
   var listEl = document.getElementById('lv-list');
-  var summEl = document.getElementById('lv-summary');
-  var detEl  = document.getElementById('lv-detail');
-
+  var cntEl  = document.getElementById('lv-count');
   if (!listEl) return;
 
-  listEl.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
+  if (!listEl.children.length) listEl.innerHTML = '<div class="fs-loading" style="height:70px;"><div class="spinner"></div></div>';
 
   try {
     var data = await libvirt2Call('/vms?detail=1');
     var vms = data.vms || [];
     _libvirt2Vms = vms;
-
-    var running = vms.filter(function(v) { return v.state === 'running'; }).length;
-    if (summEl) {
-      summEl.innerHTML = '<span style="color:var(--info);font-weight:700;"></span>'
-        + ' · ' + vms.length + ' VM' + (vms.length > 1 ? 's' : '')
-        + ' · ' + running + (running > 1 ? T(' actives') : ' active');
-    }
+    if (cntEl) cntEl.textContent = vms.length;
 
     if (!vms.length) {
-      listEl.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">🖥️</div><span>Aucune VM</span></div>');
-      if (detEl) detEl.innerHTML = T('<div class="empty-state" style="height:300px;"><div class="es-icon">⚡</div><span>Aucune VM détectée</span></div>');
+      listEl.innerHTML = '<div class="web-side-empty">' + T('Aucune VM') + '</div>';
+      lv2NoDetail(T('<div class="empty-state" style="height:300px;"><div class="es-icon">⚡</div><span>Aucune VM détectée</span></div>'));
       return;
     }
 
-    listEl.innerHTML = '';
+    if (!(_libvirt2Selected && vms.some(function(v) { return v.name === _libvirt2Selected; }))) _libvirt2Selected = vms[0].name;
+    listEl.innerHTML = vms.map(function(vm) {
+      return '<button class="web-nav' + (vm.name === _libvirt2Selected ? ' active' : '') + '" data-vmname="' + lv2Esc(vm.name) + '">' + lv2SideRowHtml(vm) + '</button>';
+    }).join('');
+    Array.from(listEl.children).forEach(function(b) { b.onclick = function() { libvirt2Select(b.dataset.vmname); }; });
 
-    vms.forEach(function(vm) {
-      var color = lv2StateColor(vm.state);
-      var div = document.createElement('div');
-      div.style.cssText = 'padding:11px;border-radius:10px;cursor:pointer;margin-bottom:6px;border:1px solid transparent;transition:all .15s;background:rgba(255,255,255,0.02);';
-      div.dataset.vmname = vm.name;
-      div.innerHTML =
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
-        + '<span style="width:8px;height:8px;border-radius:50%;background:' + color + ';flex-shrink:0;display:inline-block;"></span>'
-        + '<span style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + lv2Esc(vm.name) + '</span>'
-        + '</div>'
-        + '<div style="font-size:11px;color:' + color + ';margin-left:16px;">' + lv2Esc(lv2StateLabel(vm.state)) + '</div>'
-        + '<div style="font-size:10px;color:var(--text-dim);margin-left:16px;margin-top:2px;">'
-        + lv2Esc((vm.resources && vm.resources.vcpus ? vm.resources.vcpus + ' vCPU' : '—') + ' · '
-          + (vm.resources && vm.resources.memory_mb ? vm.resources.memory_mb + ' MB' : '—'))
-        + '</div>';
-
-      div.onclick = function() { libvirt2Select(vm.name); };
-      div.onmouseenter = function() {
-        if (this.dataset.vmname !== _libvirt2Selected) this.style.background = 'rgba(255,255,255,0.055)';
-      };
-      div.onmouseleave = function() {
-        if (this.dataset.vmname !== _libvirt2Selected) this.style.background = 'rgba(255,255,255,0.02)';
-      };
-      listEl.appendChild(div);
-    });
-
-    if (_libvirt2Selected && vms.some(function(v) { return v.name === _libvirt2Selected; })) {
-      await libvirt2Select(_libvirt2Selected);
-    } else {
-      await libvirt2Select(vms[0].name);
-    }
+    await libvirt2Select(_libvirt2Selected);
 
   } catch(e) {
-    listEl.innerHTML = '<div class="empty-state" style="height:200px;"><div class="es-icon">⚠️</div><span>' + lv2Esc(e.message) + '</span></div>';
-    if (detEl) {
-      detEl.innerHTML = T('<div class="empty-state" style="height:300px;"><div class="es-icon">⚠️</div><span>Erreur libvirt2 : ') + lv2Esc(e.message) + '</span></div>';
-    }
+    if (cntEl) cntEl.textContent = '';
+    listEl.innerHTML = '<div class="web-side-empty">' + lv2Esc(e.message) + '</div>';
+    lv2NoDetail(T('<div class="empty-state" style="height:300px;"><div class="es-icon">⚠️</div><span>Erreur libvirt2 : ') + lv2Esc(e.message) + '</span></div>');
   }
 }
 
 async function libvirt2Select(name) {
+  var changed = _libvirt2Selected !== name;
   _libvirt2Selected = name;
 
   var listEl = document.getElementById('lv-list');
   if (listEl) {
-    Array.from(listEl.children).forEach(function(el) {
-      var sel = el.dataset.vmname === name;
-      el.style.background  = sel ? 'rgba(var(--info-rgb),0.13)' : 'rgba(255,255,255,0.02)';
-      el.style.borderColor = sel ? 'rgba(var(--info-rgb),0.35)' : 'transparent';
-    });
+    Array.from(listEl.children).forEach(function(el) { el.classList.toggle('active', el.dataset.vmname === name); });
   }
 
   var detEl = document.getElementById('lv-detail');
   if (!detEl) return;
 
+  // Autre machine : son nom s'affiche tout de suite ; même machine (après une action) : l'en-tête reste en place.
+  if (changed || !document.getElementById('lv-head').firstChild) lv2Head({ name: name });
   detEl.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
 
   try {
     var data = await libvirt2Call('/vms/' + encodeURIComponent(name));
+    if (_libvirt2Selected !== name) return;   // on a cliqué une autre machine entre-temps
+    // la ligne de la colonne suit l'état réel (après un démarrage, un arrêt…)
+    if (listEl && data && !data.error) {
+      Array.from(listEl.children).forEach(function(el) { if (el.dataset.vmname === name) el.innerHTML = lv2SideRowHtml(data); });
+    }
     renderLibvirt2Detail(data);
   } catch(e) {
-    detEl.innerHTML = '<div class="empty-state" style="height:300px;"><div class="es-icon">⚠️</div><span>' + lv2Esc(e.message) + '</span></div>';
+    lv2NoDetail('<div class="empty-state" style="height:300px;"><div class="es-icon">⚠️</div><span>' + lv2Esc(e.message) + '</span></div>');
+    lv2Head({ name: name });
   }
 }
 
@@ -16871,12 +16893,8 @@ function lv2DetailShowTab(tab) {
   document.querySelectorAll('#lv2-detail-tab-content > [data-lv2-tab]').forEach(function(panel) {
     panel.style.display = panel.getAttribute('data-lv2-tab') === tab ? 'flex' : 'none';
   });
-  document.querySelectorAll('#lv2-detail-tabs [data-lv2-tab-button]').forEach(function(button) {
-    var active = button.getAttribute('data-lv2-tab-button') === tab;
-    button.style.background = active ? 'var(--accent)' : 'transparent';
-    button.style.borderColor = active ? 'var(--accent)' : 'var(--glass-border)';
-    button.style.color = active ? '#ffffff' : 'var(--text-dim)';
-    button.style.fontWeight = active ? '600' : '500';
+  document.querySelectorAll('#lv-tabs [data-lv2-tab-button]').forEach(function(button) {
+    button.classList.toggle('active', button.getAttribute('data-lv2-tab-button') === tab);
   });
 }
 
@@ -16886,17 +16904,26 @@ function lv2DetailSectionTitle(node) {
   return String(span && span.textContent || '').trim().toLowerCase();
 }
 
-function lv2DetailInstallTabs() {
+// Dernière étape du rendu d'une machine. Les panneaux ont été posés un à un dans « #lv-detail » ;
+// on les range ici au gabarit des gestionnaires : le nom, l'état et les actions principales passent
+// dans l'en-tête de la fenêtre, les sections deviennent des onglets fixes sous cet en-tête.
+function lv2DetailInstallTabs(vm) {
   var detail = document.getElementById('lv-detail');
+  var tabs = document.getElementById('lv-tabs');
   var root = detail && detail.firstElementChild;
-  if (!root || document.getElementById('lv2-detail-tabs')) return;
+  if (!root || !tabs) return;
+  if (!vm || vm.error) { lv2Head(null); tabs.innerHTML = ''; return; }
+  if (root.getAttribute('data-lv2-laid')) return;
+  root.setAttribute('data-lv2-laid', '1');
 
-  var groups = {
-    overview: [],
-    hardware: [],
-    network: [],
-    snapshots: []
-  };
+  // les deux premiers blocs du rendu d'origine (titre + pastille d'état, puis Rafraîchir / Console) sont repris par l'en-tête
+  var first = root.children[0], second = root.children[1];
+  if (first) first.remove();
+  if (second) second.remove();
+  lv2Head(vm);
+
+  var groups = { overview: [], hardware: [], network: [], snapshots: [] };
+  var cards = [], notes = [];
 
   Array.from(root.children).forEach(function(node) {
     var id = node.id || '';
@@ -16919,21 +16946,22 @@ function lv2DetailInstallTabs() {
       groups.snapshots.push(node);
     } else if (title === 'snapshots') {
       node.remove();
+    } else if (/grid-template-columns:\s*repeat\(4/.test(node.getAttribute('style') || '')) {
+      cards.push(node);   // les quatre chiffres clés (CPU, mémoire, boot, console)
+    } else {
+      notes.push(node);   // avertissements (conflit de boot, lecteur vide…)
     }
   });
+  groups.overview = cards.concat(notes, groups.overview);
 
-  var nav = document.createElement('div');
-  nav.id = 'lv2-detail-tabs';
-  nav.style.cssText = 'display:flex;gap:7px;flex-wrap:wrap;padding:4px 0 0;position:sticky;top:0;z-index:3;background:var(--window-bg,rgba(15,26,46,.96));';
-  nav.innerHTML = ''
-    + T('<button class="fs-btn" data-lv2-tab-button="overview" onclick="lv2DetailShowTab(\'overview\')">Vue générale</button>')
-    + T('<button class="fs-btn" data-lv2-tab-button="hardware" onclick="lv2DetailShowTab(\'hardware\')">Matériel</button>')
-    + T('<button class="fs-btn" data-lv2-tab-button="network" onclick="lv2DetailShowTab(\'network\')">Réseau</button>')
-    + '<button class="fs-btn" data-lv2-tab-button="snapshots" onclick="lv2DetailShowTab(\'snapshots\')">Snapshots</button>';
+  tabs.innerHTML = ''
+    + T('<button class="web-tab" data-lv2-tab-button="overview" onclick="lv2DetailShowTab(\'overview\')">Vue générale</button>')
+    + T('<button class="web-tab" data-lv2-tab-button="hardware" onclick="lv2DetailShowTab(\'hardware\')">Matériel</button>')
+    + T('<button class="web-tab" data-lv2-tab-button="network" onclick="lv2DetailShowTab(\'network\')">Réseau</button>')
+    + '<button class="web-tab" data-lv2-tab-button="snapshots" onclick="lv2DetailShowTab(\'snapshots\')">Snapshots</button>';
 
   var content = document.createElement('div');
   content.id = 'lv2-detail-tab-content';
-  content.style.cssText = 'max-height:min(58vh,620px);overflow-y:auto;overflow-x:hidden;padding:2px 5px 4px 0;scrollbar-gutter:stable;';
 
   Object.keys(groups).forEach(function(key) {
     var panel = document.createElement('div');
@@ -16946,7 +16974,6 @@ function lv2DetailInstallTabs() {
     content.appendChild(panel);
   });
 
-  root.appendChild(nav);
   root.appendChild(content);
   lv2DetailShowTab(window._lv2DetailActiveTab);
 }
@@ -16956,7 +16983,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   window._lv2DetailTabsRenderBefore = renderLibvirt2Detail;
   renderLibvirt2Detail = function(vm) {
     window._lv2DetailTabsRenderBefore(vm);
-    lv2DetailInstallTabs();
+    lv2DetailInstallTabs(vm);
   };
 }
 
@@ -17194,7 +17221,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      VMs QEMU/KVM (LIBVIRT) WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-libvirt" style="top:60px;left:160px;width:960px;height:600px;">
+<div class="window panel-win" id="win-libvirt" style="top:50px;left:160px;width:1040px;height:700px;">
   <div class="window-titlebar" data-win="libvirt">
     <span class="window-icon">⚡</span>
     <span class="window-title">VMs QEMU/KVM</span>
@@ -17203,24 +17230,24 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn max" onclick="toggleMaxWin('libvirt')"></button>
       <button class="win-btn cls" onclick="closeWin('libvirt')"></button>
     </div></div>
-  <div class="window-body" style="display:flex;gap:0;padding:0;overflow:hidden;">
-    <!-- Colonne gauche : liste VMs -->
-    <div style="width:230px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;overflow:hidden;">
-      <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;align-items:center;">
-        <button id="lv-test-btn" class="fs-btn" onclick="libvirt2TestSSH()" style="font-size:11px;">Test SSH🔌 </button>
-        <button class="fs-btn" onclick="loadLibvirt2List()" style="font-size:11px;">Rafraîchir ↻</button>
-        <button class="fs-btn" onclick="libvirt2Create()" style="font-size:11px;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);">+ VM</button>
-      </div>
-	  <span style="margin:10px; color:grey;">Sélectionnez une VM</span>
-      <div style="padding:6px 10px;font-size:11px;color:var(--text-dim);flex-shrink:0;" id="lv-summary"></div>
-      <div id="lv-list" style="flex:1;overflow-y:auto;padding:6px;"></div>
-    </div>
-    <!-- Colonne droite : détail VM -->
-    <div id="lv-detail" style="flex:1;overflow-y:auto;padding:16px;">
-      <div class="empty-state" style="height:200px;">
-        <div class="es-icon">⚡</div>
-        <span>Sélectionnez une VM</span>
-      </div>
+  <div class="window-body" style="display:flex;gap:0;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="lv-side" aria-label="Machines virtuelles">
+        <div class="web-side-title"><span>Machines virtuelles</span><span class="web-count" id="lv-count"></span></div>
+        <div class="web-side-list" id="lv-list"></div>
+        <button class="web-nav add" onclick="libvirt2Create()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="web-nav-name">Nouvelle VM</span></button>
+        <div class="web-side-sep"></div>
+        <div class="web-side-title"><span>Réglages</span></div>
+        <button class="web-nav" id="lv-test-btn" onclick="libvirt2TestSSH()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V3M15 7V3M7 7h10v5a5 5 0 01-10 0zM12 17v4"/></svg><span class="web-nav-name">Tester la connexion SSH</span></button>
+      </nav>
+      <section class="web-main">
+        <header class="web-head" id="lv-head"></header>
+        <div class="web-tabs" id="lv-tabs"></div>
+        <div class="web-body" id="lv-detail">
+          <div class="empty-state" style="height:200px;"><span>Sélectionnez une VM</span></div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="libvirt"></div>
