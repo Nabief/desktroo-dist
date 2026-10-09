@@ -437,18 +437,27 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     font-size:25px; pointer-events:none; transition:opacity 0.2s;
   }
   #taskbar.brand-hidden .taskbar-brand { opacity:0; }
-  .taskbar-apps { display:flex; gap:4px; flex:1; overflow:hidden; }
+  /* Fenêtres ouvertes : libellés sobres, sans cadre. Un trait d'accent sous le libellé dit l'état :
+     court et discret = fenêtre affichée, plus long et plein = fenêtre au premier plan, absent = fenêtre réduite. */
+  .taskbar-apps { display:flex; align-items:center; gap:2px; flex:1; min-width:0; overflow:hidden; }
+  .taskbar-apps:not(:empty) { margin-left:4px; padding-left:10px; border-left:1px solid rgba(255,255,255,0.09); }
   .taskbar-app-btn {
-    display:flex; align-items:center; gap:6px;
-    padding:5px 12px; border-radius:6px;
-    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08);
-    cursor:pointer; font-size:12px; color:var(--text);
-    transition:background 0.15s; white-space:nowrap;
-    max-width:150px; overflow:hidden; text-overflow:ellipsis;
-    font-family:inherit;
+    position:relative; display:block; flex-shrink:1; min-width:0; max-width:180px; height:36px; padding:0 13px;
+    border:0; border-radius:var(--radius-sm); background:transparent;
+    color:var(--text-dim); font-family:inherit; font-size:12.5px; font-weight:500; line-height:36px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+    transition:background 0.15s, color 0.15s;
   }
-  .taskbar-app-btn:hover { background:rgba(255,255,255,0.12); }
-  .taskbar-app-btn.active { background:rgba(var(--accent-rgb),0.25); border-color:rgba(var(--accent-rgb),0.5); }
+  .taskbar-app-btn::after {
+    content:''; position:absolute; left:50%; bottom:4px; width:0; height:2px; border-radius:2px;
+    background:var(--accent); opacity:0; transform:translateX(-50%); transition:width 0.2s, opacity 0.2s;
+  }
+  .taskbar-app-btn:hover { background:rgba(255,255,255,0.07); color:var(--text); }
+  .taskbar-app-btn.active { color:var(--text); }
+  .taskbar-app-btn.active::after { width:12px; opacity:0.5; }
+  .taskbar-app-btn.front { background:rgba(255,255,255,0.08); }
+  .taskbar-app-btn.front::after { width:22px; opacity:1; }
+  .taskbar-app-btn:focus-visible, .drawer-btn:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
   .taskbar-btn {
     display:flex; align-items:center; gap:6px;
     padding:6px 12px; border-radius:8px;
@@ -544,6 +553,8 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     animation:win-open 0.22s cubic-bezier(0.34,1.4,0.64,1);
   }
   .window.visible { display:flex; }
+  #win-network { min-width:820px; min-height:520px; }
+  #win-libvirt { min-width:860px; min-height:540px; }
   .window.maximized {
     top:0 !important; left:0 !important;
     width:100vw !important; height:calc(100vh - var(--taskbar-h)) !important;
@@ -1147,12 +1158,10 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     background:rgba(220,235,252,0.95);
     border-bottom:1px solid rgba(0,0,0,0.10);
   }
-  [data-theme="light"] .taskbar-app-btn {
-    background:rgba(0,0,0,0.06); border-color:rgba(0,0,0,0.10); color:var(--text);
-  }
-  [data-theme="light"] .taskbar-app-btn.active {
-    background:rgba(var(--accent-rgb),0.15); border-color:rgba(var(--accent-rgb),0.4);
-  }
+  [data-theme="light"] .taskbar-apps:not(:empty) { border-left-color:rgba(0,0,0,0.12); }
+  [data-theme="light"] .taskbar-app-btn:hover,
+  [data-theme="light"] .taskbar-app-btn.front,
+  [data-theme="light"] .drawer-btn:hover { background:rgba(0,0,0,0.07); }
   [data-theme="light"] .user-menu-btn { color:var(--text); }
   /* Labels des icônes du bureau : blanc en mode clair (posés sur le fond d'écran) */
   [data-theme="light"] .desk-icon-label { color:#ffffff !important; }
@@ -1492,14 +1501,13 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
   /* Bouton tiroir dans la taskbar */
   .drawer-btn {
-    width:34px; height:34px; border-radius:9px; border:none; cursor:pointer;
-    background:rgba(var(--accent-rgb),0.35); border:1px solid rgba(var(--accent-rgb),0.5);
+    width:36px; height:36px; border:0; border-radius:var(--radius-sm); cursor:pointer;
+    background:transparent; color:var(--text);
     display:flex; align-items:center; justify-content:center;
-    transition:background 0.15s, box-shadow 0.15s; flex-shrink:0;
-    box-shadow:0 2px 8px rgba(var(--accent-rgb),0.3);
+    transition:background 0.15s, color 0.15s; flex-shrink:0;
   }
-  .drawer-btn:hover { background:rgba(var(--accent-rgb),0.55); box-shadow:0 3px 12px rgba(var(--accent-rgb),0.5); }
-  .drawer-btn svg { width:16px; height:16px; color:white; }
+  .drawer-btn:hover { background:rgba(255,255,255,0.08); color:var(--accent2); }
+  .drawer-btn svg { width:17px; height:17px; }
   /* Contexte menu tiroir */
   #drawer-ctx {
     position:fixed; z-index:3000; background:var(--glass);
@@ -3430,20 +3438,15 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Effacer tout": "Clear all",
 "✅ Alertes effacées": "✅ Alerts cleared",
 "— mode actuel :": "&mdash; current mode:",
-"Tapez \u003cem>dhcp\u003c/em> ou IP statique (ex: 192.168.1.10/24)": "Type \u003cem>dhcp\u003c/em> or a static IP (e.g. 192.168.1.10/24)",
-"Format invalide. Utilisez \"192.168.0.10/24\" ou \"dhcp\"": "Invalid format. Use \"192.168.0.10/24\" or \"dhcp\"",
 "Valider les changements réseau ?": "Confirm the network changes?",
 "La connexion sera brièvement interrompue.": "The connection will be briefly interrupted.",
 "Valider": "Confirm",
-"Interface reseau mise a jour": "Network interface updated",
 "Configuration globale": "Global configuration",
 "Domaine": "Domain",
 "Passerelle": "Gateway",
-"Interface :": "Interface:",
 "Modifier": "Edit",
 "Lien": "Link",
 "Connecte": "Connected",
-"Deconnecte": "Disconnected",
 "Aucun utilisateur": "No users",
 "Utilisateur": "User",
 "Nouvel utilisateur": "New user",
@@ -4552,7 +4555,45 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Les machines virtuelles ne répondent pas": "Virtual machines are not responding",
 "Le service de virtualisation n'a pas répondu. Vérifie que le NAS est joignable, puis réessaie.": "The virtualization service did not respond. Check that the NAS is reachable, then try again.",
 "Détail technique": "Technical detail",
-"Cette machine ne répond pas": "This machine is not responding"
+"Cette machine ne répond pas": "This machine is not responding",
+"Physique": "Physical",
+"Pont": "Bridge",
+"Agrégation de liens": "Link aggregation",
+"sans adresse": "no address",
+"déconnectée": "disconnected",
+"Connectée": "Connected",
+"Déconnectée": "Disconnected",
+"Aucune interface": "No interfaces",
+"Ouvrir dans TrueNAS": "Open in TrueNAS",
+"Le réseau ne répond pas": "The network is not responding",
+"Adresse IPv4": "IPv4 address",
+"Adresse IPv6": "IPv6 address",
+"Attribution": "Assignment",
+"Automatique (DHCP)": "Automatic (DHCP)",
+"Adresse fixe": "Fixed address",
+"Automatique (DHCP) ou adresse fixe": "Automatic (DHCP) or fixed address",
+"Réglages avancés": "Advanced settings",
+"Agrégation, VLAN, pont : dans l'interface TrueNAS": "Aggregation, VLAN, bridge: in the TrueNAS interface",
+"Nom du NAS, passerelle et serveurs DNS.": "NAS name, gateway and DNS servers.",
+"Modifier dans TrueNAS": "Edit in TrueNAS",
+"Nom d'hôte": "Hostname",
+"Passerelle IPv4": "IPv4 gateway",
+"Passerelle IPv6": "IPv6 gateway",
+"Configuration globale indisponible": "Global configuration unavailable",
+"Longueur du masque": "Mask length",
+"Le changement coupe brièvement la connexion. Le NAS ne le garde que s'il reste joignable ensuite ; sinon il revient de lui-même à l'ancien réglage au bout d'une minute.": "The change briefly cuts the connection. The NAS keeps it only if it is still reachable afterwards; otherwise it goes back to the previous setting by itself after one minute.",
+"Adresse invalide. Exemple : 192.168.1.10, masque de longueur 24.": "Invalid address. Example: 192.168.1.10, mask length 24.",
+"Changement abandonné": "Change discarded",
+"Application du changement…": "Applying the change…",
+"Le bureau vérifie que le NAS répond toujours.": "The desktop is checking that the NAS still responds.",
+"✅ Configuration réseau enregistrée": "✅ Network configuration saved",
+"Le NAS ne répond plus à cette adresse": "The NAS no longer responds at this address",
+"Sans confirmation, il annule le changement de lui-même au bout d'une minute. Si tu as changé l'adresse par laquelle tu ouvres le bureau, rouvre-le à la nouvelle adresse dans la minute : la fenêtre Réseau te proposera de garder le changement.": "Without confirmation, it undoes the change by itself after one minute. If you changed the address you use to open the desktop, reopen it at the new address within the minute: the Network window will offer to keep the change.",
+"Un changement réseau attend ta confirmation": "A network change is waiting for your confirmation",
+"Sans confirmation, le NAS revient à l'ancien réglage dans {0} secondes.": "Without confirmation, the NAS goes back to the previous setting in {0} seconds.",
+"Annuler le changement": "Undo the change",
+"Garder": "Keep",
+"Changement annulé": "Change undone"
 }
 </script>
 <script id="dk-i18n">
@@ -5258,7 +5299,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <!-- NETWORK WINDOW -->
-<div class="window" id="win-network" style="top:60px;left:260px;width:660px;height:500px;">
+<div class="window" id="win-network" style="top:56px;left:220px;width:980px;height:660px;">
   <div class="window-titlebar" data-win="network">
     <span class="window-icon">🌐</span>
     <span class="window-title">Réseau</span>
@@ -5268,9 +5309,16 @@ document.addEventListener('DOMContentLoaded', function () {
       <button class="win-btn cls" onclick="closeWin('network')"></button>
     </div>
   </div>
-  <div class="window-body">
-    <div class="sysinfo" id="network-content">
-      <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="net-side" aria-label="Réseau"></nav>
+      <section class="web-main">
+        <header class="web-head" id="net-head"></header>
+        <div class="web-body" id="network-content">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="network"></div>
@@ -5729,6 +5777,7 @@ function initDesktop(sysInfo) {
   loadWidgetData();
   refreshInterval = setInterval(loadWidgetData, 60000); // toutes les 60s pour éviter le spam
   dlBadgeStart();
+  setTimeout(function() { netPendingCheck(true); }, 2500);
   jobsBadgeStart();
   licStart();
   tndLoadConfig();
@@ -9693,6 +9742,7 @@ function closeApp(id) {
 function bringToFront(win) {
   topZ++;
   win.style.zIndex = topZ;
+  tbSync();
   setupWinEdges(win);  // fenêtres créées à la volée comprises
 }
 
@@ -9718,6 +9768,38 @@ function addTaskbarBtn(id, win, customTitle) {
   };
   tb.appendChild(btn);
 }
+
+// Met les boutons de la barre en accord avec les fenêtres : « active » = affichée, « front » = au premier plan.
+// (Téléchargements, qui n'est pas une fenêtre du bureau, gère lui-même « active ».)
+var _tbSyncQueued = false;
+function tbSync() {
+  if (_tbSyncQueued) return;
+  _tbSyncQueued = true;
+  requestAnimationFrame(function() {
+    _tbSyncQueued = false;
+    var best = null, bestZ = -1, btns = document.querySelectorAll('#taskbar-apps [data-win]');
+    btns.forEach(function(b) {
+      var w = document.getElementById('win-' + b.dataset.win);
+      if (!w) return;
+      var vis = w.classList.contains('visible'), z = parseInt(w.style.zIndex) || 0;
+      b.classList.toggle('active', vis);
+      if (vis && z > bestZ) { bestZ = z; best = b; }
+    });
+    var m = document.getElementById('modal-create-app'), dl = document.querySelector('#taskbar-apps [data-win="downloads"]');
+    if (dl && m && m.style.display !== 'none' && m.classList.contains('dl-wide')) best = dl;   // la boîte passe devant les fenêtres
+    // on ne touche une classe que si elle change : sinon l'observateur ci-dessous se rappellerait sans fin
+    btns.forEach(function(b) { b.classList.toggle('front', b === best); });
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  if (!window.MutationObserver) return;
+  // une fenêtre s'affiche, se réduit ou se ferme ; un bouton apparaît ou disparaît ; la boîte de gestionnaire s'ouvre ou se ferme
+  var mo = new MutationObserver(tbSync);
+  mo.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  var tb = document.getElementById('taskbar-apps'), m = document.getElementById('modal-create-app');
+  if (tb) new MutationObserver(tbSync).observe(tb, { childList: true });
+  if (m) new MutationObserver(tbSync).observe(m, { attributes: true, attributeFilter: ['style'] });
+});
 
 function removeTaskbarBtn(id) {
   const tb = document.getElementById('taskbar-apps');
@@ -11640,39 +11722,6 @@ async function dismissAllAlerts() {
   }
 }
 
-// ===========================// NETWORK EDIT
-// ===========================
-async function networkEditIface(ifaceId) {
-  var iface;
-  try { iface = await socketCall('/interface/id/' + encodeURIComponent(ifaceId)); }
-  catch(e) { openApp('network'); return; }
-  var aliases = (iface.aliases || []).filter(function(a){ return a.type === 'INET'; });
-  var curIP   = aliases[0] ? aliases[0].address : '';
-  var curMask = aliases[0] ? aliases[0].netmask  : '';
-  var curMode = iface.ipv4_dhcp ? 'DHCP' : 'STATIQUE';
-  var choice = await showPrompt('Interface <strong>' + iface.name + T('</strong> &mdash; mode actuel : ') + curMode + T('<br><small style="color:var(--text-dim)">Tapez <em>dhcp</em> ou IP statique (ex: 192.168.1.10/24)</small>'));
-  if (!choice) return;
-  var payload = { id: ifaceId };
-  if (choice.toLowerCase() === 'dhcp') {
-    payload.ipv4_dhcp = true; payload.aliases = [];
-  } else {
-    var parts = choice.trim().split('/');
-    if (parts.length !== 2 || !parts[0].match(/^\d+\.\d+\.\d+\.\d+$/) || isNaN(parseInt(parts[1]))) {
-      toast(T('Format invalide. Utilisez "192.168.0.10/24" ou "dhcp"')); return;
-    }
-    payload.ipv4_dhcp = false;
-    payload.aliases   = [{ type: 'INET', address: parts[0], netmask: parseInt(parts[1]) }];
-  }
-  try {
-    await socketCall('/interface/id/' + encodeURIComponent(ifaceId), 'PUT', payload);
-    if (await showConfirm(T('Valider les changements réseau ?<br><span style="font-size:12px;color:var(--warning);">La connexion sera brièvement interrompue.</span>'), {ok:T('Valider'), icon:'🌐'})) {
-      await socketCall('/interface/commit', 'POST', { rollback: true, checkin_timeout: 60 });
-      toast(T('Interface reseau mise a jour'));
-    }
-    loadNetwork();
-  } catch(e) { toast(T('Erreur: ') + e.message); }
-}
-
 // ===========================
 // SETUP WINDOW DRAG
 // ===========================
@@ -11702,52 +11751,206 @@ function setupContextMenu() {
 // ===========================
 // NETWORK
 // ===========================
-async function loadNetwork() {
-  var el = document.getElementById('network-content');
+// Fenêtre Réseau au gabarit des gestionnaires : les interfaces dans la colonne, la configuration
+// globale en réglage. Lecture et modification passent par le middleware TrueNAS (interface.*).
+var _netIfs = [], _netCfg = {}, _netSel = null, _netNav = 'iface';
+WEB_ICONS.settings = '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>';
+function netIface(id) { return _netIfs.find(function(i) { return String(i.id || i.name) === String(id); }) || null; }
+// Ce qu'on affiche d'une interface, quelle que soit la forme renvoyée (champs à plat ou sous « state »).
+function netInfo(iface) {
+  var st = iface.state || {};
+  var cfg = (iface.aliases || []), run = (st.aliases || []);
+  var pick = function(list, t) { return list.filter(function(a) { return a.type === t; }); };
+  var v4 = pick(cfg, 'INET'); if (!v4.length) v4 = pick(run, 'INET');
+  var v6 = pick(cfg, 'INET6'); if (!v6.length) v6 = pick(run, 'INET6');
+  var link = iface.link_state || st.link_state || '';
+  var types = { PHYSICAL: T('Physique'), BRIDGE: T('Pont'), LINK_AGGREGATION: T('Agrégation de liens'), VLAN: 'VLAN' };
+  return {
+    up: link === 'LINK_STATE_UP', link: link, v4: v4, v6: v6, dhcp: !!iface.ipv4_dhcp,
+    mac: iface.mac_address || st.link_address || st.permanent_link_address || '',
+    mtu: iface.mtu || st.mtu || '', type: types[iface.type] || iface.type || 'Ethernet'
+  };
+}
+function netHead(title, o) {
+  o = o || {};
+  document.getElementById('net-head').innerHTML = '<div class="web-head-text">'
+    + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
+    + '<h4 class="web-title">' + webEsc(title) + '</h4>'
+    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
+    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+  var body = document.getElementById('network-content');
+  body.classList.toggle('narrow', !!o.narrow);
+  body.scrollTop = 0;
+  netSideRender();
+}
+function netBody() { return document.getElementById('network-content'); }
+function netSideRender() {
+  var el = document.getElementById('net-side');
   if (!el) return;
-  el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
+  var h = '<div class="web-side-title"><span>' + T('Interfaces') + '</span><span class="web-count">' + (_netIfs.length || '') + '</span></div>';
+  _netIfs.forEach(function(iface) {
+    var id = String(iface.id || iface.name), n = netInfo(iface);
+    var meta = n.v4.length ? n.v4[0].address : (n.up ? (n.dhcp ? 'DHCP' : T('sans adresse')) : T('déconnectée'));
+    h += '<button class="web-nav' + (_netNav === 'iface' && _netSel === id ? ' active' : '') + '" data-if="' + webEsc(id) + '">'
+      + '<span class="web-dot' + (n.up ? '' : ' off') + '" title="' + webEsc(n.up ? T('Connectée') : T('Déconnectée')) + '"></span>'
+      + '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(iface.name || id) + '</span><span class="web-nav-meta">' + webEsc(meta) + '</span></span></button>';
+  });
+  if (!_netIfs.length) h += '<div class="web-side-empty">' + T('Aucune interface') + '</div>';
+  h += '<div class="web-side-sep"></div><div class="web-side-title"><span>' + T('Réglages') + '</span></div>'
+    + '<button class="web-nav' + (_netNav === 'global' ? ' active' : '') + '" onclick="netGo(\'global\')">' + webIcon('settings') + '<span class="web-nav-name">' + T('Configuration globale') + '</span></button>'
+    + '<button class="web-nav" onclick="openTrueNASPage(\'/ui/network\')">' + webIcon('out') + '<span class="web-nav-name">' + T('Ouvrir dans TrueNAS') + '</span></button>';
+  el.innerHTML = h;
+  el.querySelectorAll('[data-if]').forEach(function(b) { b.onclick = function() { netGo('iface', b.dataset.if); }; });
+}
+function netGo(nav, id) {
+  _netNav = nav;
+  if (id !== undefined) _netSel = String(id);
+  if (nav === 'global') netGlobalView(); else netIfaceView();
+}
+async function loadNetwork() {
+  var el = netBody();
+  if (!el) return;
+  if (!_netIfs.length) { netHead(T('Réseau')); el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>'; }
   try {
     var results = await Promise.allSettled([socketCall('/interface'), socketCall('/network/configuration')]);
-    var ifs  = results[0].status === 'fulfilled' ? ensureArray(results[0].value) : [];
-    var cfg  = results[1].status === 'fulfilled' ? (results[1].value || {}) : {};
-    var html = '<div class="sysinfo">';
-    if (cfg.hostname || cfg.ipv4gateway) {
-      html += T('<div class="sysinfo-card" style="margin-bottom:12px;"><h3>Configuration globale</h3>');
-      if (cfg.hostname)    html += '<div class="sysinfo-row"><span class="label">Hostname</span><span class="value">' + cfg.hostname + '</span></div>';
-      if (cfg.domain)      html += T('<div class="sysinfo-row"><span class="label">Domaine</span><span class="value">') + cfg.domain + '</span></div>';
-      if (cfg.ipv4gateway) html += T('<div class="sysinfo-row"><span class="label">Passerelle</span><span class="value">') + cfg.ipv4gateway + '</span></div>';
-      if (cfg.nameserver1) html += '<div class="sysinfo-row"><span class="label">DNS 1</span><span class="value">' + cfg.nameserver1 + '</span></div>';
-      if (cfg.nameserver2) html += '<div class="sysinfo-row"><span class="label">DNS 2</span><span class="value">' + cfg.nameserver2 + '</span></div>';
-      html += '</div>';
-    }
-    ifs.filter(function(i){ return !i.fake; }).forEach(function(iface) {
-      var ipv4 = (iface.aliases || []).filter(function(a){ return a.type === 'INET'; });
-      var ipv6 = (iface.aliases || []).filter(function(a){ return a.type === 'INET6'; });
-      var up   = iface.link_state === 'LINK_STATE_UP';
-      var ifId = (iface.id || iface.name || '').toString().replace(/'/g, "\\'");
-      html += '<div class="sysinfo-card" style="margin-bottom:12px;">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-        + T('<h3 style="margin:0;">Interface : ') + iface.name + (iface.description ? ' — ' + iface.description : '') + '</h3>'
-        + '<div style="display:flex;gap:6px;">'
-        + '<button class="fs-btn" style="font-size:11px;padding:3px 10px;" onclick="networkEditIface(\'' + ifId + T('\')" >Modifier</button>')
-        + '<button class="fs-btn" style="font-size:11px;padding:3px 10px;" onclick="openTrueNASPage(\'/ui/network\')">TrueNAS</button>'
-        + '</div></div>'
-        + '<div class="sysinfo-row"><span class="label">Type</span><span class="value">' + (iface.type || 'Ethernet') + '</span></div>'
-        + (iface.link_state ? T('<div class="sysinfo-row"><span class="label">Lien</span><span class="value" style="color:') + (up ? 'var(--success)' : 'var(--danger)') + '">' + (up ? T('Connecte') : T('Deconnecte')) + '</span></div>' : '')
-        + (iface.mac_address ? '<div class="sysinfo-row"><span class="label">MAC</span><span class="value" style="font-size:11px;">' + iface.mac_address + '</span></div>' : '')
-        + ipv4.map(function(a){ return '<div class="sysinfo-row"><span class="label">IPv4</span><span class="value">' + a.address + '/' + a.netmask + '</span></div>'; }).join('')
-        + ipv6.slice(0,2).map(function(a){ return '<div class="sysinfo-row"><span class="label">IPv6</span><span class="value" style="font-size:11px;">' + a.address + '</span></div>'; }).join('')
-        + '</div>';
-    });
-    html += '</div>';
-    el.innerHTML = html;
+    if (results[0].status !== 'fulfilled') throw results[0].reason;
+    _netIfs = ensureArray(results[0].value).filter(function(i) { return !i.fake; });
+    _netCfg = results[1].status === 'fulfilled' ? (results[1].value || {}) : {};
+    if (!netIface(_netSel)) _netSel = _netIfs.length ? String(_netIfs[0].id || _netIfs[0].name) : null;
+    netGo(_netNav === 'global' ? 'global' : 'iface');
+    netPendingCheck();
   } catch(e) {
-    el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">error</div><span>Erreur: ') + e.message + '</span></div>';
+    _netIfs = [];
+    netHead(T('Réseau'));
+    el.innerHTML = dkWaitHtml('error', T('Le réseau ne répond pas'), webEsc((e && e.message) || String(e)),
+      '<button class="web-open" onclick="loadNetwork()">' + T('Réessayer') + '</button>');
   }
 }
-
-
-
+function netFacts(rows) {
+  return '<dl class="web-facts">' + rows.filter(function(r) { return r && r[1]; }).map(function(r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('') + '</dl>';
+}
+function netIfaceView() {
+  var iface = netIface(_netSel);
+  if (!iface) {
+    netHead(T('Réseau'));
+    netBody().innerHTML = '<div class="empty-state" style="height:200px;"><span>' + T('Aucune interface') + '</span></div>';
+    return;
+  }
+  var id = String(iface.id || iface.name), n = netInfo(iface), mono = function(v) { return '<span class="mono">' + webEsc(v) + '</span>'; };
+  var state = iface.link_state || (iface.state || {}).link_state
+    ? '<span style="color:' + (n.up ? 'var(--success)' : 'var(--danger)') + ';">' + (n.up ? T('Connectée') : T('Déconnectée')) + '</span>, ' : '';
+  netHead(iface.name || id, { sub: state + webEsc(n.type) + (iface.description ? ', ' + webEsc(iface.description) : '') });
+  var h = netFacts([
+    [T('Adresse IPv4'), n.v4.map(function(a) { return mono(a.address + '/' + a.netmask); }).join('') || ''],
+    [T('Attribution'), n.dhcp ? T('Automatique (DHCP)') : T('Adresse fixe')],
+    [T('Adresse IPv6'), n.v6.slice(0, 2).map(function(a) { return mono(a.address + (a.netmask ? '/' + a.netmask : '')); }).join('')],
+    [T('Adresse MAC'), n.mac ? mono(n.mac) + '<button class="web-mini" onclick="copyText(\'' + encodeURIComponent(n.mac) + '\')">' + T('Copier') + '</button>' : ''],
+    ['MTU', n.mtu ? mono(n.mtu) : '']
+  ]);
+  var row = function(call, name, desc) {
+    return '<button class="web-row line" onclick="' + call + '"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+  };
+  h += '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + row('netIpv4Form()', T('Adresse IPv4'), T('Automatique (DHCP) ou adresse fixe'))
+    + row('openTrueNASPage(\'/ui/network\')', T('Réglages avancés'), T('Agrégation, VLAN, pont : dans l\'interface TrueNAS'))
+    + '</div><div id="net-pending"></div>';
+  netBody().innerHTML = h;
+}
+function netGlobalView() {
+  var c = _netCfg || {}, mono = function(v) { return v ? '<span class="mono">' + webEsc(v) + '</span>' : ''; };
+  netHead(T('Configuration globale'), { sub: T('Nom du NAS, passerelle et serveurs DNS.'),
+    actions: '<button class="fs-btn" onclick="openTrueNASPage(\'/ui/network\')">' + T('Modifier dans TrueNAS') + '</button>' });
+  var rows = [
+    [T('Nom d\'hôte'), mono(c.hostname)], [T('Domaine'), mono(c.domain)],
+    [T('Passerelle IPv4'), mono(c.ipv4gateway)], [T('Passerelle IPv6'), mono(c.ipv6gateway)],
+    ['DNS 1', mono(c.nameserver1)], ['DNS 2', mono(c.nameserver2)], ['DNS 3', mono(c.nameserver3)]
+  ];
+  netBody().innerHTML = rows.some(function(r) { return r[1]; }) ? netFacts(rows)
+    : '<div class="empty-state" style="height:200px;"><span>' + T('Configuration globale indisponible') + '</span></div>';
+}
+// Adresse IPv4 d'une interface : automatique ou fixe.
+function networkEditIface(ifaceId) { _netNav = 'iface'; _netSel = String(ifaceId); netIpv4Form(); }
+function netIpv4Form() {
+  var iface = netIface(_netSel);
+  if (!iface) { loadNetwork(); return; }
+  var n = netInfo(iface), cur = (iface.aliases || []).filter(function(a) { return a.type === 'INET'; })[0] || {};
+  netHead(T('Adresse IPv4'), { back: [iface.name || _netSel, 'netGo(\'iface\')'], narrow: true });
+  netBody().innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;">'
+    + formRow(T('Attribution'), '<select id="net-mode" style="' + iStyle() + '" onchange="document.getElementById(\'net-static\').style.display=this.value===\'static\'?\'grid\':\'none\'">'
+      + '<option value="dhcp">' + T('Automatique (DHCP)') + '</option><option value="static">' + T('Adresse fixe') + '</option></select>')
+    + '<div id="net-static" style="display:none;grid-template-columns:minmax(0,1fr) 130px;gap:10px;">'
+    + formRow(T('Adresse'), '<input id="net-ip" value="' + webEsc(cur.address || '') + '" placeholder="192.168.1.10" inputmode="decimal" autocomplete="off" style="' + iStyle() + ';font-family:var(--font-mono);" />')
+    + formRow(T('Longueur du masque'), '<input id="net-mask" type="number" min="1" max="32" value="' + webEsc(cur.netmask || 24) + '" style="' + iStyle() + ';font-family:var(--font-mono);" />')
+    + '</div>'
+    + '<p class="web-note" style="margin:0;">' + T('Le changement coupe brièvement la connexion. Le NAS ne le garde que s\'il reste joignable ensuite ; sinon il revient de lui-même à l\'ancien réglage au bout d\'une minute.') + '</p>'
+    + '<div class="web-foot"><button class="fs-btn" onclick="netGo(\'iface\')">' + T('Annuler') + '</button>'
+    + '<button class="fs-btn web-primary" id="net-save-btn" onclick="netIpv4Save()">' + T('Enregistrer') + '</button></div></div>';
+  var sel = document.getElementById('net-mode');
+  sel.value = n.dhcp ? 'dhcp' : 'static';
+  sel.onchange();
+}
+function netSleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+async function netIpv4Save() {
+  var iface = netIface(_netSel);
+  if (!iface) return;
+  var id = iface.id || iface.name, payload = {};
+  if (document.getElementById('net-mode').value === 'dhcp') {
+    payload.ipv4_dhcp = true; payload.aliases = [];
+  } else {
+    var ip = document.getElementById('net-ip').value.trim(), mask = parseInt(document.getElementById('net-mask').value, 10);
+    var okIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(ip) && ip.split('.').every(function(o) { return Number(o) <= 255; });
+    if (!okIp || !(mask >= 1 && mask <= 32)) { toast(T('Adresse invalide. Exemple : 192.168.1.10, masque de longueur 24.')); return; }
+    payload.ipv4_dhcp = false;
+    payload.aliases = [{ type: 'INET', address: ip, netmask: mask }];
+  }
+  var btn = document.getElementById('net-save-btn');
+  if (btn) btn.disabled = true;
+  try {
+    await socketCall('/interface/id/' + encodeURIComponent(id), 'PUT', payload);
+  } catch(e) { toast(T('Erreur: ') + e.message); if (btn) btn.disabled = false; return; }
+  if (!await showConfirm(T('Valider les changements réseau ?<br><span style="font-size:12px;color:var(--warning);">La connexion sera brièvement interrompue.</span>'), {ok:T('Valider'), icon:'🌐'})) {
+    try { await wsCall('interface.rollback', []); } catch(_) {}   // on ne laisse pas un changement en suspens dans TrueNAS
+    toast(T('Changement abandonné'));
+    loadNetwork();
+    return;
+  }
+  netHead(T('Adresse IPv4'), { back: [iface.name || String(id), 'netGo(\'iface\')'] });
+  netBody().innerHTML = dkWaitHtml('busy', T('Application du changement…'), T('Le bureau vérifie que le NAS répond toujours.'));
+  // L'appel peut ne jamais répondre si l'adresse qu'on utilise vient de changer : on n'attend pas plus de dix secondes.
+  await Promise.race([socketCall('/interface/commit', 'POST', { rollback: true, checkin_timeout: 60 }).catch(function() {}), netSleep(10000)]);
+  // Confirmation : sans elle, TrueNAS annule le changement au bout du délai. On ne confirme que si le NAS répond encore.
+  var kept = false;
+  for (var i = 0; i < 8 && !kept; i++) {
+    await netSleep(3000);
+    try { await wsEnsureAuthenticated(6000); await wsCall('interface.checkin', [], 8000); kept = true; } catch(_) {}
+  }
+  if (kept) { toast(T('✅ Configuration réseau enregistrée')); loadNetwork(); return; }
+  netBody().innerHTML = dkWaitHtml('error', T('Le NAS ne répond plus à cette adresse'),
+    T('Sans confirmation, il annule le changement de lui-même au bout d\'une minute. Si tu as changé l\'adresse par laquelle tu ouvres le bureau, rouvre-le à la nouvelle adresse dans la minute : la fenêtre Réseau te proposera de garder le changement.'),
+    '<button class="web-open" onclick="loadNetwork()">' + T('Réessayer') + '</button>');
+}
+// Un changement réseau attend-il sa confirmation (bureau rouvert à une nouvelle adresse) ?
+async function netPendingCheck(auto) {
+  var left = null;
+  try { left = await wsCall('interface.checkin_waiting', [], 8000); } catch(_) { return; }
+  if (!(typeof left === 'number' && left > 0)) return;
+  var win = document.getElementById('win-network');
+  if (auto && !(win && win.classList.contains('visible'))) { openApp('network'); return; }   // loadNetwork reviendra ici
+  var box = document.getElementById('net-pending');
+  if (!box) return;
+  box.innerHTML = '<div class="web-group" style="margin-top:18px;border-color:rgba(245,158,11,0.4);"><div class="web-row"><span class="web-row-text">'
+    + '<span class="web-row-name">' + T('Un changement réseau attend ta confirmation') + '</span>'
+    + '<span class="web-row-desc">' + Tf('Sans confirmation, le NAS revient à l\'ancien réglage dans {0} secondes.', Math.round(left)) + '</span></span>'
+    + '<button class="fs-btn" onclick="netPendingAnswer(false)">' + T('Annuler le changement') + '</button>'
+    + '<button class="web-open" onclick="netPendingAnswer(true)">' + T('Garder') + '</button></div></div>';
+}
+async function netPendingAnswer(keep) {
+  try {
+    await wsCall(keep ? 'interface.checkin' : 'interface.rollback', [], 15000);
+    toast(keep ? T('✅ Configuration réseau enregistrée') : T('Changement annulé'));
+  } catch(e) { toast('❌ ' + e.message); }
+  loadNetwork();
+}
 
 // ============================================================
 // USERS
