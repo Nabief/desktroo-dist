@@ -1991,6 +1991,75 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   html #taskbar[data-ink="light"] .taskbar-app-btn::after { background:var(--brand); }
   .look-disc.on-dark svg { color:#fff; }
 
+
+  /* ===== WIDGETS : colonne défilante, widgets choisis dans le gestionnaire =====
+     La colonne laisse passer les clics entre les widgets ; elle défile quand l'écran est trop court. */
+  #widgets {
+    top:var(--wa-t); right:var(--wa-r); width:300px; max-height:calc(100vh - var(--wa-t) - var(--wa-b));
+    padding:16px 16px 28px 24px; overflow:hidden auto; scrollbar-width:none; pointer-events:none;
+  }
+  #widgets::-webkit-scrollbar { display:none; }
+  #widgets > .widget { pointer-events:auto; flex-shrink:0; }
+  .widget[hidden] { display:none; }
+  .widget-title-side { margin-left:auto; font-weight:500; letter-spacing:0; text-transform:none; font-size:11.5px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+  .widget-link { cursor:pointer; }
+  .widget-msg { font-size:12px; line-height:1.5; color:var(--text-dim); }
+  .widget-msg button { margin-top:9px; }
+
+  /* Ressources système : deux jauges, puis température et durée de fonctionnement sur une même ligne, à la même taille. */
+  .sys-rings { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .sys-ring { text-align:center; min-width:0; }
+  .sys-ring .mini-gauge { margin-bottom:6px; }
+  .sys-ring .mini-gauge-text { font-size:15px; font-variant-numeric:tabular-nums; }
+  .sys-lbl { font-size:11px; font-weight:600; color:var(--text); margin-top:0; }
+  .sys-sub { min-height:14px; margin-top:1px; font-size:10px; line-height:1.4; color:var(--text-dim); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .sys-facts { display:grid; grid-template-columns:1fr 1fr; margin-top:12px; padding-top:12px; border-top:1px solid var(--glass-border); }
+  .sys-fact { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; }
+  .sys-fact + .sys-fact { border-left:1px solid var(--glass-border); }
+  .sys-fact-val { font-size:17px; font-weight:700; line-height:1.15; color:var(--text); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .sys-fact-lbl { font-size:10px; line-height:1.3; color:var(--text-dim); }
+
+  /* Réseau : débit du moment et courbe de la dernière heure */
+  .nw-rates { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .nw-rate { min-width:0; }
+  .nw-rate-lbl { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text-dim); }
+  .nw-rate-lbl::before { content:''; width:9px; height:3px; border-radius:2px; background:var(--nw); }
+  .nw-rate-val { margin-top:2px; font-size:15px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .nw-rx { --nw:var(--accent2); }
+  .nw-tx { --nw:var(--info); }
+  .nw-chart { display:block; width:100%; height:58px; margin-top:10px; overflow:visible; }
+  .nw-chart .nw-grid { stroke:var(--glass-border); stroke-width:1; vector-effect:non-scaling-stroke; }
+  .nw-chart path { fill:none; stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+  .nw-chart .nw-line-rx { stroke:var(--accent2); }
+  .nw-chart .nw-area-rx { fill:rgba(var(--accent-rgb),0.16); stroke:none; }
+  .nw-chart .nw-line-tx { stroke:var(--info); }
+  .nw-foot { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+
+  /* Météo */
+  .wx-now { display:flex; align-items:center; gap:12px; }
+  .wx-ic { flex:0 0 auto; width:44px; height:44px; color:var(--accent2); }
+  .wx-ic svg, .wx-di svg { display:block; width:100%; height:100%; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .wx-temp { font-size:34px; font-weight:300; line-height:1; letter-spacing:-0.5px; color:var(--text); font-variant-numeric:tabular-nums; }
+  .wx-desc { min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .wx-desc b { font-size:12.5px; font-weight:600; color:var(--text); }
+  .wx-desc span { font-size:10.5px; line-height:1.35; color:var(--text-dim); }
+  .wx-days { display:grid; grid-template-columns:repeat(3, 1fr); margin-top:12px; padding-top:11px; border-top:1px solid var(--glass-border); }
+  .wx-day { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
+  .wx-day + .wx-day { border-left:1px solid var(--glass-border); }
+  .wx-dn { font-size:10.5px; color:var(--text-dim); }
+  .wx-di { width:22px; height:22px; color:var(--text); }
+  .wx-dt { font-size:11.5px; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+  .wx-dt b { font-weight:700; color:var(--text); margin-right:4px; }
+  .wx-src { margin-top:10px; font-size:9.5px; color:var(--text-dim); text-align:right; }
+  .wx-src a { color:inherit; }
+
+  /* Gestionnaire de widgets (Panneau de configuration) */
+  .wg-places { display:flex; flex-direction:column; gap:0; margin-top:10px; }
+  .wg-city { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border:1px solid var(--glass-border); border-radius:13px; background:rgba(255,255,255,0.03); font-size:13px; }
+  [data-theme="light"] .wg-city { background:rgba(255,255,255,0.7); }
+  .wg-city b { font-weight:600; }
+  .wg-city span { color:var(--text-dim); font-size:12px; }
+
   #wallpaper.custom-bg { background-color:#0a1220; }
   #wallpaper.custom-bg::before,
   #wallpaper.custom-bg::after { display:none !important; }
@@ -5952,7 +6021,56 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Masquer la barre automatiquement": "Hide the bar automatically",
 "Réglages de la barre système": "System bar settings",
 "Le logo au milieu de la barre disparaît ; la place revient aux fenêtres ouvertes.": "The logo in the middle of the bar goes away; the space goes to the open windows.",
-"Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre propose les plus courants.": "These settings are kept in this browser. Right-clicking the bar offers the most common ones."
+"Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre propose les plus courants.": "These settings are kept in this browser. Right-clicking the bar offers the most common ones.",
+"Horloge": "Clock",
+"Heure, date et nom du NAS": "Time, date and NAS name",
+"Météo": "Weather",
+"Temps du moment et prévisions sur trois jours": "Current weather and a three-day forecast",
+"Processeur, mémoire, température et durée de fonctionnement": "Processor, memory, temperature and uptime",
+"Débit reçu et envoyé sur la dernière heure": "Received and sent traffic over the last hour",
+"Remplissage et état des pools": "Pool usage and health",
+"Alertes en cours et mises à jour disponibles": "Current alerts and available updates",
+"Averses": "Showers",
+"Pluie faible": "Light rain",
+"Forte pluie": "Heavy rain",
+"Pluie": "Rain",
+"Orage": "Thunderstorm",
+"Pluie et neige": "Sleet",
+"Neige": "Snow",
+"Brouillard": "Fog",
+"Éclaircies": "Partly cloudy",
+"Peu nuageux": "Fair",
+"Ciel dégagé": "Clear sky",
+"Couvert": "Cloudy",
+"Aucune ville choisie.": "No city chosen.",
+"Choisir une ville": "Choose a city",
+"Météo indisponible pour le moment. Le NAS a besoin d'un accès à Internet.": "Weather unavailable right now. The NAS needs Internet access.",
+"Vent {0} km/h": "Wind {0} km/h",
+"Humidité {0} %": "Humidity {0}%",
+"Prévisions {0}": "Forecast by {0}",
+"Météo réglée sur {0}": "Weather set to {0}",
+"Mesures réseau indisponibles pour le moment.": "Network measurements unavailable right now.",
+"Débit réseau sur la dernière heure": "Network traffic over the last hour",
+"pic {0}": "peak {0}",
+"Les panneaux d'information affichés sur le bureau, à côté des icônes.": "The information panels shown on the desktop, next to the icons.",
+"Afficher les widgets": "Show widgets",
+"Toute la colonne, d'un seul geste. Le clic droit sur le bureau fait la même chose.": "The whole column at once. Right-clicking the desktop does the same.",
+"Widgets affichés": "Widgets shown",
+"Nom d'une ville": "City name",
+"Recherche...": "Searching...",
+"Chercher": "Search",
+"La recherche n'a pas abouti. Le NAS a besoin d'un accès à Internet.": "The search failed. The NAS needs Internet access.",
+"Aucune ville trouvée pour « {0} ».": "No city found for “{0}”.",
+"Prévisions de MET Norway, recherche de ville par OpenStreetMap. C'est le NAS qui les interroge : il lui faut un accès à Internet, et seule la position de la ville, arrondie au kilomètre, leur est envoyée.": "Forecasts from MET Norway, city search by OpenStreetMap. The NAS queries them itself: it needs Internet access, and only the city's position, rounded to the kilometer, is sent to them.",
+"Interface suivie": "Interface shown",
+"Automatique : la plus active ({0})": "Automatic: the busiest ({0})",
+"Automatique : la plus active": "Automatic: the busiest",
+"La liste des interfaces apparaît une fois le widget Réseau affiché.": "The interface list appears once the Network widget is shown.",
+"Ces réglages sont gardés dans ce navigateur.": "These settings are kept in this browser.",
+"Horloge, météo, ressources, réseau, stockage, alertes": "Clock, weather, resources, network, storage, alerts",
+"1 cœur": "1 core",
+"🧩 Gérer les widgets": "🧩 Manage widgets",
+"Ouvrir les rapports réseau": "Open the network reports"
 }
 </script>
 <script id="dk-i18n">
@@ -6313,8 +6431,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <!-- WIDGETS -->
 <div id="widgets" style="display:none;">
-  <!-- Clock -->
-  <div class="widget">
+  <!-- Horloge -->
+  <div class="widget" data-w="clock">
     <div class="clock-display">
       <div class="clock-time" id="clock-time">--:--:--</div>
       <div class="clock-date" id="clock-date">Chargement...</div>
@@ -6322,38 +6440,53 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>
   </div>
 
-  <!-- System Resources -->
-  <div class="widget">
+  <!-- Météo (masquée tant qu'on ne l'a pas choisie dans le gestionnaire de widgets) -->
+  <div class="widget" data-w="weather" id="widget-weather" hidden>
+    <div class="widget-title">Météo<span class="widget-title-side" id="wx-place" translate="no"></span></div>
+    <div id="wx-body"></div>
+  </div>
+
+  <!-- Ressources système : deux jauges, puis température et durée de fonctionnement à la même taille -->
+  <div class="widget" data-w="sys">
     <div class="widget-title">Ressources système</div>
-    <div class="sys-grid" id="sys-grid">
-      <div class="sys-stat">
+    <div class="sys-rings" id="sys-grid">
+      <div class="sys-ring">
         <div class="mini-gauge" id="cpu-gauge">
           <svg viewBox="0 0 56 56"><defs><linearGradient id="cpuGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--info)"/></linearGradient></defs><circle class="mini-gauge-bg" cx="28" cy="28" r="22"/><circle class="mini-gauge-fill" id="cpu-fill" cx="28" cy="28" r="22" stroke="url(#cpuGrad)" stroke-dasharray="138.2" stroke-dashoffset="138.2"/></svg>
           <div class="mini-gauge-text" id="cpu-pct">0%</div>
         </div>
         <div class="sys-lbl">CPU</div>
+        <div class="sys-sub" id="cpu-cores-lbl"></div>
       </div>
-      <div class="sys-stat">
+      <div class="sys-ring">
         <div class="mini-gauge" id="mem-gauge">
           <svg viewBox="0 0 56 56"><defs><linearGradient id="memGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs><circle class="mini-gauge-bg" cx="28" cy="28" r="22"/><circle class="mini-gauge-fill" id="mem-fill" cx="28" cy="28" r="22" stroke="url(#memGrad)" stroke-dasharray="138.2" stroke-dashoffset="138.2"/></svg>
           <div class="mini-gauge-text" id="mem-pct">0%</div>
         </div>
         <div class="sys-lbl">RAM</div>
-        <div id="mem-bytes-lbl" style="font-size:10px;color:var(--text-dim);margin-top:2px;text-align:center;"></div>
+        <div class="sys-sub" id="mem-bytes-lbl"></div>
       </div>
-      <div class="sys-stat">
-        <div class="sys-val" id="cpu-temp-val" style="color:#f59e0b;">--°C</div>
-        <div class="sys-lbl">Température</div>
+    </div>
+    <div class="sys-facts">
+      <div class="sys-fact">
+        <div class="sys-fact-val" id="cpu-temp-val">--°C</div>
+        <div class="sys-fact-lbl">Température</div>
       </div>
-      <div class="sys-stat">
-        <div class="sys-val" id="uptime-val" style="font-size:14px;">--</div>
-        <div class="sys-lbl">Uptime</div>
+      <div class="sys-fact">
+        <div class="sys-fact-val" id="uptime-val">--</div>
+        <div class="sys-fact-lbl">Uptime</div>
       </div>
     </div>
   </div>
 
-  <!-- Storage -->
-  <div class="widget">
+  <!-- Réseau : débit du moment et courbe de la dernière heure -->
+  <div class="widget widget-link" data-w="net" id="widget-net" onclick="openApp('reports');rpGo('net')" title="Ouvrir les rapports réseau">
+    <div class="widget-title">Réseau<span class="widget-title-side" id="nw-if" translate="no"></span></div>
+    <div id="nw-body"><div class="widget-msg">Chargement...</div></div>
+  </div>
+
+  <!-- Stockage -->
+  <div class="widget" data-w="pools">
     <div class="widget-title">Stockage</div>
     <div id="widget-pools">
       <div class="fs-loading"><div class="spinner"></div> Chargement...</div>
@@ -6361,7 +6494,7 @@ document.addEventListener('DOMContentLoaded', function () {
   </div>
 
   <!-- Notifications -->
-  <div class="widget" id="widget-notifs">
+  <div class="widget" data-w="notifs" id="widget-notifs">
     <div class="widget-title">Notifications</div>
     <div id="notif-list">
       <div class="notif-item">
@@ -6653,6 +6786,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="ctx-item" onclick="ctxRefresh()">↻ Actualiser le bureau</div>
   <div class="ctx-item" onclick="deskIconsReset()">▦ Ranger les icônes</div>
   <div class="ctx-item" onclick="ctxToggleWidgets()">📊 Afficher/masquer widgets</div>
+  <div class="ctx-item" onclick="dkWidgetsManage()">🧩 Gérer les widgets</div>
   <div class="ctx-item" onclick="pickWallpaper()">🖼️ Fond d’écran</div>
   <div class="ctx-item" onclick="openDownloads()">⬇️ Téléchargements</div>
   <hr class="ctx-separator">
@@ -7014,7 +7148,7 @@ function enterDesktop(sysInfo) {
   setTimeout(() => {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('desktop').classList.add('visible');
-    document.getElementById('widgets').style.display = 'flex';
+    dkWidgetsApply();
     document.getElementById('taskbar').style.display = 'flex';
     dkBarApply(); dkBarReveal(2200);   // masquage automatique : la barre se montre un instant à l'arrivée
     initDesktop(sysInfo);
@@ -7032,6 +7166,7 @@ function initDesktop(sysInfo) {
   startClock();
   loadWidgetData();
   refreshInterval = setInterval(loadWidgetData, 60000); // toutes les 60s pour éviter le spam
+  nwStart();
   dlBadgeStart();
   setTimeout(function() { netPendingCheck(true); }, 2500);
   jobsBadgeStart();
@@ -7106,7 +7241,7 @@ function startClock() {
 // WIDGET DATA LOADER
 // ===========================
 async function loadWidgetData() {
-  await Promise.allSettled([loadPools(), loadSysStats(), loadNotifs()]);
+  await Promise.allSettled([loadPools(), loadSysStats(), loadNotifs(), loadWeather(), loadNetWidget()]);
 }
 
 function fmtBytes(bytes) {
@@ -7139,6 +7274,8 @@ async function loadSysStats() {
     // Nombre de cœurs pour normaliser le CPU%
     if (info.cores)          cpuCores = info.cores;
     else if (info.physical_cores) cpuCores = info.physical_cores;
+    var coresLbl = document.getElementById('cpu-cores-lbl');
+    if (coresLbl && (info.cores || info.physical_cores)) coresLbl.textContent = cpuCores > 1 ? Tf('{0} cœurs', cpuCores) : T('1 cœur');
 
     // RAM : usage via reporting/get_data
     try {
@@ -12717,11 +12854,8 @@ function ctxRefresh() {
 }
 function ctxToggleWidgets() {
   ctxHideMenu();
-  var w = document.getElementById('widgets');
-  if (!w) return;
-  var hidden = (w.style.display === 'none');
-  w.style.display = hidden ? '' : 'none';
-  try { localStorage.setItem('tn-widgets', hidden ? 'shown' : 'hidden'); } catch(e) {}
+  var hidden = !dkWidgetsShown();
+  dkWidgetsShow(hidden);
   toast(hidden ? T('📊 Widgets affichés') : T('📊 Widgets masqués'));
 }
 
@@ -14200,6 +14334,7 @@ function logout() {
   localStorage.removeItem('tn-basic');
   localStorage.removeItem('tn-user');
   clearInterval(refreshInterval); refreshInterval = null;
+  nwStop();
   // Fermer les fenêtres ouvertes
   document.querySelectorAll('.window.visible').forEach(function(w){ w.classList.remove('visible'); });
   document.getElementById('taskbar-apps').innerHTML = '';
@@ -17843,6 +17978,296 @@ function cpBarView() {
 dkBarApply();
 
 // ===========================
+// WIDGETS — choix des widgets affichés, météo, débit réseau
+// Le choix est gardé dans ce navigateur : « dk-widgets » (un oui/non par widget), « tn-widgets » (toute la colonne),
+// « dk-weather » (la ville), « dk-net-if » (l'interface suivie ; vide : la plus active).
+// ===========================
+function dkWidgetList() {
+  return [
+    { id: 'clock', label: T('Horloge'), desc: T('Heure, date et nom du NAS') },
+    { id: 'weather', label: T('Météo'), desc: T('Temps du moment et prévisions sur trois jours'), off: true },
+    { id: 'sys', label: T('Ressources système'), desc: T('Processeur, mémoire, température et durée de fonctionnement') },
+    { id: 'net', label: T('Réseau'), desc: T('Débit reçu et envoyé sur la dernière heure') },
+    { id: 'pools', label: T('Stockage'), desc: T('Remplissage et état des pools') },
+    { id: 'notifs', label: 'Notifications', desc: T('Alertes en cours et mises à jour disponibles') }
+  ];
+}
+function dkWidgetsGet() {
+  var s = {}, out = {};
+  try { s = JSON.parse(localStorage.getItem('dk-widgets') || '{}') || {}; } catch (e) {}
+  dkWidgetList().forEach(function(w) { out[w.id] = typeof s[w.id] === 'boolean' ? s[w.id] : !w.off; });
+  return out;
+}
+function dkWidgetsShown() { try { return localStorage.getItem('tn-widgets') !== 'hidden'; } catch (e) { return true; } }
+function dkWidgetOn(id) { return dkWidgetsShown() && !!dkWidgetsGet()[id]; }
+function dkWidgetsApply() {
+  var w = document.getElementById('widgets'), desk = document.getElementById('desktop'), on = dkWidgetsGet();
+  if (!w) return;
+  Array.prototype.forEach.call(w.querySelectorAll('.widget[data-w]'), function(el) { el.hidden = !on[el.getAttribute('data-w')]; });
+  if (desk && desk.classList.contains('visible')) w.style.display = dkWidgetsShown() ? 'flex' : 'none';   // jamais sur l'écran de connexion
+}
+function dkWidgetsShow(on) {
+  try { localStorage.setItem('tn-widgets', on ? 'shown' : 'hidden'); } catch (e) {}
+  dkWidgetsApply();
+  if (on) { loadWeather(); loadNetWidget(); }
+  if (wmVisible('control') && _cp.nav === 'widgets') loadControl();
+}
+function dkWidgetSet(id, on) {
+  var s = dkWidgetsGet();
+  s[id] = !!on;
+  try { localStorage.setItem('dk-widgets', JSON.stringify(s)); } catch (e) {}
+  dkWidgetsApply();
+  if (on && id === 'weather') loadWeather();
+  if (on && id === 'net') loadNetWidget();
+  if (wmVisible('control') && _cp.nav === 'widgets') loadControl();
+}
+function dkWidgetsManage() { openApp('control'); cpGo('widgets'); }
+
+// ── Météo : prévisions de MET Norway, demandées par le NAS ──
+var _wx = { key: '', at: 0, data: null, err: '', places: null, q: '', busy: false };
+function wxPlace() {
+  try {
+    var p = JSON.parse(localStorage.getItem('dk-weather') || 'null');
+    if (p && typeof p.lat === 'number' && typeof p.lon === 'number' && p.name) return p;
+  } catch (e) {}
+  return null;
+}
+// Symbole du service (« lightrainshowers_day »…) → famille de temps.
+function wxKind(sym) {
+  var s = String(sym || ''), b = s.replace(/_(day|night|polartwilight)$/, '');
+  var k = /thunder/.test(b) ? 'thunder' : /sleet/.test(b) ? 'sleet' : /snow/.test(b) ? 'snow' : /rain/.test(b) ? 'rain'
+    : b === 'fog' ? 'fog' : b === 'partlycloudy' ? 'partly' : b === 'fair' ? 'fair' : b === 'clearsky' ? 'clear' : 'cloud';
+  return { kind: k, night: /_night$/.test(s), light: /^light/.test(b), heavy: /^heavy/.test(b), showers: /showers/.test(b) };
+}
+function wxLabel(k) {
+  if (k.kind === 'rain') return k.showers ? T('Averses') : (k.light ? T('Pluie faible') : (k.heavy ? T('Forte pluie') : T('Pluie')));
+  return { thunder: T('Orage'), sleet: T('Pluie et neige'), snow: T('Neige'), fog: T('Brouillard'), partly: T('Éclaircies'), fair: T('Peu nuageux'), clear: T('Ciel dégagé'), cloud: T('Couvert') }[k.kind];
+}
+function wxIcon(k) {
+  var sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>';
+  var moon = '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>';
+  var cloud = '<path d="M7 16h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7 6.8 4.6 4.6 0 0 0 7 16z"/>';
+  var low = '<path d="M9.5 20h8a3.5 3.5 0 0 0 .5-6.96A4.8 4.8 0 0 0 8.9 12 4 4 0 0 0 9.5 20z"/>';
+  var small = k.night ? '<path d="M12.6 3.2a4.2 4.2 0 1 0 4.9 5.4 3.4 3.4 0 0 1-4.9-5.4z"/>' : '<circle cx="8" cy="8" r="3"/><path d="M8 2.2v1.6M2.2 8h1.6M3.9 3.9 5 5M12.1 3.9 11 5"/>';
+  var body = {
+    clear: k.night ? moon : sun,
+    fair: small + low, partly: small + low,
+    cloud: '<path d="M7 18.5h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7 9.3 4.6 4.6 0 0 0 7 18.5z"/>',
+    rain: cloud + '<path d="M8.5 18.5l-1 2.5M12.5 18.5l-1 2.5M16.5 18.5l-1 2.5"/>',
+    snow: cloud + '<path stroke-width="2.4" d="M8 19.5h.01M12 19.5h.01M16 19.5h.01M10 22h.01M14 22h.01"/>',
+    sleet: cloud + '<path d="M9 18.5l-1 2.5M15.5 18.5l-1 2.5"/><path stroke-width="2.4" d="M12 20h.01"/>',
+    fog: cloud + '<path d="M5 19h14M7.5 22h9"/>',
+    thunder: cloud + '<path d="M12.5 16.5 10 20h3.5l-2 3"/>'
+  }[k.kind];
+  return '<svg viewBox="0 0 24 24" aria-hidden="true">' + body + '</svg>';
+}
+function wxRender() {
+  var el = document.getElementById('wx-body'), side = document.getElementById('wx-place'), place = wxPlace();
+  if (!el) return;
+  if (side) side.textContent = place ? place.name : '';
+  if (!place) {
+    el.innerHTML = '<div class="widget-msg">' + T('Aucune ville choisie.') + '<br><button class="fs-btn" onclick="dkWidgetsManage()">' + T('Choisir une ville') + '</button></div>';
+    return;
+  }
+  var d = _wx.data;
+  if (!d) { el.innerHTML = '<div class="widget-msg">' + (_wx.err ? T('Météo indisponible pour le moment. Le NAS a besoin d\'un accès à Internet.') : T('Chargement...')) + '</div>'; return; }
+  var hours = d.hours.map(function(h) { return { t: Date.parse(h.t), temp: Number(h.temp), wind: h.wind, hum: h.hum, sym: h.sym }; })
+    .filter(function(h) { return isFinite(h.t) && isFinite(h.temp); });
+  if (!hours.length) { el.innerHTML = '<div class="widget-msg">' + T('Météo indisponible pour le moment. Le NAS a besoin d\'un accès à Internet.') + '</div>'; return; }
+  var now = Date.now(), cur = hours[0];
+  hours.forEach(function(h) { if (h.t <= now + 30 * 60000) cur = h; });
+  // Les trois jours suivants : extrêmes de la journée, et le temps qu'il fait vers 13 h.
+  var today = new Date(now).toDateString(), byDay = {}, order = [];
+  hours.forEach(function(h) {
+    var k = new Date(h.t).toDateString();
+    if (k === today || h.t < now) return;
+    if (!byDay[k]) { byDay[k] = { t: h.t, min: h.temp, max: h.temp, sym: h.sym, gap: 99 }; order.push(k); }
+    var g = byDay[k], gap = Math.abs(new Date(h.t).getHours() - 13);
+    g.min = Math.min(g.min, h.temp); g.max = Math.max(g.max, h.temp);
+    if (h.sym && gap < g.gap) { g.gap = gap; g.sym = h.sym; }
+  });
+  var deg = function(v) { return Math.round(v) + '°'; }, k = wxKind(cur.sym);
+  var facts = isFinite(Number(cur.wind)) && cur.wind != null ? Tf('Vent {0} km/h', Math.round(Number(cur.wind) * 3.6)) : '';
+  var hum = isFinite(Number(cur.hum)) && cur.hum != null ? Tf('Humidité {0} %', Math.round(Number(cur.hum))) : '';
+  var h = '<div class="wx-now"><span class="wx-ic">' + wxIcon(k) + '</span><span class="wx-temp">' + deg(cur.temp) + '</span>'
+    + '<span class="wx-desc"><b>' + webEsc(wxLabel(k)) + '</b>' + (facts ? '<span>' + webEsc(facts) + '</span>' : '') + (hum ? '<span>' + webEsc(hum) + '</span>' : '') + '</span></div>';
+  var days = order.slice(0, 3);
+  if (days.length) {
+    h += '<div class="wx-days">';
+    days.forEach(function(key) {
+      var g = byDay[key], dk = wxKind(String(g.sym).replace(/_night$/, '_day'));
+      h += '<div class="wx-day" title="' + webEsc(wxLabel(dk)) + '"><span class="wx-dn">' + webEsc(new Date(g.t).toLocaleDateString(DK_LOCALE, { weekday: 'short' })) + '</span><span class="wx-di">' + wxIcon(dk) + '</span>'
+        + '<span class="wx-dt"><b>' + deg(g.max) + '</b>' + deg(g.min) + '</span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="wx-src">' + Tf('Prévisions {0}', '<a href="https://www.met.no/en" target="_blank" rel="noopener noreferrer">MET Norway</a>') + '</div>';
+  el.innerHTML = h;
+}
+async function loadWeather(force) {
+  if (!dkWidgetOn('weather')) return;
+  var p = wxPlace();
+  if (!p) { wxRender(); return; }
+  var key = p.lat + ',' + p.lon;
+  if (!force && _wx.key === key && Date.now() - _wx.at < 20 * 60000) { wxRender(); return; }
+  if (_wx.key !== key) { _wx.data = null; _wx.err = ''; }
+  _wx.key = key; _wx.at = Date.now();
+  wxRender();
+  try {
+    var d = await fileops('GET', 'weather?lat=' + encodeURIComponent(p.lat) + '&lon=' + encodeURIComponent(p.lon));
+    if (_wx.key !== key) return;
+    if (!d || !Array.isArray(d.hours) || !d.hours.length) throw new Error('EMPTY');
+    _wx.data = d; _wx.err = '';
+  } catch (e) {
+    if (_wx.key !== key) return;
+    _wx.err = (e && e.message) || String(e);
+    _wx.at = Date.now() - 17 * 60000;   // nouvel essai dans trois minutes
+  }
+  wxRender();
+}
+// Recherche d'une ville (gestionnaire de widgets) : au clic sur « Chercher », jamais à la frappe.
+async function wxSearch() {
+  var q = wmVal('wx-q');
+  if (q.length < 2 || _wx.busy) return;
+  _wx.busy = true; _wx.q = q; _wx.places = null; _wx.searchErr = '';
+  loadControl();
+  try {
+    var r = await fileops('GET', 'weather/search?q=' + encodeURIComponent(q) + '&lang=' + encodeURIComponent(String(DK_LOCALE || 'fr').slice(0, 2).toLowerCase()));
+    _wx.places = ensureArray(r && r.places);
+  } catch (e) { _wx.places = []; _wx.searchErr = (e && e.message) || String(e); }
+  _wx.busy = false;
+  if (wmVisible('control') && _cp.nav === 'widgets') loadControl();
+}
+function wxChoose(i) {
+  var p = (_wx.places || [])[i];
+  if (!p) return;
+  try { localStorage.setItem('dk-weather', JSON.stringify({ name: p.name, region: p.region || '', lat: Number(p.lat), lon: Number(p.lon) })); } catch (e) {}
+  _wx.places = null; _wx.q = '';
+  if (!dkWidgetsGet().weather) dkWidgetSet('weather', true); else { loadWeather(true); if (wmVisible('control') && _cp.nav === 'widgets') loadControl(); }
+  toast(Tf('Météo réglée sur {0}', p.name));
+}
+
+// ── Réseau : débit du moment et courbe de la dernière heure (mesures de TrueNAS) ──
+var _nw = { ids: null, unit: '', auto: '', autoAt: 0, seq: 0, timer: null };
+function nwChosen() { try { return localStorage.getItem('dk-net-if') || ''; } catch (e) { return ''; } }
+function nwSetIface(v) {
+  try { if (v) localStorage.setItem('dk-net-if', v); else localStorage.removeItem('dk-net-if'); } catch (e) {}
+  _nw.autoAt = 0;
+  loadNetWidget();
+}
+// Une réponse de reporting.get_data → { times, rx, tx } ; « envoyé » est parfois compté en négatif.
+function nwParse(raw) {
+  var p = rpParse(raw), pick = function(re) { var s = p.series.find(function(x) { return re.test(x.key); }); return s ? s.values.map(function(v) { return v == null ? null : Math.abs(v); }) : null; };
+  return { times: p.times, rx: pick(/receiv|rx|in/i), tx: pick(/sent|tx|out/i) };
+}
+function nwMean(a) { var n = 0, s = 0; (a || []).forEach(function(v) { if (v != null) { n++; s += v; } }); return n ? s / n : 0; }
+async function loadNetWidget() {
+  if (!dkWidgetOn('net')) return;
+  var body = document.getElementById('nw-body'), side = document.getElementById('nw-if');
+  if (!body) return;
+  var seq = ++_nw.seq;
+  try {
+    if (!_nw.ids) {
+      var meta = ensureArray(await wsCall('reporting.netdata_graphs', [[], {}], 60000).catch(function() { return wsCall('reporting.graphs', [[], {}], 60000); }));
+      var m = meta.find(function(g) { return g && g.name === 'interface'; });
+      _nw.ids = m ? ensureArray(m.identifiers).map(String) : [];
+      _nw.unit = (m && m.vertical_label) || 'Kilobits/s';
+    }
+    if (!_nw.ids.length) throw new Error('NO_IFACE');
+    var id = nwChosen(), data = null;
+    if (id && _nw.ids.indexOf(id) < 0) id = '';
+    if (!id) {
+      // Automatique : l'interface la plus active de l'heure, réévaluée toutes les dix minutes ; les interfaces
+      // virtuelles (conteneurs, machines virtuelles) ne sont retenues que s'il n'y a rien d'autre.
+      if (!_nw.auto || _nw.ids.indexOf(_nw.auto) < 0 || Date.now() - _nw.autoAt > 600000) {
+        var real = _nw.ids.filter(function(i) { return !/^(lo$|veth|docker|br-|vnet|tap|kube|virbr|incusbr|macvtap|vb-)/.test(i); });
+        var cands = (real.length ? real : _nw.ids).slice(0, 8), best = null, bestV = -1;
+        var res = await Promise.allSettled(cands.map(function(i) { return rpFetch('interface', i, 'HOUR'); }));
+        res.forEach(function(r, n) {
+          if (r.status !== 'fulfilled') return;
+          var p = nwParse(r.value), v = nwMean(p.rx) + nwMean(p.tx);
+          if (v > bestV) { bestV = v; best = cands[n]; data = p; }
+        });
+        if (!best) throw new Error('NO_DATA');
+        _nw.auto = best; _nw.autoAt = Date.now();
+      }
+      id = _nw.auto;
+    }
+    if (!data) data = nwParse(await rpFetch('interface', id, 'HOUR'));
+    if (seq !== _nw.seq) return;
+    if (side) side.textContent = id;
+    nwRender(body, data);
+  } catch (e) {
+    if (seq !== _nw.seq) return;
+    if (side) side.textContent = '';
+    body.innerHTML = '<div class="widget-msg">' + T('Mesures réseau indisponibles pour le moment.') + '</div>';
+  }
+}
+function nwRender(body, d) {
+  var fmt = rpFormatter(_nw.unit).fmt, rx = d.rx || [], tx = d.tx || [], n = d.times.length;
+  if (n < 2 || (!d.rx && !d.tx)) { body.innerHTML = '<div class="widget-msg">' + T('Mesures réseau indisponibles pour le moment.') + '</div>'; return; }
+  var max = 0;
+  rx.concat(tx).forEach(function(v) { if (v != null && v > max) max = v; });
+  var top = max > 0 ? max * 1.12 : 1, W = 228, H = 58, t0 = d.times[0], span = (d.times[n - 1] - t0) || 1;
+  var path = function(vals) {
+    var out = '', pen = false;
+    vals.forEach(function(v, i) {
+      if (v == null) { pen = false; return; }
+      out += (pen ? 'L' : 'M') + ((d.times[i] - t0) / span * W).toFixed(1) + ' ' + (H - 1 - v / top * (H - 3)).toFixed(1);
+      pen = true;
+    });
+    return out;
+  };
+  var prx = path(rx), ptx = path(tx), area = '';
+  if (prx && rx[0] != null && rx.every(function(v) { return v != null; })) area = prx + 'L' + W + ' ' + H + 'L0 ' + H + 'Z';
+  var last = function(a) { var v = rpLast(a); return v == null ? '—' : fmt(v); };
+  body.innerHTML = '<div class="nw-rates">'
+    + '<div class="nw-rate nw-rx"><div class="nw-rate-lbl">' + T('Reçu') + '</div><div class="nw-rate-val">' + webEsc(last(rx)) + '</div></div>'
+    + '<div class="nw-rate nw-tx"><div class="nw-rate-lbl">' + T('Envoyé') + '</div><div class="nw-rate-val">' + webEsc(last(tx)) + '</div></div></div>'
+    + '<svg class="nw-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + webEsc(T('Débit réseau sur la dernière heure')) + '">'
+    + '<line class="nw-grid" x1="0" x2="' + W + '" y1="' + (H - 0.5) + '" y2="' + (H - 0.5) + '"/><line class="nw-grid" x1="0" x2="' + W + '" y1="' + (H / 2).toFixed(1) + '" y2="' + (H / 2).toFixed(1) + '" stroke-dasharray="2 4"/>'
+    + (area ? '<path class="nw-area-rx" d="' + area + '"/>' : '') + (ptx ? '<path class="nw-line-tx" d="' + ptx + '"/>' : '') + (prx ? '<path class="nw-line-rx" d="' + prx + '"/>' : '')
+    + '</svg><div class="nw-foot"><span>' + T('Dernière heure') + '</span><span>' + webEsc(Tf('pic {0}', fmt(max))) + '</span></div>';
+}
+// La courbe se rafraîchit toutes les trente secondes tant que le bureau est affiché.
+function nwStart() { nwStop(); _nw.timer = setInterval(function() { if (!document.hidden) loadNetWidget(); }, 30000); }
+function nwStop() { if (_nw.timer) { clearInterval(_nw.timer); _nw.timer = null; } }
+
+// ── Gestionnaire de widgets (page du Panneau de configuration) ──
+function cpWidgetsView() {
+  var on = dkWidgetsGet(), shown = dkWidgetsShown(), place = wxPlace();
+  wmHead('cp', 'Widgets', { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true, keepScroll: true,
+    sub: T('Les panneaux d\'information affichés sur le bureau, à côté des icônes.') });
+  var h = '<div class="web-group" style="margin-top:6px;">'
+    + wmSwitch('wg-all', T('Afficher les widgets'), T('Toute la colonne, d\'un seul geste. Le clic droit sur le bureau fait la même chose.'), shown, 'onchange="dkWidgetsShow(this.checked)"')
+    + '</div><div class="web-group-title">' + T('Widgets affichés') + '</div><div class="web-group">';
+  dkWidgetList().forEach(function(w) { h += wmSwitch('wg-' + w.id, webEsc(w.label), webEsc(w.desc), on[w.id], 'onchange="dkWidgetSet(\'' + w.id + '\', this.checked)"'); });
+  h += '</div>';
+  // Météo : la ville
+  h += '<div class="web-group-title">' + T('Météo') + '</div><div class="wg-city"><span>' + (place
+      ? '<b>' + webEsc(place.name) + '</b>' + (place.region ? ' <span>' + webEsc(place.region) + '</span>' : '')
+      : T('Aucune ville choisie.')) + '</span></div>'
+    + '<div class="wm-inline" style="margin-top:10px;">' + wmInput('wx-q', _wx.q, 'placeholder="' + webEsc(T('Nom d\'une ville')) + '" aria-label="' + webEsc(T('Nom d\'une ville')) + '" onkeydown="if(event.key===\'Enter\')wxSearch()"')
+    + '<button class="fs-btn" onclick="wxSearch()"' + (_wx.busy ? ' disabled' : '') + '>' + (_wx.busy ? T('Recherche...') : T('Chercher')) + '</button></div>';
+  if (_wx.places) {
+    if (_wx.places.length) {
+      h += '<div class="web-group wg-places">';
+      _wx.places.forEach(function(p, i) { h += wmRow('wxChoose(' + i + ')', webEsc(p.name), webEsc(p.region || '')); });
+      h += '</div>';
+    } else h += '<p class="web-note">' + (_wx.searchErr ? T('La recherche n\'a pas abouti. Le NAS a besoin d\'un accès à Internet.') : webEsc(Tf('Aucune ville trouvée pour « {0} ».', _wx.q))) + '</p>';
+  }
+  h += '<p class="web-note">' + T('Prévisions de MET Norway, recherche de ville par OpenStreetMap. C\'est le NAS qui les interroge : il lui faut un accès à Internet, et seule la position de la ville, arrondie au kilomètre, leur est envoyée.') + '</p>';
+  // Réseau : l'interface suivie
+  var ids = _nw.ids || [], cur = nwChosen();
+  h += '<div class="web-group-title">' + T('Réseau') + '</div>' + wmField(T('Interface suivie'),
+    '<select class="wm-input" id="wg-if" onchange="nwSetIface(this.value)"><option value="">' + webEsc(_nw.auto ? Tf('Automatique : la plus active ({0})', _nw.auto) : T('Automatique : la plus active')) + '</option>'
+    + ids.map(function(i) { return '<option value="' + webEsc(i) + '"' + (cur === i ? ' selected' : '') + '>' + webEsc(i) + '</option>'; }).join('') + '</select>',
+    ids.length ? '' : T('La liste des interfaces apparaît une fois le widget Réseau affiché.'));
+  h += '<p class="web-note">' + T('Ces réglages sont gardés dans ce navigateur.') + '</p>';
+  wmBody('cp').innerHTML = h;
+}
+
+// ===========================
 // PANNEAU DE CONFIGURATION — tous les réglages, rangés par domaine
 // ===========================
 var _cp = { nav: 'all', q: '' };
@@ -17851,6 +18276,7 @@ var CP_SVG = 'viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" st
 function cpExtra() {
   return {
     look: { label: T('Couleur du thème'), action: function() { cpGo('look'); }, imgStyle: 'background:conic-gradient(#3ecf8e,#4d9fff,#f25f66,#f5a524,#f0d43a,#aab5c8,#3ecf8e);', svg: '<svg ' + CP_SVG + '><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>' },
+    widgets: { label: 'Widgets', action: function() { cpGo('widgets'); }, imgStyle: 'background:linear-gradient(135deg,#7c3aed,#22d3ee);', svg: '<svg ' + CP_SVG + '><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg>' },
     bar: { label: T('Barre système'), action: function() { cpGo('bar'); }, imgStyle: 'background:linear-gradient(135deg,#0f766e,#38bdf8);', svg: '<svg ' + CP_SVG + '><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/><path d="M6.5 6.5h.01M9.5 6.5h.01"/></svg>' },
     sysconfig: { label: T('Configuration système'), action: function() { openApp('sysconfig'); }, imgStyle: 'background:linear-gradient(135deg,#475569,#94a3b8);', svg: '<svg ' + CP_SVG + '><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' },
     alertconfig: { label: T('Configuration des alertes'), action: function() { openApp('alertconfig'); }, imgStyle: 'background:linear-gradient(135deg,#f59e0b,#f97316);', svg: '<svg ' + CP_SVG + '><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/><path d="M19 3l2 2M5 3 3 5"/></svg>' },
@@ -17869,14 +18295,14 @@ function cpGroups() {
     { key: 'system', label: T('Système'), items: [['sysinfo', T('Matériel, version et charge du NAS')], ['reports', T('Courbes de charge dans le temps')], ['sysconfig', T('Nom du NAS, fuseau horaire, serveurs de temps')],
         ['services', T('SSH, SMB, NFS et autres services')], ['cron', T('Commandes lancées à heure fixe')], ['update', T('Nouvelles versions de TrueNAS')], ['bootenv', T('Versions du système gardées sur le NAS')],
         ['notifs', T('Alertes en cours')], ['alertconfig', T('Où et quand être prévenu')], ['failover', T('Bascule entre deux contrôleurs')], ['terminal', T('Ligne de commande du NAS')], ['truenas-ui', T('L\'interface d\'origine de TrueNAS')]] },
-    { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['bar', T('Position, masquage, fond et transparence')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
+    { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['bar', T('Position, masquage, fond et transparence')], ['widgets', T('Horloge, météo, ressources, réseau, stockage, alertes')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
   ];
 }
 function cpEntry(id) { return cpExtra()[id] || ALL_APPS.find(function(a) { return a.id === id; }) || null; }
 function cpGo(nav) { _cp.nav = nav; _cp.q = ''; loadControl(); }
 function loadControl() {
   if (!wmBody('cp')) return;
-  var page = { look: cpLookView, bar: cpBarView }[_cp.nav], look = !!page;   // pages de réglage du domaine « Bureau Desktroo »
+  var page = { look: cpLookView, bar: cpBarView, widgets: cpWidgetsView }[_cp.nav], look = !!page;   // pages de réglage du domaine « Bureau Desktroo »
   var groups = cpGroups(), cur = groups.find(function(g) { return g.key === (look ? 'desk' : _cp.nav); });
   if (!cur) _cp.nav = 'all';
   var h = wmNav({ active: _cp.nav === 'all', call: 'cpGo(\'all\')', icon: 'grid', name: T('Tous les réglages') }) + wmSep() + wmSideTitle(T('Domaines'));

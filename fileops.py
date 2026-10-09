@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.23.0'
+APP_VERSION = '2.24.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -3672,6 +3672,110 @@ def _branding_set(accent):
     return _branding_get()
 
 
+# ── Météo du widget ───────────────────────────────────────────────────────────
+# Prévisions : MET Norway (api.met.no, données libres sous licence CC BY 4.0). Recherche de ville :
+# Nominatim (OpenStreetMap). Le NAS interroge ces services à la place du navigateur : il s'annonce
+# comme leurs conditions le demandent, garde chaque prévision jusqu'à l'heure d'expiration donnée
+# par le service, et n'envoie que des coordonnées arrondies au centième de degré (≈ 1 km).
+import email.utils as _wx_email
+import time as _wx_time
+import threading as _wx_threading
+
+_WX_UA = 'Desktroo/%s (https://desktroo.fr)' % APP_VERSION
+_WX_CACHE = {}
+_WX_LOCK = _wx_threading.Lock()
+_WX_GEO_LOCK = _wx_threading.Lock()
+_WX_GEO_LAST = [0.0]
+
+
+def _wx_get(url, timeout=15):
+    import urllib.request
+    req = urllib.request.Request(url, headers={'User-Agent': _WX_UA, 'Accept': 'application/json'})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read(4 * 1024 * 1024).decode('utf-8')), r.headers
+
+
+def _wx_coord(value, limit):
+    try:
+        f = round(float(value), 2)
+    except (TypeError, ValueError):
+        raise ValueError('coordonnées invalides')
+    if f != f or not (-limit <= f <= limit):
+        raise ValueError('coordonnées invalides')
+    return f
+
+
+def _weather(lat, lon):
+    """Prévisions heure par heure pour un point : température, vent, humidité, symbole du temps."""
+    lat, lon = _wx_coord(lat, 90), _wx_coord(lon, 180)
+    key, now = (lat, lon), _wx_time.time()
+    with _WX_LOCK:
+        hit = _WX_CACHE.get(key)
+    if hit and hit['until'] > now:
+        return hit['data']
+    try:
+        raw, headers = _wx_get('https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=%.2f&lon=%.2f' % (lat, lon))
+    except Exception as e:
+        if hit:
+            return hit['data']   # la prévision précédente plutôt que rien
+        raise RuntimeError('service météo injoignable (%s)' % e)
+    until = now + 1800
+    try:
+        until = max(now + 600, min(_wx_email.parsedate_to_datetime(headers.get('Expires')).timestamp(), now + 7200))
+    except Exception:
+        pass
+    props = raw.get('properties') if isinstance(raw, dict) else None
+    props = props if isinstance(props, dict) else {}
+    hours = []
+    for item in (props.get('timeseries') or [])[:120]:
+        d = item.get('data') or {}
+        inst = (d.get('instant') or {}).get('details') or {}
+        nxt = d.get('next_1_hours') or d.get('next_6_hours') or d.get('next_12_hours') or {}
+        hours.append({'t': item.get('time'), 'temp': inst.get('air_temperature'), 'wind': inst.get('wind_speed'),
+                      'hum': inst.get('relative_humidity'), 'sym': (nxt.get('summary') or {}).get('symbol_code') or '',
+                      'rain': (nxt.get('details') or {}).get('precipitation_amount')})
+    data = {'ok': True, 'lat': lat, 'lon': lon, 'updated': (props.get('meta') or {}).get('updated_at'),
+            'hours': hours, 'source': 'MET Norway'}
+    with _WX_LOCK:
+        if len(_WX_CACHE) > 64:
+            _WX_CACHE.clear()
+        _WX_CACHE[key] = {'until': until, 'data': data}
+    return data
+
+
+def _weather_search(query, lang='fr'):
+    """Villes correspondant à un nom. Une demande par seconde au plus : c'est la règle d'usage de Nominatim."""
+    from urllib.parse import urlencode
+    query = ' '.join(str(query or '').split())[:80]
+    if len(query) < 2:
+        raise ValueError('nom de ville trop court')
+    lang = lang if re.fullmatch(r'[a-z]{2}', str(lang or '')) else 'fr'
+    with _WX_GEO_LOCK:
+        wait = _WX_GEO_LAST[0] + 1.1 - _wx_time.time()
+        if wait > 0:
+            _wx_time.sleep(min(wait, 1.1))
+        _WX_GEO_LAST[0] = _wx_time.time()
+        try:
+            raw, _ = _wx_get('https://nominatim.openstreetmap.org/search?' + urlencode(
+                {'q': query, 'format': 'jsonv2', 'limit': 8, 'addressdetails': 1, 'accept-language': lang}))
+        except Exception as e:
+            raise RuntimeError('recherche de ville injoignable (%s)' % e)
+    out, seen = [], set()
+    for r in raw if isinstance(raw, list) else []:
+        try:
+            lat, lon = _wx_coord(r.get('lat'), 90), _wx_coord(r.get('lon'), 180)
+        except ValueError:
+            continue
+        addr = r.get('address') if isinstance(r.get('address'), dict) else {}
+        name = str(r.get('name') or str(r.get('display_name') or '').split(',')[0]).strip()[:80]
+        region = ', '.join(str(x) for x in (addr.get('state') or addr.get('county'), addr.get('country')) if x)[:120]
+        if not name or (name, region) in seen:
+            continue
+        seen.add((name, region))
+        out.append({'name': name, 'region': region, 'lat': lat, 'lon': lon})
+    return out[:6]
+
+
 # ── Conteneurs Docker de l'hôte (fenêtre Conteneurs) ──────────────────────────
 # Lecture par SSH, comme pour les sites web. Les variables d'environnement des conteneurs
 # (souvent des mots de passe) ne sortent jamais d'ici.
@@ -7220,6 +7324,25 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, {'ok': True, 'credentials': _db_creds_read()})
             except Exception as e:
                 self._json(500, {'error': str(e)})
+            return
+
+        # Widget météo : prévisions pour un point, recherche d'une ville
+        if path == '/weather':
+            try:
+                self._json(200, _weather(qs.get('lat'), qs.get('lon')))
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(502, {'error': str(e)})
+            return
+
+        if path == '/weather/search':
+            try:
+                self._json(200, {'ok': True, 'places': _weather_search(qs.get('q', ''), qs.get('lang', 'fr'))})
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(502, {'error': str(e)})
             return
 
         # Conteneurs Docker de l'hôte : liste complète, charge instantanée, journal
