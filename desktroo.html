@@ -1086,6 +1086,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-body.term-body { display:flex; padding:0 22px 22px; overflow:hidden; }
   #terminal-container { flex:1; min-width:0; min-height:0; border-radius:12px; border:1px solid var(--glass-border); outline:none; }
   .term-cmd .web-nav-name { font-family:var(--font-mono); font-size:12px; }
+  .term-note { margin:8px 10px 2px; padding:9px 10px; border-radius:9px; border:1px solid rgba(245,158,11,0.35); background:rgba(245,158,11,0.08); font-size:11.5px; line-height:1.5; color:var(--text-dim); word-break:break-word; }
 
   /* ===== UTILISATEURS, PARTAGES, SERVICES ===== */
   #win-users, #win-sharing, #win-services { min-width:860px; min-height:520px; }
@@ -5431,7 +5432,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Clé": "Key",
 "Commandes prêtes": "Ready-made commands",
 "Connecté au NAS": "Connected to the NAS",
-"Connecté. Cliquez ici pour taper.": "Connected. Click here to type.",
 "Connexion au service Desktroo...": "Connecting to the Desktroo service...",
 "Connexion impossible": "Cannot connect",
 "Connexion…": "Connecting…",
@@ -5504,7 +5504,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Suspendue": "Suspended",
 "Suspendue, elle reste en place mais ne se lance plus toute seule": "When suspended, it stays in place but no longer starts by itself",
 "Synchronise (efface ce qui a disparu)": "Sync (deletes what is gone)",
-"Terminal du NAS": "NAS terminal",
 "Tous les certificats sont valides": "All certificates are valid",
 "Tous les certificats": "All certificates",
 "Tout ce qui est planifié tourne normalement.": "Everything scheduled is running normally.",
@@ -5548,7 +5547,16 @@ select option{ background:#101b2e; color:#e9eef7; }
 "jusqu'au {0}": "until {0}",
 "{0} : terminée": "{0}: finished",
 "Active": "Enabled",
-"Connecté": "Connected"
+"Connecté": "Connected",
+"Session ouverte sur le NAS ({0}). Cliquez ici pour taper.": "Session opened on the NAS ({0}). Click here to type.",
+"Session ouverte dans le conteneur du service Desktroo, pas sur le NAS.": "Session opened in the Desktroo service container, not on the NAS.",
+"La connexion SSH au NAS a échoué : {0}": "The SSH connection to the NAS failed: {0}",
+"Les commandes du NAS (zpool, zfs, docker) n'existent pas ici.": "NAS commands (zpool, zfs, docker) do not exist here.",
+"Programmes en cours": "Running programs",
+"Connecté au NAS ({0})": "Connected to the NAS ({0})",
+"Connecté au conteneur Desktroo, pas au NAS": "Connected to the Desktroo container, not to the NAS",
+"Cette session tourne dans le conteneur du service Desktroo : zpool, zfs et docker n'y existent pas.": "This session runs in the Desktroo service container: zpool, zfs and docker do not exist there.",
+"Le service Desktroo n'est pas encore à jour : cette session tourne dans son conteneur. Après la mise à jour, le terminal s'ouvrira sur le NAS.": "The Desktroo service is not up to date yet: this session runs in its container. After the update, the terminal will open on the NAS."
 }
 </script>
 <script id="dk-i18n">
@@ -16513,17 +16521,25 @@ async function ceDelete(id) {
 // ── Terminal : état de la session et commandes prêtes à taper ──
 var _termState = 'wait';
 var _termFocus = false;
+var _termMode = '';      // ssh : sur le NAS ; local : dans le conteneur du service ; '' : service pas encore à jour
+var _termWhere = '';
+// Commandes proposées : seulement celles qui existent là où la session est ouverte.
 function termCommands() {
-  return [['zpool status', T('État des pools et des disques')], ['zfs list', T('Datasets et espace utilisé')], ['df -h', T('Espace des systèmes de fichiers')], ['free -h', T('Mémoire utilisée')],
-    ['uptime', T('Durée de fonctionnement et charge')], ['ip -br addr', T('Adresses réseau')], ['sudo docker ps', T('Conteneurs en marche')], ['journalctl -n 40 --no-pager', T('Derniers messages du système')]];
+  if (_termMode === 'ssh') return [['zpool status', T('État des pools et des disques')], ['zfs list', T('Datasets et espace utilisé')], ['df -h', T('Espace des systèmes de fichiers')], ['free -h', T('Mémoire utilisée')],
+    ['uptime', T('Durée de fonctionnement et charge')], ['ip -br addr', T('Adresses réseau')], ['sudo docker ps', T('Conteneurs en marche')], ['sudo journalctl -n 40 --no-pager', T('Derniers messages du système')]];
+  return [['df -h', T('Espace des systèmes de fichiers')], ['free -h', T('Mémoire utilisée')], ['uptime', T('Durée de fonctionnement et charge')], ['ip addr', T('Adresses réseau')], ['ps', T('Programmes en cours')]];
 }
 function termStatus(state) {
   _termState = state || _termState;
-  var s = { wait: [T('Connexion…'), 'warn'], on: [T('Connecté au NAS'), ''], off: [T('Session terminée'), 'off'], err: [T('Connexion impossible'), 'bad'] }[_termState];
+  var on = _termMode === 'ssh' ? [Tf('Connecté au NAS ({0})', _termWhere), ''] : (_termMode === 'local' ? [T('Connecté au conteneur Desktroo, pas au NAS'), 'warn'] : [T('Connecté'), '']);
+  var s = { wait: [T('Connexion…'), 'warn'], on: on, off: [T('Session terminée'), 'off'], err: [T('Connexion impossible'), 'bad'] }[_termState];
   wmHead('term', 'Terminal', { keepScroll: true, sub: '<span class="apps-state"><span class="web-dot' + (s[1] ? ' ' + s[1] : '') + '"></span>' + webEsc(s[0]) + '</span>',
     actions: '<button class="fs-btn" onclick="termCopy()">' + T('Copier la sortie') + '</button><button class="' + (_termState === 'on' || _termState === 'wait' ? 'fs-btn' : 'web-open') + '" onclick="termNewSession()">' + T('Nouvelle session') + '</button>' });
   var h = wmSideTitle(T('Commandes prêtes'));
   termCommands().forEach(function(c) { h += '<button class="web-nav term-cmd" onclick="termType(' + wmQ(c[0]) + ')" title="' + webEsc(T('Écrit la commande dans le terminal ; à vous d\'appuyer sur Entrée')) + '"><span class="web-nav-text"><span class="web-nav-name mono">' + webEsc(c[0]) + '</span><span class="web-nav-meta">' + webEsc(c[1]) + '</span></span></button>'; });
+  if (_termState === 'on' && _termMode !== 'ssh') h += '<div class="term-note">' + (_termMode === 'local'
+    ? T('Cette session tourne dans le conteneur du service Desktroo : zpool, zfs et docker n\'y existent pas.') + ' ' + webEsc(Tf('La connexion SSH au NAS a échoué : {0}', _termWhere || '?'))
+    : T('Le service Desktroo n\'est pas encore à jour : cette session tourne dans son conteneur. Après la mise à jour, le terminal s\'ouvrira sur le NAS.')) + '</div>';
   h += wmSep() + wmSideTitle(T('Voir aussi'))
     + wmNav({ call: 'openApp(\'services\')', icon: 'sliders', name: 'Services' })
     + wmNav({ call: 'openApp(\'docker\')', icon: 'layers', name: T('Conteneurs') });
@@ -17684,15 +17700,15 @@ async function loadTerminal() {
   var _termPre = _term._pre;
   _termPre._rawText = '';
   function _termAppend(s) {
-    var txt = s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g,'').replace(/\x1b[(][A-Za-z0-9]/g,'').replace(/\x1b[^[]/g,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+    var txt = s.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g,'').replace(/\x1b\[[0-9;?]*[A-Za-z]/g,'').replace(/\x1b[(][A-Za-z0-9]/g,'').replace(/\x1b[^[]/g,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
     for(var _i=0;_i<txt.length;_i++){if(txt[_i]==='\x08'){if(_termPre._rawText.length>0)_termPre._rawText=_termPre._rawText.slice(0,-1);}else{_termPre._rawText+=txt[_i];}}
     _termPre.textContent = _termPre._rawText;
     if (_termPre.parentElement) _termPre.parentElement.scrollTop = _termPre.parentElement.scrollHeight;
   }
   _term.writeln = function(s){ _termAppend(s+'\n'); };
   _term.write   = function(s){ _termAppend(s); };
+  _termMode = ''; _termWhere = '';
   termStatus('wait');
-  _term.writeln(T('Terminal du NAS'));
   _term.writeln(T('Connexion au service Desktroo...'));
   _term.writeln('');
 
@@ -17708,7 +17724,6 @@ async function loadTerminal() {
 
     _termWs.onopen = function() {
       termStatus('on');
-      _term.writeln('  ' + T('Connecté. Cliquez ici pour taper.') + '\r\n');
       var msg = JSON.stringify({ cols: _term.cols || 80, rows: _term.rows || 24 });
       _termWs.send(msg);
       setTimeout(function(){ var c=document.getElementById('terminal-container'); if(c) c.focus(); }, 150);
@@ -17716,6 +17731,17 @@ async function loadTerminal() {
 
         _termWs.onmessage = function(ev) {
       var raw = (ev.data instanceof ArrayBuffer) ? new TextDecoder('utf-8').decode(ev.data) : ev.data;
+      // le service annonce où la session s'ouvre : sur le NAS (SSH) ou, à défaut, dans son propre conteneur
+      raw = raw.replace(/\x1b\]777;desktroo=(ssh|local);([^\x07]*)\x07/g, function(_m, mode, detail) {
+        _termMode = mode; _termWhere = detail;
+        termStatus();
+        if (mode === 'ssh') _term.writeln('  ' + Tf('Session ouverte sur le NAS ({0}). Cliquez ici pour taper.', detail) + '\n');
+        else { _term.writeln('  ' + T('Session ouverte dans le conteneur du service Desktroo, pas sur le NAS.'));
+               _term.writeln('  ' + Tf('La connexion SSH au NAS a échoué : {0}', detail || '?'));
+               _term.writeln('  ' + T('Les commandes du NAS (zpool, zfs, docker) n\'existent pas ici.') + '\n'); }
+        return '';
+      });
+      if (!raw) return;
       _termAppend(raw);
     };
 

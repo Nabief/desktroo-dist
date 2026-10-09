@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.17.0'
+APP_VERSION = '2.17.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -1261,6 +1261,101 @@ def set_winsize(fd, rows, cols):
 _active_session = None
 
 
+# ── Terminal : session sur le NAS par SSH ─────────────────────────────────────
+# Le Terminal de Desktroo est celui du NAS, pas celui du conteneur du service : zpool, zfs et docker
+# n'existent que sur l'hôte. Un bash sans fichiers de profil donne une invite simple, que le
+# mini-terminal du navigateur sait afficher (il ne gère ni couleurs ni déplacements de curseur).
+_TERM_SSH_ENV = 'env TERM=dumb PATH="$PATH:/usr/local/sbin:/usr/sbin:/sbin"'
+_TERM_SSH_CMD = ('if command -v bash >/dev/null 2>&1; then exec ' + _TERM_SSH_ENV
+                 + " PS1='\\u@\\h:\\w\\$ ' bash --noprofile --norc -i; else exec " + _TERM_SSH_ENV + ' sh -i; fi')
+
+
+def _term_marker(mode, detail=''):
+    """Annonce au navigateur où la session s'ouvre (séquence OSC, jamais affichée)."""
+    clean = ''.join(ch for ch in str(detail) if ch.isprintable() and ch not in ';')[:160]
+    return ('\x1b]777;desktroo=%s;%s\x07' % (mode, clean)).encode('utf-8')
+
+
+def _term_ssh_open():
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(SSH_HOST, port=SSH_PORT_N, username=SSH_USER, password=SSH_PASS,
+                   timeout=10, auth_timeout=15, banner_timeout=15)
+    try:
+        chan = client.get_transport().open_session(timeout=15)
+        chan.get_pty(term='dumb', width=200, height=50)
+        chan.exec_command(_TERM_SSH_CMD)
+    except Exception:
+        client.close()
+        raise
+    return client, chan
+
+
+async def _terminal_ssh(ws, client, chan):
+    loop = asyncio.get_event_loop()
+
+    async def ssh_to_ws():
+        queue = asyncio.Queue()
+        fd = chan.fileno()
+
+        def _on_readable():
+            try:
+                if chan.recv_ready():
+                    queue.put_nowait(chan.recv(16384) or None)
+                elif chan.closed or chan.eof_received or chan.exit_status_ready():
+                    queue.put_nowait(None)
+            except Exception:
+                queue.put_nowait(None)
+        loop.add_reader(fd, _on_readable)
+        try:
+            while True:
+                data = await queue.get()
+                if data is None:
+                    break
+                try:
+                    await ws.send(data)
+                except Exception:
+                    break
+        finally:
+            try:
+                loop.remove_reader(fd)
+            except Exception:
+                pass
+
+    async def ws_to_ssh():
+        async for msg in ws:
+            raw = msg.encode('utf-8', errors='replace') if isinstance(msg, str) else bytes(msg)
+            if raw[:1] == b'{':
+                try:
+                    if 'cols' in json.loads(raw):
+                        continue   # largeur fixe : le mini-terminal ne replie pas les lignes lui-même
+                except Exception:
+                    pass
+            try:
+                await loop.run_in_executor(None, chan.sendall, raw)
+            except Exception:
+                break
+
+    t1 = asyncio.ensure_future(ssh_to_ws())
+    t2 = asyncio.ensure_future(ws_to_ssh())
+    try:
+        done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
+        for t in pending:
+            t.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)
+    except asyncio.CancelledError:
+        t1.cancel()
+        t2.cancel()
+        await asyncio.gather(t1, t2, return_exceptions=True)
+        raise
+    finally:
+        for closer in (chan.close, client.close):
+            try:
+                closer()
+            except Exception:
+                pass
+
+
 # ── WebSocket: terminal PTY ───────────────────────────────────────────────────
 async def terminal_session(ws):
     global _active_session
@@ -1284,6 +1379,31 @@ async def terminal_session(ws):
             pass
 
     _active_session = asyncio.current_task()
+
+    # D'abord le NAS lui-même ; le shell du conteneur ne sert que si SSH n'est pas disponible.
+    why = ''
+    if not _HAS_PARAMIKO:
+        why = 'paramiko absent'
+    elif not (SSH_HOST and SSH_USER and SSH_PASS):
+        why = 'connexion SSH au NAS non configurée'
+    else:
+        try:
+            client, chan = await asyncio.get_event_loop().run_in_executor(None, _term_ssh_open)
+        except Exception as e:
+            why = str(e) or e.__class__.__name__
+            log.warning('Terminal: SSH vers le NAS impossible (%s), repli sur le conteneur', why)
+        else:
+            log.info('Terminal: session SSH sur %s', SSH_HOST)
+            try:
+                await ws.send(_term_marker('ssh', '%s@%s' % (SSH_USER, SSH_HOST)))
+            except Exception:
+                pass
+            await _terminal_ssh(ws, client, chan)
+            return
+    try:
+        await ws.send(_term_marker('local', why))
+    except Exception:
+        pass
 
     master_fd, slave_fd = pty.openpty()
     set_winsize(master_fd, 24, 80)
