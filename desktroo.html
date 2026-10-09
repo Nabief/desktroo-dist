@@ -7,7 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231a2c4b'/%3E%3Cstop offset='1' stop-color='%230b1526'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='15' fill='url(%23t)'/%3E%3Ccircle cx='26' cy='37' r='11' fill='none' stroke='%23e9eef7' stroke-width='6'/%3E%3Crect x='37' y='12' width='6.5' height='38' rx='3.25' fill='%23e9eef7'/%3E%3Ccircle cx='26' cy='37' r='4.6' fill='%233ecf8e'/%3E%3C/svg%3E">
 <script>/* Thème persistant : appliqué avant le rendu pour éviter tout flash */
 try { document.documentElement.setAttribute('data-theme', localStorage.getItem('tn-theme') === 'light' ? 'light' : 'dark');
-      var dkA = localStorage.getItem('tn-accent'); if (/^(blue|red|amber|yellow|gray)$/.test(dkA || '')) document.documentElement.setAttribute('data-accent', dkA); } catch(e) {}</script>
+      var dkA = localStorage.getItem('tn-accent'); if (!/^(green|blue|red|amber|yellow|gray)$/.test(dkA || '')) dkA = localStorage.getItem('tn-accent-default');
+      if (/^(blue|red|amber|yellow|gray)$/.test(dkA || '')) document.documentElement.setAttribute('data-accent', dkA); } catch(e) {}</script>
 <style id="dk-fonts">
 /* Polices de la charte Desktroo, embarquées (sous-ensemble latin, graisse variable) :
    aucun appel à un serveur tiers, le bureau reste autonome sur le réseau local.
@@ -1430,6 +1431,15 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .look-demo { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:14px 16px; border:1px solid var(--glass-border); border-radius:13px; background:rgba(255,255,255,0.03); }
   .look-demo > * { pointer-events:none; }
   .look-demo-nav { width:auto; }
+  .look-install { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px 18px; padding:14px 16px; border:1px solid var(--glass-border); border-radius:13px; background:rgba(255,255,255,0.03); }
+  [data-theme="light"] .look-install, [data-theme="light"] .look-demo { background:rgba(255,255,255,0.7); }
+  .look-install-text { flex:1 1 260px; font-size:12.5px; line-height:1.5; color:var(--text-dim); }
+  .look-minis { display:flex; gap:9px; }
+  .look-mini { display:grid; place-items:center; width:30px; height:30px; padding:0; border:0; border-radius:50%; background:var(--sw); box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12); cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .look-mini:hover { transform:scale(1.08); }
+  .look-mini.active { box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--sw); }
+  .look-mini:focus-visible { outline:2px solid var(--accent2); outline-offset:3px; }
+  .look-mini svg { width:15px; height:15px; color:#0b1526; }
 
   /* ===== THEME CLAIR ===== */
   [data-theme="light"] {
@@ -5603,7 +5613,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Ambre": "Amber",
 "Jaune": "Yellow",
 "Gris": "Gray",
-"couleur d'origine": "original color",
 "Couleur du thème": "Theme color",
 "La couleur des boutons, des sélections et du logo. Les voyants d'état gardent leur vert, leur orange et leur rouge.": "The color of buttons, selections and the logo. Status lights keep their green, orange and red.",
 "Bouton principal": "Primary button",
@@ -5611,8 +5620,14 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Élément choisi": "Selected item",
 "Aussi": "Also",
 "Les fonds intégrés prennent la couleur choisie": "Built-in wallpapers take the chosen color",
-"Ce choix est gardé dans ce navigateur : chaque poste peut avoir sa couleur.": "This choice is kept in this browser: each computer can have its own color.",
-"Vert, bleu, rouge, ambre, jaune ou gris": "Green, blue, red, amber, yellow or gray"
+"Vert, bleu, rouge, ambre, jaune ou gris": "Green, blue, red, amber, yellow or gray",
+"✅ Couleur de l'installation enregistrée": "✅ Installation color saved",
+"Sur ce poste": "On this computer",
+"Celle de l'installation": "The installation's",
+"actuellement {0}": "currently {0}",
+"Pour toute l'installation": "For the whole installation",
+"Couleur proposée à tous les postes qui n'ont pas choisi la leur, écran de connexion compris.": "Color offered to every computer that has not chosen its own, sign-in screen included.",
+"Le choix « sur ce poste » est gardé dans ce navigateur ; celui de l'installation est gardé sur le NAS.": "The “on this computer” choice is kept in this browser; the installation's is kept on the NAS."
 }
 </script>
 <script id="dk-i18n">
@@ -17029,47 +17044,84 @@ function siView(soft) {
 // ===========================
 // COULEUR DU THÈME — le vert de la charte peut céder la place à une autre teinte
 // Seule la couleur d'accent change (boutons, sélections, logo, fonds intégrés) ; les voyants d'état gardent leurs couleurs.
-// Le choix est gardé dans ce navigateur, comme le mode clair ou sombre et le fond d'écran.
+// Deux niveaux : la couleur de l'installation (gardée par le service, proposée à tous, écran de connexion compris)
+// et, s'il en choisit une, celle du poste (gardée dans le navigateur), qui passe devant.
 // ===========================
+var DK_ACCENT_RE = /^(green|blue|red|amber|yellow|gray)$/;
+var _dkAccentDefault = 'green';
+try { var _dkA0 = localStorage.getItem('tn-accent-default'); if (DK_ACCENT_RE.test(_dkA0 || '')) _dkAccentDefault = _dkA0; } catch (e) {}
 function dkAccents() {
-  return [{ key: 'green', label: T('Vert'), note: T('couleur d\'origine'), color: '#3ecf8e' }, { key: 'blue', label: T('Bleu'), color: '#4d9fff' }, { key: 'red', label: T('Rouge'), color: '#f25f66' },
+  return [{ key: 'green', label: T('Vert'), color: '#3ecf8e' }, { key: 'blue', label: T('Bleu'), color: '#4d9fff' }, { key: 'red', label: T('Rouge'), color: '#f25f66' },
     { key: 'amber', label: T('Ambre'), color: '#f5a524' }, { key: 'yellow', label: T('Jaune'), color: '#f0d43a' }, { key: 'gray', label: T('Gris'), color: '#aab5c8' }];
 }
-function dkAccentGet() {
-  try { var a = localStorage.getItem('tn-accent'); return /^(blue|red|amber|yellow|gray)$/.test(a || '') ? a : 'green'; } catch (e) { return 'green'; }
-}
-// L'icône de l'onglet suit la couleur choisie.
+// Couleur choisie sur ce poste ; vide : celle de l'installation.
+function dkAccentLocal() { try { var a = localStorage.getItem('tn-accent'); return DK_ACCENT_RE.test(a || '') ? a : ''; } catch (e) { return ''; } }
+function dkAccentGet() { return dkAccentLocal() || _dkAccentDefault; }
+// L'icône de l'onglet suit la couleur affichée.
 function dkAccentFavicon() {
   var l = document.querySelector('link[rel="icon"]'), c = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
   if (!l || !/^#[0-9a-f]{6}$/i.test(c)) return;
   l.setAttribute('href', String(l.getAttribute('href') || '').replace(/fill='%23[0-9a-fA-F]{6}'\/%3E%3C\/svg%3E$/, "fill='%23" + c.slice(1) + "'/%3E%3C/svg%3E"));
 }
-function dkAccentSet(a) {
-  a = /^(blue|red|amber|yellow|gray)$/.test(a || '') ? a : 'green';
+function dkAccentApply() {
+  var a = dkAccentGet();
   if (a === 'green') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', a);
-  try { if (a === 'green') localStorage.removeItem('tn-accent'); else localStorage.setItem('tn-accent', a); } catch (e) {}
   dkAccentFavicon();
   if (wmVisible('control') && _cp.nav === 'look') loadControl();
 }
+// Choix du poste. Vide : on suit l'installation.
+function dkAccentSet(a) {
+  try { if (DK_ACCENT_RE.test(a || '')) localStorage.setItem('tn-accent', a); else localStorage.removeItem('tn-accent'); } catch (e) {}
+  dkAccentApply();
+}
+// Couleur de l'installation : lue sans jeton, pour teinter aussi l'écran de connexion.
+async function dkAccentDefaultLoad() {
+  try {
+    var r = await fetch('/fileops/branding', { cache: 'no-store' });
+    if (!r.ok) return;
+    var d = await r.json();
+    if (!d || !DK_ACCENT_RE.test(d.accent || '')) return;
+    _dkAccentDefault = d.accent;
+    try { localStorage.setItem('tn-accent-default', d.accent); } catch (e) {}
+    dkAccentApply();
+  } catch (e) {}
+}
+async function dkAccentDefaultSet(a) {
+  if (!DK_ACCENT_RE.test(a || '')) return;
+  try {
+    var r = await fileops('POST', 'branding', { accent: a });
+    _dkAccentDefault = (r && DK_ACCENT_RE.test(r.accent || '')) ? r.accent : a;
+    try { localStorage.setItem('tn-accent-default', _dkAccentDefault); } catch (e) {}
+    toast(T('✅ Couleur de l\'installation enregistrée'));
+  } catch (e) { if (!e || e.message !== 'LICENSE_READONLY') toast('❌ ' + ((e && e.message) || e), 9000); }
+  dkAccentApply();
+}
 // Page « Couleur du thème » du Panneau de configuration.
 function cpLookView() {
-  var cur = dkAccentGet();
+  var local = dkAccentLocal(), list = dkAccents(), def = list.find(function(a) { return a.key === _dkAccentDefault; }) || list[0];
   wmHead('cp', T('Couleur du thème'), { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true,
     sub: T('La couleur des boutons, des sélections et du logo. Les voyants d\'état gardent leur vert, leur orange et leur rouge.') });
-  var h = '<div class="look-grid" role="radiogroup" aria-label="' + webEsc(T('Couleur du thème')) + '">';
-  dkAccents().forEach(function(a) {
-    h += '<button class="look-swatch' + (a.key === cur ? ' active' : '') + '" role="radio" aria-checked="' + (a.key === cur) + '" onclick="dkAccentSet(\'' + a.key + '\')" style="--sw:' + a.color + '">'
-      + '<span class="look-disc">' + (a.key === cur ? webIcon('check') : '') + '</span><span class="look-text"><span class="look-name">' + webEsc(a.label) + '</span>' + (a.note ? '<span class="look-note">' + webEsc(a.note) + '</span>' : '') + '</span></button>';
-  });
+  var sw = function(key, color, label, note, on, call) {
+    return '<button class="look-swatch' + (on ? ' active' : '') + '" role="radio" aria-checked="' + !!on + '" onclick="' + call + '" style="--sw:' + color + '">'
+      + '<span class="look-disc">' + (on ? webIcon('check') : '') + '</span><span class="look-text"><span class="look-name">' + webEsc(label) + '</span>' + (note ? '<span class="look-note">' + webEsc(note) + '</span>' : '') + '</span></button>';
+  };
+  var h = '<div class="web-group-title" style="margin-top:6px;">' + T('Sur ce poste') + '</div><div class="look-grid" role="radiogroup" aria-label="' + webEsc(T('Sur ce poste')) + '">'
+    + sw('', def.color, T('Celle de l\'installation'), Tf('actuellement {0}', def.label.toLowerCase()), !local, 'dkAccentSet(\'\')');
+  list.forEach(function(a) { h += sw(a.key, a.color, a.label, '', local === a.key, 'dkAccentSet(\'' + a.key + '\')'); });
   h += '</div><div class="web-group-title">' + T('Aperçu') + '</div><div class="look-demo"><button class="web-open" tabindex="-1">' + T('Bouton principal') + '</button><button class="fs-btn" tabindex="-1">' + T('Bouton secondaire') + '</button>'
     + '<span class="web-nav active look-demo-nav">' + webIcon('grid') + '<span class="web-nav-name">' + T('Élément choisi') + '</span></span><input type="checkbox" checked tabindex="-1" aria-hidden="true"></div>'
+    + '<div class="web-group-title">' + T('Pour toute l\'installation') + '</div><div class="look-install"><span class="look-install-text">'
+    + T('Couleur proposée à tous les postes qui n\'ont pas choisi la leur, écran de connexion compris.') + '</span><span class="look-minis" role="radiogroup" aria-label="' + webEsc(T('Pour toute l\'installation')) + '">'
+    + list.map(function(a) { var on = a.key === _dkAccentDefault; return '<button class="look-mini' + (on ? ' active' : '') + '" role="radio" aria-checked="' + on + '" title="' + webEsc(a.label) + '" aria-label="' + webEsc(a.label) + '" style="--sw:' + a.color + '" onclick="dkAccentDefaultSet(\'' + a.key + '\')">' + (on ? webIcon('check') : '') + '</button>'; }).join('')
+    + '</span></div>'
     + '<div class="web-group-title">' + T('Aussi') + '</div><div class="web-group">'
     + wmRow('toggleTheme();loadControl()', T('Thème clair ou sombre'), darkMode ? T('Actuellement sombre') : T('Actuellement clair'))
     + wmRow('openWallpapers()', T('Fond d\'écran'), T('Les fonds intégrés prennent la couleur choisie')) + '</div>'
-    + '<p class="web-note">' + T('Ce choix est gardé dans ce navigateur : chaque poste peut avoir sa couleur.') + '</p>';
+    + '<p class="web-note">' + T('Le choix « sur ce poste » est gardé dans ce navigateur ; celui de l\'installation est gardé sur le NAS.') + '</p>';
   wmBody('cp').innerHTML = h;
 }
 dkAccentFavicon();
+dkAccentDefaultLoad();
 
 // ===========================
 // PANNEAU DE CONFIGURATION — tous les réglages, rangés par domaine

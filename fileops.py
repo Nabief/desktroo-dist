@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.18.0'
+APP_VERSION = '2.19.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -3645,6 +3645,26 @@ def _web_proxy_set(enabled):
     return _web_proxy_get()
 
 
+# ── Couleur du thème de l'installation ────────────────────────────────────────
+# Chaque navigateur peut choisir sa couleur ; celle-ci est proposée à ceux qui n'ont rien choisi,
+# écran de connexion compris. Ce n'est qu'un nom de couleur : la lecture est ouverte sans jeton.
+BRANDING_FILE = os.path.join(ACCESS_DATA_DIR, 'branding.json')
+_BRAND_ACCENTS = ('green', 'blue', 'red', 'amber', 'yellow', 'gray')
+
+
+def _branding_get():
+    data = _access_read_json(BRANDING_FILE, {})
+    accent = data.get('accent') if isinstance(data, dict) else None
+    return {'accent': accent if accent in _BRAND_ACCENTS else 'green'}
+
+
+def _branding_set(accent):
+    if accent not in _BRAND_ACCENTS:
+        raise ValueError('couleur inconnue')
+    _access_write_json(BRANDING_FILE, {'accent': accent})
+    return _branding_get()
+
+
 # ── Conteneurs Docker de l'hôte (fenêtre Conteneurs) ──────────────────────────
 # Lecture par SSH, comme pour les sites web. Les variables d'environnement des conteneurs
 # (souvent des mots de passe) ne sortent jamais d'ici.
@@ -7019,6 +7039,13 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         _pp = urlparse(self.path)
         if _pp.path == '/s' or _pp.path.startswith('/s/'):
             return self._share_public_get(_pp)
+        # Couleur du thème : lue par l'écran de connexion, donc sans jeton
+        if _pp.path.rstrip('/') == '/branding':
+            try:
+                self._json(200, _branding_get())
+            except Exception:
+                self._json(200, {'accent': 'green'})
+            return
 
         if not self._auth():
             return
@@ -7663,6 +7690,15 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return
 
         # MDM-APPS-V1 : bases de données + installation d'applications
+        if path == '/branding':
+            try:
+                self._json(200, dict(_branding_set(str(self._body().get('accent') or '')), ok=True))
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         if path == '/containers/restart':
             try:
                 b = self._body()
