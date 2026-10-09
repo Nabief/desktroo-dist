@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Desktroo</title>
+<link rel="manifest" href="/fileops/manifest.webmanifest" crossorigin="use-credentials">
+<meta name="theme-color" content="#0a1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Desktroo">
+<link rel="apple-touch-icon" href="/fileops/app-icon-maskable.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231a2c4b'/%3E%3Cstop offset='1' stop-color='%230b1526'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='15' fill='url(%23t)'/%3E%3Ccircle cx='26' cy='37' r='11' fill='none' stroke='%23e9eef7' stroke-width='6'/%3E%3Crect x='37' y='12' width='6.5' height='38' rx='3.25' fill='%23e9eef7'/%3E%3Ccircle cx='26' cy='37' r='4.6' fill='%233ecf8e'/%3E%3C/svg%3E">
 <script>/* Couleur libre : toute la palette (aplat, texte, encre, en sombre et en clair) se calcule depuis la teinte choisie.
    En sombre, la teinte est éclaircie jusqu'à se lire sur le fond nuit ; en clair, assombrie jusqu'à se lire en texte. */
@@ -152,6 +157,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     --taskbar-w: 60px;                /* barre système posée à gauche ou à droite */
     --wa-t: var(--taskbar-h); --wa-r: 0px; --wa-b: 0px; --wa-l: 0px;   /* place prise par la barre sur chaque bord */
     --bar-rgb: 8,16,30; --bar-alpha: 0.92; --bar-line: var(--glass-border);
+    --win-a: 1; --win-blur: 8px; --wg-a: 0.72;   /* opacité des fenêtres et des widgets, flou derrière les fenêtres */
     --window-bg: rgba(15,26,46,0.96);
     --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-display: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
@@ -494,7 +500,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     display:flex; flex-direction:column; gap:12px; width:260px;
   }
   .widget {
-    background:var(--glass); border:1px solid var(--glass-border);
+    background:rgba(15,26,46,var(--wg-a)); border:1px solid var(--glass-border);
     border-radius:var(--radius); padding:14px 16px;
     backdrop-filter:blur(16px); box-shadow:var(--shadow);
   }
@@ -716,13 +722,13 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   /* ===== WINDOWS ===== */
   .window {
     position:fixed; z-index:50;
-    background: linear-gradient(170deg, rgb(16,29,52) 0%, rgb(11,21,38) 100%);
+    background: linear-gradient(170deg, rgba(16,29,52,var(--win-a)) 0%, rgba(11,21,38,var(--win-a)) 100%);
     border:1px solid rgba(255,255,255,0.13);
     border-radius:var(--radius);
     box-shadow: var(--shadow),
                 0 0 0 1px rgba(255,255,255,0.04) inset,
                 0 1px 0 rgba(255,255,255,0.12) inset;
-    backdrop-filter:blur(8px); display:none; flex-direction:column;
+    backdrop-filter:blur(var(--win-blur)); display:none; flex-direction:column;
     min-width:400px; min-height:300px;
     animation:win-open 0.22s cubic-bezier(0.34,1.4,0.64,1);
   }
@@ -1702,7 +1708,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] .desk-icon-label { color:#ffffff !important; }
   [data-theme="light"] #wallpaper:not(.custom-bg) ~ #desktop .desk-icon-label { color:#16243f !important; font-weight:500; text-shadow:0 1px 2px rgba(255,255,255,0.65); }
   [data-theme="light"] .window {
-    background:rgba(240,246,255,0.97);
+    background:rgba(240,246,255,var(--win-a));
     border:1px solid rgba(0,0,0,0.12);
     box-shadow:0 16px 48px rgba(0,0,0,0.18);
   }
@@ -1712,7 +1718,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
   [data-theme="light"] .window-title { color:#1a2440; }
   [data-theme="light"] .widget {
-    background:rgba(255,255,255,0.80);
+    background:rgba(255,255,255,var(--wg-a));
     border:1px solid rgba(0,0,0,0.10);
   }
   [data-theme="light"] .widget-title,
@@ -1876,7 +1882,12 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
      « html[data-bar] » dit le bord (absent : en haut), « html[data-bar-hide] » le masquage automatique.
      --wa-* : place que la barre prend sur chaque bord ; le bureau, les widgets et les fenêtres
      agrandies s'en servent pour rester dans la zone libre. */
-  [data-theme="light"] { --bar-rgb:220,235,252; --bar-alpha:0.95; --bar-line:rgba(0,0,0,0.10); }
+  [data-theme="light"] { --bar-rgb:220,235,252; --bar-alpha:0.95; --bar-line:rgba(0,0,0,0.10); --win-a:0.97; --wg-a:0.80; }
+  /* Encadrés d'information des pages de réglage */
+  .cp-note { margin-top:6px; padding:12px 14px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.03); font-size:12.5px; line-height:1.6; }
+  .cp-note.ok { border-color:rgba(var(--success-rgb),0.4); background:rgba(var(--success-rgb),0.08); }
+  .cp-note.warn { border-color:rgba(245,158,11,0.45); background:rgba(245,158,11,0.08); }
+  [data-theme="light"] .cp-note { background:rgba(255,255,255,0.7); }
   html[data-bar="bottom"] { --wa-t:0px; --wa-b:var(--taskbar-h); }
   html[data-bar="left"]   { --wa-t:0px; --wa-l:var(--taskbar-w); }
   html[data-bar="right"]  { --wa-t:0px; --wa-r:var(--taskbar-w); }
@@ -6085,7 +6096,31 @@ select option{ background:#101b2e; color:#e9eef7; }
 "et {0} autres applications à mettre à jour": "and {0} more applications to update",
 "Le nom affiché dans Desktroo ; TrueNAS garde le sien": "The name shown in Desktroo; TrueNAS keeps its own",
 "Reprendre le nom d'origine": "Restore the original name",
-"Application personnalisée, {0}": "Custom application, {0}"
+"Application personnalisée, {0}": "Custom application, {0}",
+"Transparence d'origine reprise": "Original transparency restored",
+"Laisser voir le fond d'écran à travers les fenêtres, les widgets et la barre système.": "Let the wallpaper show through the windows, the widgets and the system bar.",
+"Fenêtres": "Windows",
+"Limitée à 70 % pour que le contenu reste lisible. Le fond est flouté davantage à mesure que la fenêtre s'éclaircit.": "Capped at 70% so the content stays readable. The background is blurred more as the window gets clearer.",
+"Reprendre la transparence d'origine": "Restore the original transparency",
+"Fenêtres, widgets et barre système": "Windows, widgets and system bar",
+"✅ Desktroo est installé comme application": "✅ Desktroo is installed as an app",
+"Installer comme application": "Install as an app",
+"Desktroo s'ouvre alors dans sa propre fenêtre, avec son icône sur le bureau ou dans la barre des tâches de l'ordinateur.": "Desktroo then opens in its own window, with its icon on the computer's desktop or taskbar.",
+"Desktroo est installé.": "Desktroo is installed.",
+"Cette fenêtre est celle de l'application.": "This window is the app's.",
+"Installer Desktroo": "Install Desktroo",
+"Le navigateur demande une confirmation, puis crée le raccourci": "The browser asks for confirmation, then creates the shortcut",
+"Adresse non sécurisée.": "Unsecured address.",
+"Les navigateurs n'installent une application que depuis une adresse en https. Ouvrez Desktroo par son adresse sécurisée, puis revenez ici.": "Browsers only install an app from an https address. Open Desktroo through its secure address, then come back here.",
+"Le navigateur ne propose pas encore l'installation.": "The browser is not offering installation yet.",
+"Chrome et Edge la proposent après quelques instants passés sur la page ; elle se trouve aussi dans leur menu, ou à droite de la barre d'adresse.": "Chrome and Edge offer it after a few moments on the page; it is also in their menu, or at the right of the address bar.",
+"Selon le navigateur": "By browser",
+"Icône d'installation à droite de la barre d'adresse, ou menu du navigateur, puis « Installer Desktroo ».": "Install icon at the right of the address bar, or the browser menu, then “Install Desktroo”.",
+"Sur Mac : menu Fichier, puis « Ajouter au Dock ». Sur iPhone et iPad : bouton Partager, puis « Sur l'écran d'accueil ».": "On Mac: File menu, then “Add to Dock”. On iPhone and iPad: Share button, then “Add to Home Screen”.",
+"Pas d'installation sur ordinateur. Sur Android : menu, puis « Installer ».": "No installation on desktop. On Android: menu, then “Install”.",
+"L'application installée reste une fenêtre sur ce NAS : elle a besoin de le joindre, et se met à jour avec lui.": "The installed app remains a window onto this NAS: it needs to reach it, and updates along with it.",
+"Installer l'application": "Install the app",
+"Desktroo dans sa propre fenêtre, lancé depuis l'ordinateur": "Desktroo in its own window, launched from the computer"
 }
 </script>
 <script id="dk-i18n">
@@ -6573,6 +6608,10 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="user-drop-item" onclick="document.getElementById('user-dropdown').style.display='none';openApp('control');cpGo('look')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>
           <span>Couleur du thème</span>
+        </div>
+        <div class="user-drop-item" id="user-install-item" style="display:none;" onclick="document.getElementById('user-dropdown').style.display='none';dkInstallApp()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 7v6M9.5 10.5 12 13l2.5-2.5M8 20h8"/></svg>
+          <span>Installer l'application</span>
         </div>
         <div class="user-drop-item" onclick="logout()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
@@ -17949,6 +17988,8 @@ function dkBarApply() {
   if (bar) {
     // Encre : d'après la clarté du fond tel qu'il se voit, posé sur le fond d'écran. Rien à poser si c'est celle du thème.
     var seen = dkMix(rgb || base.rgb, base.under, 1 - (c.t != null ? c.t : base.t) / 100);
+    var tc = document.querySelector('meta[name="theme-color"]');
+    if (tc) tc.setAttribute('content', dkRgbHex(seen));   // bandeau de la fenêtre quand Desktroo est installé comme application
     var ink = dkLum(seen) > 0.55 ? 'dark' : 'light';
     if (ink === (dkBarLight() ? 'dark' : 'light')) bar.removeAttribute('data-ink'); else bar.setAttribute('data-ink', ink);
     // les menus de la barre gardent les couleurs du thème
@@ -18412,6 +18453,106 @@ function cpWidgetsView() {
 }
 
 // ===========================
+// TRANSPARENCE — fenêtres et widgets (celle de la barre système se règle au même endroit)
+// Gardée dans ce navigateur : « dk-glass » = { win, wg }, en % de transparence ; absent : celle du thème.
+// ===========================
+var DK_GLASS_MAX = { win: 70, wg: 100 };   // au-delà de 70 %, le contenu d'une fenêtre devient difficile à lire
+function dkGlassGet() {
+  var c = {};
+  try { c = JSON.parse(localStorage.getItem('dk-glass') || '{}') || {}; } catch (e) {}
+  var num = function(v, max) { return typeof v === 'number' && v >= 0 && v <= max ? Math.round(v) : null; };
+  return { win: num(c.win, DK_GLASS_MAX.win), wg: num(c.wg, DK_GLASS_MAX.wg) };
+}
+function dkGlassBase() { return dkBarLight() ? { win: 3, wg: 20 } : { win: 0, wg: 28 }; }
+function dkGlassApply() {
+  var c = dkGlassGet(), root = document.documentElement;
+  if (c.win != null) {
+    root.style.setProperty('--win-a', (1 - c.win / 100).toFixed(2));
+    root.style.setProperty('--win-blur', Math.round(8 + c.win * 0.3) + 'px');   // plus la fenêtre est transparente, plus le fond est flouté derrière
+  } else { root.style.removeProperty('--win-a'); root.style.removeProperty('--win-blur'); }
+  if (c.wg != null) root.style.setProperty('--wg-a', (1 - c.wg / 100).toFixed(2)); else root.style.removeProperty('--wg-a');
+}
+function dkGlassSlide(kind, v, out) {
+  var c = dkGlassGet();
+  c[kind] = Math.max(0, Math.min(DK_GLASS_MAX[kind], +v || 0));
+  try { localStorage.setItem('dk-glass', JSON.stringify(c)); } catch (e) {}
+  dkGlassApply();
+  var o = document.getElementById(out);
+  if (o) o.textContent = Tf('{0} %', Math.round(c[kind]));
+}
+function dkGlassReset() {
+  try { localStorage.removeItem('dk-glass'); } catch (e) {}
+  dkGlassApply();
+  dkBarSet({ t: null }, true);
+  if (wmVisible('control') && _cp.nav === 'glass') loadControl();
+  toast(T('Transparence d\'origine reprise'));
+}
+// Page « Transparence » du Panneau de configuration.
+function cpGlassView() {
+  var c = dkGlassGet(), base = dkGlassBase(), bar = dkBarGet(), barBase = dkBarBase(), stored = null;
+  try { stored = localStorage.getItem('dk-glass'); } catch (e) {}
+  wmHead('cp', T('Transparence'), { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true,
+    sub: T('Laisser voir le fond d\'écran à travers les fenêtres, les widgets et la barre système.') });
+  var opaque = 'Opaque', clear = 'Invisible';   // mêmes mots en français et en anglais
+  var row = function(title, id, value, max, kind, endLabel) {
+    var call = kind ? 'dkGlassSlide(\'' + kind + '\', this.value, \'' + id + '-out\')' : 'dkBarSlide(this.value)';
+    return '<div class="web-group-title">' + title + '</div><div class="bar-range"><span class="bar-range-ends">' + opaque + '</span>'
+      + '<input type="range" id="' + id + '" min="0" max="' + max + '" step="1" value="' + value + '" aria-label="' + webEsc(title) + '" oninput="' + call + '">'
+      + '<span class="bar-range-ends">' + endLabel + '</span><output id="' + id + '-out" for="' + id + '">' + Tf('{0} %', value) + '</output></div>';
+  };
+  var h = row(T('Fenêtres'), 'gl-win', c.win != null ? c.win : base.win, DK_GLASS_MAX.win, 'win', Tf('{0} %', DK_GLASS_MAX.win))
+    + '<p class="web-note">' + T('Limitée à 70 % pour que le contenu reste lisible. Le fond est flouté davantage à mesure que la fenêtre s\'éclaircit.') + '</p>'
+    + row('Widgets', 'gl-wg', c.wg != null ? c.wg : base.wg, DK_GLASS_MAX.wg, 'wg', clear)
+    + row(T('Barre système'), 'bar-t', bar.t != null ? bar.t : barBase.t, 100, '', clear);
+  if (stored || bar.t != null) h += '<p style="margin:16px 0 0;"><button class="fs-btn" onclick="dkGlassReset()">' + T('Reprendre la transparence d\'origine') + '</button></p>';
+  h += '<p class="web-note">' + T('Ces réglages sont gardés dans ce navigateur.') + '</p>';
+  wmBody('cp').innerHTML = h;
+}
+dkGlassApply();
+
+// ===========================
+// INSTALLATION COMME APPLICATION — Desktroo dans sa propre fenêtre, lancé depuis le bureau de l'ordinateur
+// Le navigateur (Chrome, Edge…) propose l'installation quand la page annonce un manifeste et qu'elle est servie
+// en https ; il nous confie alors un événement, qu'on rejoue quand la personne clique sur « Installer ».
+// ===========================
+var _dkInstall = null;
+function dkInstalled() { return !!((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true); }
+function dkInstallRefresh() {
+  var it = document.getElementById('user-install-item');
+  if (it) it.style.display = _dkInstall && !dkInstalled() ? '' : 'none';
+  if (wmVisible('control') && _cp.nav === 'install') loadControl();
+}
+window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); _dkInstall = e; dkInstallRefresh(); });
+window.addEventListener('appinstalled', function() { _dkInstall = null; dkInstallRefresh(); toast(T('✅ Desktroo est installé comme application')); });
+async function dkInstallApp() {
+  var e = _dkInstall;
+  if (!e) { openApp('control'); cpGo('install'); return; }
+  _dkInstall = null;
+  try { e.prompt(); await e.userChoice; } catch (err) {}
+  dkInstallRefresh();
+}
+function cpInstallView() {
+  wmHead('cp', T('Installer comme application'), { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true,
+    sub: T('Desktroo s\'ouvre alors dans sa propre fenêtre, avec son icône sur le bureau ou dans la barre des tâches de l\'ordinateur.') });
+  var h = '', note = function(t) { return '<p class="web-note">' + t + '</p>'; };
+  if (dkInstalled()) h += '<div class="cp-note ok"><strong>' + T('Desktroo est installé.') + '</strong> ' + T('Cette fenêtre est celle de l\'application.') + '</div>';
+  else if (_dkInstall) h += '<div class="web-group" style="margin-top:6px;">' + wmRow('dkInstallApp()', T('Installer Desktroo'), T('Le navigateur demande une confirmation, puis crée le raccourci')) + '</div>';
+  else if (!window.isSecureContext) h += '<div class="cp-note warn"><strong>' + T('Adresse non sécurisée.') + '</strong> '
+    + T('Les navigateurs n\'installent une application que depuis une adresse en https. Ouvrez Desktroo par son adresse sécurisée, puis revenez ici.') + '</div>';
+  else h += '<div class="cp-note"><strong>' + T('Le navigateur ne propose pas encore l\'installation.') + '</strong> '
+    + T('Chrome et Edge la proposent après quelques instants passés sur la page ; elle se trouve aussi dans leur menu, ou à droite de la barre d\'adresse.') + '</div>';
+  var words = function(t) { return '<span style="word-break:normal;overflow-wrap:break-word;">' + t + '</span>'; };   // ces lignes sont des phrases : pas de coupure au milieu d'un mot
+  h += '<div class="web-group-title">' + T('Selon le navigateur') + '</div>'
+    + netFacts([
+      ['Chrome, Edge', words(T('Icône d\'installation à droite de la barre d\'adresse, ou menu du navigateur, puis « Installer Desktroo ».'))],
+      ['Safari', words(T('Sur Mac : menu Fichier, puis « Ajouter au Dock ». Sur iPhone et iPad : bouton Partager, puis « Sur l\'écran d\'accueil ».'))],
+      ['Firefox', words(T('Pas d\'installation sur ordinateur. Sur Android : menu, puis « Installer ».'))]
+    ])
+    + note(T('L\'application installée reste une fenêtre sur ce NAS : elle a besoin de le joindre, et se met à jour avec lui.'));
+  wmBody('cp').innerHTML = h;
+}
+
+// ===========================
 // PANNEAU DE CONFIGURATION — tous les réglages, rangés par domaine
 // ===========================
 var _cp = { nav: 'all', q: '' };
@@ -18421,6 +18562,8 @@ function cpExtra() {
   return {
     look: { label: T('Couleur du thème'), action: function() { cpGo('look'); }, imgStyle: 'background:conic-gradient(#3ecf8e,#4d9fff,#f25f66,#f5a524,#f0d43a,#aab5c8,#3ecf8e);', svg: '<svg ' + CP_SVG + '><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>' },
     widgets: { label: 'Widgets', action: function() { cpGo('widgets'); }, imgStyle: 'background:linear-gradient(135deg,#7c3aed,#22d3ee);', svg: '<svg ' + CP_SVG + '><rect x="3" y="3" width="8" height="10" rx="2"/><rect x="13" y="3" width="8" height="6" rx="2"/><rect x="13" y="11" width="8" height="10" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg>' },
+    glass: { label: T('Transparence'), action: function() { cpGo('glass'); }, imgStyle: 'background:linear-gradient(135deg,rgba(56,189,248,0.95),rgba(129,140,248,0.55));', svg: '<svg ' + CP_SVG + '><rect x="3" y="5" width="12" height="10" rx="2"/><rect x="9" y="9" width="12" height="10" rx="2" stroke-dasharray="2.5 2.5"/></svg>' },
+    install: { label: T('Installer comme application'), action: function() { cpGo('install'); }, imgStyle: 'background:linear-gradient(135deg,#0ea5e9,#22c55e);', svg: '<svg ' + CP_SVG + '><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 7v6M9.5 10.5 12 13l2.5-2.5M8 20h8"/></svg>' },
     bar: { label: T('Barre système'), action: function() { cpGo('bar'); }, imgStyle: 'background:linear-gradient(135deg,#0f766e,#38bdf8);', svg: '<svg ' + CP_SVG + '><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/><path d="M6.5 6.5h.01M9.5 6.5h.01"/></svg>' },
     sysconfig: { label: T('Configuration système'), action: function() { openApp('sysconfig'); }, imgStyle: 'background:linear-gradient(135deg,#475569,#94a3b8);', svg: '<svg ' + CP_SVG + '><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' },
     alertconfig: { label: T('Configuration des alertes'), action: function() { openApp('alertconfig'); }, imgStyle: 'background:linear-gradient(135deg,#f59e0b,#f97316);', svg: '<svg ' + CP_SVG + '><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/><path d="M19 3l2 2M5 3 3 5"/></svg>' },
@@ -18439,14 +18582,14 @@ function cpGroups() {
     { key: 'system', label: T('Système'), items: [['sysinfo', T('Matériel, version et charge du NAS')], ['reports', T('Courbes de charge dans le temps')], ['sysconfig', T('Nom du NAS, fuseau horaire, serveurs de temps')],
         ['services', T('SSH, SMB, NFS et autres services')], ['cron', T('Commandes lancées à heure fixe')], ['update', T('Nouvelles versions de TrueNAS')], ['bootenv', T('Versions du système gardées sur le NAS')],
         ['notifs', T('Alertes en cours')], ['alertconfig', T('Où et quand être prévenu')], ['failover', T('Bascule entre deux contrôleurs')], ['terminal', T('Ligne de commande du NAS')], ['truenas-ui', T('L\'interface d\'origine de TrueNAS')]] },
-    { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['bar', T('Position, masquage, fond et transparence')], ['widgets', T('Horloge, météo, ressources, réseau, stockage, alertes')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
+    { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['bar', T('Position, masquage, fond et transparence')], ['widgets', T('Horloge, météo, ressources, réseau, stockage, alertes')], ['glass', T('Fenêtres, widgets et barre système')], ['install', T('Desktroo dans sa propre fenêtre, lancé depuis l\'ordinateur')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
   ];
 }
 function cpEntry(id) { return cpExtra()[id] || ALL_APPS.find(function(a) { return a.id === id; }) || null; }
 function cpGo(nav) { _cp.nav = nav; _cp.q = ''; loadControl(); }
 function loadControl() {
   if (!wmBody('cp')) return;
-  var page = { look: cpLookView, bar: cpBarView, widgets: cpWidgetsView }[_cp.nav], look = !!page;   // pages de réglage du domaine « Bureau Desktroo »
+  var page = { look: cpLookView, bar: cpBarView, widgets: cpWidgetsView, glass: cpGlassView, install: cpInstallView }[_cp.nav], look = !!page;   // pages de réglage du domaine « Bureau Desktroo »
   var groups = cpGroups(), cur = groups.find(function(g) { return g.key === (look ? 'desk' : _cp.nav); });
   if (!cur) _cp.nav = 'all';
   var h = wmNav({ active: _cp.nav === 'all', call: 'cpGo(\'all\')', icon: 'grid', name: T('Tous les réglages') }) + wmSep() + wmSideTitle(T('Domaines'));
