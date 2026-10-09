@@ -313,6 +313,13 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .icon-network   { background:linear-gradient(135deg,#0d9488,#2dd4bf); }
   .icon-terminal  { background:linear-gradient(135deg,#0f172a,#1e293b); }
   .icon-vm        { background:linear-gradient(135deg,#0369a1,#0ea5e9); }
+  .icon-alerts    { background:linear-gradient(135deg,#e11d48,#fb7185); }
+  .icon-reports   { background:linear-gradient(135deg,#4f46e5,#22d3ee); }
+  .icon-users     { background:linear-gradient(135deg,#2563eb,#60a5fa); }
+  .icon-sharing   { background:linear-gradient(135deg,#ea580c,#fb923c); }
+  .icon-services  { background:linear-gradient(135deg,#475569,#94a3b8); }
+  .icon-certs     { background:linear-gradient(135deg,#b45309,#facc15); }
+  .icon-dp        { background:linear-gradient(135deg,#15803d,#4ade80); }
 
   /* ===== WIDGETS AREA (top right) ===== */
   #widgets {
@@ -1056,6 +1063,69 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .disk-status { font-size:11px; padding:2px 8px; border-radius:10px; }
   .disk-status.ONLINE { background:rgba(62,207,142,0.15); color:var(--success); }
 
+  /* ===== RAPPORTS, INFORMATIONS SYSTÈME, PANNEAU DE CONFIGURATION ===== */
+  #win-reports, #win-sysinfo, #win-control { min-width:860px; min-height:520px; }
+  /* Courbes */
+  .rp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; margin-top:6px; }
+  .rp-grid.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .rp-card { display:flex; flex-direction:column; gap:8px; min-width:0; padding:14px 16px 12px; border:1px solid var(--glass-border); border-radius:14px; background:rgba(255,255,255,0.03); }
+  [data-theme="light"] .rp-card, [data-theme="light"] .si-tile { background:rgba(255,255,255,0.7); }
+  .rp-card-top { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:4px 12px; }
+  .rp-title { font-size:13px; font-weight:600; }
+  .rp-legend { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; color:var(--text-dim); }
+  .rp-key { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .rp-key i, .rp-tip i { width:8px; height:8px; flex-shrink:0; border-radius:50%; }
+  .rp-key strong { font-weight:600; font-variant-numeric:tabular-nums; color:var(--text); }
+  .rp-plot { position:relative; height:150px; cursor:crosshair; }
+  .rp-card.compact .rp-plot { height:90px; }
+  .rp-plot svg { display:block; width:calc(100% - 60px); height:100%; margin-left:60px; }
+  .rp-grid-l { stroke:rgba(255,255,255,0.07); stroke-width:1; vector-effect:non-scaling-stroke; }
+  [data-theme="light"] .rp-grid-l { stroke:rgba(13,27,53,0.09); }
+  .rp-line { fill:none; stroke-width:1.7; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+  .rp-area { opacity:0.13; stroke:none; }
+  .rp-y { position:absolute; inset:0 auto 0 0; width:54px; text-align:right; white-space:nowrap; display:flex; flex-direction:column; justify-content:space-between; pointer-events:none; font-size:10.5px; font-variant-numeric:tabular-nums; color:var(--text-dim); }
+  .rp-x { display:flex; justify-content:space-between; padding-left:60px; font-size:10.5px; font-variant-numeric:tabular-nums; color:var(--text-dim); }
+  .rp-stats { display:flex; flex-wrap:wrap; gap:2px 16px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.06); font-size:11.5px; color:var(--text-dim); }
+  [data-theme="light"] .rp-stats { border-top-color:rgba(0,0,0,0.08); }
+  .rp-cursor { display:none; position:absolute; top:0; bottom:0; width:1px; background:var(--text-dim); opacity:0.5; pointer-events:none; }
+  .rp-tip {
+    display:none; position:absolute; top:6px; z-index:2; flex-direction:column; gap:3px; padding:7px 10px; border-radius:9px; border:1px solid var(--glass-border);
+    background:rgba(10,18,34,0.95); box-shadow:0 8px 24px rgba(0,0,0,0.35); font-size:11.5px; white-space:nowrap; pointer-events:none;
+  }
+  [data-theme="light"] .rp-tip { background:#ffffff; box-shadow:0 8px 24px rgba(13,27,53,0.16); }
+  .rp-tip span { display:flex; align-items:center; gap:6px; color:var(--text-dim); }
+  .rp-tip strong, .rp-tip .rp-tip-t { font-weight:600; color:var(--text); }
+  .rp-none { display:grid; place-items:center; height:110px; font-size:12px; color:var(--text-dim); }
+  .rp-range { display:inline-flex; padding:3px; border-radius:999px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.04); }
+  [data-theme="light"] .rp-range { background:#ffffff; border-color:rgba(0,0,0,0.14); }
+  .rp-range button { padding:5px 12px; border:0; border-radius:999px; background:none; color:var(--text-dim); font:inherit; font-size:12px; white-space:nowrap; cursor:pointer; transition:color .15s, background .15s; }
+  .rp-range button:hover { color:var(--text); }
+  .rp-range button.active { background:var(--accent); color:var(--accent-ink); font-weight:600; }
+  .rp-range button:focus-visible { outline:2px solid var(--accent2); outline-offset:1px; }
+  /* Informations système */
+  .si-tiles { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:4px 0 18px; }
+  .si-tile { display:flex; flex-direction:column; gap:6px; min-width:0; padding:14px 16px; border:1px solid var(--glass-border); border-radius:14px; background:rgba(255,255,255,0.03); }
+  .si-tile-label { font-size:12px; color:var(--text-dim); }
+  .si-tile-value { font-family:var(--font-display); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .si-tile-sub { margin-top:auto; font-size:11.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .web-table.si-disks { --wt-cols:86px minmax(0,1fr) 100px minmax(0,0.7fr); }
+  /* Panneau de configuration */
+  .cp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(262px,1fr)); gap:10px; }
+  .cp-item {
+    display:flex; align-items:center; gap:13px; min-width:0; padding:11px 13px; border:1px solid var(--glass-border); border-radius:13px;
+    background:rgba(255,255,255,0.03); color:var(--text); font:inherit; text-align:left; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .cp-item:hover { background:rgba(255,255,255,0.06); border-color:rgba(var(--accent2-rgb),0.4); }
+  .cp-item:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  [data-theme="light"] .cp-item { background:rgba(255,255,255,0.7); }
+  [data-theme="light"] .cp-item:hover { background:#ffffff; }
+  .cp-ico { display:grid; place-items:center; flex:0 0 auto; width:38px; height:38px; border-radius:11px; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.1); }
+  .cp-ico svg { width:20px; height:20px; }
+  .cp-text { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .cp-name { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cp-desc { font-size:11.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #cp-head .snap-find { width:240px; }
+
   /* ===== APPLICATIONS, CONTENEURS, CATALOGUE ===== */
   #win-apps, #win-docker, #win-catalog { min-width:860px; min-height:520px; }
   .web-nav > .web-count { margin-left:auto; }
@@ -1199,14 +1269,6 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); color:var(--text-dim);
   }
 
-  /* ===== CONTROL PANEL ===== */
-  .control-panel { padding:16px; }
-  .cp-sections { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
-  .cp-section { background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:var(--radius); padding:14px; cursor:pointer; transition:border-color 0.2s, background 0.2s; }
-  .cp-section:hover { border-color:rgba(var(--accent-rgb),0.4); background:rgba(var(--accent-rgb),0.06); }
-  .cp-section-icon { font-size:28px; margin-bottom:8px; }
-  .cp-section-name { font-family:var(--font-display); font-size:13.5px; font-weight:600; margin-bottom:4px; }
-  .cp-section-desc { font-size:11px; color:var(--text-dim); line-height:1.4; }
 
   /* ===== LOADING SPINNER ===== */
   .spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,0.1); border-top-color:var(--accent2); border-radius:50%; animation:spin 0.8s linear infinite; }
@@ -2887,18 +2949,12 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Passer en sombre": "Switch to dark mode",
 "Chargement...": "Loading...",
 "Réponse invalide": "Invalid response",
-"logiques": "logical",
 "Système": "System",
-"Plateforme": "Platform",
 "Démarrage": "Boot time",
 "Matériel": "Hardware",
-"Modèle CPU": "CPU model",
 "Cœurs": "Cores",
-"RAM totale": "Total RAM",
 "Numéro de série": "Serial number",
 "Fabricant": "Manufacturer",
-"Interfaces actives": "Active interfaces",
-"🔄 Vérifier les mises à jour": "🔄 Check for updates",
 "🌐 Réseau": "🌐 Network",
 "Erreur:": "Error:",
 "Chemin de fichier invalide.": "Invalid file path.",
@@ -3681,7 +3737,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Aucun certificat": "No certificates",
 "Expire": "Expired",
 "Valide": "Valid",
-"Donnees non disponibles": "Data not available",
 "HA non configure": "HA not configured",
 "Haute Disponibilite": "High availability",
 "Principal": "Primary",
@@ -4167,7 +4222,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Échec, restauration des partages déjà modifiés…": "Failed, restoring already modified shares…",
 "Accès refusé par la politique Desktroo": "Access denied by Desktroo policy",
 "Droits d’accès": "Access rights",
-"Utilisateurs, groupes, partages SMB, applications": "Users, groups, SMB shares, applications",
 "Le bureau web pour votre TrueNAS": "The web desktop for your TrueNAS",
 "Nom d'utilisateur": "Username",
 "Clé API (optionnel — remplace le mot de passe)": "API key (optional — replaces the password)",
@@ -4186,16 +4240,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Redémarrer le NAS": "Restart the NAS",
 "Éteindre le NAS": "Shut down the NAS",
 "Applications installées": "Installed applications",
-"Pools, datasets, snapshots ZFS": "Pools, datasets, ZFS snapshots",
-"Comptes, groupes, permissions": "Accounts, groups, permissions",
 "Configuration système": "System configuration",
-"Général, NTP, email, logs": "General, NTP, email, logs",
-"Réplication, snapshots, scrub": "Replication, snapshots, scrub",
-"Graphiques CPU, RAM, réseau": "CPU, RAM, network charts",
-"Mises à niveau de TrueNAS SCALE": "TrueNAS SCALE upgrades",
 "Haute disponibilité": "High availability",
 "Configuration des alertes": "Alert settings",
-"Notifications, seuils, email": "Notifications, thresholds, email",
 "↻ Actualiser le bureau": "↻ Refresh desktop",
 "📊 Afficher/masquer widgets": "📊 Show/hide widgets",
 "🖼️ Fond d’écran": "🖼️ Wallpaper",
@@ -4432,7 +4479,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Sélectionnez un utilisateur": "Select a user",
 "Dossiers partagés": "Shared folders",
 "Historique": "History",
-"physiques /": "physical /",
 "S'abonner —": "Subscribe —",
 "€/mois": "€/month",
 "pour «": "for “",
@@ -5083,7 +5129,122 @@ select option{ background:#101b2e; color:#e9eef7; }
 "1 relance": "1 restart",
 "1 conteneur": "1 container",
 "1 conteneur arrêté": "1 container stopped",
-"1 conteneur en marche": "1 container running"
+"1 conteneur en marche": "1 container running",
+"1 interface active": "1 active interface",
+"{0} interfaces actives": "{0} active interfaces",
+"Aucune interface active": "No active interface",
+"12 derniers mois": "last 12 months",
+"30 derniers jours": "last 30 days",
+"7 derniers jours": "last 7 days",
+"dernière heure": "last hour",
+"dernières 24 heures": "last 24 hours",
+"7 j": "7 d",
+"30 j": "30 d",
+"1 an": "1 y",
+"Abonnement Desktroo": "Desktroo subscription",
+"Actuellement clair": "Currently light",
+"Actuellement sombre": "Currently dark",
+"Alertes en cours": "Current alerts",
+"Alimentation": "Power",
+"Attente des disques": "Waiting for disks",
+"Aucun réglage ne correspond": "No setting matches",
+"Aucune mesure ici": "No measurement here",
+"Bascule entre deux contrôleurs": "Failover between two controllers",
+"Bureau Desktroo": "Desktroo desktop",
+"Cache ZFS (ARC)": "ZFS cache (ARC)",
+"Certificats TLS du NAS": "TLS certificates of the NAS",
+"Charge du système": "System load",
+"Charge moyenne": "Load average",
+"Commandes lancées à heure fixe": "Commands run on a schedule",
+"Comptes et accès": "Accounts and access",
+"Comptes et groupes": "Accounts and groups",
+"Conteneurs, charge et journaux": "Containers, load and logs",
+"Courbes de charge dans le temps": "Load charts over time",
+"Dernière heure": "Last hour",
+"Domaines": "Areas",
+"Dossiers partagés sur le réseau": "Folders shared on the network",
+"Durée de fonctionnement": "Uptime",
+"Démarré le": "Started on",
+"En marche depuis": "Running for",
+"Envoyé": "Sent",
+"Fond d'écran": "Wallpaper",
+"Fuseau horaire": "Time zone",
+"Gestionnaire de téléchargements": "Download manager",
+"Heure du NAS": "NAS time",
+"Héberger des sites sur le NAS": "Host websites on the NAS",
+"Il faudra le rallumer sur place": "It will have to be switched back on by hand",
+"Image affichée derrière les fenêtres": "Picture shown behind the windows",
+"Indisponible quelques minutes, le temps de redémarrer": "Unavailable for a few minutes while it restarts",
+"Installer de nouvelles applications": "Install new applications",
+"Interfaces, adresses, passerelle et DNS": "Interfaces, addresses, gateway and DNS",
+"L'interface d'origine de TrueNAS": "The original TrueNAS interface",
+"Le NAS ne donne pas ses informations": "The NAS is not giving its information",
+"Lecture des mesures...": "Reading measurements...",
+"Les mesures ne répondent pas": "Measurements are not responding",
+"Ligne de commande du NAS": "Command line of the NAS",
+"Matériel, version et charge du NAS": "Hardware, version and load of the NAS",
+"{0} : {1}": "{0}: {1}",
+"Actifs": "Running",
+"Bloqués": "Blocked",
+"Mesures": "Measurements",
+"Moyenne": "Average",
+"Mémoire utilisée": "Memory used",
+"Nom du NAS": "NAS name",
+"Nom du NAS, fuseau horaire, serveurs de temps": "NAS name, time zone, time servers",
+"Nouvelles versions de TrueNAS": "New TrueNAS versions",
+"Où et quand être prévenu": "Where and when to be notified",
+"Parcourir les fichiers du NAS": "Browse the files of the NAS",
+"Pas de mesure sur cette période": "No measurement over this period",
+"Points de restauration des datasets": "Restore points of the datasets",
+"Pools, datasets et espace disponible": "Pools, datasets and available space",
+"Processus": "Processes",
+"Programmes": "Programs",
+"Période": "Period",
+"Qui accède à quels partages et applications": "Who can reach which shares and applications",
+"Rechercher un réglage": "Search for a setting",
+"Revenir à une version précédente du système": "Go back to an earlier system version",
+"Reçu": "Received",
+"Régler le réseau": "Set up the network",
+"Réseau et partages": "Network and shares",
+"SSH, SMB, NFS et autres services": "SSH, SMB, NFS and other services",
+"Santé des disques, températures et vérifications": "Disk health, temperatures and checks",
+"Santé et température des disques": "Disk health and temperature",
+"Sauvegardes, réplication et tâches de protection": "Backups, replication and protection tasks",
+"Température des disques": "Disk temperature",
+"Température du processeur": "CPU temperature",
+"Thème clair ou sombre": "Light or dark theme",
+"Tous les réglages du NAS et du bureau, rangés par domaine.": "Every setting of the NAS and of the desktop, sorted by area.",
+"Tous les réglages": "All settings",
+"Toutes les courbes": "All charts",
+"TrueNAS ne relève rien pour cette rubrique sur ce NAS.": "TrueNAS records nothing for this section on this NAS.",
+"Tâches de fond": "Background tasks",
+"Utilisation du processeur": "CPU usage",
+"Utilisation": "Usage",
+"Utilisée": "Used",
+"Version compilée le": "Version built on",
+"Version et mise à jour de Desktroo": "Desktroo version and update",
+"Versions du système gardées sur le NAS": "System versions kept on the NAS",
+"Vérifier et installer une nouvelle version": "Check for and install a new version",
+"avec correction d'erreurs (ECC)": "with error correction (ECC)",
+"sans correction d'erreurs (non ECC)": "without error correction (non-ECC)",
+"branchée": "connected",
+"débranchée": "disconnected",
+"sur 1, 5 et 15 minutes": "over 1, 5 and 15 minutes",
+"1 jour et {0} h": "1 day and {0} h",
+"{0} jours et {1} h": "{0} days and {1} h",
+"Activité du disque {0}": "Activity of disk {0}",
+"Rien ne contient « {0} ».": "Nothing contains “{0}”.",
+"Température du disque {0}": "Temperature of disk {0}",
+"Trafic réseau, {0}": "Network traffic, {0}",
+"démarré le {0}": "started on {0}",
+"moyenne {0}, maximum {1}": "average {0}, maximum {1}",
+"{0} cœurs": "{0} cores",
+"{0} cœurs, {1} fils d'exécution": "{0} cores, {1} threads",
+"{0} sur {1}": "{0} of {1}",
+"Modèle du NAS": "NAS model",
+"libre": "free",
+"processeur": "CPU",
+"Mémoire disponible": "Memory available"
 }
 </script>
 <script id="dk-i18n">
@@ -5660,7 +5821,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <!-- SYSTEM INFO WINDOW -->
-<div class="window" id="win-sysinfo" style="top:60px;left:200px;width:680px;height:540px;">
+<div class="window" id="win-sysinfo" style="top:60px;left:200px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="sysinfo">
     <span class="window-icon">📊</span>
     <span class="window-title">Informations système</span>
@@ -5670,9 +5831,16 @@ document.addEventListener('DOMContentLoaded', function () {
       <button class="win-btn cls" onclick="closeWin('sysinfo')"></button>
     </div>
   </div>
-  <div class="window-body">
-    <div class="sysinfo" id="sysinfo-content">
-      <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="si-side" aria-label="Informations système"></nav>
+      <section class="web-main">
+        <header class="web-head" id="si-head"></header>
+        <div class="web-body" id="si-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="sysinfo"></div>
@@ -5717,7 +5885,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <!-- CONTROL PANEL WINDOW -->
-<div class="window" id="win-control" style="top:60px;left:240px;width:700px;height:540px;">
+<div class="window" id="win-control" style="top:60px;left:240px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="control">
     <span class="window-icon">⚙️</span>
     <span class="window-title">Panneau de configuration</span>
@@ -5727,70 +5895,16 @@ document.addEventListener('DOMContentLoaded', function () {
       <button class="win-btn cls" onclick="closeWin('control')"></button>
     </div>
   </div>
-  <div class="window-body">
-    <div class="control-panel">
-      <div class="cp-sections">
-        <div class="cp-section" onclick="openApp('storage')">
-          <div class="cp-section-icon">💾</div>
-          <div class="cp-section-name">Stockage</div>
-          <div class="cp-section-desc">Pools, datasets, snapshots ZFS</div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="cp-side" aria-label="Panneau de configuration"></nav>
+      <section class="web-main">
+        <header class="web-head" id="cp-head"></header>
+        <div class="web-body" id="cp-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> </div>
         </div>
-        <div class="cp-section" onclick="openApp('network')">
-          <div class="cp-section-icon">🌐</div>
-          <div class="cp-section-name">Réseau</div>
-          <div class="cp-section-desc">Interfaces, routes, DNS, VLANs</div>
-        </div>
-        <div class="cp-section" onclick="openApp('users')">
-          <div class="cp-section-icon">👥</div>
-          <div class="cp-section-name">Utilisateurs</div>
-          <div class="cp-section-desc">Comptes, groupes, permissions</div>
-        </div>
-        <div class="cp-section" onclick="openApp('sharing')">
-          <div class="cp-section-icon">📡</div>
-          <div class="cp-section-name">Partages</div>
-          <div class="cp-section-desc">SMB, NFS, iSCSI, FTP</div>
-        </div>
-        <div class="cp-section" onclick="openApp('services')">
-          <div class="cp-section-icon">🔧</div>
-          <div class="cp-section-name">Services</div>
-          <div class="cp-section-desc">SSH, SNMP, S.M.A.R.T.</div>
-        </div>
-        <div class="cp-section" onclick="openApp('sysconfig')">
-          <div class="cp-section-icon">🖥️</div>
-          <div class="cp-section-name">Configuration système</div>
-          <div class="cp-section-desc">Général, NTP, email, logs</div>
-        </div>
-        <div class="cp-section" onclick="openApp('dataprotect')">
-          <div class="cp-section-icon">🛡️</div>
-          <div class="cp-section-name">Protection des données</div>
-          <div class="cp-section-desc">Réplication, snapshots, scrub</div>
-        </div>
-        <div class="cp-section" onclick="openApp('certs')">
-          <div class="cp-section-icon">🔒</div>
-          <div class="cp-section-name">Certificats</div>
-          <div class="cp-section-desc">TLS, CA, ACME</div>
-        </div>
-        <div class="cp-section" onclick="openApp('reports')">
-          <div class="cp-section-icon">📈</div>
-          <div class="cp-section-name">Rapports</div>
-          <div class="cp-section-desc">Graphiques CPU, RAM, réseau</div>
-        </div>
-        <div class="cp-section" onclick="openApp('update')">
-          <div class="cp-section-icon">🔄</div>
-          <div class="cp-section-name">Mises à jour TrueNAS</div>
-          <div class="cp-section-desc">Mises à niveau de TrueNAS SCALE</div>
-        </div>
-        <div class="cp-section" onclick="openApp('failover')">
-          <div class="cp-section-icon">🔁</div>
-          <div class="cp-section-name">Haute disponibilité</div>
-          <div class="cp-section-desc">Failover, HA cluster</div>
-        </div>
-        <div class="cp-section" onclick="openApp('alertconfig')">
-          <div class="cp-section-icon">🔔</div>
-          <div class="cp-section-name">Configuration des alertes</div>
-          <div class="cp-section-desc">Notifications, seuils, email</div>
-        </div>
-      </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="control"></div>
@@ -5886,77 +6000,6 @@ function toast(msg, duration) {
   el.textContent = msg;
   box.appendChild(el);
   setTimeout(function() { el.remove(); }, duration);
-}
-
-async function loadSysInfo() {
-  // Dashboard gauges (non-bloquant)
-  loadSysStats();
-  // Fenêtre Informations système
-  const el = document.getElementById('sysinfo-content');
-  if (!el) return;
-  el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
-  try {
-    const info = await socketCall('/system/info');
-    if (!info || typeof info !== 'object') throw new Error(T('Réponse invalide'));
-
-    function row(label, val) {
-      return '<div class="sysinfo-row"><span class="label">' + label + '</span><span class="value">' + (val || '—') + '</span></div>';
-    }
-    function card(title, rows) {
-      return '<div class="sysinfo-card"><h3>' + title + '</h3>' + rows + '</div>';
-    }
-
-    const uptime = info.uptime_seconds ? fmtUptime(info.uptime_seconds) : '—';
-    const ram    = info.physmem ? fmtBytes(info.physmem) : '—';
-    const cores  = (info.cores || info.physical_cores) ? (info.physical_cores || info.cores) + T(' physiques / ') + (info.cores || info.physical_cores) + T(' logiques') : '—';
-    const boot   = info.datetime ? new Date(info.datetime.$date || info.datetime).toLocaleString(DK_LOCALE) : '—';
-
-    var html = '<div class="sysinfo-grid">';
-
-    // Carte Système
-    html += card(T('Système'),
-      row('Hostname',  info.hostname)
-    + row('Version',   info.version)
-    + row(T('Plateforme'), info.platform || info.system_product || '—')
-    + row(T('Démarrage'), boot)
-    + row('Uptime',    uptime)
-    );
-
-    // Carte Matériel
-    html += card(T('Matériel'),
-      row(T('Modèle CPU'), info.cpu_model || '—')
-    + row(T('Cœurs'),      cores)
-    + row(T('RAM totale'), ram)
-    + row(T('Numéro de série'), info.system_serial || '—')
-    + row(T('Fabricant'), info.system_manufacturer || '—')
-    );
-
-    html += '</div>';
-
-    // Carte réseau (interfaces)
-    try {
-      const ifaces = await socketCall('/interface');
-      const ifList = (Array.isArray(ifaces) ? ifaces : []).filter(i => i.state && i.state.link_state === 'LINK_STATE_UP');
-      if (ifList.length) {
-        var ifRows = '';
-        ifList.forEach(function(i) {
-          var addrs = (i.state.aliases || []).filter(a => a.address).map(a => a.address + (a.netmask ? '/' + a.netmask : '')).join(', ') || '—';
-          ifRows += row(i.name, addrs);
-        });
-        html += T('<div class="sysinfo-card" style="margin-bottom:12px;"><h3>Interfaces actives</h3>') + ifRows + '</div>';
-      }
-    } catch(_) {}
-
-    // Carte licences / pools (infos NAS)
-    html += '<div style="display:flex;gap:10px;margin-bottom:12px;">'
-      + T('<button class="fs-btn" onclick="openApp(\'update\')">🔄 Vérifier les mises à jour</button>')
-      + T('<button class="fs-btn" onclick="openApp(\'network\')">🌐 Réseau</button>')
-      + '</div>';
-
-    el.innerHTML = html;
-  } catch(e) {
-    el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">⚠️</div><span>Erreur: ') + e.message + '</span></div>';
-  }
 }
 
 function closeWin(id) { closeApp(id); }
@@ -11394,6 +11437,7 @@ function openApp(id) {
     apps:         loadApps,
     docker:       loadContainers,
     sysinfo:      loadSysInfo,
+    control:      loadControl,
     update:       loadUpdates,
     network:      loadNetwork,
     notifs:       loadAlertsWindow,
@@ -15486,32 +15530,471 @@ async function loadCerts() {
   } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
 }
 
-// ============================================================
-// REPORTS
-// ============================================================
+// ===========================
+// COURBES — mesures de TrueNAS (reporting.get_data), dessinées en SVG
+// Servent à la fenêtre Rapports et à la vue d'ensemble d'Informations système.
+// ===========================
+var RP_COLORS = ['var(--accent2)', '#60a5fa', '#c084fc', '#fbbf24', '#f472b6', '#2dd4bf'];
+var _rpCharts = {};
+var _rpSeq = 0;
+function rpNum(v, d) { return Number(v).toLocaleString(DK_LOCALE, { maximumFractionDigits: d == null ? 1 : d }); }
+// Mise en forme d'une valeur selon l'unité annoncée par TrueNAS (« vertical_label »).
+function rpFormatter(label) {
+  var l = String(label || '').toLowerCase();
+  var size = function(v) { return mntFmtSize(Math.max(0, v)); };
+  if (l === 'bytes') return { kind: 'size', fmt: size };
+  if (l === 'bytes/s') return { kind: 'rate', fmt: function(v) { return size(v) + '/s'; } };
+  if (l === 'kibibytes/s') return { kind: 'rate', fmt: function(v) { return size(v * 1024) + '/s'; } };
+  if (l === 'kilobits/s' || l === 'kibibits/s') return { kind: 'bits', fmt: function(v) {
+    var b = Math.max(0, v) * (l === 'kibibits/s' ? 1024 : 1000);
+    return b >= 1e9 ? rpNum(b / 1e9, 2) + ' Gbit/s' : (b >= 1e6 ? rpNum(b / 1e6) + ' Mbit/s' : (b >= 1e3 ? rpNum(b / 1e3) + ' kbit/s' : rpNum(b, 0) + ' bit/s'));
+  } };
+  if (l === 'celsius') return { kind: 'temp', fmt: function(v) { return rpNum(v, 0) + ' °C'; } };
+  if (l.indexOf('%') >= 0 || l === 'percentage') return { kind: 'pct', fmt: function(v) { return rpNum(v) + ' %'; } };
+  if (l === 'seconds') return { kind: 'time', fmt: function(v) { return fmtUptime(v); } };
+  return { kind: 'num', fmt: function(v) { return rpNum(v, v < 10 ? 2 : 1); } };
+}
+function rpSeriesLabel(k) {
+  var m = { received: T('Reçu'), sent: T('Envoyé'), reads: T('Lecture'), writes: T('Écriture'), read: T('Lecture'), write: T('Écriture'), shortterm: T('1 minute'), midterm: T('5 minutes'), longterm: T('15 minutes'),
+    temperature_value: T('Température'), available: T('Disponible'), used: T('Utilisée'), cpu: T('Utilisation'), size: T('Taille'), mean: T('Moyenne'), max: T('Maximum'), user: T('Programmes'), system: T('Système'),
+    iowait: T('Attente des disques'), nice: T('Tâches de fond'), running: T('Actifs'), blocked: T('Bloqués') };
+  return m[k] || k;
+}
+// Une réponse de reporting.get_data → { times, series:[{ key, values }] }
+function rpParse(r) {
+  r = Array.isArray(r) ? r[0] : r;
+  var rows = ensureArray(r && r.data), legend = ensureArray(r && r.legend), times = [], series = [];
+  for (var c = 1; c < legend.length; c++) series.push({ key: String(legend[c]), values: [] });
+  rows.forEach(function(row) {
+    if (!Array.isArray(row) || row[0] == null) return;
+    times.push(Number(row[0]) * 1000);
+    series.forEach(function(s, i) { var v = row[i + 1]; s.values.push(v == null || !isFinite(Number(v)) ? null : Number(v)); });
+  });
+  return { times: times, series: series };
+}
+function rpLast(values) { for (var i = values.length - 1; i >= 0; i--) if (values[i] != null) return values[i]; return null; }
+function rpStats(values) {
+  var n = 0, sum = 0, max = -Infinity, min = Infinity;
+  values.forEach(function(v) { if (v == null) return; n++; sum += v; if (v > max) max = v; if (v < min) min = v; });
+  return n ? { mean: sum / n, max: max, min: min } : null;
+}
+// Mesure brute → courbe lisible : séries utiles, noms en clair, plafond.
+function rpBuild(name, id, raw, meta, ctx) {
+  var p = rpParse(raw), unit = (meta && meta.vertical_label) || '', c = { name: name, id: id || '', times: p.times, series: p.series, unit: unit, title: (meta && meta.title) || name };
+  var keys = p.series.map(function(s) { return s.key; });
+  if (name === 'cpu') {
+    c.title = T('Utilisation du processeur'); c.max = 100; c.unit = '%';
+    var total = p.series.find(function(s) { return s.key === 'cpu'; }), cores = p.series.filter(function(s) { return /^cpu\d+$/.test(s.key); });
+    if (total) c.series = [total];
+    else if (cores.length) c.series = [{ key: 'cpu', values: p.times.map(function(_, i) { var n = 0, sum = 0; cores.forEach(function(s) { if (s.values[i] != null) { n++; sum += s.values[i]; } }); return n ? sum / n : null; }) }];
+    else c.series = p.series.filter(function(s) { return s.key !== 'idle'; });
+  } else if (name === 'memory') {
+    c.title = T('Mémoire'); c.unit = 'Bytes';
+    var av = p.series.find(function(s) { return s.key === 'available'; });
+    if (av && keys.length === 1 && ctx && ctx.physmem) { c.title = T('Mémoire utilisée'); c.max = ctx.physmem; c.series = [{ key: 'used', values: av.values.map(function(v) { return v == null ? null : Math.max(0, ctx.physmem - v); }) }]; }
+  } else if (name === 'cputemp') {
+    c.title = T('Température du processeur'); c.unit = 'Celsius';
+    if (p.series.length > 4) c.series = [
+      { key: 'max', values: p.times.map(function(_, i) { var m = null; p.series.forEach(function(s) { var v = s.values[i]; if (v != null && (m == null || v > m)) m = v; }); return m; }) },
+      { key: 'mean', values: p.times.map(function(_, i) { var n = 0, sum = 0; p.series.forEach(function(s) { if (s.values[i] != null) { n++; sum += s.values[i]; } }); return n ? sum / n : null; }) }];
+  } else if (name === 'load') c.title = T('Charge du système');
+  else if (name === 'processes') c.title = T('Processus');
+  else if (name === 'arcsize') { c.title = T('Cache ZFS (ARC)'); c.unit = 'Bytes'; }
+  else if (name === 'interface') c.title = Tf('Trafic réseau, {0}', id);
+  else if (name === 'disk') c.title = Tf('Activité du disque {0}', id);
+  else if (name === 'disktemp') c.title = Tf('Température du disque {0}', id);
+  else if (name === 'uptime') c.title = T('Durée de fonctionnement');
+  c.series = c.series.slice(0, 6);
+  return c;
+}
+function rpTimeLabel(ms, unit) {
+  var d = new Date(ms);
+  if (unit === 'HOUR' || unit === 'DAY') return d.toLocaleTimeString(DK_LOCALE, { hour: '2-digit', minute: '2-digit' });
+  if (unit === 'YEAR') return d.toLocaleDateString(DK_LOCALE, { month: 'short', year: '2-digit' });
+  return d.toLocaleDateString(DK_LOCALE, { day: '2-digit', month: '2-digit' });
+}
+// Dessine une courbe. c : { title, times, series, unit, max }, o : { unit de période, compact }
+function rpChart(c, o) {
+  o = o || {};
+  var id = 'rp' + (++_rpSeq), f = rpFormatter(c.unit), W = 600, H = o.compact ? 90 : 150, n = c.times.length;
+  var all = [];
+  c.series.forEach(function(s) { s.values.forEach(function(v) { if (v != null) all.push(v); }); });
+  if (n < 2 || !all.length) return '<div class="rp-card"><div class="rp-card-top"><span class="rp-title">' + webEsc(c.title) + '</span></div><div class="rp-none">' + T('Pas de mesure sur cette période') + '</div></div>';
+  var lo = 0, hi = Math.max.apply(null, all);
+  if (f.kind === 'temp') { lo = Math.max(0, Math.floor((Math.min.apply(null, all) - 4) / 10) * 10); hi = Math.ceil((hi + 2) / 10) * 10; }
+  else if (c.max) hi = c.max;
+  else if (f.kind === 'pct') hi = Math.max(10, Math.ceil(hi / 10) * 10);
+  else { var mag = Math.pow(10, Math.floor(Math.log10(hi || 1))); hi = (Math.ceil((hi || 1) / mag * 4) / 4) * mag * 1.02; }
+  if (hi <= lo) hi = lo + 1;
+  var X = function(i) { return (i / (n - 1) * W).toFixed(1); }, Y = function(v) { return (H - 4 - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo) * (H - 10)).toFixed(1); };
+  var svg = '';
+  [0.25, 0.5, 0.75].forEach(function(g) { svg += '<line class="rp-grid-l" x1="0" x2="' + W + '" y1="' + (H * g).toFixed(1) + '" y2="' + (H * g).toFixed(1) + '"/>'; });
+  c.series.forEach(function(s, si) {
+    var d = '', pen = false, first = -1, last = -1;
+    s.values.forEach(function(v, i) {
+      if (v == null) { pen = false; return; }
+      d += (pen ? 'L' : 'M') + X(i) + ' ' + Y(v);
+      pen = true; if (first < 0) first = i; last = i;
+    });
+    if (!d) return;
+    if (si === 0 && c.series.length <= 2 && d.indexOf('M', 1) < 0) svg += '<path class="rp-area" style="fill:' + RP_COLORS[0] + '" d="' + d + 'L' + X(last) + ' ' + H + 'L' + X(first) + ' ' + H + 'Z"/>';
+    svg += '<path class="rp-line" style="stroke:' + RP_COLORS[si % RP_COLORS.length] + '" d="' + d + '"/>';
+  });
+  _rpCharts[id] = { c: c, f: f, unit: o.unit || 'HOUR' };
+  var legend = c.series.map(function(s, si) {
+    var cur = rpLast(s.values);
+    return '<span class="rp-key"><i style="background:' + RP_COLORS[si % RP_COLORS.length] + '"></i>' + (c.series.length > 1 || o.keys ? webEsc(rpSeriesLabel(s.key)) + ' ' : '') + '<strong>' + (cur == null ? '—' : webEsc(f.fmt(cur))) + '</strong></span>';
+  }).join('');
+  var stats = o.compact ? '' : '<div class="rp-stats">' + c.series.map(function(s) {
+    var st = rpStats(s.values);
+    var txt = Tf('moyenne {0}, maximum {1}', f.fmt(st ? st.mean : 0), f.fmt(st ? st.max : 0));
+    return st ? '<span>' + webEsc(c.series.length > 1 ? Tf('{0} : {1}', rpSeriesLabel(s.key), txt) : txt) + '</span>' : '';
+  }).join('') + '</div>';
+  var mid = Math.floor((n - 1) / 2);
+  return '<div class="rp-card' + (o.compact ? ' compact' : '') + '"><div class="rp-card-top"><span class="rp-title">' + webEsc(c.title) + '</span><span class="rp-legend">' + legend + '</span></div>'
+    + '<div class="rp-plot" id="' + id + '" onmousemove="rpHover(event,\'' + id + '\')" onmouseleave="rpLeave(\'' + id + '\')">'
+    + '<div class="rp-y"><span>' + webEsc(f.fmt(hi)) + '</span><span>' + webEsc(f.fmt((hi + lo) / 2)) + '</span><span>' + (lo ? webEsc(f.fmt(lo)) : '0') + '</span></div>'
+    + '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' + svg + '</svg><div class="rp-cursor"></div><div class="rp-tip"></div></div>'
+    + '<div class="rp-x"><span>' + webEsc(rpTimeLabel(c.times[0], o.unit)) + '</span><span>' + webEsc(rpTimeLabel(c.times[mid], o.unit)) + '</span><span>' + webEsc(rpTimeLabel(c.times[n - 1], o.unit)) + '</span></div>' + stats + '</div>';
+}
+function rpHover(ev, id) {
+  var ch = _rpCharts[id], el = document.getElementById(id);
+  if (!ch || !el) return;
+  var svg = el.querySelector('svg'), r = svg.getBoundingClientRect(), n = ch.c.times.length;
+  if (!r.width) return;
+  var i = Math.max(0, Math.min(n - 1, Math.round((ev.clientX - r.left) / r.width * (n - 1)))), x = r.left - el.getBoundingClientRect().left + i / (n - 1) * r.width;
+  var cur = el.querySelector('.rp-cursor'), tip = el.querySelector('.rp-tip'), d = new Date(ch.c.times[i]);
+  cur.style.left = x + 'px'; cur.style.display = 'block';
+  var when = ch.unit === 'HOUR' || ch.unit === 'DAY' ? d.toLocaleTimeString(DK_LOCALE, { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString(DK_LOCALE, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  tip.innerHTML = '<span class="rp-tip-t">' + webEsc(when) + '</span>' + ch.c.series.map(function(s, si) {
+    var v = s.values[i];
+    return '<span><i style="background:' + RP_COLORS[si % RP_COLORS.length] + '"></i>' + (ch.c.series.length > 1 ? webEsc(rpSeriesLabel(s.key)) + ' ' : '') + '<strong>' + (v == null ? '—' : webEsc(ch.f.fmt(v))) + '</strong></span>';
+  }).join('');
+  tip.style.display = 'flex';
+  var tw = tip.offsetWidth, left = x + 12;
+  if (left + tw > el.clientWidth) left = x - tw - 12;
+  tip.style.left = Math.max(0, left) + 'px';
+}
+function rpLeave(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.querySelector('.rp-cursor').style.display = 'none';
+  el.querySelector('.rp-tip').style.display = 'none';
+}
+// Lit une mesure ; chaque appel est isolé, une mesure absente n'emporte pas les autres.
+function rpFetch(name, identifier, unit) {
+  var g = { name: name };
+  if (identifier) g.identifier = identifier;
+  return wsCall('reporting.get_data', [[g], { unit: unit || 'HOUR' }], 120000);
+}
+
+// ===========================
+// RAPPORTS — charge du NAS dans le temps
+// ===========================
+var _rp = { nav: 'all', unit: 'HOUR', meta: null, physmem: 0, seq: 0, timer: null, loaded: false };
+function rpUnits() { return [['HOUR', T('1 h')], ['DAY', T('24 h')], ['WEEK', T('7 j')], ['MONTH', T('30 j')], ['YEAR', T('1 an')]]; }
+function rpMeta(name) { return (_rp.meta || []).find(function(g) { return g.name === name; }) || null; }
+function rpIds(name) { var m = rpMeta(name); return m ? ensureArray(m.identifiers) : []; }
+function rpHas(name) { return !_rp.meta || !!rpMeta(name); }
 async function loadReports() {
-  const el = document.getElementById('reports-content');
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
-  try {
-    const r = await socketCall('/reporting/get_data','POST',{graphs:[{name:'cpu'},{name:'memory'}],query:{unit:'HOUR'}});
-    const datasets = ensureArray(r && r.data ? r.data : (Array.isArray(r) ? r : []));
-    if (!datasets.length) { el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">&#128202;</div><span>Donnees non disponibles</span></div>'); return; }
-    const drawGraph = function(label, d, color) {
-      const rows = d && d.data ? d.data : (Array.isArray(d) ? d : []);
-      if (!rows.length) return '';
-      const vals = rows.map(function(row){ return Array.isArray(row) ? (row.slice(1).reduce(function(a,b){ return a+(b||0); },0)) : 0; });
-      const max  = Math.max.apply(null, vals) || 1;
-      const pts  = vals.map(function(v,i){ return (i/(vals.length-1||1)*540) + ',' + (70 - (v/max)*65); }).join(' ');
-      return '<div class="sysinfo-card" style="margin-bottom:10px;"><h3 style="margin-top:0;">' + label + '</h3>'
-        + '<svg viewBox="0 0 540 80" style="width:100%;height:80px;">'
-        + '<polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2"/>'
-        + '</svg></div>';
-    };
-    let html = '<div class="sysinfo" style="padding:0;">';
-    datasets.forEach(function(d,i){ html += drawGraph(i===0?'CPU':'RAM', d, i===0?'var(--accent2)':'#a855f7'); });
-    html += '</div>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
+  if (!wmBody('rp')) return;
+  if (!_rp.loaded) { rpHead(); rpSide(); wmLoading('rp', T('Lecture des mesures...')); }
+  var r = await Promise.allSettled([
+    wsCall('reporting.netdata_graphs', [[], {}], 60000).catch(function() { return wsCall('reporting.graphs', [[], {}], 60000); }),
+    wsCall('system.info', [])
+  ]);
+  _rp.meta = r[0].status === 'fulfilled' && ensureArray(r[0].value).length ? ensureArray(r[0].value) : null;
+  _rp.physmem = r[1].status === 'fulfilled' && r[1].value ? Number(r[1].value.physmem) || 0 : 0;
+  _rp.loaded = true;
+  rpView();
+}
+function rpGo(nav) { _rp.nav = nav; rpView(); }
+function rpSetUnit(u) { _rp.unit = u; rpView(); }
+function rpNavs() {
+  var l = [['all', 'grid', T('Vue d\'ensemble')], ['cpu', 'sliders', T('Processeur')], ['mem', 'layers', T('Mémoire')]];
+  if (rpIds('interface').length || !_rp.meta) l.push(['net', 'proxy', T('Réseau')]);
+  if (rpIds('disk').length || rpIds('disktemp').length || !_rp.meta) l.push(['disk', 'storage', T('Disques')]);
+  return l;
+}
+function rpSide() {
+  var h = '';
+  rpNavs().forEach(function(n, i) { h += wmNav({ active: _rp.nav === n[0], call: 'rpGo(\'' + n[0] + '\')', icon: n[1], name: n[2] }) + (i === 0 ? wmSep() + wmSideTitle(T('Mesures')) : ''); });
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'sysinfo\')', icon: 'list', name: T('Informations système') })
+    + wmNav({ call: 'openApp(\'maintenance\')', icon: 'sliders', name: T('Disques & Scrub') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/reportsdashboard/cpu\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('rp', h);
+}
+function rpHead(soft) {
+  var cur = rpNavs().find(function(n) { return n[0] === _rp.nav; }), units = { HOUR: T('dernière heure'), DAY: T('dernières 24 heures'), WEEK: T('7 derniers jours'), MONTH: T('30 derniers jours'), YEAR: T('12 derniers mois') };
+  wmHead('rp', _rp.nav === 'all' || !cur ? T('Rapports') : cur[2], { keepScroll: soft, sub: webEsc(units[_rp.unit]),
+    actions: '<div class="rp-range" role="group" aria-label="' + webEsc(T('Période')) + '">' + rpUnits().map(function(u) {
+      return '<button class="' + (_rp.unit === u[0] ? 'active' : '') + '" onclick="rpSetUnit(\'' + u[0] + '\')">' + u[1] + '</button>'; }).join('') + '</div>' });
+}
+// Mesures affichées par page : [nom, identifiant]
+function rpWanted() {
+  var ifs = rpIds('interface'), disks = rpIds('disk'), temps = rpIds('disktemp'), nav = _rp.nav, l = [];
+  var add = function(n, id) { if (rpHas(n)) l.push([n, id || null]); };
+  if (nav === 'cpu') { add('cpu'); add('cputemp'); add('load'); add('processes'); }
+  else if (nav === 'mem') { add('memory'); add('arcsize'); }
+  else if (nav === 'net') ifs.forEach(function(i) { add('interface', i); });
+  else if (nav === 'disk') { disks.forEach(function(d) { add('disk', d); }); temps.forEach(function(d) { add('disktemp', d); }); }
+  else { add('cpu'); add('memory'); add('cputemp'); add('load'); if (ifs.length) add('interface', ifs[0]); }
+  return l;
+}
+async function rpView(soft) {
+  var el = wmBody('rp'), seq = ++_rp.seq, unit = _rp.unit;
+  clearTimeout(_rp.timer);
+  if (!el) return;
+  if (!rpNavs().some(function(n) { return n[0] === _rp.nav; })) _rp.nav = 'all';
+  rpHead(soft); rpSide();
+  var want = rpWanted();
+  if (!want.length) { el.innerHTML = '<div class="fs-empty">' + webIcon('list') + '<div class="fs-empty-title">' + T('Aucune mesure ici') + '</div><div>' + T('TrueNAS ne relève rien pour cette rubrique sur ce NAS.') + '</div></div>'; return; }
+  if (!soft) wmLoading('rp', T('Lecture des mesures...'));
+  var res = await Promise.allSettled(want.map(function(w) { return rpFetch(w[0], w[1], unit); }));
+  if (seq !== _rp.seq) return;
+  if (res.every(function(r) { return r.status !== 'fulfilled'; })) { wmFail('rp', T('Les mesures ne répondent pas'), res[0].reason, 'rpView()'); return; }
+  var charts = [], temps = [];
+  res.forEach(function(r, i) {
+    if (r.status !== 'fulfilled') return;
+    var c = rpBuild(want[i][0], want[i][1], r.value, rpMeta(want[i][0]), _rp);
+    if (want[i][0] === 'disktemp') temps.push(c); else charts.push(c);
+  });
+  // températures des disques : une seule courbe, une ligne par disque
+  if (temps.length) {
+    var base = temps.reduce(function(a, b) { return b.times.length > a.times.length ? b : a; });
+    charts.push({ name: 'disktemp', title: T('Température des disques'), unit: 'Celsius', times: base.times,
+      series: temps.slice(0, 6).map(function(t) { return { key: t.id, values: base.times.map(function(_, i) { var v = t.series[0] && t.series[0].values[i]; return v == null ? null : v; }) }; }) });
+  }
+  var sc = el.scrollTop;
+  _rpCharts = {};
+  el.innerHTML = '<div class="rp-grid">' + charts.map(function(c) { return rpChart(c, { unit: unit, keys: c.name === 'disktemp' }); }).join('') + '</div>';
+  if (soft) el.scrollTop = sc;
+  // la dernière heure se met à jour toute seule
+  if (unit === 'HOUR' || unit === 'DAY') _rp.timer = setTimeout(function() { if (wmVisible('reports')) rpView(true); }, unit === 'HOUR' ? 60000 : 300000);
+}
+
+// ===========================
+// INFORMATIONS SYSTÈME
+// ===========================
+var _si = { nav: 'all', info: null, gen: null, net: null, ifaces: [], disks: [], pools: [], cpu: null, mem: null, temp: null, seq: 0, timer: null, loaded: false };
+function siGo(nav) { _si.nav = nav; siView(); }
+async function loadSysInfo(soft) {
+  loadSysStats();   // jauges du bureau
+  var el = wmBody('si');
+  if (!el) return;
+  var seq = ++_si.seq;
+  if (!_si.loaded) { wmHead('si', T('Informations système')); siSide(); wmLoading('si'); }
+  var r = await Promise.allSettled([
+    wsCall('system.info', []), wsCall('interface.query', [[], {}], 60000), wsCall('network.configuration.config', []), wsCall('system.general.config', []),
+    wsCall('disk.query', [[], { extra: { pools: true } }], 60000), socketCall('/pool')
+  ]);
+  if (seq !== _si.seq) return;
+  if (r[0].status !== 'fulfilled' || !r[0].value || typeof r[0].value !== 'object' || Array.isArray(r[0].value)) {
+    _si.loaded = false;
+    wmHead('si', T('Informations système')); siSide();
+    wmFail('si', T('Le NAS ne donne pas ses informations'), r[0].reason || new Error(T('Réponse invalide')), 'loadSysInfo()');
+    return;
+  }
+  var val = function(i, arr) { return r[i].status === 'fulfilled' ? (arr ? ensureArray(r[i].value) : r[i].value) : (arr ? [] : null); };
+  _si.info = r[0].value; _si.ifaces = val(1, true); _si.net = val(2); _si.gen = val(3); _si.disks = val(4, true); _si.pools = val(5, true);
+  _si.loaded = true;
+  siView(soft === true);
+  siLive();
+}
+// Charge instantanée : dernières mesures de l'heure, relues chaque minute.
+async function siLive() {
+  clearTimeout(_si.timer);
+  if (!wmVisible('sysinfo') || !_si.info) return;
+  var ctx = { physmem: Number(_si.info.physmem) || 0 };
+  var r = await Promise.allSettled([rpFetch('cpu', null, 'HOUR'), rpFetch('memory', null, 'HOUR'), rpFetch('cputemp', null, 'HOUR')]);
+  _si.cpu = r[0].status === 'fulfilled' ? rpBuild('cpu', null, r[0].value, null, ctx) : null;
+  _si.mem = r[1].status === 'fulfilled' ? rpBuild('memory', null, r[1].value, { vertical_label: 'Bytes' }, ctx) : null;
+  _si.temp = r[2].status === 'fulfilled' ? rpBuild('cputemp', null, r[2].value, { vertical_label: 'Celsius' }, ctx) : null;
+  if (wmVisible('sysinfo') && _si.nav === 'all') siView(true);
+  _si.timer = setTimeout(siLive, 60000);
+}
+function siSide() {
+  var h = wmNav({ active: _si.nav === 'all', call: 'siGo(\'all\')', icon: 'grid', name: T('Vue d\'ensemble') })
+    + wmSep() + wmSideTitle(T('Détails'))
+    + wmNav({ active: _si.nav === 'hw', call: 'siGo(\'hw\')', icon: 'box', name: T('Matériel') })
+    + wmNav({ active: _si.nav === 'sys', call: 'siGo(\'sys\')', icon: 'settings', name: T('Système') })
+    + wmNav({ active: _si.nav === 'net', call: 'siGo(\'net\')', icon: 'proxy', name: T('Réseau') })
+    + wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'reports\')', icon: 'list', name: T('Rapports') })
+    + wmNav({ call: 'openApp(\'update\')', icon: 'refresh', name: T('Mises à jour TrueNAS') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/system/general\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('si', h);
+}
+function siUptime(secs) {
+  secs = Number(secs) || 0;
+  var d = Math.floor(secs / 86400), h = Math.floor(secs % 86400 / 3600), m = Math.floor(secs % 3600 / 60);
+  if (d > 1) return Tf('{0} jours et {1} h', d, h);
+  if (d === 1) return Tf('1 jour et {0} h', h);
+  return h ? Tf('{0} h {1} min', h, m) : Tf('{0} min', m);
+}
+function siDate(v, opt) {
+  var d = v && typeof v === 'object' && v.$date ? new Date(v.$date) : (v ? new Date(v) : null);
+  return d && !isNaN(d.getTime()) ? d.toLocaleString(DK_LOCALE, opt || { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+}
+function siVersion(i) { return String(i.version || '').replace(/^TrueNAS-(SCALE-)?/i, ''); }
+function siCores(i) {
+  var p = Number(i.physical_cores) || 0, l = Number(i.cores) || 0;
+  if (p && l && p !== l) return Tf('{0} cœurs, {1} fils d\'exécution', p, l);
+  return p || l ? Tf('{0} cœurs', p || l) : '';
+}
+function siTile(label, value, sub, pct, lvl) {
+  return '<div class="si-tile"><span class="si-tile-label">' + label + '</span><span class="si-tile-value">' + value + '</span>'
+    + (pct != null ? '<span class="sto-bar"><i class="' + (lvl || '') + '" style="width:' + Math.max(0, Math.min(100, pct)).toFixed(0) + '%"></i></span>' : '')
+    + '<span class="si-tile-sub">' + (sub || '') + '</span></div>';
+}
+function siView(soft) {
+  var i = _si.info;
+  if (!i) return;
+  siSide();
+  var el = wmBody('si'), product = [i.system_manufacturer, i.system_product].filter(function(x) { return x && !/^(to be filled|default string|system (manufacturer|product name))/i.test(x); }).join(' ');
+  if (_si.nav === 'hw') {
+    wmHead('si', T('Matériel'), { keepScroll: soft, sub: webEsc(product) });
+    var h = netFacts([
+      [T('Fabricant'), webEsc(i.system_manufacturer || '')], [T('Modèle du NAS'), webEsc(i.system_product || '')], [T('Numéro de série'), i.system_serial ? '<span class="mono">' + webEsc(i.system_serial) + '</span>' : ''],
+      [T('Processeur'), webEsc(i.model || i.cpu_model || '')], [T('Cœurs'), webEsc(siCores(i))],
+      [T('Mémoire'), i.physmem ? webEsc(mntFmtSize(i.physmem)) + (i.ecc_memory != null ? '<span class="dim">' + (i.ecc_memory ? T('avec correction d\'erreurs (ECC)') : T('sans correction d\'erreurs (non ECC)')) + '</span>' : '') : '']
+    ]);
+    if (_si.disks.length) {
+      h += '<div class="web-group-title">' + webEsc(_si.disks.length > 1 ? Tf('{0} disques', _si.disks.length) : T('1 disque')) + '</div><div class="web-table si-disks"><div class="web-tr head"><span>' + T('Disque') + '</span><span>' + T('Modèle de disque') + '</span><span class="num">' + T('Taille') + '</span><span>Pool</span></div>';
+      _si.disks.slice().sort(function(a, b) { return String(a.name).localeCompare(String(b.name), undefined, { numeric: true }); }).forEach(function(d) {
+        h += '<div class="web-tr"><span class="mono">' + webEsc(d.name) + '</span><span>' + webEsc(d.model || '—') + '</span><span class="num">' + webEsc(d.size ? mntFmtSize(d.size) : '—') + '</span><span>' + (d.pool ? webEsc(d.pool) : '<span class="dim">' + T('libre') + '</span>') + '</span></div>';
+      });
+      h += '</div><div class="web-foot" style="justify-content:flex-start;margin-top:14px;"><button class="fs-btn" onclick="openApp(\'maintenance\')">' + T('Santé et température des disques') + '</button></div>';
+    }
+    el.innerHTML = h;
+    return;
+  }
+  if (_si.nav === 'sys') {
+    wmHead('si', T('Système'), { keepScroll: soft, sub: webEsc('TrueNAS ' + siVersion(i)) });
+    var tz = (_si.gen && _si.gen.timezone) || i.timezone || '';
+    el.innerHTML = netFacts([
+      [T('Nom du NAS'), webEsc(i.hostname || '')], ['Version', webEsc(siVersion(i))], [T('Version compilée le'), webEsc(siDate(i.buildtime, { day: 'numeric', month: 'long', year: 'numeric' }))],
+      [T('Démarré le'), webEsc(siDate(i.boottime))], [T('En marche depuis'), webEsc(siUptime(i.uptime_seconds))],
+      [T('Heure du NAS'), webEsc(siDate(i.datetime))], [T('Fuseau horaire'), webEsc(tz)],
+      [T('Charge moyenne'), Array.isArray(i.loadavg) ? webEsc(i.loadavg.map(function(x) { return rpNum(x, 2); }).join(', ')) + '<span class="dim">' + T('sur 1, 5 et 15 minutes') + '</span>' : '']
+    ]) + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+      + wmRow('openApp(\'update\')', T('Mises à jour TrueNAS'), T('Vérifier et installer une nouvelle version'))
+      + wmRow('openApp(\'bootenv\')', T('Environnements de démarrage'), T('Revenir à une version précédente du système'))
+      + wmRow('openApp(\'sysconfig\')', T('Configuration système'), T('Nom du NAS, fuseau horaire, serveurs de temps'))
+      + '</div><div class="web-group-title">' + T('Alimentation') + '</div><div class="web-group">'
+      + wmRow('doRestart()', T('Redémarrer le NAS'), T('Indisponible quelques minutes, le temps de redémarrer'))
+      + wmRow('doShutdown()', T('Éteindre le NAS'), T('Il faudra le rallumer sur place'), 'danger')
+      + '</div>';
+    return;
+  }
+  if (_si.nav === 'net') {
+    var cfg = _si.net || {}, up = _si.ifaces.filter(function(f) { return f && f.state && f.state.link_state === 'LINK_STATE_UP'; });
+    wmHead('si', T('Réseau'), { keepScroll: soft, sub: webEsc(up.length > 1 ? Tf('{0} interfaces actives', up.length) : (up.length ? T('1 interface active') : T('Aucune interface active'))),
+      actions: '<button class="fs-btn" onclick="openApp(\'network\')">' + T('Régler le réseau') + '</button>' });
+    var dns = [cfg.nameserver1, cfg.nameserver2, cfg.nameserver3].filter(Boolean);
+    var hn = netFacts([
+      [T('Nom du NAS'), webEsc([cfg.hostname || i.hostname, cfg.domain && cfg.domain !== 'local' ? cfg.domain : ''].filter(Boolean).join('.'))],
+      [T('Passerelle'), cfg.ipv4gateway ? '<span class="mono">' + webEsc(cfg.ipv4gateway) + '</span>' : ''], ['DNS', dns.map(function(d) { return '<span class="mono">' + webEsc(d) + '</span>'; }).join(' ')]
+    ]);
+    if (_si.ifaces.length) {
+      hn += '<div class="web-group-title">Interfaces</div><div class="web-group">';
+      _si.ifaces.forEach(function(f) {
+        var st = f.state || {}, on = st.link_state === 'LINK_STATE_UP';
+        var addrs = ensureArray(st.aliases).filter(function(a) { return a && a.address && a.type !== 'LINK'; }).map(function(a) { return a.address + (a.netmask ? '/' + a.netmask : ''); });
+        var speed = st.active_media_subtype && on ? String(st.active_media_subtype) : '';
+        hn += '<div class="web-row"><span class="web-dot' + (on ? '' : ' off') + '"></span><span class="web-row-text"><span class="web-row-name">' + webEsc(f.name) + (f.description ? ' <span class="dim" style="font-weight:400;">' + webEsc(f.description) + '</span>' : '') + '</span>'
+          + '<span class="web-row-desc mono">' + (addrs.length ? webEsc(addrs.join(', ')) : T('sans adresse')) + '</span></span><span class="dim" style="font-size:12px;">' + webEsc(on ? (speed || T('branchée')) : T('débranchée')) + '</span></div>';
+      });
+      hn += '</div>';
+    }
+    el.innerHTML = hn;
+    return;
+  }
+  // Vue d'ensemble
+  wmHead('si', i.hostname || T('Informations système'), { keepScroll: soft, sub: webEsc(['TrueNAS ' + siVersion(i), product].filter(Boolean).join(', ')) });
+  var cpu = _si.cpu && _si.cpu.series[0] ? rpLast(_si.cpu.series[0].values) : null, used = _si.mem && _si.mem.series[0] && _si.mem.series[0].key === 'used' ? rpLast(_si.mem.series[0].values) : null;
+  var temp = _si.temp && _si.temp.series[0] ? rpLast(_si.temp.series[0].values) : null, mp = used != null && i.physmem ? used / i.physmem * 100 : null;
+  var cap = 0, alloc = 0;
+  _si.pools.forEach(function(p) { cap += Number(p.size) || 0; alloc += Number(p.allocated) || 0; });
+  var ho = '<div class="si-tiles">'
+    + siTile(T('Processeur'), cpu == null ? '—' : rpNum(cpu, 0) + ' %', webEsc(siCores(i)), cpu, cpu > 85 ? 'crit' : cpu > 65 ? 'warn' : '')
+    + siTile(T('Mémoire'), mp == null ? '—' : rpNum(mp, 0) + ' %', i.physmem ? webEsc(used != null ? Tf('{0} sur {1}', mntFmtSize(used), mntFmtSize(i.physmem)) : mntFmtSize(i.physmem)) : '', mp, mp > 90 ? 'crit' : mp > 75 ? 'warn' : '')
+    + siTile(T('Stockage'), cap ? rpNum(alloc / cap * 100, 0) + ' %' : '—', cap ? webEsc(Tf('{0} sur {1}', mntFmtSize(alloc), mntFmtSize(cap))) : T('Aucun pool'), cap ? alloc / cap * 100 : null, alloc / cap > 0.85 ? 'crit' : alloc / cap > 0.65 ? 'warn' : '')
+    + siTile(T('Température'), temp == null ? '—' : rpNum(temp, 0) + ' °C', T('processeur'), null)
+    + '</div>';
+  ho += netFacts([
+    ['Version', webEsc(siVersion(i))], [T('Modèle du NAS'), webEsc(product)], [T('Processeur'), webEsc(i.model || i.cpu_model || '')],
+    [T('Mémoire'), i.physmem ? webEsc(mntFmtSize(i.physmem)) : ''], [T('En marche depuis'), webEsc(siUptime(i.uptime_seconds)) + (siDate(i.boottime) ? '<span class="dim">' + webEsc(Tf('démarré le {0}', siDate(i.boottime, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }))) + '</span>' : '')],
+    [T('Adresse'), webEsc(ensureArray(_si.ifaces).map(function(f) { return ensureArray((f.state || {}).aliases).filter(function(a) { return a && a.type === 'INET'; }).map(function(a) { return a.address; }); }).reduce(function(a, b) { return a.concat(b); }, []).join(', '))]
+  ]);
+  if (_si.cpu || _si.mem) {
+    _rpCharts = {};
+    ho += '<div class="web-group-title">' + T('Dernière heure') + '</div><div class="rp-grid two">' + (_si.cpu ? rpChart(_si.cpu, { unit: 'HOUR', compact: true }) : '') + (_si.mem ? rpChart(_si.mem, { unit: 'HOUR', compact: true }) : '') + '</div>'
+      + '<div class="web-foot" style="justify-content:flex-start;margin-top:12px;"><button class="fs-btn" onclick="openApp(\'reports\')">' + T('Toutes les courbes') + '</button></div>';
+  }
+  var sc = el.scrollTop;
+  el.innerHTML = ho;
+  if (soft) el.scrollTop = sc;
+}
+
+// ===========================
+// PANNEAU DE CONFIGURATION — tous les réglages, rangés par domaine
+// ===========================
+var _cp = { nav: 'all', q: '' };
+var CP_SVG = 'viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"';
+// Entrées qui n'ont pas d'icône dans le tiroir d'applications.
+function cpExtra() {
+  return {
+    sysconfig: { label: T('Configuration système'), action: function() { openApp('sysconfig'); }, imgStyle: 'background:linear-gradient(135deg,#475569,#94a3b8);', svg: '<svg ' + CP_SVG + '><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' },
+    alertconfig: { label: T('Configuration des alertes'), action: function() { openApp('alertconfig'); }, imgStyle: 'background:linear-gradient(135deg,#f59e0b,#f97316);', svg: '<svg ' + CP_SVG + '><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/><path d="M19 3l2 2M5 3 3 5"/></svg>' },
+    failover: { label: T('Haute disponibilité'), action: function() { openApp('failover'); }, imgStyle: 'background:linear-gradient(135deg,#0891b2,#22d3ee);', svg: '<svg ' + CP_SVG + '><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>' },
+    wallpaper: { label: T('Fond d\'écran'), action: function() { openWallpapers(); }, imgStyle: 'background:linear-gradient(135deg,#ec4899,#8b5cf6);', svg: '<svg ' + CP_SVG + '><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>' },
+    theme: { label: T('Thème clair ou sombre'), action: function() { toggleTheme(); loadControl(); }, keep: true, imgStyle: 'background:linear-gradient(135deg,#1e293b,#64748b);', svg: '<svg ' + CP_SVG + '><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>' }
+  };
+}
+function cpGroups() {
+  return [
+    { key: 'storage', label: T('Stockage'), items: [['storage', T('Pools, datasets et espace disponible')], ['maintenance', T('Santé des disques, températures et vérifications')], ['snapshots', T('Points de restauration des datasets')],
+        ['dataprotect', T('Sauvegardes, réplication et tâches de protection')], ['filestation', T('Parcourir les fichiers du NAS')]] },
+    { key: 'net', label: T('Réseau et partages'), items: [['network', T('Interfaces, adresses, passerelle et DNS')], ['sharing', T('Dossiers partagés sur le réseau')], ['certs', T('Certificats TLS du NAS')], ['websites', T('Héberger des sites sur le NAS')]] },
+    { key: 'users', label: T('Comptes et accès'), items: [['users', T('Comptes et groupes')], ['access', T('Qui accède à quels partages et applications')]] },
+    { key: 'apps', label: 'Applications', items: [['apps', T('Applications installées')], ['catalog', T('Installer de nouvelles applications')], ['docker', T('Conteneurs, charge et journaux')], ['libvirt', T('Machines virtuelles')], ['downloads', T('Gestionnaire de téléchargements')]] },
+    { key: 'system', label: T('Système'), items: [['sysinfo', T('Matériel, version et charge du NAS')], ['reports', T('Courbes de charge dans le temps')], ['sysconfig', T('Nom du NAS, fuseau horaire, serveurs de temps')],
+        ['services', T('SSH, SMB, NFS et autres services')], ['cron', T('Commandes lancées à heure fixe')], ['update', T('Nouvelles versions de TrueNAS')], ['bootenv', T('Versions du système gardées sur le NAS')],
+        ['notifs', T('Alertes en cours')], ['alertconfig', T('Où et quand être prévenu')], ['failover', T('Bascule entre deux contrôleurs')], ['terminal', T('Ligne de commande du NAS')], ['truenas-ui', T('L\'interface d\'origine de TrueNAS')]] },
+    { key: 'desk', label: T('Bureau Desktroo'), items: [['wallpaper', T('Image affichée derrière les fenêtres')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
+  ];
+}
+function cpEntry(id) { return cpExtra()[id] || ALL_APPS.find(function(a) { return a.id === id; }) || null; }
+function cpGo(nav) { _cp.nav = nav; _cp.q = ''; loadControl(); }
+function loadControl() {
+  if (!wmBody('cp')) return;
+  var groups = cpGroups(), cur = groups.find(function(g) { return g.key === _cp.nav; });
+  if (!cur) _cp.nav = 'all';
+  var h = wmNav({ active: _cp.nav === 'all', call: 'cpGo(\'all\')', icon: 'grid', name: T('Tous les réglages') }) + wmSep() + wmSideTitle(T('Domaines'));
+  groups.forEach(function(g) { h += wmNav({ active: _cp.nav === g.key, call: 'cpGo(\'' + g.key + '\')', name: g.label, count: g.items.filter(function(it) { return cpEntry(it[0]); }).length }); });
+  wmSide('cp', h);
+  wmHead('cp', cur ? cur.label : T('Panneau de configuration'), { sub: cur ? '' : T('Tous les réglages du NAS et du bureau, rangés par domaine.'),
+    actions: '<input id="cp-search" class="snap-find" type="search" placeholder="' + webEsc(T('Rechercher un réglage')) + '" aria-label="' + webEsc(T('Rechercher un réglage')) + '" value="' + webEsc(_cp.q) + '" oninput="cpFilter(this.value)">' });
+  cpRender();
+}
+function cpFilter(q) { _cp.q = String(q || ''); cpRender(); }
+function cpRender() {
+  var el = wmBody('cp'), q = _cp.q.trim().toLowerCase(), h = '', n = 0;
+  cpGroups().forEach(function(g) {
+    if (!q && _cp.nav !== 'all' && _cp.nav !== g.key) return;
+    var items = g.items.map(function(it) { return { id: it[0], desc: it[1], e: cpEntry(it[0]) }; }).filter(function(x) { return x.e && (!q || String(x.e.label).toLowerCase().indexOf(q) >= 0 || x.desc.toLowerCase().indexOf(q) >= 0); });
+    if (!items.length) return;
+    n += items.length;
+    if (q || _cp.nav === 'all') h += '<div class="web-group-title">' + webEsc(g.label) + '</div>';
+    h += '<div class="cp-grid">' + items.map(function(x) {
+      return '<button class="cp-item" data-cp="' + webEsc(x.id) + '"><span class="cp-ico ' + (x.e.imgClass || '') + '" style="' + (x.e.imgStyle || '') + '">' + x.e.svg + '</span><span class="cp-text"><span class="cp-name">' + webEsc(x.e.label) + '</span><span class="cp-desc">' + webEsc(x.desc) + '</span></span></button>';
+    }).join('') + '</div>';
+  });
+  if (!n) h = '<div class="fs-empty">' + webIcon('settings') + '<div class="fs-empty-title">' + T('Aucun réglage ne correspond') + '</div><div>' + webEsc(Tf('Rien ne contient « {0} ».', _cp.q.trim())) + '</div></div>';
+  el.innerHTML = h;
+  el.querySelectorAll('[data-cp]').forEach(function(b) { b.onclick = function() { var e = cpEntry(b.dataset.cp); if (e) e.action(); }; });
 }
 
 // ============================================================
@@ -19972,16 +20455,28 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      WIN : RAPPORTS
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-reports" style="top:65px;left:170px;width:720px;height:500px;">
+<div class="window" id="win-reports" style="top:65px;left:160px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="reports">
-    <span class="window-icon">📊</span>
+    <span class="window-icon">📈</span>
     <span class="window-title">Rapports</span>
     <div class="window-controls">
       <button class="win-btn min" onclick="minimizeWin('reports')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('reports')"></button>
       <button class="win-btn cls" onclick="closeWin('reports')"></button>
-    </div></div>
-  <div class="window-body"><div id="reports-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div></div>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="rp-side" aria-label="Rapports"></nav>
+      <section class="web-main">
+        <header class="web-head" id="rp-head"></header>
+        <div class="web-body" id="rp-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Lecture des mesures...</div>
+        </div>
+      </section>
+    </div>
+  </div>
   <div class="resize-handle" data-win="reports"></div>
 </div>
 
@@ -22960,16 +23455,6 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
         imgStyle: 'background:linear-gradient(135deg,#0078d4,#7c3aed);',
         svg: '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.96)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8.5 12l2.2 2.2 4.8-5"/></svg>'
       });
-    }
-
-    var sections = document.querySelector('.cp-sections');
-    if (sections && !document.getElementById('cp-access-center')) {
-      var card = document.createElement('div');
-      card.className = 'cp-section';
-      card.id = 'cp-access-center';
-      card.onclick = function () { openApp('access'); };
-      card.innerHTML = T('<div class="cp-section-icon">🛡️</div><div class="cp-section-name">Droits d’accès</div><div class="cp-section-desc">Utilisateurs, groupes, partages SMB, applications</div>');
-      sections.appendChild(card);
     }
 
     try {
