@@ -1392,52 +1392,27 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .ds-children { display:none; padding-left:20px; border-left:1px solid rgba(255,255,255,0.06); margin-left:15px; }
   .ds-children.open { display:block; }
 
-  /* ===== ACL MODAL ===== */
-  #acl-modal {
-    display:none; position:fixed; inset:0; z-index:9998;
-    align-items:center; justify-content:center;
-    background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
-  }
-  #acl-modal.open { display:flex; }
-  .acl-box {
-    background:linear-gradient(180deg,rgba(18,34,60,0.99) 0%,rgba(12,22,40,0.99) 100%);
-    border:1px solid rgba(255,255,255,0.13); border-radius:16px;
-    box-shadow:0 24px 64px rgba(0,0,0,0.7);
-    width:640px; max-width:95vw; max-height:80vh;
-    display:flex; flex-direction:column;
-    animation:win-open 0.2s cubic-bezier(0.34,1.4,0.64,1);
-  }
-  [data-theme="light"] .acl-box {
-    background:rgba(240,246,255,0.99); border:1px solid rgba(0,0,0,0.12);
-  }
-  .acl-header {
-    padding:20px 24px 16px; border-bottom:1px solid rgba(255,255,255,0.07);
-    display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
-  }
-  .acl-title { font-size:15px; font-weight:700; }
-  .acl-path { font-size:11px; color:var(--text-dim); margin-top:2px; }
-  .acl-body { flex:1; overflow-y:auto; padding:16px 24px; }
-  .acl-footer { padding:14px 24px; border-top:1px solid rgba(255,255,255,0.07); display:flex; gap:8px; justify-content:flex-end; flex-shrink:0; }
-  .acl-entry {
-    display:grid; grid-template-columns:1fr 1fr 1fr auto;
-    gap:8px; align-items:center; padding:8px;
-    background:rgba(255,255,255,0.04); border-radius:8px; margin-bottom:6px;
-  }
-  [data-theme="light"] .acl-entry { background:rgba(0,0,0,0.04); }
-  .acl-entry select, .acl-entry input {
-    background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12);
-    border-radius:6px; padding:5px 8px; color:var(--text); font-size:12px;
-    font-family:inherit; width:100%;
-  }
-  [data-theme="light"] .acl-entry select,
-  [data-theme="light"] .acl-entry input {
-    background:rgba(0,0,0,0.06); border-color:rgba(0,0,0,0.12); color:#1a2440;
-  }
-  .acl-add-row {
-    display:flex; gap:8px; margin-top:8px; padding-top:12px;
-    border-top:1px solid rgba(255,255,255,0.06);
-  }
-
+  /* Droits d'accès d'un dataset (page de Stockage) */
+  .acl-row { gap:10px; padding:10px 14px; }
+  .acl-sel { flex:0 0 auto; width:164px; padding:7px 10px; font-size:12.5px; }
+  .acl-sel.wide { width:222px; }
+  .acl-sel.grow { flex:1 1 180px; width:auto; min-width:0; }
+  .acl-rwx { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+  .acl-rwx label { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text-dim); cursor:pointer; }
+  /* Petite case carrée : ici trois cases par ligne, l'interrupteur pilule prendrait toute la place */
+  input[type="checkbox"].acl-check { width:18px !important; height:18px !important; min-width:18px; border-radius:5px; background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.24); }
+  input[type="checkbox"].acl-check::before { top:2px; left:5px; width:4px; height:8px; border-radius:0; background:none; box-shadow:none; border:solid var(--accent-ink); border-width:0 2px 2px 0; transform:rotate(45deg); opacity:0; transition:opacity .12s; }
+  input[type="checkbox"].acl-check:checked { background:var(--accent); border-color:var(--accent); }
+  input[type="checkbox"].acl-check:checked::before { transform:rotate(45deg); opacity:1; }
+  [data-theme="light"] input[type="checkbox"].acl-check:not(:checked) { background:#ffffff; border-color:rgba(13,27,53,0.3); }
+  .acl-chip { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:999px; border:1px solid var(--glass-border); font-size:10.5px; font-weight:500; color:var(--text-dim); vertical-align:1px; }
+  .acl-chip.deny { border-color:rgba(239,68,68,0.45); color:#f87171; }
+  [data-theme="light"] .acl-chip.deny { color:#dc2626; }
+  .acl-nodel { flex:0 0 62px; }
+  .acl-row .web-mini { flex:0 0 62px; padding:4px 0; text-align:center; }
+  .acl-add { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .acl-add .acl-sel:first-child { width:136px; }
+  .web-body > .acl-add > button.fs-btn { flex-shrink:0; align-self:center; }
 
   #prompt-modal {
     display:none; position:fixed; inset:0; z-index:9999;
@@ -3264,7 +3239,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "\" supprimé": "\" deleted",
 "Aucun snapshot": "No snapshots",
 "Supprimer le snapshot": "Delete snapshot",
-"Erreur chargement ACL:": "Error loading ACL:",
 "Aucune entrée ACL": "No ACL entries",
 "TYPE QUI PERMISSIONS": "TYPE&nbsp;&nbsp;&nbsp;WHO&nbsp;&nbsp;&nbsp;PERMISSIONS&nbsp;&nbsp;&nbsp;",
 "✅ ACL enregistrées": "✅ ACLs saved",
@@ -4847,7 +4821,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Parcourir le contenu de ce dataset": "Browse this dataset's contents",
 "Voir, créer, restaurer et planifier les snapshots de ce dataset": "View, create, restore and schedule this dataset's snapshots",
 "Droits d'accès": "Permissions",
-"Propriétaire, groupe et ACL du dataset : dans l'interface TrueNAS": "Owner, group and ACL of the dataset: in the TrueNAS interface",
 "Créer un sous-dataset": "Create a child dataset",
 "Un dataset rangé dans celui-ci": "A dataset stored inside this one",
 "Le dataset et tous ses fichiers sont détruits": "The dataset and all its files are destroyed",
@@ -4881,7 +4854,42 @@ select option{ background:#101b2e; color:#e9eef7; }
 "ressource :": "resource:",
 "Les droits d’accès ne répondent pas": "Access rights are not responding",
 "Compte": "Account",
-"Utilisateurs TrueNAS": "TrueNAS users"
+"Utilisateurs TrueNAS": "TrueNAS users",
+"Traverser": "Traverse",
+"Groupe propriétaire": "Owner group",
+"Tout le monde": "Everyone",
+"Les autres": "Others",
+"Masque": "Mask",
+"plafond des utilisateurs et groupes ajoutés": "upper limit for added users and groups",
+"Les droits de ce dataset ne se lisent pas": "This dataset's permissions cannot be read",
+"ACL NFSv4": "NFSv4 ACL",
+"ACL POSIX": "POSIX ACL",
+"Les ACL sont désactivées sur ce dataset : seuls le propriétaire, le groupe et les permissions Unix s'appliquent. Ils se règlent dans l'interface TrueNAS.": "ACLs are disabled on this dataset: only the owner, the group and Unix permissions apply. They are set in the TrueNAS interface.",
+"Qui a le droit de faire quoi": "Who is allowed to do what",
+"Sur ce dossier": "On this folder",
+"Pour ce qui sera créé dedans": "For what gets created inside",
+"refus": "deny",
+"Niveau": "Level",
+"Personnalisé": "Custom",
+"Portée": "Scope",
+"Portée personnalisée": "Custom scope",
+"Ce dossier et son contenu": "This folder and its contents",
+"Ce dossier seulement": "This folder only",
+"Lire": "Read",
+"Écrire": "Write",
+"Comptes du système": "System accounts",
+"Ajouter un utilisateur ou un groupe": "Add a user or a group",
+"Lecture et écriture": "Read and write",
+"Appliquer aussi au contenu existant": "Also apply to existing contents",
+"Réécrit les droits de tous les sous-dossiers et fichiers déjà présents. Sans cela, seuls les éléments créés ensuite en héritent.": "Rewrites the permissions of every subfolder and file already there. Otherwise only items created later inherit them.",
+"Rien n'est envoyé à TrueNAS avant « Enregistrer ». Les entrées du propriétaire et du groupe propriétaire ne peuvent pas être retirées ici.": "Nothing is sent to TrueNAS before “Save”. The owner and owner group entries cannot be removed here.",
+"Aucun compte à ajouter": "No account to add",
+"Ce compte a déjà une entrée": "This account already has an entry",
+"Appliquer ces droits à": "Apply these permissions to",
+"Les droits de tout le contenu existant seront réécrits.": "The permissions of all existing contents will be rewritten.",
+"Application…": "Applying…",
+"L'application des droits continue en arrière-plan": "Permissions are still being applied in the background",
+"Qui peut lire et écrire dans ce dataset": "Who can read and write in this dataset"
 }
 </script>
 <script id="dk-i18n">
@@ -9745,7 +9753,7 @@ async function fsDoUpload(files) {
 // STORAGE MANAGER
 // Gabarit des gestionnaires : les pools dans la colonne, leurs datasets et leurs disques à droite.
 // ===========================
-var _stoNav = 'all';       // all | pool | ds | newds | replace
+var _stoNav = 'all';       // all | pool | ds | newds | replace | acl
 var _stoPool = null;       // nom du pool affiché
 var _stoTab = 'sum';       // sum | ds | disks
 var _stoDs = null;         // dataset affiché
@@ -9833,6 +9841,8 @@ function stoSideRender() {
   el.querySelectorAll('[data-pool]').forEach(function(b) { b.onclick = function() { stoGo('pool', b.dataset.pool); }; });
 }
 function stoGo(nav, pool) {
+  if (_acl && _acl.dirty) { aclLeave(nav, pool); return; }
+  _acl = null;
   _stoNav = nav;
   if (pool !== undefined && pool !== _stoPool) { _stoPool = pool; _stoDs = null; }
   if (nav === 'pool' && stoPoolGet(_stoPool)) stoPoolView();
@@ -9869,6 +9879,8 @@ async function loadStorage() {
     if (!stoPoolGet(_stoPool)) { _stoPool = null; _stoDs = null; }
     var nav = _stoNav;
     if (nav === 'newds' || nav === 'replace') nav = 'pool';
+    // la page des droits garde ses réglages en cours quand la fenêtre se recharge
+    if (nav === 'acl') { if (_acl && _acl.data && stoPoolGet(_stoPool)) { aclRender(); return; } _acl = null; nav = 'ds'; }
     stoGo(nav);
   } catch (e) {
     _stoLoaded = false; _stoPools = []; _stoDisks = []; _stoUse = {};
@@ -10013,7 +10025,7 @@ function stoDsView() {
   ]) + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
     + row('webOpenFolder(' + qm + ')', T('Ouvrir dans Fichiers'), T('Parcourir le contenu de ce dataset'))
     + row('stoOpenSnaps(' + q + ')', 'Snapshots', T('Voir, créer, restaurer et planifier les snapshots de ce dataset'))
-    + row('openTrueNASPage(\'/ui/datasets/\' + ' + q + ')', T('Droits d\'accès'), T('Propriétaire, groupe et ACL du dataset : dans l\'interface TrueNAS'))
+    + row('stoAclOpen(' + q + ',' + qm + ')', T('Droits d\'accès'), T('Qui peut lire et écrire dans ce dataset'))
     + row('stoNewDs(' + q + ')', T('Créer un sous-dataset'), T('Un dataset rangé dans celui-ci'))
     + row('storageDeleteDataset(decodeURIComponent(' + q + '))', T('Supprimer'), T('Le dataset et tous ses fichiers sont détruits'), 'danger')
     + '</div>';
@@ -10154,99 +10166,224 @@ async function diskReplace() {
 }
 
 // ===========================
-// ACL MANAGER
+// ACL MANAGER — droits d'accès d'un dataset (filesystem.getacl / filesystem.setacl)
+// Page de la fenêtre Stockage. Règle de prudence : ce qui n'est pas modifié ici est renvoyé à TrueNAS
+// tel qu'il l'a donné (entrées avancées, drapeaux, propriétaire), rien n'est simplifié en route.
 // ===========================
-let _aclPath = '';
-let _aclEntries = [];
+var _acl = null;          // { path, ds, type, data, entries, dirty, saving }
+var _aclWho = null;       // { users, groups } pour la liste « Ajouter »
+var _aclSeq = 0;
+var ACL_NFS_LEVELS = ['FULL_CONTROL', 'MODIFY', 'READ', 'TRAVERSE'];
 
-async function openAcl(dsName, mountPath) {
-  _aclPath = mountPath || ('/mnt/' + dsName);
-  document.getElementById('acl-path-label').textContent = _aclPath;
-  document.getElementById('acl-entries').innerHTML = '<div class="fs-loading" style="height:60px;"><div class="spinner"></div></div>';
-  document.getElementById('acl-modal').classList.add('open');
+function aclLevelLabel(l) {
+  return ({ FULL_CONTROL: T('Contrôle total'), MODIFY: T('Modification'), READ: T('Lecture'), TRAVERSE: T('Traverser') })[l] || l;
+}
+function aclIsSpecial(e) { return ['owner@', 'group@', 'everyone@', 'USER_OBJ', 'GROUP_OBJ', 'OTHER', 'MASK'].indexOf(e.tag) >= 0; }
+// Qui est visé par une entrée, en clair.
+function aclWhoLabel(e, data) {
+  var t = e.tag;
+  if (t === 'owner@' || t === 'USER_OBJ') return { name: T('Propriétaire'), sub: (data && data.user) || '' };
+  if (t === 'group@' || t === 'GROUP_OBJ') return { name: T('Groupe propriétaire'), sub: (data && data.group) || '' };
+  if (t === 'everyone@') return { name: T('Tout le monde'), sub: '' };
+  if (t === 'OTHER') return { name: T('Les autres'), sub: '' };
+  if (t === 'MASK') return { name: T('Masque'), sub: T('plafond des utilisateurs et groupes ajoutés') };
+  var who = e.who || (e.id != null && e.id !== -1 ? '#' + e.id : '?');
+  return { name: who, sub: t === 'GROUP' ? T('Groupe') : T('Utilisateur') };
+}
+// Une entrée telle que TrueNAS l'attend : l'identifiant numérique fait foi, le nom ne sert qu'à défaut.
+function aclWire(e, type) {
+  var o = { tag: e.tag, perms: e.perms };
+  if (type === 'NFS4') { o.type = e.type; o.flags = e.flags; } else o['default'] = !!e['default'];
+  if (aclIsSpecial(e)) o.id = null;
+  else if (e.id != null && e.id !== -1) o.id = e.id;
+  else { o.id = null; o.who = e.who; }
+  return o;
+}
+function aclDirty() { if (_acl) { _acl.dirty = true; var b = document.getElementById('acl-save'); if (b) b.disabled = false; } }
+
+// Ouvre la page des droits d'un dataset (depuis sa fiche).
+async function stoAclOpen(encDs, encPath) {
+  var ds = decodeURIComponent(encDs), path = decodeURIComponent(encPath), seq = ++_aclSeq;
+  _stoNav = 'acl';
+  _acl = { path: path, ds: ds, type: '', data: null, entries: [], dirty: false, saving: false };
+  aclHead();
+  stoBody().innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
   try {
-    const acl = await socketCall('/filesystem/getacl', 'POST', { path: _aclPath, simplified: true, resolve_ids: true });
-    _aclEntries = [];
-    // TrueNAS retourne { acl: [...], acltype: 'NFS4'|'POSIX1E' }
-    const entries = ensureArray(acl && (acl.acl || acl.dacl || acl));
-    entries.forEach(function(e) {
-      _aclEntries.push({
-        tag:   e.tag   || e.type  || 'USER',
-        who:   e.who   || e.id    || '',
-        perms: typeof e.perms === 'object' ? e.perms : { READ_DATA:true, WRITE_DATA:false, EXECUTE:true },
-        type:  e.type  || 'ALLOW'
-      });
-    });
-    renderAclEntries();
-  } catch(ex) {
-    document.getElementById('acl-entries').innerHTML = T('<div style="color:var(--danger);font-size:12px;">Erreur chargement ACL: ') + ex.message + '</div>';
-  }
-}
-
-function renderAclEntries() {
-  const el = document.getElementById('acl-entries');
-  if (!_aclEntries.length) { el.innerHTML = T('<div style="font-size:12px;color:var(--text-dim);">Aucune entrée ACL</div>'); return; }
-  const inp = 'font-size:11px;width:100%;padding:4px 7px;';
-  let h = T('<div style="font-size:11px;color:var(--text-dim);display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;padding:0 8px 6px;font-weight:600;letter-spacing:.5px;">TYPE&nbsp;&nbsp;&nbsp;QUI&nbsp;&nbsp;&nbsp;PERMISSIONS&nbsp;&nbsp;&nbsp;</div>');
-  _aclEntries.forEach(function(e, i) {
-    const permsStr = typeof e.perms === 'object' ? Object.keys(e.perms).filter(function(k){return e.perms[k];}).join(',') : String(e.perms||'');
-    h += '<div class="acl-entry">'
-      + '<select onchange="_aclEntries['+i+'].tag=this.value" style="'+inp+'">'
-      + ['USER','GROUP','USER_OBJ','GROUP_OBJ','OTHER','MASK'].map(function(t){ return '<option value="'+t+'"'+(e.tag===t?' selected':'')+'>'+t+'</option>'; }).join('')
-      + '</select>'
-      + '<input value="' + (e.who||'') + '" placeholder="utilisateur/groupe" style="'+inp+'" oninput="_aclEntries['+i+'].who=this.value" />'
-      + '<select onchange="_aclEntries['+i+'].perms=this.value" style="'+inp+'">'
-      + ['READ','WRITE','EXECUTE','READ,WRITE','READ,EXECUTE','READ,WRITE,EXECUTE','FULL_CONTROL'].map(function(p){return '<option value="'+p+'"'+(permsStr.includes(p.split(',')[0])?' selected':'')+'>'+p+'</option>';}).join('')
-      + '</select>'
-      + '<button class="fs-btn" style="font-size:12px;padding:4px 8px;color:#f87171;flex-shrink:0;" onclick="_aclEntries.splice('+i+',1);renderAclEntries()">✕</button>'
-      + '</div>';
-  });
-  el.innerHTML = h;
-}
-
-function aclAddEntry() {
-  const tag = document.getElementById('acl-new-tag').value;
-  const who = document.getElementById('acl-new-who').value.trim();
-  _aclEntries.push({ tag: tag, who: who, perms: 'READ', type: 'ALLOW' });
-  renderAclEntries();
-  document.getElementById('acl-new-who').value = '';
-}
-
-async function aclSave() {
-  try {
-    function parsePerms(p) {
-      if (typeof p === 'object') return p;
-      const set = String(p).split(',');
-      return {
-        READ_DATA:    set.includes('READ') || set.includes('READ,WRITE,EXECUTE') || set.includes('FULL_CONTROL'),
-        WRITE_DATA:   set.includes('WRITE') || set.includes('READ,WRITE,EXECUTE') || set.includes('FULL_CONTROL'),
-        EXECUTE:      set.includes('EXECUTE') || set.includes('READ,EXECUTE') || set.includes('READ,WRITE,EXECUTE') || set.includes('FULL_CONTROL'),
-        APPEND_DATA:  set.includes('FULL_CONTROL'),
-        DELETE:       set.includes('FULL_CONTROL'),
-        DELETE_CHILD: set.includes('FULL_CONTROL'),
-        READ_ACL:     true,
-        WRITE_ACL:    set.includes('FULL_CONTROL'),
-        WRITE_OWNER:  set.includes('FULL_CONTROL'),
-        SYNCHRONIZE:  true
+    var r = await Promise.allSettled([
+      socketCall('/filesystem/getacl', 'POST', { path: path, simplified: true, resolve_ids: true }),
+      _aclWho ? Promise.resolve(null) : wsCall('user.query', [[], {}], 60000),
+      _aclWho ? Promise.resolve(null) : wsCall('group.query', [[], {}], 60000)
+    ]);
+    if (seq !== _aclSeq || _stoNav !== 'acl') return;
+    if (r[0].status !== 'fulfilled') throw r[0].reason;
+    if (!_aclWho) {
+      var byName = function(k) { return function(a, b) { return (a.builtin === true) - (b.builtin === true) || String(a[k] || a.name || '').localeCompare(String(b[k] || b.name || ''), undefined, { sensitivity: 'base' }); }; };
+      _aclWho = {
+        users: (r[1].status === 'fulfilled' ? ensureArray(r[1].value) : []).filter(function(u) { return u && u.username && u.uid != null; }).sort(byName('username')),
+        groups: (r[2].status === 'fulfilled' ? ensureArray(r[2].value) : []).filter(function(g) { return g && (g.group || g.name) && g.gid != null; }).sort(byName('group'))
       };
     }
-    const payload = {
-      path: _aclPath,
-      dacl: _aclEntries.map(function(e, i) {
-        return { tag: e.tag, id: e.who || null, who: e.who || null, perms: parsePerms(e.perms), flags: { FILE_INHERIT:true, DIRECTORY_INHERIT:true }, type: e.type || 'ALLOW' };
-      }),
-      options: { recursive: false, traverse: false }
-    };
-    const job = await socketCall('/filesystem/setacl', 'POST', payload);
-    if (job) await waitJob(job, 30000);
-    toast(T('✅ ACL enregistrées'));
-    closeAcl();
-  } catch(e) { toast('❌ ' + e.message); }
+    var data = r[0].value || {};
+    _acl.data = data;
+    _acl.type = String(data.acltype || '');
+    _acl.entries = JSON.parse(JSON.stringify(Array.isArray(data.acl) ? data.acl : []));
+    aclRender();
+  } catch (e) {
+    if (seq !== _aclSeq || _stoNav !== 'acl') return;
+    stoBody().innerHTML = dkWaitHtml('error', T('Les droits de ce dataset ne se lisent pas'), webEsc((e && e.message) || String(e)),
+      '<button class="web-open" onclick="stoAclOpen(\'' + encodeURIComponent(ds) + '\',\'' + encodeURIComponent(path) + '\')">' + T('Réessayer') + '</button>');
+  }
 }
-
-function closeAcl() {
-  document.getElementById('acl-modal').classList.remove('open');
-  _aclEntries = [];
+function aclHead() {
+  var a = _acl, kind = a.type === 'NFS4' ? T('ACL NFSv4') : (a.type === 'POSIX1E' ? T('ACL POSIX') : '');
+  stoHead(T('Droits d\'accès'), { back: [a.ds, 'aclLeave()'],
+    sub: '<span class="mono">' + webEsc(a.path) + '</span>' + (kind ? ', ' + webEsc(kind) : ''),
+    actions: (a.type === 'NFS4' || a.type === 'POSIX1E') ? '<button class="web-open" id="acl-save" onclick="aclSave()"' + (a.dirty ? '' : ' disabled') + '>' + T('Enregistrer') + '</button>' : '' });
+}
+// Quitte la page ; si des réglages ne sont pas enregistrés, la question est posée d'abord.
+async function aclLeave(nav, pool) {
+  if (_acl && _acl.dirty && !await showConfirm(T('Des modifications ne sont pas enregistrées.<br>Les abandonner ?'), { danger: true, ok: T('Abandonner') })) return;
+  _acl = null;
+  stoGo(nav || 'ds', pool);
+}
+// Ce que contient une entrée « personnalisée », pour l'infobulle.
+function aclCustomTip(o) {
+  return Object.keys(o || {}).filter(function(k) { return o[k] === true; }).join(', ');
+}
+function aclRender() {
+  var a = _acl, data = a.data || {}, el = stoBody(), sc = el.scrollTop;
+  aclHead();
+  var owner = netFacts([
+    [T('Propriétaire'), data.user ? webEsc(data.user) + '<span class="dim mono">' + webEsc(data.uid) + '</span>' : (data.uid != null ? '<span class="mono">' + webEsc(data.uid) + '</span>' : '')],
+    [T('Groupe propriétaire'), data.group ? webEsc(data.group) + '<span class="dim mono">' + webEsc(data.gid) + '</span>' : (data.gid != null ? '<span class="mono">' + webEsc(data.gid) + '</span>' : '')]
+  ]);
+  if (a.type !== 'NFS4' && a.type !== 'POSIX1E') {
+    el.innerHTML = owner + '<div class="snap-warn" style="border-color:var(--glass-border);background:rgba(255,255,255,0.03);margin-top:14px;">'
+      + T('Les ACL sont désactivées sur ce dataset : seuls le propriétaire, le groupe et les permissions Unix s\'appliquent. Ils se règlent dans l\'interface TrueNAS.') + '</div>'
+      + '<div class="web-foot" style="justify-content:flex-start;"><button class="fs-btn" onclick="openTrueNASPage(\'/ui/datasets/' + encodeURIComponent(a.ds) + '\')">' + T('Ouvrir dans TrueNAS') + '</button></div>';
+    return;
+  }
+  var nfs = a.type === 'NFS4', h = owner;
+  // POSIX : deux jeux d'entrées, celui du dossier et celui dont héritent les éléments créés dedans
+  var hasDef = !nfs && a.entries.some(function(e) { return e['default']; });
+  var sets = hasDef ? [[false, T('Sur ce dossier')], [true, T('Pour ce qui sera créé dedans')]] : [[null, T('Qui a le droit de faire quoi')]];
+  sets.forEach(function(set) {
+  h += '<div class="web-group-title">' + set[1] + '</div><div class="web-group acl-list">';
+  a.entries.forEach(function(e, i) {
+    if (set[0] !== null && !!e['default'] !== set[0]) return;
+    var w = aclWhoLabel(e, data), fixed = e.tag === 'owner@' || e.tag === 'group@' || e.tag === 'USER_OBJ' || e.tag === 'GROUP_OBJ' || e.tag === 'OTHER' || e.tag === 'MASK';
+    h += '<div class="web-row acl-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(w.name)
+      + (nfs && e.type === 'DENY' ? ' <span class="acl-chip deny">' + T('refus') + '</span>' : '') + '</span>'
+      + (w.sub ? '<span class="web-row-desc">' + webEsc(w.sub) + '</span>' : '') + '</span>';
+    if (nfs) {
+      var basic = e.perms && e.perms.BASIC, fb = e.flags && e.flags.BASIC;
+      h += '<select class="acl-sel" aria-label="' + webEsc(T('Niveau')) + '"' + (basic ? '' : ' title="' + webEsc(aclCustomTip(e.perms)) + '"') + ' onchange="aclSet(' + i + ',\'perms\',this.value)">'
+        + (basic ? '' : '<option value="" selected>' + T('Personnalisé') + '</option>')
+        + ACL_NFS_LEVELS.map(function(l) { return '<option value="' + l + '"' + (basic === l ? ' selected' : '') + '>' + aclLevelLabel(l) + '</option>'; }).join('') + '</select>'
+        + '<select class="acl-sel wide" aria-label="' + webEsc(T('Portée')) + '"' + (fb ? '' : ' title="' + webEsc(aclCustomTip(e.flags)) + '"') + ' onchange="aclSet(' + i + ',\'flags\',this.value)">'
+        + (fb ? '' : '<option value="" selected>' + T('Portée personnalisée') + '</option>')
+        + '<option value="INHERIT"' + (fb === 'INHERIT' ? ' selected' : '') + '>' + T('Ce dossier et son contenu') + '</option>'
+        + '<option value="NOINHERIT"' + (fb === 'NOINHERIT' ? ' selected' : '') + '>' + T('Ce dossier seulement') + '</option></select>';
+    } else {
+      var p = e.perms || {};
+      h += '<span class="acl-rwx">' + [['READ', T('Lire')], ['WRITE', T('Écrire')], ['EXECUTE', T('Parcourir')]].map(function(k) {
+        return '<label><input class="acl-check" type="checkbox" ' + (p[k[0]] ? 'checked' : '') + ' onchange="aclSet(' + i + ',\'' + k[0] + '\',this.checked)"><span>' + k[1] + '</span></label>';
+      }).join('') + '</span>';
+    }
+    h += fixed ? '<span class="acl-nodel"></span>' : '<button class="web-mini" onclick="aclRemove(' + i + ')">' + T('Retirer') + '</button>';
+    h += '</div>';
+  });
+  if (!a.entries.length) h += '<div class="web-row"><span class="web-row-text"><span class="web-row-desc">' + T('Aucune entrée ACL') + '</span></span></div>';
+  h += '</div>';
+  });
+  // Ajouter un utilisateur ou un groupe
+  var opt = function(list, key, idk) {
+    var mine = list.filter(function(x) { return x.builtin !== true; }), sys = list.filter(function(x) { return x.builtin === true; });
+    var one = function(x) { return '<option value="' + webEsc(x[idk]) + '">' + webEsc(x[key] || x.name) + '</option>'; };
+    return mine.map(one).join('') + (sys.length ? '<optgroup label="' + webEsc(T('Comptes du système')) + '">' + sys.map(one).join('') + '</optgroup>' : '');
+  };
+  h += '<div class="web-group-title">' + T('Ajouter un utilisateur ou un groupe') + '</div><div class="acl-add">'
+    + '<select class="acl-sel" id="acl-new-tag" onchange="aclAddKind()"><option value="USER">' + T('Utilisateur') + '</option><option value="GROUP">' + T('Groupe') + '</option></select>'
+    + '<select class="acl-sel grow" id="acl-new-user">' + opt(_aclWho.users, 'username', 'uid') + '</select>'
+    + '<select class="acl-sel grow" id="acl-new-group" style="display:none;">' + opt(_aclWho.groups, 'group', 'gid') + '</select>'
+    + (nfs ? '<select class="acl-sel" id="acl-new-level">' + ACL_NFS_LEVELS.map(function(l) { return '<option value="' + l + '"' + (l === 'MODIFY' ? ' selected' : '') + '>' + aclLevelLabel(l) + '</option>'; }).join('') + '</select>'
+           : '<select class="acl-sel" id="acl-new-level"><option value="rx">' + T('Lecture') + '</option><option value="rwx" selected>' + T('Lecture et écriture') + '</option></select>')
+    + '<button class="fs-btn" onclick="aclAdd()">' + T('Ajouter') + '</button></div>';
+  h += '<div class="web-group" style="margin-top:22px;"><label class="web-row" style="cursor:pointer;"><span class="web-row-text"><span class="web-row-name">' + T('Appliquer aussi au contenu existant') + '</span><span class="web-row-desc">'
+    + T('Réécrit les droits de tous les sous-dossiers et fichiers déjà présents. Sans cela, seuls les éléments créés ensuite en héritent.') + '</span></span><input type="checkbox" id="acl-recursive"' + (a.recursive ? ' checked' : '') + ' onchange="_acl.recursive=this.checked"></label></div>'
+    + '<p class="web-note">' + T('Rien n\'est envoyé à TrueNAS avant « Enregistrer ». Les entrées du propriétaire et du groupe propriétaire ne peuvent pas être retirées ici.') + '</p>';
+  el.innerHTML = h;
+  el.scrollTop = sc;
+}
+function aclAddKind() {
+  var g = document.getElementById('acl-new-tag').value === 'GROUP';
+  document.getElementById('acl-new-user').style.display = g ? 'none' : '';
+  document.getElementById('acl-new-group').style.display = g ? '' : 'none';
+}
+function aclSet(i, key, val) {
+  var e = _acl && _acl.entries[i];
+  if (!e) return;
+  if (key === 'perms') { if (!val) return; e.perms = { BASIC: val }; }
+  else if (key === 'flags') { if (!val) return; e.flags = { BASIC: val }; }
+  else { e.perms = Object.assign({ READ: false, WRITE: false, EXECUTE: false }, e.perms); e.perms[key] = !!val; }
+  aclDirty();
+  if (key === 'perms' || key === 'flags') aclRender();
+}
+function aclRemove(i) {
+  var a = _acl, e = a && a.entries[i];
+  if (!e) return;
+  if (a.type === 'POSIX1E' && !aclIsSpecial(e)) {
+    // POSIX : l'entrée d'accès et son éventuelle jumelle « par défaut » partent ensemble
+    a.entries = a.entries.filter(function(x) { return !(x.tag === e.tag && x.id === e.id && (x.who || '') === (e.who || '')); });
+  } else a.entries.splice(i, 1);
+  aclDirty();
+  aclRender();
+}
+function aclAdd() {
+  var a = _acl;
+  if (!a) return;
+  var tag = document.getElementById('acl-new-tag').value === 'GROUP' ? 'GROUP' : 'USER';
+  var sel = document.getElementById(tag === 'GROUP' ? 'acl-new-group' : 'acl-new-user');
+  if (!sel || sel.value === '') { toast(T('Aucun compte à ajouter')); return; }
+  var id = Number(sel.value), who = sel.options[sel.selectedIndex].textContent, level = document.getElementById('acl-new-level').value;
+  if (a.entries.some(function(x) { return x.tag === tag && Number(x.id) === id && (a.type === 'NFS4' ? x.type === 'ALLOW' : true); })) { toast(T('Ce compte a déjà une entrée')); return; }
+  if (a.type === 'NFS4') {
+    a.entries.push({ tag: tag, id: id, who: who, type: 'ALLOW', perms: { BASIC: level }, flags: { BASIC: 'INHERIT' } });
+  } else {
+    var perms = { READ: true, WRITE: level === 'rwx', EXECUTE: true };
+    var hasDefault = a.entries.some(function(x) { return x['default']; });
+    [false].concat(hasDefault ? [true] : []).forEach(function(def) {
+      a.entries.push({ tag: tag, id: id, who: who, perms: Object.assign({}, perms), 'default': def });
+      // POSIX : dès qu'un utilisateur ou un groupe est nommé, un masque est exigé dans le même jeu d'entrées
+      if (!a.entries.some(function(x) { return x.tag === 'MASK' && !!x['default'] === def; })) a.entries.push({ tag: 'MASK', id: null, who: null, perms: { READ: true, WRITE: true, EXECUTE: true }, 'default': def });
+    });
+  }
+  aclDirty();
+  aclRender();
+}
+async function aclSave() {
+  var a = _acl;
+  if (!a || !a.dirty || a.saving) return;
+  var rec = !!a.recursive;
+  if (!await showConfirm(T('Appliquer ces droits à <strong>') + webEsc(a.path) + '</strong> ?'
+    + (rec ? '<br><span style="font-size:12px;color:var(--danger);">' + T('Les droits de tout le contenu existant seront réécrits.') + '</span>' : ''), { danger: rec, ok: T('Appliquer') })) return;
+  var payload = { path: a.path, dacl: a.entries.map(function(e) { return aclWire(e, a.type); }), options: { recursive: rec, traverse: false }, acltype: a.type };
+  if (a.type === 'NFS4' && a.data && a.data.aclflags) payload.nfs41_flags = a.data.aclflags;
+  a.saving = true;
+  var btn = document.getElementById('acl-save');
+  if (btn) { btn.disabled = true; btn.textContent = T('Application…'); }
+  try {
+    var job = await socketCall('/filesystem/setacl', 'POST', payload), done = true;
+    if (typeof job === 'number') done = (await waitJob(job, rec ? 600000 : 60000)) !== null;
+    toast(done ? T('✅ ACL enregistrées') : T('L\'application des droits continue en arrière-plan'));
+    a.saving = false; a.dirty = false;
+    stoAclOpen(encodeURIComponent(a.ds), encodeURIComponent(a.path));
+  } catch (e) {
+    a.saving = false;
+    toast('❌ ' + ((e && e.message) || e), 9000);
+    btn = document.getElementById('acl-save');
+    if (btn) { btn.disabled = false; btn.textContent = T('Enregistrer'); }
+  }
 }
 
 // ===========================
