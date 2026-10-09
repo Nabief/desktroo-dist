@@ -415,6 +415,14 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   @media (prefers-reduced-motion: reduce) {
     .dk-hero.is-busy .dk-h-arc, .dk-hero.is-busy .dk-h-dot, .login-logo.is-busy .dk-h-arc, .login-logo.is-busy .dk-h-dot { animation:none; }
   }
+  /* Écran d'attente « maison » : le logo animé au centre, un titre, une phrase. Sert aussi à dire calmement qu'un service ne répond pas. */
+  .dk-wait { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-height:340px; padding:20px; text-align:center; }
+  .dk-wait .dk-hero { width:84px; height:84px; margin-bottom:6px; }
+  .dk-wait-title { font-family:var(--font-display); font-size:17px; font-weight:700; letter-spacing:-0.01em; color:var(--text); }
+  .dk-wait-text { max-width:400px; font-size:12.5px; line-height:1.55; color:var(--text-dim); }
+  .dk-wait details { max-width:520px; font-size:11px; color:var(--text-dim); }
+  .dk-wait summary { cursor:pointer; }
+  .dk-wait pre { margin:8px 0 0; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:11px; text-align:left; white-space:pre-wrap; word-break:break-word; }
   .dk-steps { display:flex; flex-direction:column; gap:10px; font-size:13.5px; }
   .dk-step { display:flex; align-items:center; gap:10px; }
   .dk-step-ic { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0; font-size:14px; line-height:1; color:var(--text-dim); }
@@ -663,6 +671,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     padding:1px 7px; border-radius:999px; background:rgba(255,255,255,0.08);
     font-size:10px; font-weight:600; letter-spacing:0; color:var(--text-dim);
   }
+  .web-count:empty { display:none; }
   .web-side-empty { padding:4px 10px 8px; font-size:12px; color:var(--text-dim); }
   .web-side-sep { height:1px; flex-shrink:0; margin:10px 10px 4px; background:rgba(255,255,255,0.07); }
   .web-nav {
@@ -3767,7 +3776,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "☾ Veille": "☾ Sleep",
 "Aucune VM": "No VMs",
 "Aucune VM détectée": "No VM detected",
-"Erreur libvirt2 :": "libvirt2 error:",
 "VM illisible": "Unreadable VM",
 "⚠ Conflit boot : legacy + per-device détectés.": "⚠ Boot conflict: legacy + per-device detected.",
 "💿 Lecteur CD-ROM présent mais aucun ISO monté.": "💿 CD-ROM drive present but no ISO mounted.",
@@ -4537,7 +4545,14 @@ select option{ background:#101b2e; color:#e9eef7; }
 "✅ Adresse MAC enregistrée": "✅ MAC address saved",
 "Adresse MAC refusée : le premier octet doit être pair (adresse d’une seule carte).": "MAC address refused: the first byte must be even (address of a single card).",
 "Adresse MAC déjà utilisée par une carte d’une machine virtuelle.": "MAC address already used by a card of a virtual machine.",
-"VM active : la nouvelle adresse MAC est enregistrée. Arrêter puis démarrer la VM pour qu’elle soit prise en compte.": "VM running: the new MAC address is saved. Stop then start the VM for it to take effect."
+"VM active : la nouvelle adresse MAC est enregistrée. Arrêter puis démarrer la VM pour qu’elle soit prise en compte.": "VM running: the new MAC address is saved. Stop then start the VM for it to take effect.",
+"Service injoignable": "Service unreachable",
+"Les machines virtuelles arrivent…": "Virtual machines are on their way…",
+"Le service de virtualisation démarre. Après une mise à jour, cela peut prendre une minute ou deux.": "The virtualization service is starting. After an update, this can take a minute or two.",
+"Les machines virtuelles ne répondent pas": "Virtual machines are not responding",
+"Le service de virtualisation n'a pas répondu. Vérifie que le NAS est joignable, puis réessaie.": "The virtualization service did not respond. Check that the NAS is reachable, then try again.",
+"Détail technique": "Technical detail",
+"Cette machine ne répond pas": "This machine is not responding"
 }
 </script>
 <script id="dk-i18n">
@@ -9975,13 +9990,22 @@ function openTrueNAS() {
 
 // ── Version & mise à jour ─────────────────────────────────────
 // Logo en pavé, grand format. state : '' | 'busy' (un arc tourne dans la panse du « d ») | 'error'.
-function dkHero(state) {
-  return '<div class="dk-hero' + (state ? ' is-' + state : '') + '" id="dk-hero" aria-hidden="true"><svg viewBox="4 4 56 56" xmlns="http://www.w3.org/2000/svg">'
-    + '<defs><linearGradient id="dk-hero-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2c4b"/><stop offset="1" stop-color="#0b1526"/></linearGradient></defs>'
-    + '<rect x="4" y="4" width="56" height="56" rx="15" fill="url(#dk-hero-g)"/><rect x="4.25" y="4.25" width="55.5" height="55.5" rx="14.75" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width=".5"/>'
+var _dkHeroSeq = 0;
+function dkHero(state, id) {
+  var g = 'dk-hero-g' + (++_dkHeroSeq);   // dégradé propre à chaque exemplaire : un autre, caché ailleurs, ne peut pas l'éteindre
+  return '<div class="dk-hero' + (state ? ' is-' + state : '') + '"' + (id ? ' id="' + id + '"' : '') + ' aria-hidden="true"><svg viewBox="4 4 56 56" xmlns="http://www.w3.org/2000/svg">'
+    + '<defs><linearGradient id="' + g + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2c4b"/><stop offset="1" stop-color="#0b1526"/></linearGradient></defs>'
+    + '<rect x="4" y="4" width="56" height="56" rx="15" fill="url(#' + g + ')"/><rect x="4.25" y="4.25" width="55.5" height="55.5" rx="14.75" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width=".5"/>'
     + '<circle cx="26" cy="37" r="11" fill="none" stroke="#e9eef7" stroke-width="6"/>'
     + '<circle class="dk-h-arc" cx="26" cy="37" r="11" fill="none" stroke="#3ecf8e" stroke-width="6" stroke-linecap="round" stroke-dasharray="17 52.2"/>'
     + '<rect x="37" y="12" width="6.5" height="38" rx="3.25" fill="#e9eef7"/><circle class="dk-h-dot" cx="26" cy="37" r="4.6" fill="#3ecf8e"/></svg></div>';
+}
+// Écran d'attente (state 'busy') ou d'arrêt calme (state 'error') : logo, titre, phrase, puis un complément éventuel.
+function dkWaitHtml(state, title, text, extra) {
+  return '<div class="dk-wait"' + (state === 'busy' ? ' role="status"' : '') + '>' + dkHero(state)
+    + '<div class="dk-wait-title">' + title + '</div>'
+    + (text ? '<div class="dk-wait-text">' + text + '</div>' : '')
+    + (extra || '') + '</div>';
 }
 function dkCardName() { return '<div class="dk-card-name" translate="no">Desktr<span class="dk-oo">oo</span></div>'; }
 async function tndAbout() {
@@ -10028,7 +10052,7 @@ async function tndDoUpdate() {
         + dkCardName() + '<div class="dk-card-sub" id="dk-up-sub">' + T('Mise à jour') + '</div>'
         + '<div class="dk-steps" id="dk-up-steps"></div>'
         + '<div class="tnd-muted" id="dk-up-msg" style="font-size:12.5px;line-height:1.5;" aria-live="polite"></div><div id="dk-up-extra"></div>'
-        + '</div>' + dkHero('busy') + '</div>';
+        + '</div>' + dkHero('busy', 'dk-hero') + '</div>';
     }
     var step = function (st, label) { return '<div class="dk-step ' + st + '"><span class="dk-step-ic">' + _ic(st) + '</span><span>' + label + '</span></div>'; };
     if (_steps !== stepDl + '/' + stepRestart) {
@@ -14873,13 +14897,56 @@ async function libvirt2Call(endpoint, method, body) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
   }
-  var res = await fetch('/fileops/libvirt2' + endpoint, opts);
+  var res;
+  try { res = await fetch('/fileops/libvirt2' + endpoint, opts); }
+  catch (netErr) { var ne = new Error(T('Service injoignable')); ne.transient = true; throw ne; }
   var text = await res.text();
-  var data = {};
+  var data = {}, isJson = true;
   try { data = text ? JSON.parse(text) : {}; }
-  catch (_) { data = { raw: text }; }
-  if (!res.ok) throw new Error(Tdyn(data.error || data.raw || ('HTTP ' + res.status)));   // message du serveur, en français
+  catch (_) { data = {}; isJson = false; }
+  if (!res.ok) {
+    // Réponse du serveur en français ; une page d'erreur du proxy (service qui redémarre) se résume à son code.
+    var err = new Error(Tdyn(data.error || ('HTTP ' + res.status)));
+    err.status = res.status;
+    err.transient = !isJson || (res.status >= 502 && res.status <= 504)
+      || /libvirt-sock|hypervisor|hyperviseur|Connection refused|timed? ?out|No route|unreachable|SSH|paramiko/i.test(String(data.error || ''));
+    throw err;
+  }
   return data;
+}
+
+// ── Attente du service de virtualisation ──
+// Juste après une mise à jour (ou un démarrage du NAS), le service met un moment à répondre. Plutôt qu'un
+// message d'erreur, la fenêtre patiente avec le logo animé et réessaie seule ; passé le délai, elle le dit calmement.
+var LV2_WAIT_MS = 150000, LV2_RETRY_MS = 3000;
+var _lv2Wait = { since: 0, timer: null };
+function lv2WaitStop() {
+  if (_lv2Wait.timer) { clearTimeout(_lv2Wait.timer); _lv2Wait.timer = null; }
+  _lv2Wait.since = 0;
+}
+function lv2WaitOrFail(e) {
+  var win = document.getElementById('win-libvirt');
+  if (!win || !win.classList.contains('visible')) { lv2WaitStop(); return; }   // fenêtre fermée : on n'insiste pas
+  var now = Date.now();
+  if (!_lv2Wait.since) _lv2Wait.since = now;
+  if (_lv2Wait.timer) { clearTimeout(_lv2Wait.timer); _lv2Wait.timer = null; }
+  var listEl = document.getElementById('lv-list'), cntEl = document.getElementById('lv-count');
+  if (listEl) listEl.innerHTML = '';
+  if (cntEl) cntEl.textContent = '';
+  if (now - _lv2Wait.since < LV2_WAIT_MS) {
+    if (!document.querySelector('#lv-detail .dk-wait .dk-hero.is-busy')) {
+      lv2NoDetail(dkWaitHtml('busy', T('Les machines virtuelles arrivent…'),
+        T('Le service de virtualisation démarre. Après une mise à jour, cela peut prendre une minute ou deux.')));
+    }
+    _lv2Wait.timer = setTimeout(function() { _lv2Wait.timer = null; loadLibvirt2List(); }, LV2_RETRY_MS);
+    return;
+  }
+  lv2WaitStop();
+  var detail = String((e && e.message) || e || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400);
+  lv2NoDetail(dkWaitHtml('error', T('Les machines virtuelles ne répondent pas'),
+    T('Le service de virtualisation n\'a pas répondu. Vérifie que le NAS est joignable, puis réessaie.'),
+    '<button class="web-open" onclick="loadLibvirt2List()">' + T('Réessayer') + '</button>'
+    + (detail ? '<details><summary>' + T('Détail technique') + '</summary><pre>' + lv2Esc(detail) + '</pre></details>' : '')));
 }
 
 function lv2Esc(v) {
@@ -15028,12 +15095,13 @@ async function loadLibvirt2List() {
   var cntEl  = document.getElementById('lv-count');
   if (!listEl) return;
 
-  if (!listEl.children.length) listEl.innerHTML = '<div class="fs-loading" style="height:70px;"><div class="spinner"></div></div>';
+  if (!listEl.children.length && !_lv2Wait.since) listEl.innerHTML = '<div class="fs-loading" style="height:70px;"><div class="spinner"></div></div>';
 
   try {
     var data = await libvirt2Call('/vms?detail=1');
     var vms = data.vms || [];
     _libvirt2Vms = vms;
+    lv2WaitStop();
     if (cntEl) cntEl.textContent = vms.length;
 
     if (!vms.length) {
@@ -15051,9 +15119,7 @@ async function loadLibvirt2List() {
     await libvirt2Select(_libvirt2Selected);
 
   } catch(e) {
-    if (cntEl) cntEl.textContent = '';
-    listEl.innerHTML = '<div class="web-side-empty">' + lv2Esc(e.message) + '</div>';
-    lv2NoDetail(T('<div class="empty-state" style="height:300px;"><div class="es-icon">⚠️</div><span>Erreur libvirt2 : ') + lv2Esc(e.message) + '</span></div>');
+    lv2WaitOrFail(e);
   }
 }
 
@@ -15082,7 +15148,9 @@ async function libvirt2Select(name) {
     }
     renderLibvirt2Detail(data);
   } catch(e) {
-    lv2NoDetail('<div class="empty-state" style="height:300px;"><div class="es-icon">⚠️</div><span>' + lv2Esc(e.message) + '</span></div>');
+    if (e && e.transient) { lv2WaitOrFail(e); return; }
+    lv2NoDetail(dkWaitHtml('error', T('Cette machine ne répond pas'), lv2Esc(e.message),
+      '<button class="web-open" onclick="loadLibvirt2List()">' + T('Réessayer') + '</button>'));
     lv2Head({ name: name });
   }
 }
