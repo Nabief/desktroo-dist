@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.28.2'
+APP_VERSION = '2.28.3'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -6099,8 +6099,61 @@ def _prem_test(provider):
 
 
 # ── MDM-DOWNLOADS-V1 : gestionnaire de téléchargements HTTP/HTTPS ────────────
-DOWNLOAD_DIR = os.environ.get('DOWNLOAD_DIR', '/mnt/Truenas_Stockage/Downloads')
+def _install_pool_root():
+    """« /mnt/<pool> » de cette installation, déduit du dossier d'installation (à défaut, de celui des VM)."""
+    for p in (APP_DIR, os.environ.get('VM_DIR', ''), os.environ.get('ISO_DIR', '')):
+        parts = str(p or '').split('/')
+        if len(parts) > 2 and parts[0] == '' and parts[1] == 'mnt' and parts[2]:
+            return '/mnt/' + parts[2]
+    return ''
+
+
+# Dossier de téléchargement quand rien n'est précisé (extension du navigateur, par exemple) : celui choisi dans
+# Desktroo (réglage « default_dir »), à défaut « Downloads » à la racine du pool de l'installation. Jusqu'à la 2.28.2
+# c'était un chemin écrit en dur, « /mnt/Truenas_Stockage/Downloads » : sur un NAS dont le pool porte un autre nom,
+# le dossier était créé hors de tout pool, sur le disque système.
+DOWNLOAD_DIR = os.environ.get('DOWNLOAD_DIR') or ((_install_pool_root() + '/Downloads') if _install_pool_root() else '')
 DOWNLOAD_ALLOWED_ROOT = os.environ.get('DOWNLOAD_ALLOWED_ROOT', '/mnt')
+_DL_DEFAULT_DIR = ''        # choisi dans Desktroo ; vide : DOWNLOAD_DIR
+_DL_AUTO_EXTRACT = False    # décompresser à la fin, quand la demande ne le précise pas
+_DL_AUTO_REMOVE = False     # retirer de la liste une fois terminé, idem
+
+
+def _dl_default_dir():
+    return _DL_DEFAULT_DIR or DOWNLOAD_DIR
+
+
+def _dl_check_dir(path):
+    """Chemin réel d'un dossier de destination, ou une erreur claire. Sous /mnt, le premier niveau (le pool) doit
+    déjà exister : on ne crée jamais « /mnt/<nom> », ce serait écrire sur le disque système."""
+    path = str(path or '').strip()
+    if not path.startswith('/'):
+        raise ValueError('Dossier de destination invalide.')
+    real = os.path.realpath(path)
+    base = os.path.realpath(DOWNLOAD_ALLOWED_ROOT).rstrip('/')
+    if not (real == base or real.startswith(base + '/')):
+        raise PermissionError('Destination hors zone autorisée (%s).' % DOWNLOAD_ALLOWED_ROOT)
+    parts = real.split('/')
+    if len(parts) > 2 and parts[1] == 'mnt':
+        if not os.path.isdir('/mnt/' + parts[2]):
+            raise PermissionError("Le pool « %s » n'existe pas sur ce NAS : choisissez un dossier d'un pool existant." % parts[2])
+    if real == '/mnt':
+        raise PermissionError('Choisissez un dossier dans un pool, pas /mnt lui-même.')
+    return real
+
+
+def _dl_set_default_dir(path):
+    global _DL_DEFAULT_DIR
+    _DL_DEFAULT_DIR = _dl_check_dir(path)
+    return _DL_DEFAULT_DIR
+
+
+def _dl_set_auto(extract=None, remove=None):
+    global _DL_AUTO_EXTRACT, _DL_AUTO_REMOVE
+    if extract is not None:
+        _DL_AUTO_EXTRACT = bool(extract)
+    if remove is not None:
+        _DL_AUTO_REMOVE = bool(remove)
 DOWNLOADS_FILE = os.path.join(ACCESS_DATA_DIR, 'downloads.json')
 _DL_CHUNK = 256 * 1024
 _DL_MAX_CONCURRENT = int(os.environ.get('DOWNLOAD_MAX_CONCURRENT', '3'))
@@ -6162,7 +6215,10 @@ _DL_MAX_CONCURRENT_MAX = 20
 
 def _dl_settings_get():
     return {'max_concurrent': _DL_MAX_CONCURRENT,
-            'default_connections': _DL_CONNECTIONS}
+            'default_connections': _DL_CONNECTIONS,
+            'default_dir': _DL_DEFAULT_DIR,
+            'auto_extract': _DL_AUTO_EXTRACT,
+            'auto_remove': _DL_AUTO_REMOVE}
 
 
 def _dl_settings_save():
@@ -6206,6 +6262,11 @@ def _dl_settings_load():
                 _dl_set_max_concurrent(d.get('max_concurrent'))
             if d.get('default_connections') is not None:
                 _dl_set_default_connections(d.get('default_connections'))
+            global _DL_DEFAULT_DIR, _DL_AUTO_EXTRACT, _DL_AUTO_REMOVE
+            if d.get('default_dir'):
+                _DL_DEFAULT_DIR = str(d.get('default_dir'))   # vérifié à l'usage : le pool peut être absent au démarrage
+            _DL_AUTO_EXTRACT = bool(d.get('auto_extract'))
+            _DL_AUTO_REMOVE = bool(d.get('auto_remove'))
     except Exception as e:
         log.warning('dl settings load: %s', e)
 
@@ -6731,15 +6792,18 @@ def _dl_start_thread(did):
 
 
 def _dl_add(url, dest_dir=None, filename=None, premium='auto', connections=None,
-            auto_extract=False, auto_remove=False):
+            auto_extract=None, auto_remove=None):
     url = str(url or '').strip()
     if not re.match(r'^https?://', url, re.I):
         raise ValueError('URL invalide (http/https attendu).')
-    dest_dir = os.path.realpath(dest_dir or DOWNLOAD_DIR)
-    base = os.path.realpath(DOWNLOAD_ALLOWED_ROOT).rstrip('/')
-    if not (dest_dir == base or dest_dir.startswith(base + '/')):
-        raise PermissionError('Destination hors zone autorisée (%s).' % DOWNLOAD_ALLOWED_ROOT)
+    if not (dest_dir or _dl_default_dir()):
+        raise ValueError('Aucun dossier de destination : choisissez-en un dans Téléchargements, Options.')
+    dest_dir = _dl_check_dir(dest_dir or _dl_default_dir())
     os.makedirs(dest_dir, exist_ok=True)
+    if auto_extract is None:
+        auto_extract = _DL_AUTO_EXTRACT
+    if auto_remove is None:
+        auto_remove = _DL_AUTO_REMOVE
     # Résolution premium (débrideur / compte direct) si demandé.
     source_url = url
     via = None
@@ -6788,7 +6852,7 @@ def _dl_add(url, dest_dir=None, filename=None, premium='auto', connections=None,
 
 
 def _dl_add_batch(urls, dest_dir=None, premium='auto', connections=None,
-                  auto_extract=False, auto_remove=False):
+                  auto_extract=None, auto_remove=None):
     """Ajoute plusieurs URLs d'un coup. Retourne un résultat par URL (une erreur
     sur un lien n'empêche pas les autres)."""
     out = []
@@ -6883,8 +6947,9 @@ def _dl_list():
     with _dl_lock:
         items = [dict(v) for v in _dl_items.values()]
     items.sort(key=lambda x: x.get('added_at', 0), reverse=True)
-    return {'ok': True, 'downloads': items, 'default_dir': DOWNLOAD_DIR,
-            'max_concurrent': _DL_MAX_CONCURRENT, 'default_connections': _DL_CONNECTIONS}
+    return {'ok': True, 'downloads': items, 'default_dir': _dl_default_dir(), 'default_dir_set': bool(_DL_DEFAULT_DIR),
+            'max_concurrent': _DL_MAX_CONCURRENT, 'default_connections': _DL_CONNECTIONS,
+            'auto_extract': _DL_AUTO_EXTRACT, 'auto_remove': _DL_AUTO_REMOVE}
 
 
 _dl_load()
@@ -8453,6 +8518,9 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     _dl_set_max_concurrent(b.get('max_concurrent'))
                 if b.get('default_connections') is not None:
                     _dl_set_default_connections(b.get('default_connections'))
+                if b.get('default_dir'):
+                    _dl_set_default_dir(b.get('default_dir'))
+                _dl_set_auto(b.get('auto_extract'), b.get('auto_remove'))
                 _dl_settings_save()
                 self._json(200, dict({'ok': True}, **_dl_settings_get()))
             except (ValueError, PermissionError) as e:
@@ -9535,7 +9603,7 @@ import time as _lv2_safe_time
 import re as _lv2_safe_re
 import xml.etree.ElementTree as _lv2_safe_ET
 
-_LV2_SAFE_SNAPSHOT_ROOT = "/mnt/Truenas_Stockage/vms/_snapshots"
+_LV2_SAFE_SNAPSHOT_ROOT = VM_DIR.rstrip('/') + '/_snapshots'
 
 
 def _lv2_safe_snapshot_id(label=""):
@@ -9877,7 +9945,7 @@ def _lv2_snapshot_delete(name, snapshot):
 
 
 # MDM-LIBVIRT2-SAFE-COPY-RESTORE-20260711
-_LV2_SAFE_RESTORE_BACKUP_ROOT = "/mnt/Truenas_Stockage/vms/_restore_backups"
+_LV2_SAFE_RESTORE_BACKUP_ROOT = VM_DIR.rstrip('/') + '/_restore_backups'
 
 
 def _lv2_safe_restore_relpath(value, prefix):

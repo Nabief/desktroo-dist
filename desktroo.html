@@ -1032,6 +1032,18 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-sub { margin-top:3px; font-size:12.5px; color:var(--text-dim); line-height:1.45; }
   .web-head-actions { display:flex; align-items:center; gap:14px; flex-shrink:0; }
   .web-body { flex:1 1 auto; min-height:0; overflow:auto; padding:6px 28px 28px; }
+  /* Un filet sépare l'en-tête du contenu ; quand la fenêtre a des onglets, c'est le leur qui en tient lieu. */
+  .web-head { border-bottom:1px solid rgba(255,255,255,0.08); }
+  .web-head:has(+ .web-tabs:not(:empty)) { border-bottom-color:transparent; }
+  .web-head + .web-body { padding-top:18px; }
+  [data-theme="light"] :is(.web-head, .web-tabs) { border-bottom-color:rgba(0,0,0,0.09); }
+  [data-theme="light"] .web-head:has(+ .web-tabs:not(:empty)) { border-bottom-color:transparent; }
+  /* Chaque section du contenu s'ouvre par son titre, prolongé d'un filet jusqu'au bord. */
+  .web-group-title { display:flex; align-items:center; gap:12px; }
+  .web-group-title:not(.sto-vdev-title)::after { content:''; flex:1; min-width:24px; height:1px; background:rgba(255,255,255,0.08); }
+  [data-theme="light"] .web-group-title:not(.sto-vdev-title)::after { background:rgba(0,0,0,0.10); }
+  .sto-plain-ic { display:grid; place-items:center; flex:0 0 auto; width:20px; height:20px; color:var(--text-dim); }
+  .sto-plain-ic svg { width:17px; height:17px; }
   .web-body.narrow > * { max-width:660px; }
   .web-body .mono { font-family:var(--font-mono); font-size:12px; }
   .web-online { display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); cursor:pointer; white-space:nowrap; }
@@ -5032,7 +5044,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Depuis le navigateur": "From the browser",
 "Aucun téléchargement terminé": "No completed downloads",
 "Aucun téléchargement en cours": "No downloads in progress",
-"Elles s'appliquent aux prochains téléchargements ajoutés.": "They apply to the downloads you add next.",
 "Plusieurs connexions accélèrent les gros fichiers.": "Several connections speed up large files.",
 "Les suivants attendent dans la file.": "The others wait in the queue.",
 "Les archives sont extraites une fois téléchargées.": "Archives are extracted once downloaded.",
@@ -6140,7 +6151,12 @@ select option{ background:#101b2e; color:#e9eef7; }
 "À jour": "Up to date",
 "Site web": "Website",
 "Mettre à jour vers la {0}": "Update to {0}",
-"Abonnement actif": "Subscription active"
+"Abonnement actif": "Subscription active",
+"Elles s'appliquent aux prochains téléchargements, y compris ceux envoyés par l'extension du navigateur.": "They apply to the next downloads, including those sent by the browser extension.",
+"Là où vont les fichiers quand aucun dossier n'est précisé.": "Where files go when no folder is given.",
+"Pour les ajouts faits depuis cette fenêtre, dans ce navigateur.": "For downloads added from this window, in this browser.",
+"Dossiers ordinaires": "Plain folders",
+"Ces dossiers ont été créés directement dans le pool : ce ne sont pas des datasets. Ils n'ont ni snapshots, ni quota, ni droits propres ; pour cela, créez un dataset.": "These folders were created directly in the pool: they are not datasets. They have no snapshots, quota or permissions of their own; create a dataset for that."
 }
 </script>
 <script id="dk-i18n">
@@ -11120,6 +11136,7 @@ async function stoDsTab(p) {
     el.innerHTML = '<div class="fs-empty">' + webIcon('folder') + '<div class="fs-empty-title">' + T('Aucun dataset') + '</div><div>'
       + T('Un dataset est un dossier du pool qui a ses propres réglages : snapshots, droits, quota.') + '</div>'
       + '<button class="web-open" onclick="stoNewDs()">' + T('Créer un dataset') + '</button></div>';
+    stoPlainDirs(p, list, seq);
     return;
   }
   var total = (_stoUse[p.name] || {}).total || 0;
@@ -11134,6 +11151,26 @@ async function stoDsTab(p) {
   });
   el.innerHTML = h + '</div>';
   el.querySelectorAll('[data-ds]').forEach(function(b) { b.onclick = function() { _stoDs = list[Number(b.dataset.ds)].name; stoGo('ds'); }; });
+  stoPlainDirs(p, list, seq);
+}
+// Les dossiers créés à la racine du pool (dans Fichiers, par exemple) ne sont pas des datasets : ils manquaient ici,
+// et on les croyait disparus. On les montre à part, avec ce qui les distingue.
+async function stoPlainDirs(p, list, seq) {
+  var raw;
+  try { raw = ensureArray(await fileops('GET', 'list?path=' + encodeURIComponent('/mnt/' + p.name))); } catch (e) { return; }
+  if (seq !== _stoSeq || _stoNav !== 'pool' || _stoTab !== 'ds' || _stoPool !== p.name) return;
+  var isDs = {};
+  list.forEach(function(d) { var parts = d.name.split('/'); if (parts.length === 2) isDs[parts[1]] = 1; });
+  var plain = raw.filter(function(e) { return e && e.is_dir && !isDs[e.name] && !/^(\.|ix-)/.test(e.name); })
+    .sort(function(a, b) { return String(a.name).localeCompare(String(b.name), undefined, { numeric: true, sensitivity: 'base' }); });
+  if (!plain.length) return;
+  var h = '<div class="web-group-title">' + T('Dossiers ordinaires') + '</div><div class="web-group">';
+  plain.forEach(function(e) {
+    h += '<button class="web-row line" onclick="webOpenFolder(' + wmQ('/mnt/' + p.name + '/' + e.name) + ')"><span class="sto-plain-ic">' + webIcon('folder') + '</span><span class="web-row-text"><span class="web-row-name">' + webEsc(e.name)
+      + '</span><span class="web-row-desc">' + T('Ouvrir dans Fichiers') + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+  });
+  h += '</div><p class="web-note">' + T('Ces dossiers ont été créés directement dans le pool : ce ne sont pas des datasets. Ils n\'ont ni snapshots, ni quota, ni droits propres ; pour cela, créez un dataset.') + '</p>';
+  stoBody().insertAdjacentHTML('beforeend', h);
 }
 function stoDsView() {
   var d = stoDsGet(_stoDs), p = stoPoolGet(_stoPool);
@@ -13037,13 +13074,61 @@ var _dlNav = 'queue', _dlItems = [], _dlSrv = {}, _dlPremConf = {};
 WEB_ICONS.check = '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>';
 WEB_ICONS.sliders = '<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/>';
 WEB_ICONS.key = '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.8 12.2L20 3M16.5 6.5l3 3M13.5 9.5l2.5 2.5"/>';
-// Réglages mémorisés dans ce navigateur, complétés par les valeurs par défaut du serveur.
+// Réglages des téléchargements. Le dossier de destination, les connexions par lien, la décompression et le retrait
+// automatiques sont gardés par le service : l'extension du navigateur et les autres postes suivent les mêmes.
+// Jusqu'à la 2.28.2 ils restaient dans ce navigateur (dlPrefsMigrate les confie au service, une fois).
+// Seul le choix du débrideur reste propre à ce navigateur.
+function dlLocalPrefs() {
+  try { return JSON.parse(localStorage.getItem('tn-dl-prefs') || '{}') || {}; } catch (e) { return {}; }
+}
 function dlPrefs() {
-  var p = {};
-  try { p = JSON.parse(localStorage.getItem('tn-dl-prefs') || '{}') || {}; } catch (e) {}
+  var p = dlLocalPrefs(), s = _dlSrv, shared = !!s.shared;
   var prem = p.premium || 'auto';
   if (prem !== 'auto' && prem !== 'off' && !(_dlPremConf[prem] && _dlPremConf[prem].configured)) prem = 'auto';
-  return { dir: p.dir || _dlSrv.dir || _dlDefaultDir || '/mnt', conn: Number(p.conn || _dlSrv.conn || 4), premium: prem, extract: !!p.extract, autoremove: !!p.autoremove };
+  return { dir: (shared ? s.dir : (p.dir || s.dir)) || _dlDefaultDir || '/mnt', conn: Number((shared ? s.conn : (p.conn || s.conn)) || 4), premium: prem,
+    extract: shared ? !!s.extract : !!p.extract, autoremove: shared ? !!s.autoremove : !!p.autoremove };
+}
+// Enregistre un réglage auprès du service. Rend true si c'est fait.
+async function dlSrvSet(patch) {
+  try {
+    var r = await fileops('POST', 'downloads/settings', patch);
+    if (r && r.default_dir) { _dlSrv.dir = r.default_dir; _dlSrv.dirSet = true; }
+    if (r && r.default_connections) _dlSrv.conn = r.default_connections;
+    if (r && r.auto_extract != null) _dlSrv.extract = !!r.auto_extract;
+    if (r && r.auto_remove != null) _dlSrv.autoremove = !!r.auto_remove;
+    return true;
+  } catch (e) { if (e.message !== 'LICENSE_READONLY') toast('❌ ' + e.message); return false; }
+}
+var _dlMigrating = false;
+function dlPrefsMigrate() {
+  if (_dlMigrating || !_dlSrv.shared || _licReadonly) return;
+  var p = dlLocalPrefs();
+  if (p.synced) return;
+  _dlMigrating = true;
+  var patch = {};
+  if (p.dir && !_dlSrv.dirSet) patch.default_dir = p.dir;
+  if (p.conn) patch.default_connections = Number(p.conn);
+  if (p.extract != null) patch.auto_extract = !!p.extract;
+  if (p.autoremove != null) patch.auto_remove = !!p.autoremove;
+  var done = function() {
+    dlPrefSet('synced', 1);
+    var dd = document.getElementById('dl-dir');
+    if (dd && document.activeElement !== dd) dd.value = dlPrefs().dir;
+  };
+  if (Object.keys(patch).length) dlSrvSet(patch).then(done); else done();
+}
+// Le dossier de destination change (saisie ou sélecteur) : il devient celui de l'installation.
+async function dlDirSave(inputId) {
+  var el = document.getElementById(inputId), v = el ? el.value.trim() : '';
+  if (!v || v === _dlSrv.dir) return true;
+  if (!_dlSrv.shared) { dlPrefSet('dir', v); return true; }
+  var ok = await dlSrvSet({ default_dir: v });
+  if (ok && el) el.value = _dlSrv.dir;
+  return ok;
+}
+function dlPickDir(inputId) {
+  var el = document.getElementById(inputId);
+  fsPickFolder((el && el.value.trim()) || '/mnt', function(path) { if (el) { el.value = path; dlDirSave(inputId); } });
 }
 function dlPrefSet(k, v) {
   try {
@@ -13112,7 +13197,7 @@ function dlListView() {
     h += '<div class="tnd-panel tnd-panel-pad dl-add">'
       + formRow(T('URL(s) à télécharger — une par ligne'), T('<textarea id="dl-url" class="tnd-input" rows="3" placeholder="https://exemple.com/fichier1.iso&#10;https://autre.com/fichier2.zip" style="resize:vertical;font-family:inherit;"></textarea>'))
       + '<div class="dl-add-row">'
-      + formRow(T('Dossier de destination'), '<div style="display:flex;gap:6px;"><input id="dl-dir" class="tnd-input" value="' + webEsc(dlPrefs().dir) + T('" style="flex:1;min-width:0;" /><button class="fs-btn" onclick="openFilePicker(\'dl-dir\',null,\'/mnt\')" title="Choisir un dossier">📁</button></div>'))
+      + formRow(T('Dossier de destination'), '<div style="display:flex;gap:6px;"><input id="dl-dir" class="tnd-input" value="' + webEsc(dlPrefs().dir) + '" style="flex:1;min-width:0;" /><button class="fs-btn" onclick="dlPickDir(\'dl-dir\')" title="' + T('Choisir un dossier') + '">📁</button></div>')
       + T('<button class="fs-btn" id="dl-add-btn" onclick="dlAdd()">⬇ Ajouter</button>')
       + '</div></div>';
   }
@@ -13120,7 +13205,7 @@ function dlListView() {
   wmBody('dl').innerHTML = h;
   dlListFill();
   var dd = document.getElementById('dl-dir');
-  if (dd) dd.addEventListener('change', function() { if (dd.value.trim()) dlPrefSet('dir', dd.value.trim()); });
+  if (dd) dd.addEventListener('change', function() { dlDirSave('dl-dir'); });
 }
 function dlListFill() {
   var el = document.getElementById('dl-list');
@@ -13132,7 +13217,7 @@ function dlListFill() {
   if (el._h !== h) { el._h = h; el.innerHTML = h; }   // rien à redessiner si rien n'a bougé
 }
 async function dlOptionsView() {
-  dlHead(T('Options'), { wide:true, sub: T('Elles s\'appliquent aux prochains téléchargements ajoutés.') });
+  dlHead(T('Options'), { wide:true, sub: T('Elles s\'appliquent aux prochains téléchargements, y compris ceux envoyés par l\'extension du navigateur.') });
   wmBody('dl').innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
   try { var pr = await fileops('GET', 'premium/status'); _dlPremConf = (pr && pr.providers) || {}; } catch (e) {}
   if (_dlNav !== 'options' || !wmVisible('downloads')) return;
@@ -13147,18 +13232,22 @@ async function dlOptionsView() {
     return '<' + tag + ' class="web-row"><span class="web-row-text"><span class="web-row-name">' + name + '</span>' + (desc ? '<span class="web-row-desc">' + desc + '</span>' : '') + '</span>' + control + '</' + tag + '>';
   };
   wmBody('dl').innerHTML = '<div class="web-group">'
+    + row(T('Dossier de destination'), T('Là où vont les fichiers quand aucun dossier n\'est précisé.'),
+        '<span style="display:flex;gap:6px;flex:0 1 360px;min-width:0;"><input id="dl-opt-dir" class="tnd-input" style="flex:1;min-width:0;" value="' + webEsc(p.dir) + '"><button class="fs-btn" onclick="dlPickDir(\'dl-opt-dir\')" title="' + T('Choisir un dossier') + '">📁</button></span>')
     + row(T('Connexions par lien'), T('Plusieurs connexions accélèrent les gros fichiers.'), '<select id="dl-conn" class="tnd-input"><option value="1">1 (simple)</option><option value="2">2</option><option value="4">4</option><option value="8">8</option><option value="16">16</option></select>')
     + row(T('Téléchargements simultanés'), T('Les suivants attendent dans la file.'), '<select id="dl-maxc" class="tnd-input"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="8">8</option><option value="10">10</option></select>')
-    + row(T('Débrideur / compte premium'), '', '<select id="dl-premium" class="tnd-input">' + premOpts + '</select>')
+    + row(T('Débrideur / compte premium'), T('Pour les ajouts faits depuis cette fenêtre, dans ce navigateur.'), '<select id="dl-premium" class="tnd-input">' + premOpts + '</select>')
     + row(T('Décompresser à la fin'), T('Les archives sont extraites une fois téléchargées.'), '<input type="checkbox" id="dl-extract">', 'label')
     + row(T('Retirer une fois terminé'), T('L\'entrée quitte la liste ; le fichier reste dans son dossier.'), '<input type="checkbox" id="dl-autoremove">', 'label')
     + '</div>';
   var set = function(id, v) { var el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = !!v; else el.value = String(v); } return el; };
-  set('dl-conn', p.conn).addEventListener('change', function() { dlPrefSet('conn', Number(this.value) || 4); });
+  set('dl-conn', p.conn).addEventListener('change', function() { var n = Number(this.value) || 4; if (_dlSrv.shared) dlSrvSet({ default_connections: n }); else dlPrefSet('conn', n); });
+  var od = document.getElementById('dl-opt-dir');
+  if (od) od.addEventListener('change', function() { dlDirSave('dl-opt-dir'); });
   set('dl-maxc', _dlSrv.maxc || 3).addEventListener('change', dlMaxConcurrentSave);
   set('dl-premium', p.premium).addEventListener('change', function() { dlPrefSet('premium', this.value); });
-  set('dl-extract', p.extract).addEventListener('change', function() { dlPrefSet('extract', this.checked); });
-  set('dl-autoremove', p.autoremove).addEventListener('change', function() { dlPrefSet('autoremove', this.checked); });
+  set('dl-extract', p.extract).addEventListener('change', function() { if (_dlSrv.shared) dlSrvSet({ auto_extract: this.checked }); else dlPrefSet('extract', this.checked); });
+  set('dl-autoremove', p.autoremove).addEventListener('change', function() { if (_dlSrv.shared) dlSrvSet({ auto_remove: this.checked }); else dlPrefSet('autoremove', this.checked); });
 }
 async function dlMaxConcurrentSave() {
   var el = document.getElementById('dl-maxc');
@@ -13202,8 +13291,11 @@ async function dlRefreshList() {
   try {
     const r = await fileops('GET', 'downloads/list');
     _dlItems = (r && r.downloads) || [];
-    _dlSrv = { dir: r.default_dir, conn: r.default_connections, maxc: r.max_concurrent };
+    // « shared » : le service garde lui-même le dossier et les options (à partir de la 2.28.3).
+    _dlSrv = { dir: r.default_dir, conn: r.default_connections, maxc: r.max_concurrent, shared: r.default_dir_set != null,
+      dirSet: !!r.default_dir_set, extract: !!r.auto_extract, autoremove: !!r.auto_remove };
     if (!_dlDefaultDir) _dlDefaultDir = r.default_dir || '/mnt';
+    dlPrefsMigrate();
     dlSideCounts();
     dlListFill();
     return '';
@@ -13216,8 +13308,9 @@ async function dlAdd() {
   if (!urls.length) { toast(T('URL requise')); return; }
   const p = dlPrefs();
   const prem = p.premium, conn = p.conn, ax = p.extract, ar = p.autoremove;
-  if (dir) dlPrefSet('dir', dir);
   const btn = document.getElementById('dl-add-btn'); if (btn) btn.disabled = true;
+  // Le dossier saisi devient celui de l'installation ; s'il est refusé (pool absent…), on n'ajoute rien.
+  if (dir && !(await dlDirSave('dl-dir'))) { if (btn) btn.disabled = false; return; }
   try {
     if (urls.length === 1) {
       await fileops('POST', 'downloads/add', { url: urls[0], dir: dir || undefined, premium: prem, connections: conn, auto_extract: ax, auto_remove: ar });
