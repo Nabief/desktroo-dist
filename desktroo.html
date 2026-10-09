@@ -274,16 +274,19 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #desktop.visible { display:block; }
 
   /* ===== DESKTOP ICONS ===== */
-  .desktop-icons {
-    display:flex; flex-direction:column; flex-wrap:wrap; gap:12px;
-    height:calc(100vh - var(--taskbar-h) - 32px); padding-top:4px;
-    align-content:flex-start;
-  }
+  /* Placement libre : chaque icône est posée sur une case d'une grille invisible (voir deskLayout). */
+  .desktop-icons { position:relative; height:calc(100vh - var(--taskbar-h) - 32px); }
   .desk-icon {
+    position:absolute; left:0; top:4px;
     width:88px; display:flex; flex-direction:column; align-items:center; gap:6px;
     cursor:pointer; padding:8px; border-radius:var(--radius-sm);
-    transition:background 0.15s; position:relative;
+    transition:background 0.15s, left 0.18s ease, top 0.18s ease;
+    touch-action:none; user-select:none; -webkit-user-select:none;
   }
+  .desk-icon.dragging { z-index:6; cursor:grabbing; transition:none; background:rgba(var(--accent-rgb),0.2); }
+  .desk-icon.dragging .desk-icon-img { transform:scale(1.08); box-shadow:0 14px 30px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.15) inset; }
+  .desk-drop { display:none; position:absolute; width:88px; height:100px; border-radius:var(--radius-sm); border:1.5px dashed rgba(var(--accent2-rgb),0.65); background:rgba(var(--accent-rgb),0.08); pointer-events:none; }
+  @media (prefers-reduced-motion: reduce) { .desk-icon { transition:background 0.15s; } }
   .desk-icon:hover { background:rgba(255,255,255,0.07); }
   .desk-icon:active { background:rgba(255,255,255,0.12); }
   .desk-icon.selected { background:rgba(var(--accent-rgb),0.25); }
@@ -5627,7 +5630,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "actuellement {0}": "currently {0}",
 "Pour toute l'installation": "For the whole installation",
 "Couleur proposée à tous les postes qui n'ont pas choisi la leur, écran de connexion compris.": "Color offered to every computer that has not chosen its own, sign-in screen included.",
-"Le choix « sur ce poste » est gardé dans ce navigateur ; celui de l'installation est gardé sur le NAS.": "The “on this computer” choice is kept in this browser; the installation's is kept on the NAS."
+"Le choix « sur ce poste » est gardé dans ce navigateur ; celui de l'installation est gardé sur le NAS.": "The “on this computer” choice is kept in this browser; the installation's is kept on the NAS.",
+"Icônes rangées": "Icons tidied up",
+"▦ Ranger les icônes": "▦ Tidy up icons"
 }
 </script>
 <script id="dk-i18n">
@@ -6326,6 +6331,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <!-- CONTEXT MENU -->
 <div id="ctx-menu">
   <div class="ctx-item" onclick="ctxRefresh()">↻ Actualiser le bureau</div>
+  <div class="ctx-item" onclick="deskIconsReset()">▦ Ranger les icônes</div>
   <div class="ctx-item" onclick="ctxToggleWidgets()">📊 Afficher/masquer widgets</div>
   <div class="ctx-item" onclick="pickWallpaper()">🖼️ Fond d’écran</div>
   <div class="ctx-item" onclick="openDownloads()">⬇️ Téléchargements</div>
@@ -13385,14 +13391,17 @@ function isPinned(id) { return getShortcuts().indexOf(id) >= 0; }
 function renderDesktopIcons() {
   var el = document.getElementById('desktop-icons');
   if (!el) return;
-  el.innerHTML = '';
+  el.innerHTML = '<div class="desk-drop" id="desk-drop"></div>';
   var shortcuts = getShortcuts();
   shortcuts.forEach(function(id) {
     var app = ALL_APPS.find(function(a){ return a.id === id; });
     if (!app) return;
     var div = document.createElement('div');
     div.className = 'desk-icon';
-    div.ondblclick = function() { app.action(); };
+    div.dataset.id = id;
+    div.ondblclick = function() { if (div._dragged && Date.now() - div._dragged < 500) return; app.action(); };
+    div.onpointerdown = function(e) { deskDragStart(e, div); };
+    div.ondragstart = function() { return false; };
     div.oncontextmenu = function(e) {
       e.preventDefault(); e.stopPropagation();
       showDesktopIconCtx(e, app);
@@ -13403,7 +13412,105 @@ function renderDesktopIcons() {
       + '<span class="desk-icon-label">' + app.label + '</span>';
     el.appendChild(div);
   });
+  deskLayout();
 }
+// ── Icônes du bureau : placement libre, calé sur une grille invisible ──
+// Tant qu'aucune icône n'a été déplacée, elles se rangent seules en colonnes. Au premier déplacement,
+// toutes les places sont figées ; elles sont gardées dans ce navigateur, en cases (colonne, rangée).
+var DESK_CW = 100, DESK_CH = 110;
+var _deskCells = {};       // id → case affichée
+var _deskDrag = null;
+function deskPosGet() { try { var p = JSON.parse(localStorage.getItem('desktop_icon_pos') || 'null'); return p && typeof p === 'object' && !Array.isArray(p) ? p : null; } catch (_) { return null; } }
+function deskPosSave(p) { try { if (p) localStorage.setItem('desktop_icon_pos', JSON.stringify(p)); else localStorage.removeItem('desktop_icon_pos'); } catch (_) {} }
+function deskGrid() {
+  var bar = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h'), 10) || 52;
+  return { cols: Math.max(1, Math.floor((window.innerWidth - 32) / DESK_CW)), rows: Math.max(1, Math.floor((window.innerHeight - bar - 32) / DESK_CH)) };
+}
+// Place chaque icône : sa case gardée si elle est libre et visible, sinon la première case libre.
+function deskLayout() {
+  var el = document.getElementById('desktop-icons');
+  if (!el) return;
+  var g = deskGrid(), kept = deskPosGet(), saved = kept || {}, used = {}, cells = {}, later = [], fresh = false;
+  var key = function(c, r) { return c + ':' + r; };
+  var icons = Array.prototype.slice.call(el.querySelectorAll('.desk-icon'));
+  icons.forEach(function(d) {
+    var p = saved[d.dataset.id];
+    if (p && p.c >= 0 && p.r >= 0 && p.c < g.cols && p.r < g.rows && !used[key(p.c, p.r)]) { used[key(p.c, p.r)] = true; cells[d.dataset.id] = { c: p.c, r: p.r }; }
+    else later.push(d);
+  });
+  later.forEach(function(d) {
+    for (var c = 0; c < 400; c++) for (var r = 0; r < g.rows; r++) if (!used[key(c, r)]) {
+      used[key(c, r)] = true; cells[d.dataset.id] = { c: c, r: r };
+      // une icône ajoutée après coup garde la place qu'elle vient de recevoir
+      if (kept && !kept[d.dataset.id]) { kept[d.dataset.id] = { c: c, r: r }; fresh = true; }
+      return;
+    }
+  });
+  if (fresh) deskPosSave(kept);
+  _deskCells = cells;
+  icons.forEach(function(d) {
+    var p = cells[d.dataset.id];
+    if (!p || (_deskDrag && _deskDrag.moved && _deskDrag.el === d)) return;
+    d.style.left = (p.c * DESK_CW) + 'px'; d.style.top = (p.r * DESK_CH + 4) + 'px';
+  });
+}
+function deskCellAt(x, y) {
+  var g = deskGrid(), c = Math.max(0, Math.min(g.cols - 1, Math.round(x / DESK_CW))), r = Math.max(0, Math.min(g.rows - 1, Math.round((y - 4) / DESK_CH)));
+  // pas sous le panneau des widgets, quand il est affiché
+  var w = document.getElementById('widgets'), el = document.getElementById('desktop-icons');
+  var wr = w && el ? w.getBoundingClientRect() : null;
+  if (wr && wr.width > 0) {   // largeur nulle : panneau masqué
+    var er = el.getBoundingClientRect();
+    while (c > 0 && er.left + c * DESK_CW + 88 > wr.left - 8 && er.top + r * DESK_CH < wr.bottom && er.top + (r + 1) * DESK_CH > wr.top) c--;
+  }
+  return { c: c, r: r };
+}
+function deskDragStart(e, div) {
+  if (e.button !== 0 && e.pointerType === 'mouse') return;
+  _deskDrag = { el: div, id: div.dataset.id, x: e.clientX, y: e.clientY, left: parseFloat(div.style.left) || 0, top: parseFloat(div.style.top) || 0, moved: false, cell: null };
+  window.addEventListener('pointermove', deskDragMove);
+  window.addEventListener('pointerup', deskDragEnd);
+  window.addEventListener('pointercancel', deskDragEnd);
+}
+function deskDragMove(e) {
+  var d = _deskDrag;
+  if (!d) return;
+  var dx = e.clientX - d.x, dy = e.clientY - d.y;
+  if (!d.moved && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+  if (!d.moved) { d.moved = true; d.el.classList.add('dragging'); }
+  var el = document.getElementById('desktop-icons'), x = Math.max(0, Math.min(el.clientWidth - 88, d.left + dx)), y = Math.max(0, Math.min(el.clientHeight - 80, d.top + dy));
+  d.el.style.left = x + 'px'; d.el.style.top = y + 'px';
+  d.cell = deskCellAt(x, y);
+  var ghost = document.getElementById('desk-drop');
+  if (ghost) { ghost.style.left = (d.cell.c * DESK_CW) + 'px'; ghost.style.top = (d.cell.r * DESK_CH + 4) + 'px'; ghost.style.display = 'block'; }
+}
+function deskDragEnd() {
+  var d = _deskDrag;
+  window.removeEventListener('pointermove', deskDragMove);
+  window.removeEventListener('pointerup', deskDragEnd);
+  window.removeEventListener('pointercancel', deskDragEnd);
+  _deskDrag = null;
+  if (!d) return;
+  var ghost = document.getElementById('desk-drop');
+  if (ghost) ghost.style.display = 'none';
+  if (!d.moved) return;
+  d.el.classList.remove('dragging');
+  d.el._dragged = Date.now();   // le relâchement ne compte pas comme un clic d'ouverture
+  if (d.cell) {
+    // premier déplacement : toutes les places affichées sont figées, puis celle-ci change
+    var pos = deskPosGet() || {}, from = _deskCells[d.id];
+    Object.keys(_deskCells).forEach(function(id) { if (!pos[id]) pos[id] = { c: _deskCells[id].c, r: _deskCells[id].r }; });
+    var other = Object.keys(_deskCells).find(function(id) { return id !== d.id && _deskCells[id].c === d.cell.c && _deskCells[id].r === d.cell.r; });
+    if (other && from) pos[other] = { c: from.c, r: from.r };   // case prise : les deux icônes échangent leur place
+    pos[d.id] = { c: d.cell.c, r: d.cell.r };
+    deskPosSave(pos);
+  }
+  deskLayout();
+}
+// Remet les icônes en colonnes, dans l'ordre.
+function deskIconsReset() { deskPosSave(null); deskLayout(); toast(T('Icônes rangées')); }
+window.addEventListener('resize', function() { clearTimeout(window._deskRz); window._deskRz = setTimeout(deskLayout, 120); });
+
 
 function showDesktopIconCtx(e, app) {
   // Réutiliser le ctx-menu du bureau avec options de bureau
@@ -13411,12 +13518,12 @@ function showDesktopIconCtx(e, app) {
   if (!menu) return;
   // Insérer temporairement option "Retirer" en tête
   var old = menu.innerHTML;
-  menu.innerHTML = '<div class="ctx-item" onclick="unpinFromDesktop(\'' + app.id + T('\');closeCtxMenu()">🗑 Retirer du bureau</div>')
+  menu.innerHTML = '<div class="ctx-item" onclick="unpinFromDesktop(\'' + app.id + '\')">' + T('🗑 Retirer du bureau') + '</div>'
     + '<div class="ctx-sep"></div>'
     + old;
-  menu.style.left = e.clientX + 'px';
-  menu.style.top  = e.clientY + 'px';
   menu.style.display = 'block';
+  menu.style.left = Math.max(4, Math.min(e.clientX, window.innerWidth  - menu.offsetWidth  - 8)) + 'px';
+  menu.style.top  = Math.max(4, Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8)) + 'px';
   setTimeout(function() {
     document.addEventListener('click', function handler() {
       menu.style.display = 'none';
@@ -13427,6 +13534,7 @@ function showDesktopIconCtx(e, app) {
 }
 
 function unpinFromDesktop(id) {
+  var pos = deskPosGet(); if (pos && pos[id]) { delete pos[id]; deskPosSave(pos); }
   var arr = getShortcuts().filter(function(s){ return s !== id; });
   saveShortcuts(arr);
   renderDesktopIcons();
@@ -13866,9 +13974,9 @@ function setupContextMenu() {
   desk.addEventListener('contextmenu', function(e) {
     if (e.target.closest('.window,.desk-icon')) return;
     e.preventDefault();
-    ctx.style.left    = Math.min(e.clientX, window.innerWidth  - 180) + 'px';
-    ctx.style.top     = Math.min(e.clientY, window.innerHeight - 120) + 'px';
     ctx.style.display = 'block';
+    ctx.style.left    = Math.max(4, Math.min(e.clientX, window.innerWidth  - ctx.offsetWidth  - 8)) + 'px';
+    ctx.style.top     = Math.max(4, Math.min(e.clientY, window.innerHeight - ctx.offsetHeight - 8)) + 'px';
   });
   document.addEventListener('click', function() { if (ctx) ctx.style.display = 'none'; });
 }
