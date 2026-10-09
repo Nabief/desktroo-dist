@@ -602,6 +602,8 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .dk-wait-text { max-width:400px; font-size:12.5px; line-height:1.55; color:var(--text-dim); }
   .dk-wait details { max-width:520px; font-size:11px; color:var(--text-dim); }
   .dk-wait summary { cursor:pointer; }
+  .dk-wait-small { min-height:0; padding:28px 18px; }
+  .dk-wait-small .dk-hero { width:64px; height:64px; }
   .dk-wait pre { margin:8px 0 0; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:11px; text-align:left; white-space:pre-wrap; word-break:break-word; }
   .dk-steps { display:flex; flex-direction:column; gap:10px; font-size:13.5px; }
   .dk-step { display:flex; align-items:center; gap:10px; }
@@ -6156,7 +6158,16 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Là où vont les fichiers quand aucun dossier n'est précisé.": "Where files go when no folder is given.",
 "Pour les ajouts faits depuis cette fenêtre, dans ce navigateur.": "For downloads added from this window, in this browser.",
 "Dossiers ordinaires": "Plain folders",
-"Ces dossiers ont été créés directement dans le pool : ce ne sont pas des datasets. Ils n'ont ni snapshots, ni quota, ni droits propres ; pour cela, créez un dataset.": "These folders were created directly in the pool: they are not datasets. They have no snapshots, quota or permissions of their own; create a dataset for that."
+"Ces dossiers ont été créés directement dans le pool : ce ne sont pas des datasets. Ils n'ont ni snapshots, ni quota, ni droits propres ; pour cela, créez un dataset.": "These folders were created directly in the pool: they are not datasets. They have no snapshots, quota or permissions of their own; create a dataset for that.",
+"Le service ne répond pas": "The service is not responding",
+"Il redémarre sans doute, après une mise à jour par exemple. Réessaie dans un instant.": "It is probably restarting, after an update for example. Try again in a moment.",
+"Cette page n'a pas pu s'afficher": "This page could not be displayed",
+"Le service ne répond toujours pas": "The service is still not responding",
+"Desktroo n'arrive pas à joindre son service. Vérifie que le NAS est allumé et joignable, puis réessaie.": "Desktroo cannot reach its service. Check that the NAS is on and reachable, then try again.",
+"Un instant…": "One moment…",
+"Le service ne répond pas encore : il redémarre sans doute, après une mise à jour par exemple. La page s'affichera d'elle-même.": "The service is not responding yet: it is probably restarting, after an update for example. The page will appear by itself.",
+"Les sites ne répondent pas": "The websites are not responding",
+"Les téléchargements ne répondent pas": "The downloads are not responding"
 }
 </script>
 <script id="dk-i18n">
@@ -7146,8 +7157,12 @@ function ensureArray(v) {
   if (v && Array.isArray(v.items))  return v.items;
   return [];
 }
+// Un écran qui n'a pas pu s'afficher (appel unique, sans nouvel essai automatique) : le logo au repos, une phrase claire.
 function errHtml(msg) {
-  return `<div class="empty-state" style="height:160px;"><div class="es-icon">⚠️</div><span style="font-size:11px;max-width:90%;text-align:center;">${msg}</span></div>`;
+  var html = dkTransient(msg)
+    ? dkWaitHtml('error', T('Le service ne répond pas'), T('Il redémarre sans doute, après une mise à jour par exemple. Réessaie dans un instant.'), dkDetail(msg))
+    : dkWaitHtml('error', T('Cette page n\'a pas pu s\'afficher'), String(msg || '').replace(/^(Erreur|Error|Err) ?: ?/, ''));
+  return html.replace('class="dk-wait"', 'class="dk-wait dk-wait-small"');
 }
 
 // ===========================
@@ -7293,6 +7308,12 @@ function tndOpenDeepLinkApp() {
     var want = new URLSearchParams(location.search).get('app') || (location.hash || '').replace(/^#/, '');
     if (!want) return;
     want = decodeURIComponent(want).trim().toLowerCase();
+    // L'adresse est nettoyée aussitôt : sans cela, la fenêtre se rouvrirait à chaque actualisation de la page.
+    try {
+      var here = new URL(location.href);
+      if (here.searchParams.has('app')) here.searchParams.delete('app'); else here.hash = '';
+      history.replaceState(history.state, '', here.pathname + here.search + here.hash);
+    } catch (_) {}
     setTimeout(function() {
       try {
         var app = (typeof ALL_APPS !== 'undefined' ? ALL_APPS : []).find(function(a){ return a.id === want; });
@@ -9933,7 +9954,7 @@ async function loadWebsites() {
   if (_webQuietOpen) { if (!_webLoaded) webLoad().catch(function(){}); return; }
   if (!_webLoaded) {
     webHead(T('Sites Web'), { nav:'site' });
-    webBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
+    if (!document.getElementById('dk-await-web')) webBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
   }
   await webRenderList();
 }
@@ -9943,7 +9964,8 @@ async function webRenderList() {
   catch(e) {
     if (!_webLoaded) {
       webHead(T('Sites Web'), { nav:'site' });
-      webBody().innerHTML = errHtml(T('Erreur: ') + e.message) + '<div style="text-align:center;"><button class="fs-btn" onclick="loadWebsites()">' + T('Réessayer') + '</button></div>';
+      if (dkTransient(e)) dkAwait('web', webBody(), loadWebsites, e, { failTitle: T('Les sites ne répondent pas') });
+      else webBody().innerHTML = dkWaitHtml('error', T('Les sites ne répondent pas'), webEsc(dkErrText(e)), '<button class="web-open" onclick="loadWebsites()">' + T('Réessayer') + '</button>');
       return;
     }
     toast('❌ ' + e.message);
@@ -11596,10 +11618,20 @@ function wmNav(o) {
 }
 function wmSideTitle(label, count) { return '<div class="web-side-title"><span>' + label + '</span>' + (count != null && count !== '' ? '<span class="web-count">' + count + '</span>' : '') + '</div>'; }
 function wmSep() { return '<div class="web-side-sep"></div>'; }
-function wmLoading(id, text) { var b = wmBody(id); if (b) b.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div> ' + (text || T('Chargement...')) + '</div>'; }
+function wmLoading(id, text) {
+  var b = wmBody(id);
+  if (!b || document.getElementById('dk-await-wm-' + id)) return;   // le logo d'attente est déjà là : on le laisse tourner
+  b.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div> ' + (text || T('Chargement...')) + '</div>';
+}
+// « retry » : l'appel (texte) qui recharge la fenêtre. Une panne passagère se traduit par une attente, pas par une erreur.
 function wmFail(id, title, e, retry) {
   var b = wmBody(id);
-  if (b) b.innerHTML = dkWaitHtml('error', title, webEsc((e && e.message) || String(e)), retry ? '<button class="web-open" onclick="' + retry + '">' + T('Réessayer') + '</button>' : '');
+  if (!b) return;
+  if (retry && dkTransient(e)) {
+    dkAwait('wm-' + id, b, function() { try { (new Function(retry))(); } catch (x) {} }, e, { failTitle: title });
+    return;
+  }
+  b.innerHTML = dkWaitHtml('error', title, webEsc(dkErrText(e)), retry ? '<button class="web-open" onclick="' + retry + '">' + T('Réessayer') + '</button>' : '');
 }
 // Ligne d'action : nom à gauche, explication à la suite.
 function wmRow(call, name, desc, cls) {
@@ -12844,7 +12876,55 @@ function dkHero(state, id) {
     + '<rect x="37" y="12" width="6.5" height="38" rx="3.25" fill="#e9eef7"/><circle class="dk-h-dot" cx="26" cy="37" r="4.6" fill="#3ecf8e"/></svg></div>';
 }
 // Écran d'attente (state 'busy') ou d'arrêt calme (state 'error') : logo, titre, phrase, puis un complément éventuel.
+// ── Attente « maison » ──
+// Un service qui ne répond pas encore (il redémarre après une mise à jour, le NAS démarre) n'est pas une erreur :
+// la fenêtre patiente avec le logo animé et réessaie seule ; passé le délai, elle le dit calmement.
+var DK_WAIT_MS = 90000, DK_RETRY_MS = 3000, _dkAwait = {};
+function dkErrText(e) { return String((e && e.message) || e || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400); }
+// Panne passagère : le proxy répond à la place du service (502, 503, 504), ou la liaison est coupée.
+function dkTransient(e) {
+  return /\bHTTP 50[234]\b|Bad Gateway|Service Unavailable|Gateway Time-?out|Failed to fetch|NetworkError|Load failed|WS_UNAVAILABLE/i.test(dkErrText(e));
+}
+function dkDetail(e) {
+  var d = dkErrText(e);
+  return d ? '<details><summary>' + T('Détail technique') + '</summary><pre>' + webEsc(d) + '</pre></details>' : '';
+}
+// Attend dans « box ». « retry » est relancée toutes les 3 s tant que l'attente est affichée : elle pose le contenu
+// si tout va bien, ou rappelle dkAwait. o.failTitle : titre propre à la fenêtre une fois le délai passé.
+// L'attente (ou son écran « délai passé ») est-elle affichée pour cette clé ?
+function dkAwaiting(key) { return !!(document.getElementById('dk-await-' + key) || document.getElementById('dk-late-' + key)); }
+function dkAwait(key, box, retry, e, o) {
+  if (!box) return;
+  o = o || {};
+  var now = Date.now(), id = 'dk-await-' + key, st = _dkAwait[key];
+  if (!st || now - st.last > DK_RETRY_MS + 8000) st = _dkAwait[key] = { since: now, timer: null };
+  st.last = now;
+  clearTimeout(st.timer);
+  if (now - st.since >= DK_WAIT_MS) {
+    delete _dkAwait[key];
+    box.innerHTML = '<div id="dk-late-' + key + '">' + dkWaitHtml('error', o.failTitle || T('Le service ne répond toujours pas'),
+      T('Desktroo n\'arrive pas à joindre son service. Vérifie que le NAS est allumé et joignable, puis réessaie.'),
+      '<button class="web-open" id="' + id + '-again">' + T('Réessayer') + '</button>' + dkDetail(e)) + '</div>';
+    var again = document.getElementById(id + '-again');
+    if (again) again.onclick = function() { dkAwait(key, box, retry, e, o); };
+    return;
+  }
+  if (!document.getElementById(id)) {
+    box.innerHTML = '<div id="' + id + '">' + dkWaitHtml('busy', T('Un instant…'),
+      T('Le service ne répond pas encore : il redémarre sans doute, après une mise à jour par exemple. La page s\'affichera d\'elle-même.')) + '</div>';
+  }
+  st.timer = setTimeout(function() {
+    var el = document.getElementById(id);
+    if (!el || el.offsetParent === null) { delete _dkAwait[key]; return; }   // écran remplacé ou fenêtre fermée : on n'insiste pas
+    retry();
+  }, DK_RETRY_MS);
+}
 function dkWaitHtml(state, title, text, extra) {
+  // Un message brut de panne passagère (« HTTP 502 ») ne s'affiche jamais tel quel : une phrase, et le détail replié.
+  if (state === 'error' && typeof text === 'string' && text.length < 120 && dkTransient(text)) {
+    extra = (extra || '') + dkDetail(text);
+    text = T('Il redémarre sans doute, après une mise à jour par exemple. Réessaie dans un instant.');
+  }
   return '<div class="dk-wait"' + (state === 'busy' ? ' role="status"' : '') + '>' + dkHero(state)
     + '<div class="dk-wait-title">' + title + '</div>'
     + (text ? '<div class="dk-wait-text">' + text + '</div>' : '')
@@ -13144,8 +13224,22 @@ function dlPollStart() {
   if (_dlPollTimer) return;
   _dlPollTimer = setInterval(function() {
     if (!document.querySelector('#taskbar-apps [data-win="downloads"]')) { clearInterval(_dlPollTimer); _dlPollTimer = null; return; }
-    if (wmVisible('downloads')) dlRefreshList();
+    if (!wmVisible('downloads')) return;
+    dlRefreshList().then(function(err) {
+      if (!err) { _dlFails = 0; return; }
+      // La liste était affichée et le service se tait (trois essais de suite) : on attend, au lieu de montrer une liste figée.
+      if (dkTransient(err) && ++_dlFails >= 3 && (_dlNav === 'queue' || _dlNav === 'done') && !dkAwaiting('dl')) dlAwait(err);
+    });
   }, 1000);
+}
+var _dlFails = 0;
+function dlAwait(err) { dkAwait('dl', wmBody('dl'), dlRecover, err, { failTitle: T('Les téléchargements ne répondent pas') }); }
+async function dlRecover() {
+  var err = await dlRefreshList();
+  if (!wmVisible('downloads')) return;
+  if (err) { dlAwait(err); return; }
+  _dlFails = 0;
+  dlGo(_dlNav === 'done' ? 'done' : 'queue');
 }
 // À l'ouverture de la fenêtre : la file d'attente.
 async function loadDownloads() {
@@ -13159,7 +13253,11 @@ async function loadDownloads() {
   } catch (e) {}
   var err = await dlRefreshList();
   if (!wmVisible('downloads') || _dlNav !== 'queue') return;
-  if (err) { wmBody('dl').innerHTML = errHtml(T('Erreur: ') + err); return; }
+  if (err) {
+    if (dkTransient(err)) dlAwait(err);
+    else wmBody('dl').innerHTML = dkWaitHtml('error', T('Les téléchargements ne répondent pas'), webEsc(dkErrText(err)), '<button class="web-open" onclick="loadDownloads()">' + T('Réessayer') + '</button>');
+    return;
+  }
   dlGo('queue');
 }
 function dlGo(k) {
