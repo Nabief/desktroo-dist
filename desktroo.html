@@ -1,7 +1,12 @@
 <!DOCTYPE html>
+<!-- Desktroo — © 2026 Mdm-services.fr. Tous droits réservés.
+     Logiciel propriétaire, soumis à la licence d'utilisation de Desktroo (LICENSE.md, https://desktroo.fr).
+     Copie, modification et redistribution interdites sans accord écrit. Cette mention ne doit pas être retirée. -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="author" content="Mdm-services.fr">
+<meta name="copyright" content="© 2026 Mdm-services.fr. Tous droits réservés.">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Desktroo</title>
 <link rel="manifest" href="/fileops/manifest.webmanifest" crossorigin="use-credentials">
@@ -1191,6 +1196,19 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .about-title { margin:10px 0 16px; font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--text); }
   .about-page > .web-crumb { align-self:flex-start; }
   .about-up { padding:16px 18px; }
+  /* « À propos » : droits et licence */
+  .about-legal-lead { margin:0 0 8px; font-size:14px; line-height:1.5; color:var(--text); }
+  .about-legal { margin:0 0 6px; font-size:13px; line-height:1.55; color:var(--text-dim); }
+  .about-legal-h { margin:18px 0 7px; font-size:13px; font-weight:600; color:var(--text); }
+  .about-legal-list { margin:0; padding:0; list-style:none; border:1px solid var(--glass-border); border-radius:12px; background:rgba(255,255,255,0.035); overflow:hidden; }
+  .about-legal-list li { position:relative; padding:9px 14px 9px 38px; border-top:1px solid var(--glass-border); font-size:13px; line-height:1.45; color:var(--text); }
+  .about-legal-list li:first-child { border-top:0; }
+  .about-legal-list li::before { position:absolute; left:15px; top:9px; font-size:12px; font-weight:700; }
+  .about-legal-list.ok li::before { content:'✓'; color:var(--accent); }
+  .about-legal-list.no li::before { content:'✕'; color:var(--text-dim); }
+  .about-legal-note { margin:16px 0 0; font-size:11.5px; line-height:1.5; color:var(--text-dim); }
+  .about-actions a.web-open { text-decoration:none; }
+  .login-copy { margin-top:14px; font-size:10.5px; color:var(--text-dim); }
   /* Page « Signaler un problème » de la fenêtre À propos */
   .rp-seg { display:flex; gap:6px; padding:4px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.18); }
   [data-theme="light"] .rp-seg { background:rgba(13,27,53,0.05); }
@@ -6303,7 +6321,24 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Aucun dossier pour l'instant. Ajoute ceux que l'application doit voir : films, musique, photos…": "No folder yet. Add the ones the application must see: films, music, photos…",
 "+ Ajouter un dossier": "+ Add a folder",
 "Retirer un dossier de la liste ne supprime rien sur le NAS.": "Removing a folder from the list deletes nothing on the NAS.",
-"Dossiers du NAS donnés à l'application": "NAS folders given to the application"
+"Dossiers du NAS donnés à l'application": "NAS folders given to the application",
+"© 2026 Mdm-services.fr. Tous droits réservés.": "© 2026 Mdm-services.fr. All rights reserved.",
+"Droits d'auteur": "Copyright",
+"Droits et licence": "Rights and licence",
+"Tous droits réservés.": "All rights reserved.",
+"Desktroo est un logiciel propriétaire. Son code est lisible parce qu'il s'installe sur ton NAS, pas parce qu'il est libre.": "Desktroo is proprietary software. Its code is readable because it is installed on your NAS, not because it is free software.",
+"Ce que la licence permet": "What the licence allows",
+"Installer Desktroo sur tes propres NAS.": "Install Desktroo on your own NAS devices.",
+"L'utiliser pour tes besoins, pendant l'essai puis avec un abonnement.": "Use it for your own needs, during the trial and then with a subscription.",
+"En garder des copies de sauvegarde.": "Keep backup copies of it.",
+"Ce qui demande un accord écrit": "What requires written consent",
+"Copier, publier ou redistribuer Desktroo, modifié ou non.": "Copying, publishing or redistributing Desktroo, modified or not.",
+"Le modifier ou en tirer un autre logiciel, y compris avec une IA.": "Modifying it or deriving other software from it, including with an AI.",
+"Retirer ou changer les mentions de droits.": "Removing or changing the copyright notices.",
+"Contourner la licence ou la période d'essai.": "Bypassing the licence or the trial period.",
+"Réutiliser le nom Desktroo ou son logo.": "Reusing the Desktroo name or its logo.",
+"Les polices Figtree, Schibsted Grotesk et JetBrains Mono sont sous licence SIL Open Font License 1.1.": "The Figtree, Schibsted Grotesk and JetBrains Mono fonts are under the SIL Open Font License 1.1.",
+"Lire la licence complète": "Read the full licence"
 }
 </script>
 <script id="dk-i18n">
@@ -6655,6 +6690,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="login-error" id="login-error"></div>
     <p class="login-info">⚙️ Clé API : TrueNAS → Paramètres → API Keys</p>
     <div class="dk-lang" id="dk-lang-login" translate="no"></div>
+    <p class="login-copy">© 2026 Mdm-services.fr. Tous droits réservés.</p>
   </div>
 </div>
 
@@ -13129,11 +13165,11 @@ function dkWaitHtml(state, title, text, extra) {
 // ── Fenêtre « À propos » : compacte, centrée sur le logo animé ; la licence est sa seconde page ──
 var _about = { nav: 'desk', busy: false };
 try {   // la fenêtre a d'abord existé en grand format : la taille mémorisée alors n'a plus cours
-  if (localStorage.getItem('dk-about-compact') !== '2') {
+  if (localStorage.getItem('dk-about-compact') !== '3') {
     var _aboutSizes = JSON.parse(localStorage.getItem('win_sizes') || '{}');
     delete _aboutSizes.about;
     localStorage.setItem('win_sizes', JSON.stringify(_aboutSizes));
-    localStorage.setItem('dk-about-compact', '2');
+    localStorage.setItem('dk-about-compact', '3');
   }
 } catch (e) {}
 function tndAbout() { aboutGo('desk'); }
@@ -13147,7 +13183,7 @@ function aboutGo(k) {
 }
 function loadAbout() {
   if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la fenêtre
-  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'report') aboutReportView(); else aboutDeskView();
+  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'report') aboutReportView(); else if (_about.nav === 'rights') aboutRightsView(); else aboutDeskView();
 }
 function aboutBody() { return document.getElementById('about-body'); }
 // ── Signaler un problème : une page de la fenêtre « À propos ». Le message part au service, qui le relaie à desktroo.fr ──
@@ -13288,6 +13324,24 @@ function aboutLicLabel() {
   if (s.state === 'grace') return [T('Expirée, période de tolérance'), 'warn'];
   return [T('Expirée, lecture seule'), 'bad'];
 }
+// ── Droits et licence : à qui appartient Desktroo, et ce que sa licence permet. Le texte qui fait foi est LICENSE.md. ──
+var DK_COPYRIGHT = '© 2026 Mdm-services.fr';
+var DK_LICENCE_URL = 'https://github.com/Nabief/desktroo-dist/blob/main/LICENSE.md';
+function aboutRightsView() {
+  var li = function(s) { return '<li>' + s + '</li>'; };
+  aboutBody().innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
+    + '<h4 class="about-title">' + T('Droits et licence') + '</h4>'
+    + '<p class="about-legal-lead"><b>' + DK_COPYRIGHT + '.</b> ' + T('Tous droits réservés.') + '</p>'
+    + '<p class="about-legal">' + T('Desktroo est un logiciel propriétaire. Son code est lisible parce qu\'il s\'installe sur ton NAS, pas parce qu\'il est libre.') + '</p>'
+    + '<div class="about-legal-h">' + T('Ce que la licence permet') + '</div><ul class="about-legal-list ok">'
+    + li(T('Installer Desktroo sur tes propres NAS.')) + li(T('L\'utiliser pour tes besoins, pendant l\'essai puis avec un abonnement.')) + li(T('En garder des copies de sauvegarde.')) + '</ul>'
+    + '<div class="about-legal-h">' + T('Ce qui demande un accord écrit') + '</div><ul class="about-legal-list no">'
+    + li(T('Copier, publier ou redistribuer Desktroo, modifié ou non.')) + li(T('Le modifier ou en tirer un autre logiciel, y compris avec une IA.'))
+    + li(T('Retirer ou changer les mentions de droits.')) + li(T('Contourner la licence ou la période d\'essai.')) + li(T('Réutiliser le nom Desktroo ou son logo.')) + '</ul>'
+    + '<p class="about-legal-note">' + T('Les polices Figtree, Schibsted Grotesk et JetBrains Mono sont sous licence SIL Open Font License 1.1.') + '</p>'
+    + '<div class="about-actions"><a class="web-open" href="' + DK_LICENCE_URL + '" target="_blank" rel="noopener">' + T('Lire la licence complète') + '</a></div></div>';
+  aboutBody().scrollTop = 0;
+}
 function aboutLicView() {
   aboutBody().innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
     + '<h4 class="about-title">' + T('Licence') + '</h4><div id="license-body"></div></div>';
@@ -13309,7 +13363,8 @@ async function aboutDeskView() {
     + '<button class="about-row" onclick="aboutGo(\'lic\')"><span>' + T('Licence') + '</span><span class="about-val">'
       + (lic ? '<span class="about-chip' + (lic[1] ? ' ' + lic[1] : '') + '">' + lic[0] + '</span>' : '') + chev + '</span></button>'
     + '<a class="about-row" href="https://desktroo.fr" target="_blank" rel="noopener"><span>' + T('Site web') + '</span><span class="about-val">desktroo.fr' + out + '</span></a>'
-    + '<button class="about-row" onclick="aboutGo(\'report\')"><span>' + T('Un souci, une idée ?') + '</span><span class="about-val">' + T('Signaler un problème') + chev + '</span></button>';
+    + '<button class="about-row" onclick="aboutGo(\'report\')"><span>' + T('Un souci, une idée ?') + '</span><span class="about-val">' + T('Signaler un problème') + chev + '</span></button>'
+    + '<button class="about-row" onclick="aboutGo(\'rights\')"><span>' + T('Droits d\'auteur') + '</span><span class="about-val">' + DK_COPYRIGHT + chev + '</span></button>';
   box.innerHTML = '<div class="about-page">' + aboutHero('', tag)
     + '<div class="about-list" id="about-list">' + rows + '</div>'
     + '<div class="about-actions">' + (up
@@ -13407,7 +13462,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.29.3';
+var DK_PAGE_VERSION = '2.30.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -23928,7 +23983,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   </div>
   <div class="resize-handle" data-win="downloads"></div>
 </div>
-<div class="window" id="win-about" style="top:60px;left:380px;width:480px;height:690px;">
+<div class="window" id="win-about" style="top:60px;left:380px;width:480px;height:738px;">
   <div class="window-titlebar" data-win="about">
     <span class="window-icon">ℹ️</span>
     <span class="window-title">À propos</span>

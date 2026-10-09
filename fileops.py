@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Desktroo — © 2026 Mdm-services.fr. Tous droits réservés.
+# Logiciel propriétaire, soumis à la licence d'utilisation de Desktroo (LICENSE.md, https://desktroo.fr).
+# Copie, modification et redistribution interdites sans accord écrit. Cette mention ne doit pas être retirée.
 """
 Desktroo – File-ops & PTY terminal sidecar
 HTTP  → port FILEOPS_PORT   (default 8765)
@@ -39,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.29.3'
+APP_VERSION = '2.30.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -652,6 +655,15 @@ def _do_update():
         with open(dst, 'wb') as fh:
             fh.write(data)
         updated.append(f)
+    # La licence d'utilisation accompagne les fichiers ; son absence ne fait pas échouer la mise à jour.
+    try:
+        req = urllib.request.Request(GITHUB_RAW + '/LICENSE.md', headers={'User-Agent': 'Desktroo'})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = r.read()
+        with open(os.path.join(APP_DIR, 'LICENSE.md'), 'wb') as fh:
+            fh.write(data)
+    except Exception:
+        pass
     return updated
 
 

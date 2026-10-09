@@ -1,4 +1,7 @@
 #!/bin/sh
+# Desktroo — © 2026 Mdm-services.fr. Tous droits réservés.
+# Logiciel propriétaire, soumis à la licence d'utilisation de Desktroo (LICENSE.md, https://desktroo.fr).
+# Copie, modification et redistribution interdites sans accord écrit. Cette mention ne doit pas être retirée.
 # ============================================================
 #  Desktroo — init container (déploiement 100% web)
 #  Téléchargé et exécuté par le service "app-init" du compose
@@ -38,6 +41,8 @@ for f in fileops.py desktroo.html vnc-viewer.html; do
   fetch "$GITHUB_RAW/$f" "$D/$f" || { echo "✗ Échec téléchargement $f"; exit 1; }
   echo "  + $f"
 done
+# La licence d'utilisation accompagne les fichiers ; son absence ne bloque pas le démarrage.
+fetch "$GITHUB_RAW/LICENSE.md" "$D/LICENSE.md" && echo "  + LICENSE.md" || true
 
 echo "▸ Injection de la configuration locale"
 sed -i "s|const NAS_URL *= *'[^']*';|const NAS_URL = '';|" "$D/desktroo.html"

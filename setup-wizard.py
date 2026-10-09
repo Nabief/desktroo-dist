@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Desktroo — © 2026 Mdm-services.fr. Tous droits réservés.
+# Logiciel propriétaire, soumis à la licence d'utilisation de Desktroo (LICENSE.md, https://desktroo.fr).
+# Copie, modification et redistribution interdites sans accord écrit. Cette mention ne doit pas être retirée.
 # =============================================================
 #  Desktroo — Wizard d'installation web
 #
@@ -397,6 +400,15 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                 except Exception as e:
                     emit(f'✗ Échec récupération {fname} : {e}', 'error')
                     raise RuntimeError(f'Impossible de récupérer {fname} depuis {github_raw}')
+        # La licence d'utilisation accompagne les fichiers ; son absence ne bloque pas l'installation.
+        try:
+            _lic_src = os.path.join(script_dir, 'LICENSE.md'); _lic_dst = os.path.join(install_dir, 'LICENSE.md')
+            if os.path.exists(_lic_src) and _lic_src != _lic_dst:
+                shutil.copy2(_lic_src, _lic_dst)
+            elif not os.path.exists(_lic_dst):
+                _u.urlretrieve(f'{github_raw}/LICENSE.md', _lic_dst)
+        except Exception:
+            pass
 
         # (4. Le jeton n'est plus inscrit dans la page : fileops le remet au navigateur
         #     après avoir vérifié les identifiants TrueNAS — voir SECURITE.md.)
@@ -1064,6 +1076,7 @@ HTML = """<!DOCTYPE html>
   .form-group input::placeholder { color: rgba(157,176,208,.55); }
   .form-group input:focus { border-color: var(--accent); background: rgba(var(--accent-rgb),.08); }
   .hint { font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .hint a { color: var(--accent); text-underline-offset: 2px; }
 
   /* Configuration écran par écran */
   .cfg-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
@@ -1367,6 +1380,10 @@ HTML = """<!DOCTYPE html>
       </section>
       </div><!-- /slides -->
 
+      <div class="form-group" id="licence-row" hidden>
+        <label class="switch"><input type="checkbox" id="accept_licence" /><span class="slider"></span><span class="switch-label">J'accepte la licence d'utilisation de Desktroo</span></label>
+        <div class="hint">Desktroo est un logiciel propriétaire : il s'utilise, il ne se copie pas et ne se redistribue pas. <a href="https://github.com/Nabief/desktroo-dist/blob/main/LICENSE.md" target="_blank" rel="noopener">Lire la licence</a></div>
+      </div>
       <div class="cfg-error" id="cfg-error" role="alert"></div>
       <div class="actions">
         <button class="btn btn-secondary" onclick="cfgBack()">← Retour</button>
@@ -1450,6 +1467,7 @@ function cfgShow(i) {
   var last = i === list.length - 1;
   document.getElementById('cfg-next').hidden = last;
   document.getElementById('btn-install').hidden = !last;
+  document.getElementById('licence-row').hidden = !last;
   cfgError('');
   updateInstallBtn();
 }
@@ -1665,6 +1683,11 @@ function startInstall() {
     alert(T('Teste le SMTP (il doit réussir) avant de lancer, ou laisse le mot de passe SMTP vide pour utiliser le fichier local.'));
     return;
   }
+  if (!document.getElementById('accept_licence').checked) {
+    cfgError(T("Pour installer, accepte la licence d'utilisation de Desktroo."));
+    document.getElementById('accept_licence').focus();
+    return;
+  }
 
   const config = {
     install_dir:  document.getElementById('install_dir').value.trim(),
@@ -1812,6 +1835,10 @@ I18N_EN = r"""{
 "Le test doit réussir avant de pouvoir installer (sinon l'enrôlement 2FA par email serait impossible).": "The test must succeed before you can install (otherwise 2FA enrollment by email would be impossible).",
 "L'assistant configure tout le côté NAS. Il reste ensuite à créer 2 hôtes proxy dans NPM + les redirections DNS vers l'IP de NPM — l'assistant affiche les valeurs exactes à la fin. L'enrôlement TOTP se fait après l'installation.": "The wizard configures everything on the NAS side. You then need to create 2 proxy hosts in NPM and the DNS records pointing to the NPM IP — the wizard shows the exact values at the end. TOTP enrollment happens after installation.",
 "Installer →": "Install →",
+"J'accepte la licence d'utilisation de Desktroo": "I accept the Desktroo licence agreement",
+"Desktroo est un logiciel propriétaire : il s'utilise, il ne se copie pas et ne se redistribue pas.": "Desktroo is proprietary software: it may be used, not copied or redistributed.",
+"Lire la licence": "Read the licence",
+"Pour installer, accepte la licence d'utilisation de Desktroo.": "To install, accept the Desktroo licence agreement.",
 "Installation réussie !": "Installation successful!",
 "Desktroo est prêt.": "Desktroo is ready.",
 "Ouvrir le bureau →": "Open the desktop →",
