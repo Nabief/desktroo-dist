@@ -1144,6 +1144,35 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .about-title { margin:10px 0 16px; font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--text); }
   .about-page > .web-crumb { align-self:flex-start; }
   .about-up { padding:16px 18px; }
+  /* Page « Signaler un problème » de la fenêtre À propos */
+  .rp-seg { display:flex; gap:6px; padding:4px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.18); }
+  [data-theme="light"] .rp-seg { background:rgba(13,27,53,0.05); }
+  .rp-seg-btn { flex:1; padding:7px 8px; border:0; border-radius:9px; background:none; color:var(--text-dim); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s, color .15s; }
+  .rp-seg-btn:hover { color:var(--text); }
+  .rp-seg-btn.active { background:rgba(var(--accent-rgb),0.18); color:var(--accent2); }
+  .rp-seg-btn:focus-visible, .rp-add:focus-visible, .rp-shot-x:focus-visible, .rp-copy:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  .rp-lbl { display:block; margin:16px 0 6px; font-size:13px; font-weight:600; color:var(--text); }
+  .rp-lbl .dim { font-weight:400; color:var(--text-dim); }
+  .rp-text { resize:vertical; min-height:84px; font-family:inherit; line-height:1.5; }
+  .rp-shots { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+  .rp-shot { position:relative; width:86px; height:60px; border-radius:9px; overflow:hidden; border:1px solid var(--glass-border); background:rgba(0,0,0,0.25); }
+  .rp-shot img { display:block; width:100%; height:100%; object-fit:cover; }
+  .rp-shot-x { position:absolute; top:3px; right:3px; width:20px; height:20px; padding:0; border:0; border-radius:50%; background:rgba(4,9,18,0.78); color:#fff; font-size:15px; line-height:1; cursor:pointer; }
+  .rp-add { padding:8px 13px; border-radius:9px; border:1px dashed rgba(128,140,160,0.55); background:none; color:var(--text); font:inherit; font-size:12.5px; cursor:pointer; }
+  .rp-add:hover { border-color:var(--accent2); color:var(--accent2); }
+  .rp-hint { font-size:12px; color:var(--text-dim); }
+  .rp-check { display:flex; align-items:center; gap:9px; margin-top:18px; font-size:13px; cursor:pointer; }
+  .rp-check input { width:16px; height:16px; accent-color:var(--accent); }
+  .rp-diag { margin-top:8px; font-size:12px; color:var(--text-dim); }
+  .rp-diag summary { cursor:pointer; }
+  .rp-diag pre { margin:8px 0 0; padding:10px 12px; max-height:180px; overflow:auto; border-radius:10px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:11px; line-height:1.5; white-space:pre-wrap; word-break:break-word; color:var(--text); }
+  [data-theme="light"] .rp-diag pre { background:rgba(13,27,53,0.06); }
+  .rp-out { min-height:18px; margin-top:14px; font-size:12.5px; line-height:1.5; color:var(--text-dim); text-align:center; }
+  .rp-out.bad { color:#f87171; }
+  [data-theme="light"] .rp-out.bad { color:#b3261e; }
+  .rp-copy { padding:3px 10px; border-radius:99px; border:1px solid currentColor; background:none; color:inherit; font:inherit; font-size:12px; cursor:pointer; }
+  .rp-foot .rp-out { margin-top:10px; }
+  .rp-foot .about-actions { margin-top:8px; }
   .about-msg { margin-top:14px; font-size:12.5px; line-height:1.55; color:var(--text-dim); text-align:center; }
   .dl-add { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
   .dl-add-row { display:flex; align-items:flex-end; gap:12px; }
@@ -6171,7 +6200,32 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Compte d'administration de MariaDB": "MariaDB administration account",
 "Il voit toutes les bases : c'est celui à saisir dans phpMyAdmin pour tout gérer.": "It sees every database: the one to enter in phpMyAdmin to manage everything.",
 "Le mot de passe d'administration n'est pas dans la configuration de Desktroo.": "The administration password is not in Desktroo's configuration.",
-"Le service ne répond pas encore. Réessaie dans un instant.": "The service is not responding yet. Try again in a moment."
+"Le service ne répond pas encore. Réessaie dans un instant.": "The service is not responding yet. Try again in a moment.",
+"Signaler un problème": "Report a problem",
+"Un bug": "A bug",
+"Une idée": "An idea",
+"Une question": "A question",
+"Que se passe-t-il ?": "What is happening?",
+"Ce que tu faisais, ce que tu attendais, ce qui s'est passé.": "What you were doing, what you expected, what happened.",
+"Captures d'écran": "Screenshots",
+"(3 au plus)": "(3 at most)",
+"Ton e-mail": "Your email",
+"(facultatif, pour te répondre)": "(optional, to reply to you)",
+"Joindre les informations techniques": "Attach technical information",
+"Voir ce qui sera joint": "See what will be attached",
+"ou colle une capture avec Ctrl+V": "or paste a screenshot with Ctrl+V",
+"Trois captures au plus.": "Three screenshots at most.",
+"Cette image n'a pas pu être lue.": "This image could not be read.",
+"Décris le problème en quelques mots.": "Describe the problem in a few words.",
+"Cette adresse e-mail a l'air incomplète.": "This email address looks incomplete.",
+"Signalement envoyé, merci !": "Report sent, thank you!",
+"Il porte le numéro {0}.": "Its number is {0}.",
+"La réponse arrivera à {0}.": "The reply will arrive at {0}.",
+"Sans adresse e-mail, il n'y aura pas de réponse directe.": "Without an email address, there will be no direct reply.",
+"Revenir à « À propos »": "Back to “About”",
+"Copier le signalement": "Copy the report",
+"Le signalement n'est pas parti.": "The report was not sent.",
+"Un souci, une idée ?": "A problem, an idea?"
 }
 </script>
 <script id="dk-i18n">
@@ -6660,6 +6714,10 @@ document.addEventListener('DOMContentLoaded', function () {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>
           <span>Couleur du thème</span>
         </div>
+        <div class="user-drop-item" onclick="document.getElementById('user-dropdown').style.display='none';dkReport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/></svg>
+          <span>Signaler un problème</span>
+        </div>
         <div class="user-drop-item" id="user-install-item" style="display:none;" onclick="document.getElementById('user-dropdown').style.display='none';dkInstallApp()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 7v6M9.5 10.5 12 13l2.5-2.5M8 20h8"/></svg>
           <span>Installer l'application</span>
@@ -6942,6 +7000,21 @@ let sysInfo = null;
 // ===========================
 // UTILITAIRES GLOBAUX
 // ===========================
+// Journal des vingt dernières erreurs, gardé en mémoire seulement : il est joint à un signalement si l'utilisateur
+// le laisse coché, et il le voit avant d'envoyer. Une erreur qui se répète est comptée, pas recopiée.
+var _dkErrLog = [];
+function dkLogErr(kind, text) {
+  try {
+    text = String(text == null ? '' : text).replace(/\s+/g, ' ').trim().slice(0, 300);
+    if (!text) return;
+    var last = _dkErrLog[_dkErrLog.length - 1];
+    if (last && last.k === kind && last.m === text) { last.n++; last.t = Date.now(); return; }
+    _dkErrLog.push({ t: Date.now(), k: kind, m: text, n: 1 });
+    if (_dkErrLog.length > 20) _dkErrLog.shift();
+  } catch (e) {}
+}
+window.addEventListener('error', function(e) { dkLogErr('page', (e.message || '') + (e.filename ? ' (' + String(e.filename).split('/').pop().split('?')[0] + ':' + e.lineno + ')' : '')); });
+window.addEventListener('unhandledrejection', function(e) { var r = e.reason; dkLogErr('page', (r && r.message) || r); });
 function toast(msg, duration) {
   msg = Tdyn(msg);
   duration = duration || 4000;
@@ -8929,7 +9002,8 @@ function dkShowPortalExpired() {
 }
 
 async function fileops(method, endpoint, body, _retried) {
-  if (_licReadonly && method !== 'GET' && String(endpoint).split('?')[0].replace(/^\/+/, '') !== 'license/activate') {
+  // En lecture seule, deux envois restent permis : activer une licence, et signaler un problème.
+  if (_licReadonly && method !== 'GET' && ['license/activate', 'report'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
     licBlockToast();
     throw new Error('LICENSE_READONLY');
   }
@@ -8943,6 +9017,7 @@ async function fileops(method, endpoint, body, _retried) {
     resp = await fetch('/fileops/' + endpoint, opts);
   } catch (netErr) {
     if (await dkPortalSessionExpired()) throw new Error(T('Session du portail d\'authentification expirée.'));
+    dkLogErr('service', String(endpoint).split('?')[0] + ' : ' + ((netErr && netErr.message) || netErr));
     throw netErr;
   }
   if (resp.status === 401 && endpoint !== 'auth/login' && !/json/i.test(resp.headers.get('content-type') || '') && await dkPortalSessionExpired()) {
@@ -8954,7 +9029,11 @@ async function fileops(method, endpoint, body, _retried) {
     await fileopsLogin();
     return fileops(method, endpoint, body, true);
   }
-  if (!resp.ok) throw new Error(data.error || 'HTTP ' + resp.status);
+  if (!resp.ok) {
+    const why = data.error || 'HTTP ' + resp.status;
+    dkLogErr('service', String(endpoint).split('?')[0] + ' : ' + why);
+    throw new Error(why);
+  }
   return data;
 }
 
@@ -12934,9 +13013,11 @@ function dkAwait(key, box, retry, e, o) {
     delete _dkAwait[key];
     box.innerHTML = '<div id="dk-late-' + key + '">' + dkWaitHtml('error', o.failTitle || T('Le service ne répond toujours pas'),
       T('Desktroo n\'arrive pas à joindre son service. Vérifie que le NAS est allumé et joignable, puis réessaie.'),
-      '<button class="web-open" id="' + id + '-again">' + T('Réessayer') + '</button>' + dkDetail(e)) + '</div>';
+      '<button class="web-open" id="' + id + '-again">' + T('Réessayer') + '</button><button class="about-quiet" id="' + id + '-report">' + T('Signaler un problème') + '</button>' + dkDetail(e)) + '</div>';
     var again = document.getElementById(id + '-again');
     if (again) again.onclick = function() { dkAwait(key, box, retry, e, o); };
+    var rep = document.getElementById(id + '-report');
+    if (rep) rep.onclick = function() { dkReport((o.failTitle || T('Le service ne répond toujours pas')) + ' (' + dkErrText(e) + ')\n\n'); };
     return;
   }
   if (!document.getElementById(id)) {
@@ -12963,11 +13044,11 @@ function dkWaitHtml(state, title, text, extra) {
 // ── Fenêtre « À propos » : compacte, centrée sur le logo animé ; la licence est sa seconde page ──
 var _about = { nav: 'desk', busy: false };
 try {   // la fenêtre a d'abord existé en grand format : la taille mémorisée alors n'a plus cours
-  if (!localStorage.getItem('dk-about-compact')) {
+  if (localStorage.getItem('dk-about-compact') !== '2') {
     var _aboutSizes = JSON.parse(localStorage.getItem('win_sizes') || '{}');
     delete _aboutSizes.about;
     localStorage.setItem('win_sizes', JSON.stringify(_aboutSizes));
-    localStorage.setItem('dk-about-compact', '1');
+    localStorage.setItem('dk-about-compact', '2');
   }
 } catch (e) {}
 function tndAbout() { aboutGo('desk'); }
@@ -12981,9 +13062,133 @@ function aboutGo(k) {
 }
 function loadAbout() {
   if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la fenêtre
-  if (_about.nav === 'lic') aboutLicView(); else aboutDeskView();
+  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'report') aboutReportView(); else aboutDeskView();
 }
 function aboutBody() { return document.getElementById('about-body'); }
+// ── Signaler un problème : une page de la fenêtre « À propos ». Le message part au service, qui le relaie à desktroo.fr ──
+var _report = { cat: 'bug', text: '', mail: '', images: [], diagOn: true, busy: false };
+function dkReport(prefill) {
+  if (prefill && !_report.text) _report.text = String(prefill);
+  aboutGo('report');
+}
+// Ce qui sera joint, si l'utilisateur le laisse coché : rien d'autre que ce qui s'affiche sous « Voir ce qui sera joint ».
+function dkReportDiag() {
+  var bar = {};
+  try { bar = dkBarGet(); } catch (e) {}
+  return {
+    desktroo: (_tndUpdate && _tndUpdate.version) || '',
+    truenas: (sysInfo && sysInfo.version) || '',
+    langue: DK_LANG,
+    theme: document.documentElement.getAttribute('data-theme') || 'dark',
+    navigateur: navigator.userAgent,
+    ecran: window.innerWidth + ' x ' + window.innerHeight + ' (x' + (window.devicePixelRatio || 1) + ')',
+    barre: (bar.pos || 'top') + (bar.hide ? ' (masquage automatique)' : ''),
+    fenetres: [].map.call(document.querySelectorAll('.window.visible'), function(w) { return w.id.replace(/^win-/, ''); }),
+    erreurs: _dkErrLog.map(function(e) { return new Date(e.t).toLocaleTimeString(DK_LOCALE) + ' ' + e.k + ' : ' + e.m + (e.n > 1 ? ' (x' + e.n + ')' : ''); })
+  };
+}
+function dkReportDiagText(d) {
+  return Object.keys(d).map(function(k) {
+    var v = d[k];
+    return k + ' : ' + (Array.isArray(v) ? (v.length ? '\n  - ' + v.join('\n  - ') : '-') : (v === '' ? '-' : v));
+  }).join('\n');
+}
+function dkReportCats() { return [['bug', T('Un bug')], ['idea', T('Une idée')], ['question', T('Une question')]]; }
+function aboutReportView() {
+  var r = _report, box = aboutBody();
+  box.innerHTML = '<div class="about-page rp"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
+    + '<h4 class="about-title">' + T('Signaler un problème') + '</h4>'
+    + '<div class="rp-seg" role="radiogroup" aria-label="' + webEsc(T('Signaler un problème')) + '">' + dkReportCats().map(function(c) {
+        return '<button role="radio" aria-checked="' + (r.cat === c[0]) + '" class="rp-seg-btn' + (r.cat === c[0] ? ' active' : '') + '" data-cat="' + c[0] + '">' + c[1] + '</button>';
+      }).join('') + '</div>'
+    + '<label class="rp-lbl" for="rp-text">' + T('Que se passe-t-il ?') + '</label>'
+    + '<textarea id="rp-text" class="tnd-input rp-text" rows="4" placeholder="' + webEsc(T('Ce que tu faisais, ce que tu attendais, ce qui s\'est passé.')) + '"></textarea>'
+    + '<div class="rp-lbl">' + T('Captures d\'écran') + ' <span class="dim">' + T('(3 au plus)') + '</span></div>'
+    + '<div class="rp-shots" id="rp-shots"></div>'
+    + '<input type="file" id="rp-file" accept="image/png,image/jpeg,image/webp" multiple hidden>'
+    + '<label class="rp-lbl" for="rp-mail">' + T('Ton e-mail') + ' <span class="dim">' + T('(facultatif, pour te répondre)') + '</span></label>'
+    + '<input id="rp-mail" type="email" class="tnd-input" autocomplete="email" spellcheck="false">'
+    + '<label class="rp-check"><input type="checkbox" id="rp-diag-on"><span>' + T('Joindre les informations techniques') + '</span></label>'
+    + '<details class="rp-diag"><summary>' + T('Voir ce qui sera joint') + '</summary><pre id="rp-diag"></pre></details>'
+    + '<div class="rp-foot"><div class="rp-out" id="rp-out" role="status"></div>'
+    + '<div class="about-actions"><button class="web-open" id="rp-send">' + T('Envoyer') + '</button></div></div></div>';
+  box.scrollTop = 0;
+  var $ = function(id) { return document.getElementById(id); };
+  $('rp-text').value = r.text; $('rp-mail').value = r.mail; $('rp-diag-on').checked = r.diagOn;
+  $('rp-diag').textContent = dkReportDiagText(dkReportDiag());
+  $('rp-text').addEventListener('input', function() { r.text = this.value; });
+  $('rp-mail').addEventListener('input', function() { r.mail = this.value; });
+  $('rp-diag-on').addEventListener('change', function() { r.diagOn = this.checked; });
+  box.querySelectorAll('.rp-seg-btn').forEach(function(b) { b.addEventListener('click', function() { r.cat = b.dataset.cat; aboutReportView(); }); });
+  $('rp-file').addEventListener('change', function() { dkReportAddFiles(this.files); this.value = ''; });
+  $('rp-send').addEventListener('click', dkReportSend);
+  // Une capture se colle directement (Ctrl+V) n'importe où dans la page.
+  box.firstChild.addEventListener('paste', function(e) {
+    var files = [].filter.call((e.clipboardData && e.clipboardData.files) || [], function(f) { return /^image\//.test(f.type); });
+    if (files.length) { e.preventDefault(); dkReportAddFiles(files); }
+  });
+  dkReportShots();
+}
+function dkReportShots() {
+  var el = document.getElementById('rp-shots');
+  if (!el) return;
+  var h = _report.images.map(function(src, i) {
+    return '<span class="rp-shot"><img src="' + src + '" alt=""><button class="rp-shot-x" data-i="' + i + '" title="' + webEsc(T('Retirer')) + '" aria-label="' + webEsc(T('Retirer')) + '">&times;</button></span>';
+  }).join('');
+  if (_report.images.length < 3) h += '<button class="rp-add" id="rp-add">' + T('Ajouter une image') + '</button><span class="rp-hint">' + T('ou colle une capture avec Ctrl+V') + '</span>';
+  el.innerHTML = h;
+  el.querySelectorAll('.rp-shot-x').forEach(function(b) { b.addEventListener('click', function() { _report.images.splice(Number(b.dataset.i), 1); dkReportShots(); }); });
+  var add = document.getElementById('rp-add');
+  if (add) add.addEventListener('click', function() { document.getElementById('rp-file').click(); });
+}
+// Chaque image est ramenée à 1600 px au plus et passée en JPEG : quelques centaines de Ko au lieu de plusieurs Mo.
+function dkReportAddFiles(files) {
+  [].slice.call(files || []).forEach(function(f) {
+    if (!/^image\//.test(f.type)) return;
+    var url = URL.createObjectURL(f), img = new Image();
+    img.onload = function() {
+      try {
+        var k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        var g = c.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+        if (_report.images.length < 3) { _report.images.push(c.toDataURL('image/jpeg', 0.82)); dkReportShots(); }
+        else toast(T('Trois captures au plus.'));
+      } catch (e) {}
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); toast(T('Cette image n\'a pas pu être lue.')); };
+    img.src = url;
+  });
+}
+function dkReportText() {
+  var r = _report, cat = (dkReportCats().filter(function(c) { return c[0] === r.cat; })[0] || [])[1] || r.cat;
+  return 'Desktroo, ' + cat + '\n\n' + r.text.trim() + '\n\n' + (r.mail.trim() ? 'Contact : ' + r.mail.trim() + '\n\n' : '') + (r.diagOn ? dkReportDiagText(dkReportDiag()) : '');
+}
+async function dkReportSend() {
+  var r = _report, out = document.getElementById('rp-out'), btn = document.getElementById('rp-send');
+  if (r.busy || !out || !btn) return;
+  var say = function(text, cls, extra) { out.className = 'rp-out' + (cls ? ' ' + cls : ''); out.textContent = text; if (extra) out.appendChild(extra); };
+  if (r.text.trim().length < 10) { say(T('Décris le problème en quelques mots.'), 'bad'); document.getElementById('rp-text').focus(); return; }
+  if (r.mail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.mail.trim())) { say(T('Cette adresse e-mail a l\'air incomplète.'), 'bad'); document.getElementById('rp-mail').focus(); return; }
+  r.busy = true; btn.disabled = true; say(T('Envoi…'));
+  try {
+    var res = await fileops('POST', 'report', { category: r.cat, message: r.text.trim(), contact: r.mail.trim(), diag: r.diagOn ? dkReportDiag() : {}, images: r.images });
+    var mail = r.mail.trim();
+    _report = { cat: 'bug', text: '', mail: mail, images: [], diagOn: true, busy: false };
+    if (_about.nav !== 'report' || !document.getElementById('rp-send')) { toast(T('Signalement envoyé, merci !')); return; }
+    aboutBody().innerHTML = '<div class="about-page">' + aboutHero('', T('Signalement envoyé, merci !'))
+      + '<p class="about-msg" style="margin-top:0;">' + (res && res.id ? webEsc(Tf('Il porte le numéro {0}.', res.id)) + ' ' : '')
+      + (mail ? webEsc(Tf('La réponse arrivera à {0}.', mail)) : T('Sans adresse e-mail, il n\'y aura pas de réponse directe.')) + '</p>'
+      + '<div class="about-actions"><button class="fs-btn" onclick="aboutGo(\'desk\')">' + T('Revenir à « À propos »') + '</button></div></div>';
+  } catch (e) {
+    r.busy = false; btn.disabled = false;
+    // Rien n'est perdu : le texte reste dans la page, et peut être copié pour l'envoyer autrement.
+    var copy = document.createElement('button');
+    copy.className = 'rp-copy'; copy.textContent = T('Copier le signalement');
+    copy.addEventListener('click', function() { copyText(encodeURIComponent(dkReportText())); });
+    say(T('Le signalement n\'est pas parti.') + ' ' + (dkTransient(e) ? T('Le service ne répond pas encore. Réessaie dans un instant.') : e.message) + ' ', 'bad', copy);
+  }
+}
 // Le logo (animé tant que « state » vaut 'busy'), le nom, une ligne dessous.
 function aboutHero(state, line, logoId, lineId) {
   return '<div class="about-hero">' + dkHero(state, logoId) + '<div class="about-name" translate="no">Desktr<span class="dk-oo">oo</span></div>'
@@ -13018,7 +13223,8 @@ async function aboutDeskView() {
     + (up ? '<div class="about-row"><span>' + T('Dernière version') + '</span><span class="about-val">' + webEsc(v.latest) + '<span class="about-chip warn">' + T('Disponible') + '</span></span></div>' : '')
     + '<button class="about-row" onclick="aboutGo(\'lic\')"><span>' + T('Licence') + '</span><span class="about-val">'
       + (lic ? '<span class="about-chip' + (lic[1] ? ' ' + lic[1] : '') + '">' + lic[0] + '</span>' : '') + chev + '</span></button>'
-    + '<a class="about-row" href="https://desktroo.fr" target="_blank" rel="noopener"><span>' + T('Site web') + '</span><span class="about-val">desktroo.fr' + out + '</span></a>';
+    + '<a class="about-row" href="https://desktroo.fr" target="_blank" rel="noopener"><span>' + T('Site web') + '</span><span class="about-val">desktroo.fr' + out + '</span></a>'
+    + '<button class="about-row" onclick="aboutGo(\'report\')"><span>' + T('Un souci, une idée ?') + '</span><span class="about-val">' + T('Signaler un problème') + chev + '</span></button>';
   box.innerHTML = '<div class="about-page">' + aboutHero('', tag)
     + '<div class="about-list" id="about-list">' + rows + '</div>'
     + '<div class="about-actions">' + (up
@@ -23493,7 +23699,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   </div>
   <div class="resize-handle" data-win="downloads"></div>
 </div>
-<div class="window" id="win-about" style="top:76px;left:380px;width:480px;height:600px;">
+<div class="window" id="win-about" style="top:60px;left:380px;width:480px;height:690px;">
   <div class="window-titlebar" data-win="about">
     <span class="window-icon">ℹ️</span>
     <span class="window-title">À propos</span>

@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.28.6'
+APP_VERSION = '2.29.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -7268,8 +7268,85 @@ def _lic_is_readonly():
         return False
 
 
-# Routes POST dont l'écriture reste autorisée même en lecture seule.
-_LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh'}
+# Routes POST dont l'écriture reste autorisée même en lecture seule (on doit pouvoir signaler un problème sans abonnement).
+_LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report'}
+
+
+# ── Signalements : bug, idée ou question, envoyés depuis le bureau ───────────
+# Le bureau dépose le signalement ici ; le service y ajoute sa version et l'identifiant d'installation, puis le
+# relaie à desktroo.fr (même serveur que les licences), qui le transmet par e-mail. Passer par le service évite au
+# navigateur d'appeler un autre site, et marche même quand le poste n'a pas d'accès direct à Internet.
+REPORT_URL = os.environ.get('REPORT_URL') or (LICENSE_SERVER + '/report')
+REPORT_MAX_BYTES = 6 * 1024 * 1024
+_REPORT_CATEGORIES = ('bug', 'idea', 'question')
+
+
+def _report_clean(v, depth=0):
+    """Informations techniques : textes, nombres et listes courtes seulement, bornés en taille."""
+    if isinstance(v, bool) or v is None:
+        return v
+    if isinstance(v, (int, float)):
+        return v
+    if isinstance(v, str):
+        return v[:600]
+    if depth >= 2:
+        return str(v)[:200]
+    if isinstance(v, (list, tuple)):
+        return [_report_clean(x, depth + 1) for x in list(v)[:30]]
+    if isinstance(v, dict):
+        return {str(k)[:40]: _report_clean(x, depth + 1) for k, x in list(v.items())[:30]}
+    return str(v)[:200]
+
+
+def _report_send(b):
+    import platform
+    import urllib.error
+    import urllib.request
+    b = b if isinstance(b, dict) else {}
+    message = str(b.get('message') or '').strip()
+    if len(message) < 10:
+        raise ValueError('Décrivez le problème en quelques mots.')
+    category = str(b.get('category') or 'bug')
+    if category not in _REPORT_CATEGORIES:
+        category = 'bug'
+    images = [x for x in (b.get('images') or []) if isinstance(x, str) and x.startswith('data:image/')][:3]
+    try:
+        lic = license_status()
+    except Exception:
+        lic = {}
+    payload = {
+        'category': category,
+        'message': message[:5000],
+        'contact': str(b.get('contact') or '').strip()[:200],
+        'diag': _report_clean(b.get('diag') if isinstance(b.get('diag'), dict) else {}),
+        'images': images,
+        'service': {'version': APP_VERSION, 'install_id': str(lic.get('install_id') or ''),
+                    'license': str(lic.get('state') or ''), 'plan': str(lic.get('plan') or ''),
+                    'python': platform.python_version()},
+    }
+    data = json.dumps(payload).encode('utf-8')
+    if len(data) > REPORT_MAX_BYTES:
+        raise ValueError('Signalement trop volumineux : retirez une capture.')
+    req = urllib.request.Request(REPORT_URL, data=data, method='POST',
+                                 headers={'Content-Type': 'application/json', 'User-Agent': 'Desktroo/' + APP_VERSION})
+    try:
+        with urllib.request.urlopen(req, timeout=40) as r:
+            j = json.loads(r.read().decode('utf-8', 'replace'))
+    except urllib.error.HTTPError as e:
+        try:
+            j = json.loads(e.read().decode('utf-8', 'replace'))
+        except Exception:
+            j = None
+        if isinstance(j, dict) and j.get('code') == 'rest_no_route':
+            raise RuntimeError("La réception des signalements n'est pas encore en place sur desktroo.fr.")
+        why = (j.get('message') or j.get('error')) if isinstance(j, dict) else None
+        raise RuntimeError("desktroo.fr n'a pas pris le signalement (%s)." % (why or 'HTTP %s' % e.code))
+    except Exception as e:
+        raise RuntimeError('desktroo.fr est injoignable depuis le NAS (%s).' % e)
+    if not (isinstance(j, dict) and j.get('ok')):
+        raise RuntimeError("desktroo.fr n'a pas pris le signalement (%s)."
+                           % ((j.get('message') or j.get('error') or 'réponse inattendue') if isinstance(j, dict) else 'réponse inattendue'))
+    return {'ok': True, 'id': j.get('id')}
 
 
 # ── MDM-WALLPAPERS-V1 : dossier de fonds d'écran ─────────────────────────────
@@ -8133,6 +8210,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, {'ok': bool(ok), 'status': st})
             except Exception as e:
                 self._json(500, {'ok': False, 'error': str(e)})
+            return
+        if path == '/report':
+            try:
+                self._json(200, _report_send(self._body()))
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(502, {'error': str(e)})
             return
         if path not in _LIC_READONLY_ALLOW_POST and _lic_is_readonly():
             self._json(402, {'error': 'license_readonly',
