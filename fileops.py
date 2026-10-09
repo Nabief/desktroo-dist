@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.24.0'
+APP_VERSION = '2.25.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -3670,6 +3670,39 @@ def _branding_set(accent):
         raise ValueError('couleur inconnue')
     _access_write_json(BRANDING_FILE, {'accent': accent})
     return _branding_get()
+
+
+# ── Noms d'affichage des applications ─────────────────────────────────────────
+# TrueNAS ne permet pas de renommer une application, et toutes les applications personnalisées s'y
+# appellent « Custom App ». Desktroo garde ici le nom choisi pour chacune : nom technique → nom affiché.
+APP_LABELS_FILE = os.path.join(ACCESS_DATA_DIR, 'app_labels.json')
+_APP_LABEL_NAME = re.compile(r'[a-z0-9][a-z0-9._-]{0,62}')
+
+
+def _app_labels_get():
+    data = _access_read_json(APP_LABELS_FILE, {})
+    out = {}
+    if isinstance(data, dict):
+        for k, v in data.items():
+            if isinstance(k, str) and isinstance(v, str) and _APP_LABEL_NAME.fullmatch(k) and v.strip():
+                out[k] = v.strip()[:60]
+    return out
+
+
+def _app_labels_set(name, label):
+    name = str(name or '').strip()
+    if not _APP_LABEL_NAME.fullmatch(name):
+        raise ValueError("nom d'application invalide")
+    label = ' '.join(''.join(c for c in str(label or '') if c.isprintable()).split())[:60]
+    labels = _app_labels_get()
+    if label:
+        if name not in labels and len(labels) >= 500:
+            raise ValueError('trop de noms enregistrés')
+        labels[name] = label
+    else:
+        labels.pop(name, None)   # nom vide : on reprend celui de TrueNAS
+    _access_write_json(APP_LABELS_FILE, labels)
+    return labels
 
 
 # ── Météo du widget ───────────────────────────────────────────────────────────
@@ -7326,6 +7359,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        # Noms d'affichage des applications
+        if path == '/apps/labels':
+            try:
+                self._json(200, {'ok': True, 'labels': _app_labels_get()})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         # Widget météo : prévisions pour un point, recherche d'une ville
         if path == '/weather':
             try:
@@ -7820,6 +7861,16 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return
 
         # MDM-APPS-V1 : bases de données + installation d'applications
+        if path == '/apps/labels':
+            try:
+                b = self._body()
+                self._json(200, {'ok': True, 'labels': _app_labels_set(b.get('name'), b.get('label'))})
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         if path == '/branding':
             try:
                 self._json(200, dict(_branding_set(str(self._body().get('accent') or '')), ok=True))

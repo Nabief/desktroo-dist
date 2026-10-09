@@ -6070,7 +6070,22 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Horloge, météo, ressources, réseau, stockage, alertes": "Clock, weather, resources, network, storage, alerts",
 "1 cœur": "1 core",
 "🧩 Gérer les widgets": "🧩 Manage widgets",
-"Ouvrir les rapports réseau": "Open the network reports"
+"Ouvrir les rapports réseau": "Open the network reports",
+"Nom affiché dans Desktroo pour": "Name shown in Desktroo for",
+"TrueNAS garde le sien ; seul l'affichage change.": "TrueNAS keeps its own; only the display changes.",
+"Renommée en {0}": "Renamed to {0}",
+"Nom d'origine repris": "Original name restored",
+"Nom gardé dans ce navigateur seulement : le service Desktroo n'a pas pu l'enregistrer.": "Name kept in this browser only: the Desktroo service could not save it.",
+"⬆ Mise à jour disponible pour {0}": "⬆ Update available for {0}",
+"⬆ Mises à jour disponibles pour {0} applications": "⬆ Updates available for {0} applications",
+"Nouvelles images pour {0}": "New images for {0}",
+"{0} : version {1} disponible": "{0}: version {1} available",
+"Mise à jour disponible pour {0}": "Update available for {0}",
+"Application — cliquer pour ouvrir": "Application — click to open",
+"et {0} autres applications à mettre à jour": "and {0} more applications to update",
+"Le nom affiché dans Desktroo ; TrueNAS garde le sien": "The name shown in Desktroo; TrueNAS keeps its own",
+"Reprendre le nom d'origine": "Restore the original name",
+"Application personnalisée, {0}": "Custom application, {0}"
 }
 </script>
 <script id="dk-i18n">
@@ -7164,6 +7179,7 @@ function initDesktop(sysInfo) {
     document.getElementById('clock-hostname').textContent = sysInfo.hostname || 'TrueNAS';
   }
   startClock();
+  _appUp.at = 0; appLabelsLoad();
   loadWidgetData();
   refreshInterval = setInterval(loadWidgetData, 60000); // toutes les 60s pour éviter le spam
   nwStart();
@@ -7242,6 +7258,7 @@ function startClock() {
 // ===========================
 async function loadWidgetData() {
   await Promise.allSettled([loadPools(), loadSysStats(), loadNotifs(), loadWeather(), loadNetWidget()]);
+  appUpdatesCheck();
 }
 
 function fmtBytes(bytes) {
@@ -7550,22 +7567,24 @@ async function loadNotifs() {
   const badge = document.getElementById('badge-count');
   var upPending = false;
   try { upPending = tndUpdatePending(); } catch (e) {}
+  var appItems = '', appN = 0;
+  try { appItems = appUpItemsHtml(); appN = _appUp.list.length; } catch (e) {}
   var upItem = upPending
     ? T('<div class="notif-item" style="cursor:pointer;" onclick="tndAbout()"><div class="notif-dot warning"></div><div class="notif-text">Mise à jour ') + ((_tndUpdate && _tndUpdate.latest) || '') + T(' disponible<div class="notif-time">Desktroo — cliquer pour installer</div></div></div>')
     : '';
   try {
     const raw    = await socketCall('/alert/list');
     const alerts = ensureArray(raw).filter(a => !a.dismissed);
-    if (!alerts.length && !upPending) {
+    if (!alerts.length && !upPending && !appN) {
       el.innerHTML = T('<div style="color:var(--accent);font-size:12px;text-align:center;padding:8px 0;opacity:0.7;">● Aucune alerte</div>');
       badge.style.display = 'none';
       return;
     }
     const crits = alerts.filter(a => (a.klass||a.level||'').toUpperCase().includes('CRIT'));
-    const count = (crits.length || alerts.length) + (upPending ? 1 : 0);
+    const count = (crits.length || alerts.length) + (upPending ? 1 : 0) + appN;
     badge.textContent = count > 9 ? '9+' : String(count);
     badge.style.display = count > 0 ? 'flex' : 'none';
-    el.innerHTML = upItem;
+    el.innerHTML = upItem + appItems;
     alerts.slice(0,4).forEach(alert => {
       const level  = (alert.level || alert.klass || 'INFO').toLowerCase();
       const dotCls = level.includes('crit') ? 'danger' : level.includes('warn') ? 'warning' : level.includes('notice') ? 'info' : 'success';
@@ -7579,8 +7598,9 @@ async function loadNotifs() {
       </div>`;
     });
   } catch {
-    el.innerHTML = upItem || T('<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:8px 0;">✅ Système opérationnel</div>');
-    if (upPending) { badge.textContent = '1'; badge.style.display = 'flex'; }
+    el.innerHTML = (upItem + appItems) || T('<div style="color:var(--text-dim);font-size:12px;text-align:center;padding:8px 0;">✅ Système opérationnel</div>');
+    var n = (upPending ? 1 : 0) + appN;
+    if (n) { badge.textContent = n > 9 ? '9+' : String(n); badge.style.display = 'flex'; }
     else { badge.style.display = 'none'; }
   }
 }
@@ -11559,7 +11579,125 @@ var _appsTimer = null;
 var _appsSeq = 0;
 
 function appKey(a) { return String((a && (a.name || a.id)) || ''); }
-function appTitle(a) { var m = (a && a.metadata) || {}; return String(m.title || (a && (a.name || a.id)) || ''); }
+function appTitle(a) { return appAlias(appKey(a)) || appTitleBase(a); }
+// ── Noms d'affichage des applications ──
+// TrueNAS appelle « Custom App » toutes les applications personnalisées et ne permet pas d'en renommer une.
+// Desktroo montre donc leur nom technique, et l'on peut donner à n'importe quelle application un nom de son choix :
+// il est gardé sur le NAS (fileops), avec une copie dans le navigateur pour l'afficher sans attendre.
+var _appLabels = {};
+try { _appLabels = JSON.parse(localStorage.getItem('dk-app-labels') || '{}') || {}; } catch (e) { _appLabels = {}; }
+function appAlias(name) { var v = _appLabels && _appLabels[name]; return typeof v === 'string' ? v : ''; }
+function appLabelsKeep(l) {
+  _appLabels = (l && typeof l === 'object') ? l : {};
+  try { localStorage.setItem('dk-app-labels', JSON.stringify(_appLabels)); } catch (e) {}
+}
+// Relit les noms gardés sur le NAS ; les fenêtres ouvertes se redessinent s'ils ont changé.
+async function appLabelsLoad() {
+  try {
+    var r = await fileops('GET', 'apps/labels');
+    if (!r || typeof r.labels !== 'object') return;
+    var before = JSON.stringify(_appLabels);
+    appLabelsKeep(r.labels);
+    if (before !== JSON.stringify(_appLabels)) appLabelsRefresh();
+  } catch (e) {}
+}
+function appLabelsRefresh() {
+  var by = function(a, b) { return appTitle(a).localeCompare(appTitle(b), undefined, { sensitivity: 'base' }); };
+  _apps.sort(by);
+  if (wmVisible('apps') && _appsLoaded) appsRender(true);
+  if (wmVisible('docker') && _ct.loaded) ctRender(true);
+  appUpdatesFrom(null);
+}
+// Nom d'origine : le titre du catalogue, ou le nom technique pour une application personnalisée.
+function appTitleBase(a) {
+  var m = (a && a.metadata) || {}, k = appKey(a), t = String(m.title || '');
+  if (k && (!t || (a && a.custom_app) || /^custom app$/i.test(t))) return k.charAt(0).toUpperCase() + k.slice(1);
+  return t || k;
+}
+async function appRename(enc, reset) {
+  var name = decodeURIComponent(enc), a = appGet(name) || _ct.apps.find(function(x) { return appKey(x) === name; }), base = a ? appTitleBase(a) : name, label = '';
+  if (!reset) {
+    label = await showPrompt(T('Nom affiché dans Desktroo pour <strong>') + webEsc(base) + '</strong><br><span style="font-size:12px;color:var(--text-dim);">'
+      + T('TrueNAS garde le sien ; seul l\'affichage change.') + '</span>', appAlias(name) || base);
+    if (!label) return;
+    label = label.replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (!label || label === appAlias(name)) return;
+  }
+  var local = Object.assign({}, _appLabels);
+  if (label) local[name] = label; else delete local[name];
+  try {
+    var r = await fileops('POST', 'apps/labels', { name: name, label: label });
+    appLabelsKeep((r && r.labels) || local);
+    toast(label ? '✅ ' + Tf('Renommée en {0}', label) : '✅ ' + T('Nom d\'origine repris'));
+  } catch (e) {
+    if (e && e.message === 'LICENSE_READONLY') return;
+    appLabelsKeep(local);   // service pas à jour ou injoignable : le nom vaut au moins ici
+    toast('⚠ ' + T('Nom gardé dans ce navigateur seulement : le service Desktroo n\'a pas pu l\'enregistrer.'), 9000);
+  }
+  appLabelsRefresh();
+}
+
+// ── Mises à jour d'applications : annoncées sur le bureau ──
+// Vérifiées à l'arrivée puis toutes les dix minutes. Chaque nouveauté donne un toast, une seule fois ; elle reste
+// dans le widget Notifications, sur la cloche et dans la fenêtre Alertes tant qu'elle n'est ni faite ni effacée.
+var _appUp = { list: [], at: 0, busy: false };
+function appUpStore(key) { try { var v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v.map(String) : []; } catch (e) { return []; } }
+function appUpId(u) { return u.name + '@' + (u.images ? 'images' : (u.version || 'new')); }
+function appUpdatesFrom(apps) {
+  if (apps) _appUp.all = ensureArray(apps).filter(function(a) { return a && (a.upgrade_available || a.image_updates_available); }).map(function(a) {
+    return { name: appKey(a), version: a.upgrade_available ? String(a.latest_version || '') : '', images: !a.upgrade_available, app: a };
+  });
+  var all = _appUp.all || [], hidden = appUpStore('dk-app-up-hidden'), seen = appUpStore('dk-app-up-seen'), ids = all.map(appUpId);
+  all.forEach(function(u) { u.title = appTitle(u.app); });
+  _appUp.list = all.filter(function(u) { return hidden.indexOf(appUpId(u)) < 0; });
+  var fresh = apps ? _appUp.list.filter(function(u) { return seen.indexOf(appUpId(u)) < 0; }) : [];
+  if (apps) {
+    // on n'oublie que ce qui n'est plus d'actualité : une mise à jour faite pourra être annoncée de nouveau plus tard
+    try {
+      localStorage.setItem('dk-app-up-seen', JSON.stringify(ids));
+      localStorage.setItem('dk-app-up-hidden', JSON.stringify(hidden.filter(function(k) { return ids.indexOf(k) >= 0; })));
+    } catch (e) {}
+    if (fresh.length === 1) toast(Tf('⬆ Mise à jour disponible pour {0}', fresh[0].title), 9000);
+    else if (fresh.length > 1) toast(Tf('⬆ Mises à jour disponibles pour {0} applications', fresh.length), 9000);
+  }
+  try { loadNotifs(); } catch (e) {}
+  if (apps && wmVisible('notifs')) { try { loadAlertsWindow(); } catch (e) {} }
+}
+async function appUpdatesCheck(force) {
+  if (_appUp.busy || (!force && Date.now() - _appUp.at < 10 * 60000)) return;
+  _appUp.busy = true; _appUp.at = Date.now();
+  try { appUpdatesFrom(await appsFetch()); } catch (e) { _appUp.at = Date.now() - 8 * 60000; }   // échec : nouvel essai dans deux minutes
+  _appUp.busy = false;
+}
+function appUpHide(enc) {
+  var id = decodeURIComponent(enc), hidden = appUpStore('dk-app-up-hidden');
+  if (hidden.indexOf(id) < 0) hidden.push(id);
+  try { localStorage.setItem('dk-app-up-hidden', JSON.stringify(hidden)); } catch (e) {}
+  appUpdatesFrom(null);
+  if (wmVisible('notifs')) { try { loadAlertsWindow(); } catch (e) {} }
+}
+function appUpText(u) { return u.images ? Tf('Nouvelles images pour {0}', u.title) : (u.version ? Tf('{0} : version {1} disponible', u.title, u.version) : Tf('Mise à jour disponible pour {0}', u.title)); }
+// Lignes du widget Notifications.
+function appUpItemsHtml() {
+  var l = _appUp.list, h = '';
+  l.slice(0, 3).forEach(function(u) {
+    h += '<div class="notif-item" style="cursor:pointer;" onclick="appsOpen(' + wmQ(u.name) + ')"><div class="notif-dot warning"></div><div class="notif-text">' + webEsc(appUpText(u))
+      + '<div class="notif-time">' + T('Application — cliquer pour ouvrir') + '</div></div></div>';
+  });
+  if (l.length > 3) h += '<div class="notif-item" style="cursor:pointer;" onclick="openApp(\'apps\')"><div class="notif-dot warning"></div><div class="notif-text">' + webEsc(Tf('et {0} autres applications à mettre à jour', l.length - 3)) + '</div></div>';
+  return h;
+}
+// Cartes de la fenêtre Alertes.
+function appUpCardsHtml() {
+  return _appUp.list.map(function(u) {
+    return '<div style="background:rgba(240,180,41,0.10);border:1px solid rgba(240,180,41,0.30);border-left:3px solid var(--warning);border-radius:8px;padding:12px 14px;">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+      + '<span style="color:var(--warning);font-size:11px;font-weight:700;">' + T('MISE À JOUR') + '</span><span style="color:var(--text-dim);font-size:11px;">Application</span>'
+      + '<button onclick="appsOpen(' + wmQ(u.name) + ')" style="margin-left:auto;background:rgba(var(--accent-rgb),0.15);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent2);border-radius:4px;padding:3px 11px;cursor:pointer;font-size:11px;">' + T('Voir l\'application') + '</button>'
+      + '<button onclick="appUpHide(' + wmQ(appUpId(u)) + ')" style="background:rgba(255,255,255,0.07);border:none;color:var(--text-dim);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;">' + T('Effacer') + '</button>'
+      + '</div><div style="font-size:13px;line-height:1.5;">' + webEsc(appUpText(u)) + '</div></div>';
+  }).join('');
+}
 function appGet(name) { return _apps.find(function(a) { return appKey(a) === name; }) || null; }
 function appStateInfo(a) {
   var s = String((a && a.state) || '').toUpperCase(), busy = a && _appsBusy[appKey(a)];
@@ -11626,6 +11764,8 @@ async function loadApps(soft) {
     _apps = list; _appsLoaded = true;
     if (_appsNav === 'one' && !appGet(_appsSel)) { _appsNav = 'all'; _appsSel = null; }
     appsRender(soft === true);
+    appUpdatesFrom(list); _appUp.at = Date.now();
+    if (!soft) appLabelsLoad();
   } catch (e) {
     if (seq !== _appsSeq) return;
     _appsLoaded = false; _apps = [];
@@ -11673,7 +11813,7 @@ function appsAllView(soft) {
   var h = '<div class="web-table apps-list"><div class="web-tr head"><span>Application</span><span>Version</span><span>' + T('État') + '</span><span>' + T('Adresse') + '</span></div>';
   _apps.forEach(function(a, i) {
     var st = appStateInfo(a), v = appVersions(a), portal = appPortals(a)[0], ok = appAllowed(appKey(a));
-    var origin = a.custom_app ? T('Application personnalisée') : appKey(a);
+    var origin = a.custom_app ? (appAlias(appKey(a)) ? Tf('Application personnalisée, {0}', appKey(a)) : T('Application personnalisée')) : appKey(a);
     h += '<div class="web-tr click" role="button" tabindex="0" data-app="' + i + '">'
       + '<span class="apps-name">' + appIconOf(a) + '<span class="cron-two"><strong>' + webEsc(appTitle(a)) + '</strong><span class="dim">' + webEsc(origin) + '</span></span></span>'
       + '<span class="cron-two"><span>' + webEsc(v.app || '—') + '</span>' + (a.upgrade_available ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
@@ -11752,6 +11892,8 @@ function appsOneView(soft) {
     + (run && !busy ? wmRow('appsAct(' + q + ',\'restart\')', T('Redémarrer'), T('Arrête l\'application puis la relance')) : '')
     + (busy ? '' : wmRow('openEditApp(decodeURIComponent(' + q + '))', T('Modifier la configuration'), T('Ports, dossiers, variables et réglages de l\'application')))
     + wmRow('ctOpenApp(' + q + ')', T('Conteneurs et journal'), T('Ce qui tourne réellement, sa charge et ses messages'))
+    + wmRow('appRename(' + q + ')', T('Renommer'), T('Le nom affiché dans Desktroo ; TrueNAS garde le sien'))
+    + (appAlias(name) ? wmRow('appRename(' + q + ',true)', T('Reprendre le nom d\'origine'), webEsc(appTitleBase(a))) : '')
     + (m.home && /^https?:\/\//i.test(m.home) ? '<a class="web-row line" href="' + webEsc(m.home) + '" target="_blank" rel="noopener noreferrer"><span class="web-row-text"><span class="web-row-name">' + T('Site du projet') + '</span><span class="web-row-desc">' + webEsc(String(m.home).replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></a>' : '')
     + (busy ? '' : wmRow('appsDelete(' + q + ')', T('Supprimer'), T('Retire l\'application et ses conteneurs, pas les dossiers du NAS'), 'danger'))
     + '</div>';
@@ -11779,6 +11921,7 @@ async function appsAct(enc, action) {
     else if (action === 'upgrade') await appsJob('app.upgrade', [name, { app_version: 'latest' }], 1200000);
     else if (action === 'pull') await appsJob('app.pull_images', [name, { redeploy: true }], 1200000);
     else await appsJob(action === 'start' ? 'app.start' : 'app.stop', [name]);
+    if (action === 'upgrade' || action === 'pull') { _appUp.at = 0; appUpdatesCheck(true); }
     toast('✅ ' + ({ start: Tf('{0} est démarrée', title), stop: Tf('{0} est arrêtée', title), restart: Tf('{0} a redémarré', title), upgrade: Tf('{0} est à jour', title), pull: Tf('{0} : images récupérées', title) }[action] || title));
   } catch (e) { toast('❌ ' + title + ' : ' + ((e && e.message) || e), 9000); }
   delete _appsBusy[name];
@@ -11848,6 +11991,7 @@ function ctFromApps(apps) {
   return out;
 }
 async function loadContainers(soft) {
+  if (!soft) appLabelsLoad();
   var body = wmBody('ct');
   if (!body) return;
   var seq = ++_ct.seq;
@@ -11941,7 +12085,7 @@ function ctAllView(soft) {
   var app = grouped && _ct.group ? _ct.apps.find(function(a) { return appKey(a) === _ct.group; }) : null;
   wmHead('ct', grouped ? ctGroupLabel(_ct.group) : T('Conteneurs'), { keepScroll: soft, back: grouped ? [T('Conteneurs'), 'ctGo(\'group\',null)'] : null,
     sub: n ? webEsc((n > 1 ? Tf('{0} conteneurs', n) : T('1 conteneur')) + ', ' + (run > 1 ? Tf('{0} en marche', run) : (run ? T('1 en marche') : T('aucun en marche')))) : '',
-    actions: (app ? '<button class="fs-btn" onclick="appsOpen(' + wmQ(_ct.group) + ')">' + T('Voir l\'application') + '</button>' : '') + '<button class="fs-btn" onclick="loadContainers()">' + T('Actualiser') + '</button>' });
+    actions: (app ? '<button class="fs-btn" onclick="appRename(' + wmQ(_ct.group) + ')">' + T('Renommer') + '</button><button class="fs-btn" onclick="appsOpen(' + wmQ(_ct.group) + ')">' + T('Voir l\'application') + '</button>' : '') + '<button class="fs-btn" onclick="loadContainers()">' + T('Actualiser') + '</button>' });
   var el = wmBody('ct'), h = '';
   if (_ct.docker === false) h += '<div class="snap-warn ct-reduced"><strong>' + T('Vue réduite.') + '</strong> ' + T('Desktroo n\'a pas pu interroger Docker sur le NAS : seuls les conteneurs des applications TrueNAS sont listés, sans charge ni journal.')
     + (_ct.why ? '<span class="dim mono">' + webEsc(_ct.why) + '</span>' : '') + '</div>';
@@ -14385,7 +14529,7 @@ async function loadAlertsWindow() {
   el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
   try {
     try { _tndUpdate = await fileops('GET', 'version'); } catch (e) {}
-    var upCard = tndUpdateCardHtml();
+    var upCard = tndUpdateCardHtml() + appUpCardsHtml();
     const alerts = ensureArray(await socketCall('/alert/list')).filter(function(a){ return !a.dismissed; });
     if (!alerts.length && !upCard) {
       el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">ok</div><span>Aucune alerte — Système opérationnel</span></div>');
