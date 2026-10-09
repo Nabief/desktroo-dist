@@ -617,6 +617,22 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .mnt-bar i { display:block; height:100%; border-radius:3px; background:var(--accent); transition:width .6s; }
   .mnt-scan.paused .mnt-bar i { background:var(--text-dim); }
   .mnt-scan-sub { min-height:16px; font-size:12px; color:var(--text-dim); }
+  #win-snapshots { min-width:860px; min-height:520px; }
+  /* Snapshots ZFS */
+  .web-table.snap-list { --wt-cols:minmax(0,1fr) 172px 92px 92px; }
+  .web-table.snap-list.with-ds .web-tr:not(.head), .web-table.snap-tasks .web-tr:not(.head) { min-height:50px; }
+  .web-table.snap-tasks { --wt-cols:minmax(0,1.35fr) minmax(0,1.1fr) 104px minmax(0,1.1fr); }
+  .web-title.snap-path { font-family:var(--font-mono); font-size:17px; letter-spacing:0; word-break:break-all; }
+  .snap-tools { display:flex; margin:0 0 12px; }
+  .snap-find {
+    width:100%; max-width:340px; height:32px; padding:0 12px; border-radius:10px; border:1px solid var(--glass-border);
+    background:rgba(255,255,255,0.05); color:var(--text); font:inherit; font-size:12.5px; outline:none; transition:border-color .15s;
+  }
+  .snap-find:focus { border-color:rgba(var(--accent2-rgb),0.55); }
+  [data-theme="light"] .snap-find { background:#ffffff; border-color:rgba(0,0,0,0.14); }
+  .snap-warn { padding:12px 14px; border-radius:12px; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.09); font-size:12.5px; line-height:1.6; }
+  .web-body .snap-danger { background:#e05252 !important; border-color:transparent !important; color:#ffffff !important; font-weight:600; }
+  .web-body .snap-danger:hover { background:#ea6a6a !important; }
   .window.maximized {
     top:0 !important; left:0 !important;
     width:100vw !important; height:calc(100vh - var(--taskbar-h)) !important;
@@ -3763,7 +3779,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Chaque minute": "Every minute",
 "Tous les jours à": "Every day at",
 "Toutes les heures (min": "Every hour (min",
-"＋ Nouvelle tâche": "＋ New task",
 "↻ Actualiser": "↻ Refresh",
 "Aucune tâche planifiée": "No scheduled tasks",
 "Commande": "Command",
@@ -3824,28 +3839,17 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Conservation désactivée": "Retention disabled",
 "mois": "month(s)",
 "année(s)": "year(s)",
-"🗓️ Tâches périodiques": "🗓️ Periodic tasks",
-"Tous les datasets": "All datasets",
-"＋ Créer un snapshot": "＋ Create a snapshot",
-"pour ce dataset": "for this dataset",
-"Affichage limité aux 2000 premiers — filtre par dataset pour affiner.": "Display limited to the first 2000 — filter by dataset to narrow down.",
 "Référencé": "Referenced",
-"Restaurer le dataset à cet état": "Restore the dataset to this state",
-"⟲ Restaurer": "⟲ Restore",
 "Cloner vers un nouveau dataset": "Clone to a new dataset",
-"Créer un snapshot manuel": "Create a manual snapshot",
-"Récursif (inclure les datasets enfants)": "Recursive (include child datasets)",
 "Choisis un dataset": "Choose a dataset",
 "Le nom est obligatoire": "Name is required",
 "Nom de snapshot invalide": "Invalid snapshot name",
 "Création…": "Creating…",
 "✅ Snapshot créé": "✅ Snapshot created",
-"⚠ Restaurer un snapshot": "⚠ Restore a snapshot",
 "Le dataset": "The dataset",
 "va revenir à l'état du snapshot": "will revert to the state of snapshot",
 "Toutes les données écrites après ce snapshot seront définitivement perdues.": "All data written after this snapshot will be permanently lost.",
 "Les snapshots plus récents doivent être détruits pour que la restauration aboutisse.": "Newer snapshots must be destroyed for the restore to succeed.",
-"Détruire les snapshots plus récents (requis s'il y en a)": "Destroy newer snapshots (required if there are any)",
 "Détruire aussi les clones plus récents": "Also destroy newer clones",
 "Restaurer maintenant": "Restore now",
 "Confirmer la restauration de": "Confirm the restore of",
@@ -3858,14 +3862,12 @@ select option{ background:#101b2e; color:#e9eef7; }
 "✅ Snapshot cloné vers": "✅ Snapshot cloned to",
 "Snapshot supprimé": "Snapshot deleted",
 "Aucune tâche de snapshot périodique": "No periodic snapshot tasks",
-"Rétention": "Retention",
 "Récursif": "Recursive",
 "Supprimer la tâche périodique sur": "Delete the periodic task on",
 "Nouvelle tâche de snapshot": "New snapshot task",
 "Schéma de nommage": "Naming schema",
 "Début (heure)": "Start (time)",
 "Fin (heure)": "End (time)",
-"Récursif (datasets enfants)": "Recursive (child datasets)",
 "Autoriser les snapshots vides": "Allow empty snapshots",
 "Aucun disque détecté": "No disks detected",
 "Disque": "Disk",
@@ -4684,7 +4686,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "semaine(s)": "week(s)",
 "· courant": "· current",
 "· Date :": "· Date:",
-"Dataset :": "Dataset:",
 "(J-": "(D-",
 "restants": "left",
 "actives": "active",
@@ -5009,7 +5010,51 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Sinon, les erreurs de la commande sont envoyées par e-mail.": "Otherwise, the command's errors are sent by email.",
 "Ce planning n'est pas reconnu. Chaque champ accepte un nombre, *, une liste (1,15), une plage (1-5) ou un pas (*/10).": "This schedule is not recognised. Each field accepts a number, *, a list (1,15), a range (1-5) or a step (*/10).",
 "Prochain passage : {0}.": "Next run: {0}.",
-"Ce planning ne tombe sur aucune date.": "This schedule never falls on a date."
+"Ce planning ne tombe sur aucune date.": "This schedule never falls on a date.",
+"{0} heures": "{0} hours",
+"{0} heure": "{0} hour",
+"{0} jour": "{0} day",
+"{0} semaines": "{0} weeks",
+"{0} semaine": "{0} week",
+"{0} mois": "{0} months",
+"1 mois": "1 month",
+"{0} ans": "{0} years",
+"{0} an": "{0} year",
+"Gardés {0}": "Kept {0}",
+"Tous les snapshots": "All snapshots",
+"Créer un snapshot": "Create a snapshot",
+"Snapshots périodiques actifs": "Periodic snapshots active",
+"Pas de snapshot périodique": "No periodic snapshots",
+"Les snapshots ne répondent pas": "Snapshots are not responding",
+"{0} sur {1}.": "{0} across {1}.",
+"Le plus récent : {0}.": "Most recent: {0}.",
+"Un snapshot fige l'état d'un dataset à un instant donné : on peut y revenir, ou en tirer une copie, sans doubler la place occupée.": "A snapshot freezes the state of a dataset at a given moment: you can go back to it, or make a copy from it, without doubling the space used.",
+"Filtrer par nom ou par dataset…": "Filter by name or dataset…",
+"Seuls les {0} premiers snapshots sont affichés. Choisis un dataset dans la colonne pour voir tous les siens.": "Only the first {0} snapshots are shown. Pick a dataset in the column to see all of its snapshots.",
+"Aucun snapshot ne correspond à ce filtre.": "No snapshot matches this filter.",
+"le plus récent : {0}": "most recent: {0}",
+"Ce dataset n'a aucun snapshot pour l'instant.": "This dataset has no snapshots yet.",
+"Planifier des snapshots": "Schedule snapshots",
+"Un autre rythme ou une autre durée de conservation": "Another frequency or retention period",
+"Ce dataset est déjà couvert par la tâche récursive d'un dataset parent": "This dataset is already covered by a parent dataset's recursive task",
+"Aucun snapshot automatique sur ce dataset": "No automatic snapshots on this dataset",
+"datasets enfants inclus": "child datasets included",
+"Créé {0}": "Created {0}",
+"Nom complet": "Full name",
+"place propre à ce snapshot, libérée s'il est supprimé": "space held only by this snapshot, freed if it is deleted",
+"taille du dataset à cet instant": "size of the dataset at that moment",
+"Restaurer le dataset": "Restore the dataset",
+"Le ramener à l'état de ce snapshot ; ce qui a été écrit depuis est perdu": "Return it to the state of this snapshot; anything written since is lost",
+"Créer un nouveau dataset à partir de ce snapshot, sans toucher à l'original": "Create a new dataset from this snapshot, leaving the original untouched",
+"Le snapshot est détruit, la place qu'il occupait est libérée": "The snapshot is destroyed and the space it held is freed",
+"Prend aussi, au même instant, un snapshot de chaque dataset enfant.": "Also takes, at the same moment, a snapshot of every child dataset.",
+"Détruire les snapshots plus récents": "Destroy newer snapshots",
+"Nécessaire s'il en existe : la restauration échoue sinon.": "Required if any exist: the restore fails otherwise.",
+"Les datasets clonés depuis ces snapshots disparaissent avec eux.": "Datasets cloned from those snapshots disappear with them.",
+"Une tâche périodique prend des snapshots d'un dataset à intervalle régulier et efface d'elle-même les plus anciens.": "A periodic task takes snapshots of a dataset at regular intervals and removes the oldest ones by itself.",
+"Conservation": "Retention",
+"Prend aussi les datasets enfants.": "Also covers child datasets.",
+"Prend le snapshot même si rien n'a changé depuis le précédent.": "Takes the snapshot even if nothing has changed since the previous one."
 }
 </script>
 <script id="dk-i18n">
@@ -13525,31 +13570,47 @@ async function beToggleKeep(i, value) {
 
 // ============================================================
 // SNAPSHOTS ZFS — pool.snapshot.* + pool.snapshottask.* (v26.0)
+// Gabarit des gestionnaires : les datasets dans la colonne, leurs snapshots à droite.
 // ============================================================
-var _snapTab = 'snaps';
-var _snapList = [];
+var _snapNav = 'all';        // all | ds | snap | new | rollback | tasks | task
+var _snapDs = null;          // dataset affiché
+var _snapCur = null;         // snapshot affiché
+var _snapLoaded = false;
+var _snapAll = [];           // tous les snapshots (2000 au plus)
+var _snapDsList = [];        // snapshots du dataset affiché
 var _snapTasks = [];
 var _snapDatasets = [];
-var _snapFilter = '';
+var _snapCounts = null;      // snapshots par dataset, connu seulement si la liste complète tient dans la limite
 var _snapTruncated = false;
-var SNAP_TAB_ACTIVE = 'background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);';
+var _snapSeq = 0;
+var _snapTaskBack = 'tasks'; // d'où l'on a ouvert l'éditeur de tâche : tasks | ds
+var SNAP_LIMIT = 2000;
 var SNAP_UNITS = [['HOUR',T('heure(s)')],['DAY',T('jour(s)')],['WEEK',T('semaine(s)')],['MONTH',T('mois')],['YEAR',T('année(s)')]];
+WEB_ICONS.clock = '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>';
 
 function snapEsc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function snapProp(p) { if (p == null) return null; if (typeof p === 'object') return (p.value != null ? p.value : (p.rawvalue != null ? p.rawvalue : null)); return p; }
 function snapPropRaw(p) { if (p == null) return null; if (typeof p === 'object') return (p.rawvalue != null ? p.rawvalue : p.value); return p; }
-function snapFmtDate(props) {
-  if (!props || !props.creation) return '—';
-  var raw = snapPropRaw(props.creation);
-  if (raw == null) return '—';
-  var n = Number(raw);
-  if (!isFinite(n)) return String(raw);
-  var d = new Date(n * 1000);
-  return isNaN(d.getTime()) ? String(raw) : d.toLocaleString(DK_LOCALE);
+function snapTime(s) {
+  var p = (s && s.properties) || {}, n = Number(snapPropRaw(p.creation));
+  return isFinite(n) && n > 0 ? n * 1000 : 0;
 }
-function snapFmtSize(props, key) {
-  if (!props || !props[key]) return '—';
-  var v = snapProp(props[key]);
+// « Aujourd'hui 03:00 », « Hier 18:40 », sinon le jour et l'heure.
+function snapWhen(s) {
+  var ms = snapTime(s);
+  if (!ms) return '—';
+  var d = new Date(ms), now = new Date(), day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  var hm = d.toLocaleTimeString(DK_LOCALE, { hour:'2-digit', minute:'2-digit' });
+  if (ms >= day0 && ms < day0 + 864e5) return T('Aujourd\'hui') + ' ' + hm;
+  if (ms >= day0 - 864e5 && ms < day0) return T('Hier') + ' ' + hm;
+  return d.toLocaleDateString(DK_LOCALE, { day:'numeric', month:'short', year:'numeric' }) + ', ' + hm;
+}
+function snapSize(s, key) {
+  var p = (s && s.properties) || {};
+  if (!p[key]) return '—';
+  var raw = Number(snapPropRaw(p[key]));
+  if (isFinite(raw)) return mntFmtSize(raw);
+  var v = snapProp(p[key]);
   return v == null ? '—' : String(v);
 }
 function _snapFlattenDs(list, out) {
@@ -13560,78 +13621,208 @@ function _snapFlattenDs(list, out) {
   return out;
 }
 function snapUnitLabel(u) { for (var k = 0; k < SNAP_UNITS.length; k++) { if (SNAP_UNITS[k][0] === u) return SNAP_UNITS[k][1]; } return u || ''; }
+// Durée de conservation : « 2 semaines », puis « gardés 2 semaines »
+function snapLife(t) {
+  var n = Number(t.lifetime_value) || 0, many = n > 1, u = t.lifetime_unit;
+  if (u === 'HOUR') return many ? Tf('{0} heures', n) : Tf('{0} heure', n);
+  if (u === 'DAY') return many ? Tf('{0} jours', n) : Tf('{0} jour', n);
+  if (u === 'WEEK') return many ? Tf('{0} semaines', n) : Tf('{0} semaine', n);
+  if (u === 'MONTH') return many ? Tf('{0} mois', n) : T('1 mois');
+  if (u === 'YEAR') return many ? Tf('{0} ans', n) : Tf('{0} an', n);
+  return n + ' ' + (u || '');
+}
+function snapKeep(t) { return Tf('Gardés {0}', snapLife(t)); }
+function snapCountText(n) { return n > 1 ? Tf('{0} snapshots', n) : (n === 1 ? T('1 snapshot') : T('Aucun snapshot')); }
+function snapTasksOf(ds) { return _snapTasks.filter(function(t) { return t.dataset === ds; }); }
+// Un dataset est couvert par une tâche active posée sur lui, ou sur un parent en mode récursif.
+function snapCovered(ds) {
+  return _snapTasks.some(function(t) { return t.enabled && (t.dataset === ds || (t.recursive && ds.indexOf(t.dataset + '/') === 0)); });
+}
+function snapNewest(list) { var best = null; list.forEach(function(s) { if (!best || snapTime(s) > snapTime(best)) best = s; }); return best; }
+function snapSorted(list) { return list.slice().sort(function(a, b) { return snapTime(b) - snapTime(a) || String(a.name || '').localeCompare(String(b.name || '')); }); }
 
-async function loadSnapshots() {
-  var el = document.getElementById('snapshots-content');
+function snapBody() { return document.getElementById('snapshots-content'); }
+function snapHead(title, o) {
+  o = o || {};
+  document.getElementById('snap-head').innerHTML = '<div class="web-head-text">'
+    + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
+    + '<h4 class="web-title' + (o.mono ? ' snap-path' : '') + '">' + webEsc(title) + '</h4>'
+    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
+    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+  var body = snapBody();
+  body.classList.toggle('narrow', !!o.narrow);
+  body.scrollTop = 0;
+  snapSideRender();
+}
+function snapSideRender() {
+  var el = document.getElementById('snap-side');
   if (!el) return;
-  el.innerHTML =
-    '<div style="display:flex;gap:4px;margin-bottom:12px;">'
-    + '<button class="fs-btn" onclick="snapSetTab(\'snaps\')" style="' + (_snapTab === 'snaps' ? SNAP_TAB_ACTIVE : '') + '">📸 Snapshots</button>'
-    + '<button class="fs-btn" onclick="snapSetTab(\'tasks\')" style="' + (_snapTab === 'tasks' ? SNAP_TAB_ACTIVE : '') + T('">🗓️ Tâches périodiques</button>')
-    + '</div><div id="snap-body"><div class="fs-loading" style="height:180px;"><div class="spinner"></div></div></div>';
-  try {
-    if (!_snapDatasets.length) {
-      var ds = ensureArray(await wsCall('pool.dataset.query', [[], {}], 60000));
-      var out = [];
-      _snapFlattenDs(ds, out);
-      _snapDatasets = out.filter(function(v, i, a) { return v && a.indexOf(v) === i; }).sort();
-    }
-    if (_snapTab === 'snaps') await snapLoadSnaps(); else await snapLoadTasks();
-  } catch (e) {
-    var b = document.getElementById('snap-body');
-    if (b) b.innerHTML = errHtml(T('Erreur : ') + e.message);
-  }
-}
-function snapSetTab(t) { _snapTab = t; loadSnapshots(); }
-function _snapAt(i) { return _snapList[i] || {}; }
-
-async function snapLoadSnaps() {
-  var b = document.getElementById('snap-body');
-  if (!b) return;
-  b.innerHTML = '<div class="fs-loading" style="height:180px;"><div class="spinner"></div></div>';
-  var filters = _snapFilter ? [['dataset', '=', _snapFilter]] : [];
-  var opts = { extra: { properties: ['creation', 'used', 'referenced'] } };
-  if (!_snapFilter) opts.limit = 2000;
-  var r = ensureArray(await wsCall('pool.snapshot.query', [filters, opts], 120000));
-  _snapTruncated = (!_snapFilter && r.length >= 2000);
-  _snapList = r;
-  snapRenderSnaps();
-}
-function snapSetFilter(v) { _snapFilter = v; snapLoadSnaps(); }
-function snapRenderSnaps() {
-  var b = document.getElementById('snap-body');
-  if (!b) return;
-  var dsOpts = T('<option value="">Tous les datasets</option>') + _snapDatasets.map(function(d) {
-    return '<option value="' + snapEsc(d) + '"' + (_snapFilter === d ? ' selected' : '') + '>' + snapEsc(d) + '</option>';
-  }).join('');
-  var h = '<div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
-    + T('<button class="fs-btn" onclick="snapCreateForm()" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);">＋ Créer un snapshot</button>')
-    + T('<button class="fs-btn" onclick="snapLoadSnaps()">↻ Actualiser</button>')
-    + T('<span style="margin-left:auto;font-size:11px;color:var(--text-dim);">Dataset :</span>')
-    + '<select class="tnd-input" style="max-width:300px;" onchange="snapSetFilter(this.value)">' + dsOpts + '</select>'
-    + '</div>';
-  if (!_snapList.length) {
-    h += T('<div class="empty-state" style="height:160px;"><div class="es-icon">📸</div><span>Aucun snapshot') + (_snapFilter ? T(' pour ce dataset') : '') + '</span></div>';
-    b.innerHTML = h; return;
-  }
-  if (_snapTruncated) h += T('<div style="font-size:11px;color:#eab308;margin-bottom:8px;">Affichage limité aux 2000 premiers — filtre par dataset pour affiner.</div>');
-  h += T('<table class="container-table"><thead><tr><th>Dataset</th><th>Snapshot</th><th>Créé</th><th>Utilisé</th><th>Référencé</th><th>Actions</th></tr></thead><tbody>');
-  _snapList.forEach(function(s, i) {
-    var p = s.properties || {};
-    h += '<tr>'
-      + '<td style="font-family:var(--font-mono);font-size:11px;">' + snapEsc(s.dataset || '') + '</td>'
-      + '<td style="font-family:var(--font-mono);font-size:11px;"><strong>' + snapEsc(s.snapshot_name || '') + '</strong></td>'
-      + '<td style="font-size:11px;">' + snapEsc(snapFmtDate(p)) + '</td>'
-      + '<td style="font-size:11px;">' + snapEsc(snapFmtSize(p, 'used')) + '</td>'
-      + '<td style="font-size:11px;">' + snapEsc(snapFmtSize(p, 'referenced')) + '</td>'
-      + '<td style="white-space:nowrap;display:flex;gap:4px;">'
-      + '<button class="fs-btn" style="font-size:11px;padding:3px 9px;" onclick="snapRollbackForm(' + i + T(')" title="Restaurer le dataset à cet état">⟲ Restaurer</button>')
-      + '<button class="fs-btn" style="font-size:11px;padding:3px 9px;" onclick="snapClone(' + i + T(')" title="Cloner vers un nouveau dataset">⧉ Cloner</button>')
-      + '<button class="fs-btn" style="font-size:11px;padding:3px 9px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#f87171;" onclick="snapDelete(' + i + T(')" title="Supprimer">🗑</button>')
-      + '</td></tr>';
+  var onDs = (_snapNav === 'ds' || _snapNav === 'snap' || _snapNav === 'rollback') ? _snapDs : null;
+  var h = '<button class="web-nav' + (_snapNav === 'all' ? ' active' : '') + '" onclick="snapGo(\'all\')">' + webIcon('layers') + '<span class="web-nav-name">' + T('Tous les snapshots') + '</span></button>'
+    + '<button class="web-nav' + (_snapNav === 'tasks' || _snapNav === 'task' ? ' active' : '') + '" onclick="snapGo(\'tasks\')">' + webIcon('clock') + '<span class="web-nav-name">' + T('Snapshots périodiques') + '</span><span class="web-count">' + (_snapTasks.length || '') + '</span></button>'
+    + '<button class="web-nav add' + (_snapNav === 'new' ? ' active' : '') + '" onclick="snapCreateForm()">' + webIcon('plus') + '<span class="web-nav-name">' + T('Créer un snapshot') + '</span></button>'
+    + '<div class="web-side-sep"></div><div class="web-side-title"><span>Datasets</span><span class="web-count">' + (_snapDatasets.length || '') + '</span></div>';
+  _snapDatasets.forEach(function(d) {
+    var depth = d.split('/').length - 1, cov = snapCovered(d);
+    var n = _snapCounts ? (_snapCounts[d] || 0) : null;
+    h += '<button class="web-nav' + (onDs === d ? ' active' : '') + '" data-ds="' + webEsc(d) + '" title="' + webEsc(d) + '" style="padding-left:' + (10 + Math.min(depth, 6) * 13) + 'px;">'
+      + '<span class="web-dot' + (cov ? '' : ' off') + '" title="' + webEsc(cov ? T('Snapshots périodiques actifs') : T('Pas de snapshot périodique')) + '"></span>'
+      + '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(d.split('/').pop()) + '</span>'
+      + (n != null ? '<span class="web-nav-meta">' + webEsc(snapCountText(n)) + '</span>' : '') + '</span></button>';
   });
-  h += '</tbody></table>';
-  b.innerHTML = h;
+  if (!_snapDatasets.length) h += '<div class="web-side-empty">' + T('Aucun dataset') + '</div>';
+  h += '<div class="web-side-sep"></div><button class="web-nav" onclick="openTrueNASPage(\'/ui/datasets\')">' + webIcon('out') + '<span class="web-nav-name">' + T('Ouvrir dans TrueNAS') + '</span></button>';
+  var sc = el.scrollTop;
+  el.innerHTML = h;
+  el.scrollTop = sc;
+  el.querySelectorAll('[data-ds]').forEach(function(b) { b.onclick = function() { snapGo('ds', b.dataset.ds); }; });
+}
+function snapGo(nav, ds) {
+  _snapNav = nav;
+  if (ds !== undefined) _snapDs = ds;
+  if (nav === 'ds' && _snapDs) snapDsView();
+  else if (nav === 'tasks') snapTasksView();
+  else if (nav === 'snap' && _snapCur) snapOneView();
+  else { _snapNav = 'all'; snapAllView(); }
+}
+async function loadSnapshots() {
+  var el = snapBody();
+  if (!el) return;
+  if (!_snapLoaded) { snapHead('Snapshots'); el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>'; }
+  try {
+    var r = await Promise.allSettled([
+      wsCall('pool.snapshot.query', [[], { extra: { properties: ['creation', 'used', 'referenced'] }, limit: SNAP_LIMIT }], 120000),
+      wsCall('pool.dataset.query', [[], {}], 60000),
+      wsCall('pool.snapshottask.query', [[], {}], 60000)
+    ]);
+    if (r[0].status !== 'fulfilled') throw r[0].reason;
+    _snapAll = ensureArray(r[0].value);
+    _snapTruncated = _snapAll.length >= SNAP_LIMIT;
+    var out = [];
+    if (r[1].status === 'fulfilled') _snapFlattenDs(ensureArray(r[1].value), out);
+    _snapAll.forEach(function(s) { if (s.dataset) out.push(s.dataset); });
+    _snapDatasets = out.filter(function(v, i, a) { return v && a.indexOf(v) === i; }).sort();
+    _snapTasks = r[2].status === 'fulfilled' ? ensureArray(r[2].value) : [];
+    _snapCounts = null;
+    if (!_snapTruncated) { _snapCounts = {}; _snapAll.forEach(function(s) { _snapCounts[s.dataset] = (_snapCounts[s.dataset] || 0) + 1; }); }
+    _snapLoaded = true;
+    if (_snapDs && _snapDatasets.indexOf(_snapDs) < 0) _snapDs = null;
+    var nav = _snapNav;
+    if (nav === 'snap' || nav === 'rollback' || nav === 'new') nav = _snapDs ? 'ds' : 'all';
+    if (nav === 'task') nav = _snapTaskBack;
+    snapGo(nav);
+  } catch (e) {
+    _snapLoaded = false; _snapAll = []; _snapDatasets = []; _snapTasks = []; _snapCounts = null;
+    snapHead('Snapshots');
+    el.innerHTML = dkWaitHtml('error', T('Les snapshots ne répondent pas'), webEsc((e && e.message) || String(e)),
+      '<button class="web-open" onclick="loadSnapshots()">' + T('Réessayer') + '</button>');
+  }
+}
+
+// Tableau de snapshots. withDs : la ligne rappelle le dataset (vue d'ensemble).
+function snapTable(list, withDs) {
+  var h = '<div class="web-table snap-list' + (withDs ? ' with-ds' : '') + '"><div class="web-tr head"><span>Snapshot</span><span>' + T('Créé') + '</span><span class="num">' + T('Utilisé') + '</span><span class="num">' + T('Référencé') + '</span></div>';
+  list.forEach(function(s, i) {
+    h += '<button class="web-tr" data-snap="' + i + '" data-find="' + webEsc(String(s.name || s.id || '').toLowerCase()) + '">'
+      + (withDs ? '<span class="cron-two"><strong class="mono">' + webEsc(s.snapshot_name || '') + '</strong><span class="mono dim" title="' + webEsc(s.dataset || '') + '">' + webEsc(s.dataset || '') + '</span></span>'
+                : '<span class="mono" title="' + webEsc(s.snapshot_name || '') + '"><strong>' + webEsc(s.snapshot_name || '') + '</strong></span>')
+      + '<span>' + webEsc(snapWhen(s)) + '</span>'
+      + '<span class="num">' + webEsc(snapSize(s, 'used')) + '</span>'
+      + '<span class="num dim">' + webEsc(snapSize(s, 'referenced')) + '</span></button>';
+  });
+  return h + '</div>';
+}
+function snapTableBind(el, list) {
+  el.querySelectorAll('[data-snap]').forEach(function(b) { b.onclick = function() { _snapCur = list[Number(b.dataset.snap)]; _snapDs = _snapCur.dataset; snapGo('snap'); }; });
+}
+function snapFind(v) {
+  v = String(v || '').trim().toLowerCase();
+  var n = 0;
+  snapBody().querySelectorAll('.snap-list [data-snap]').forEach(function(b) { var ok = !v || b.dataset.find.indexOf(v) >= 0; b.style.display = ok ? '' : 'none'; if (ok) n++; });
+  var none = document.getElementById('snap-none');
+  if (none) none.style.display = n ? 'none' : '';
+}
+
+// ── Tous les snapshots ──
+function snapAllView() {
+  var list = snapSorted(_snapAll), nds = {}, newest = list[0];
+  list.forEach(function(s) { nds[s.dataset] = 1; });
+  var sub = list.length ? webEsc(Tf('{0} sur {1}.', snapCountText(list.length), Object.keys(nds).length > 1 ? Tf('{0} datasets', Object.keys(nds).length) : T('1 dataset')))
+    + (newest && snapTime(newest) ? ' ' + webEsc(Tf('Le plus récent : {0}.', cronMid(snapWhen(newest)))) : '') : '';
+  snapHead('Snapshots', { sub: sub, actions: '<button class="fs-btn" onclick="loadSnapshots()">' + T('Actualiser') + '</button><button class="web-open" onclick="snapCreateForm()">' + T('Créer un snapshot') + '</button>' });
+  var el = snapBody();
+  if (!list.length) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('layers') + '<div class="fs-empty-title">' + T('Aucun snapshot') + '</div><div>'
+      + T('Un snapshot fige l\'état d\'un dataset à un instant donné : on peut y revenir, ou en tirer une copie, sans doubler la place occupée.') + '</div>'
+      + '<button class="web-open" onclick="snapCreateForm()">' + T('Créer un snapshot') + '</button></div>';
+    return;
+  }
+  el.innerHTML = '<div class="snap-tools"><input class="snap-find" type="search" placeholder="' + webEsc(T('Filtrer par nom ou par dataset…')) + '" oninput="snapFind(this.value)" autocomplete="off" spellcheck="false"></div>'
+    + (_snapTruncated ? '<p class="web-note" style="margin:0 0 10px;color:#eab308;">' + webEsc(Tf('Seuls les {0} premiers snapshots sont affichés. Choisis un dataset dans la colonne pour voir tous les siens.', SNAP_LIMIT)) + '</p>' : '')
+    + snapTable(list, true) + '<p class="web-note" id="snap-none" style="display:none;">' + T('Aucun snapshot ne correspond à ce filtre.') + '</p>';
+  snapTableBind(el, list);
+}
+
+// ── Un dataset ──
+async function snapDsView() {
+  var ds = _snapDs, el = snapBody(), seq = ++_snapSeq;
+  var act = '<button class="fs-btn" onclick="loadSnapshots()">' + T('Actualiser') + '</button><button class="web-open" onclick="snapCreateForm()">' + T('Créer un snapshot') + '</button>';
+  if (_snapTruncated) {
+    // Liste générale tronquée : les snapshots de ce dataset sont demandés à part, en entier.
+    snapHead(ds, { mono: true, actions: act });
+    el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
+    try { _snapDsList = ensureArray(await wsCall('pool.snapshot.query', [[['dataset', '=', ds]], { extra: { properties: ['creation', 'used', 'referenced'] } }], 120000)); }
+    catch (e) { if (seq !== _snapSeq) return; el.innerHTML = dkWaitHtml('error', T('Les snapshots ne répondent pas'), webEsc((e && e.message) || String(e)), '<button class="web-open" onclick="snapGo(\'ds\')">' + T('Réessayer') + '</button>'); return; }
+    if (seq !== _snapSeq || _snapNav !== 'ds' || _snapDs !== ds) return;
+  } else {
+    _snapDsList = _snapAll.filter(function(s) { return s.dataset === ds; });
+  }
+  var list = snapSorted(_snapDsList), tasks = snapTasksOf(ds), cov = snapCovered(ds), newest = list[0];
+  snapHead(ds, { mono: true, actions: act,
+    sub: webEsc(snapCountText(list.length)) + (newest && snapTime(newest) ? webEsc(', ' + Tf('le plus récent : {0}', cronMid(snapWhen(newest)))) : '')
+      + '. <span style="color:' + (cov ? 'var(--success)' : 'var(--text-dim)') + ';">' + (cov ? T('Snapshots périodiques actifs') : T('Pas de snapshot périodique')) + '</span>' });
+  var h = list.length ? snapTable(list, false)
+    : '<p class="web-note" style="margin:6px 0 0;">' + T('Ce dataset n\'a aucun snapshot pour l\'instant.') + '</p>';
+  h += '<div class="web-group-title">' + T('Snapshots périodiques') + '</div><div class="web-group">';
+  tasks.forEach(function(t) { h += snapTaskRow(t); });
+  var inherited = !tasks.length && cov;
+  h += '<button class="web-row line" onclick="snapTaskEditor(null)"><span class="web-row-text"><span class="web-row-name">' + (tasks.length ? T('Ajouter un passage') : T('Planifier des snapshots'))
+    + '</span><span class="web-row-desc">' + (tasks.length ? T('Un autre rythme ou une autre durée de conservation') : (inherited ? T('Ce dataset est déjà couvert par la tâche récursive d\'un dataset parent') : T('Aucun snapshot automatique sur ce dataset')))
+    + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button></div>';
+  el.innerHTML = h;
+  snapTableBind(el, list);
+}
+function snapTaskRow(t) {
+  var i = _snapTasks.indexOf(t);
+  return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(cronHuman(t.schedule)) + '</span><span class="web-row-desc">'
+    + webEsc(snapKeep(t) + (t.recursive ? ', ' + T('datasets enfants inclus') : '') + '.')
+    + ' <span class="mono">' + webEsc(t.naming_schema || '') + '</span></span></span>'
+    + '<button class="web-mini" onclick="snapTaskEditor(' + i + ')">' + T('Modifier') + '</button>'
+    + '<button class="web-mini" onclick="snapTaskDelete(' + i + ')">' + T('Supprimer') + '</button>'
+    + '<input type="checkbox" ' + (t.enabled ? 'checked' : '') + ' onchange="snapTaskToggle(' + i + ',this.checked)" title="' + webEsc(T('Activée')) + '" aria-label="' + webEsc(T('Activée')) + '"></div>';
+}
+
+// ── Un snapshot ──
+function snapOneView() {
+  var s = _snapCur;
+  if (!s || !s.id) { snapGo(_snapDs ? 'ds' : 'all'); return; }
+  var ms = snapTime(s), full = s.name || s.id;
+  snapHead(s.snapshot_name || full, { mono: true, back: [s.dataset || 'Snapshots', 'snapGo(\'ds\')'],
+    sub: ms ? webEsc(Tf('Créé {0}', cronMid(snapWhen(s)))) : '' });
+  var row = function(call, name, desc, cls) {
+    return '<button class="web-row line' + (cls ? ' ' + cls : '') + '" onclick="' + call + '"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+  };
+  snapBody().innerHTML = netFacts([
+    ['Dataset', '<span class="mono">' + webEsc(s.dataset || '') + '</span>'],
+    [T('Nom complet'), '<span class="mono">' + webEsc(full) + '</span><button class="web-mini" onclick="copyText(\'' + encodeURIComponent(full) + '\')">' + T('Copier') + '</button>'],
+    [T('Créé'), ms ? webEsc(new Date(ms).toLocaleDateString(DK_LOCALE, { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ', ' + new Date(ms).toLocaleTimeString(DK_LOCALE, { hour:'2-digit', minute:'2-digit' })) : ''],
+    [T('Utilisé'), webEsc(snapSize(s, 'used')) + '<span class="dim">' + T('place propre à ce snapshot, libérée s\'il est supprimé') + '</span>'],
+    [T('Référencé'), webEsc(snapSize(s, 'referenced')) + '<span class="dim">' + T('taille du dataset à cet instant') + '</span>']
+  ]) + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + row('snapRollbackForm()', T('Restaurer le dataset'), T('Le ramener à l\'état de ce snapshot ; ce qui a été écrit depuis est perdu'))
+    + row('snapClone()', T('Cloner'), T('Créer un nouveau dataset à partir de ce snapshot, sans toucher à l\'original'))
+    + row('snapDelete()', T('Supprimer'), T('Le snapshot est détruit, la place qu\'il occupait est libérée'), 'danger')
+    + '</div>';
 }
 
 function snapDefName() {
@@ -13640,19 +13831,21 @@ function snapDefName() {
   return 'manuel-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
 }
 function snapCreateForm() {
-  var b = document.getElementById('snap-body');
+  var b = snapBody();
   if (!b) return;
-  var dsOpts = _snapDatasets.map(function(d) { return '<option value="' + snapEsc(d) + '"' + (_snapFilter === d ? ' selected' : '') + '>' + snapEsc(d) + '</option>'; }).join('');
+  var from = (_snapNav === 'ds' || _snapNav === 'snap') && _snapDs ? _snapDs : null;
+  var dsOpts = _snapDatasets.map(function(d) { return '<option value="' + snapEsc(d) + '"' + (from === d ? ' selected' : '') + '>' + snapEsc(d) + '</option>'; }).join('');
+  var back = from ? [from, 'snapGo(\'ds\')'] : [T('Tous les snapshots'), 'snapGo(\'all\')'];
+  _snapNav = 'new';
+  snapHead(T('Créer un snapshot'), { back: back, narrow: true });
   b.innerHTML =
-    '<div style="max-width:560px;">'
-    + T('<h3 style="margin:0 0 14px;">Créer un snapshot manuel</h3>')
-    + formRow('Dataset', '<select id="snap-ds" class="tnd-input">' + dsOpts + '</select>')
-    + formRow(T('Nom'), '<input id="snap-name" class="tnd-input" value="' + snapEsc(snapDefName()) + '">')
-    + T('<label class="tnd-switch" style="display:flex;justify-content:space-between;gap:10px;margin:6px 0 14px;"><span>Récursif (inclure les datasets enfants)</span><input type="checkbox" id="snap-rec"></label>')
-    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
-    + T('<button class="fs-btn" onclick="snapLoadSnaps()">Annuler</button>')
-    + T('<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="snapCreateSave()">Créer</button>')
-    + '</div></div>';
+    '<div style="display:flex;flex-direction:column;gap:12px;">'
+    + formRow('Dataset', '<select id="snap-ds" style="' + iStyle() + ';font-family:var(--font-mono);">' + dsOpts + '</select>')
+    + formRow(T('Nom'), '<input id="snap-name" style="' + iStyle() + ';font-family:var(--font-mono);" value="' + snapEsc(snapDefName()) + '" autocomplete="off" spellcheck="false">')
+    + '<div class="web-group"><label class="web-row" style="cursor:pointer;"><span class="web-row-text"><span class="web-row-name">' + T('Récursif') + '</span><span class="web-row-desc">'
+      + T('Prend aussi, au même instant, un snapshot de chaque dataset enfant.') + '</span></span><input type="checkbox" id="snap-rec"></label></div>'
+    + '<div class="web-foot"><button class="fs-btn" onclick="' + back[1] + '">' + T('Annuler') + '</button>'
+    + '<button class="fs-btn web-primary" onclick="snapCreateSave()">' + T('Créer') + '</button></div></div>';
 }
 async function snapCreateSave() {
   var ds = document.getElementById('snap-ds').value;
@@ -13662,45 +13855,47 @@ async function snapCreateSave() {
   if (!name) { toast(T('Le nom est obligatoire')); return; }
   if (!/^[A-Za-z0-9][A-Za-z0-9._:\- ]*$/.test(name)) { toast(T('Nom de snapshot invalide')); return; }
   toast(T('Création…'));
-  try { await wsCall('pool.snapshot.create', [{ dataset: ds, name: name, recursive: rec }], 120000); toast(T('✅ Snapshot créé')); _snapFilter = ds; snapLoadSnaps(); }
+  try { await wsCall('pool.snapshot.create', [{ dataset: ds, name: name, recursive: rec }], 120000); toast(T('✅ Snapshot créé')); _snapNav = 'ds'; _snapDs = ds; loadSnapshots(); }
   catch(e) { toast('Err: ' + e.message); }
 }
 
-function snapRollbackForm(i) {
-  var s = _snapAt(i);
-  if (!s.id) return;
-  var b = document.getElementById('snap-body');
+function snapRollbackForm() {
+  var s = _snapCur;
+  if (!s || !s.id) return;
+  var b = snapBody();
   if (!b) return;
+  _snapNav = 'rollback';
+  snapHead(T('Restaurer le dataset'), { back: [s.snapshot_name || s.id, 'snapGo(\'snap\')'], narrow: true });
+  var sw = function(cid, name, desc) {
+    return '<label class="web-row" style="cursor:pointer;"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><input type="checkbox" id="' + cid + '"></label>';
+  };
   b.innerHTML =
-    '<div style="max-width:620px;">'
-    + T('<h3 style="margin:0 0 8px;color:#f87171;">⚠ Restaurer un snapshot</h3>')
-    + '<div style="background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:14px;">'
+    '<div style="display:flex;flex-direction:column;gap:14px;">'
+    + '<div class="snap-warn">'
     + T('Le dataset <strong>') + snapEsc(s.dataset) + T('</strong> va revenir à l\'état du snapshot <strong>') + snapEsc(s.snapshot_name) + '</strong>.<br>'
     + T('<span style="color:#f87171;">Toutes les données écrites après ce snapshot seront définitivement perdues.</span> ')
     + T('Les snapshots plus récents doivent être détruits pour que la restauration aboutisse.')
-    + '</div>'
-    + T('<label class="tnd-switch" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;"><span>Détruire les snapshots plus récents (requis s\'il y en a)</span><input type="checkbox" id="snap-rb-rec"></label>')
-    + T('<label class="tnd-switch" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:14px;"><span>Détruire aussi les clones plus récents</span><input type="checkbox" id="snap-rb-clones"></label>')
-    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
-    + T('<button class="fs-btn" onclick="snapLoadSnaps()">Annuler</button>')
-    + '<button class="fs-btn" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.35);color:#f87171;" onclick="snapRollbackDo(' + i + T(')">Restaurer maintenant</button>')
-    + '</div></div>';
+    + '</div><div class="web-group">'
+    + sw('snap-rb-rec', T('Détruire les snapshots plus récents'), T('Nécessaire s\'il en existe : la restauration échoue sinon.'))
+    + sw('snap-rb-clones', T('Détruire aussi les clones plus récents'), T('Les datasets clonés depuis ces snapshots disparaissent avec eux.'))
+    + '</div><div class="web-foot"><button class="fs-btn" onclick="snapGo(\'snap\')">' + T('Annuler') + '</button>'
+    + '<button class="fs-btn snap-danger" onclick="snapRollbackDo()">' + T('Restaurer maintenant') + '</button></div></div>';
 }
-async function snapRollbackDo(i) {
-  var s = _snapAt(i);
-  if (!s.id) return;
+async function snapRollbackDo() {
+  var s = _snapCur;
+  if (!s || !s.id) return;
   var opts = {
     recursive: document.getElementById('snap-rb-rec').checked,
     recursive_clones: document.getElementById('snap-rb-clones').checked
   };
-  if (!await showConfirm(T('Confirmer la restauration de <strong>') + snapEsc(s.dataset) + T('</strong> ? Cette action est irréversible.'), { danger: true, ok: T('Restaurer'), icon: '⟲' })) return;
+  if (!await showConfirm(T('Confirmer la restauration de <strong>') + snapEsc(s.dataset) + T('</strong> ? Cette action est irréversible.'), { danger: true, ok: T('Restaurer') })) return;
   toast(T('Restauration…'));
-  try { await wsCall('pool.snapshot.rollback', [s.id, opts], 300000); toast(T('✅ Dataset restauré')); snapLoadSnaps(); }
+  try { await wsCall('pool.snapshot.rollback', [s.id, opts], 300000); toast(T('✅ Dataset restauré')); _snapNav = 'ds'; loadSnapshots(); }
   catch(e) { toast('Err: ' + e.message); }
 }
-async function snapClone(i) {
-  var s = _snapAt(i);
-  if (!s.id) return;
+async function snapClone() {
+  var s = _snapCur;
+  if (!s || !s.id) return;
   var d = new Date();
   function p(n) { return n < 10 ? '0' + n : '' + n; }
   var def = (s.dataset || '') + '_clone_' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
@@ -13709,105 +13904,135 @@ async function snapClone(i) {
   dst = String(dst).trim();
   if (!dst) { toast(T('Chemin requis')); return; }
   toast(T('Clonage…'));
-  try { await wsCall('pool.snapshot.clone', [{ snapshot: s.id, dataset_dst: dst }], 120000); toast(T('✅ Snapshot cloné vers ') + dst); }
+  try { await wsCall('pool.snapshot.clone', [{ snapshot: s.id, dataset_dst: dst }], 120000); toast(T('✅ Snapshot cloné vers ') + dst); loadSnapshots(); }
   catch(e) { toast('Err: ' + e.message); }
 }
-async function snapDelete(i) {
-  var s = _snapAt(i);
-  if (!s.id) return;
-  if (!await showConfirm(T('Supprimer le snapshot <strong>') + snapEsc(s.name || s.id) + '</strong> ?', { danger: true, ok: T('Supprimer'), icon: '🗑' })) return;
-  try { await wsCall('pool.snapshot.delete', [s.id], 120000); toast(T('Snapshot supprimé')); snapLoadSnaps(); }
+async function snapDelete() {
+  var s = _snapCur;
+  if (!s || !s.id) return;
+  if (!await showConfirm(T('Supprimer le snapshot <strong>') + snapEsc(s.name || s.id) + '</strong> ?', { danger: true, ok: T('Supprimer') })) return;
+  try { await wsCall('pool.snapshot.delete', [s.id], 120000); toast(T('Snapshot supprimé')); _snapNav = 'ds'; _snapCur = null; loadSnapshots(); }
   catch(e) { toast('Err: ' + e.message); }
 }
 
-async function snapLoadTasks() {
-  var b = document.getElementById('snap-body');
-  if (!b) return;
-  b.innerHTML = '<div class="fs-loading" style="height:180px;"><div class="spinner"></div></div>';
-  _snapTasks = ensureArray(await wsCall('pool.snapshottask.query', [[], {}], 60000));
-  snapRenderTasks();
-}
+// ── Snapshots périodiques ──
 function _snapTaskAt(i) { return _snapTasks[i] || {}; }
-function snapRenderTasks() {
-  var b = document.getElementById('snap-body');
-  if (!b) return;
-  var h = '<div style="margin-bottom:12px;display:flex;gap:8px;">'
-    + T('<button class="fs-btn" onclick="snapTaskEditor(null)" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);">＋ Nouvelle tâche</button>')
-    + T('<button class="fs-btn" onclick="snapLoadTasks()">↻ Actualiser</button></div>');
-  if (!_snapTasks.length) {
-    h += T('<div class="empty-state" style="height:160px;"><div class="es-icon">🗓️</div><span>Aucune tâche de snapshot périodique</span></div>');
-    b.innerHTML = h; return;
+// Prochain passage d'une tâche : le planning, restreint à la plage horaire « début – fin ».
+function snapTaskNext(t) {
+  var s = t.schedule || {}, toMin = function(v, d) { var m = /^(\d{1,2}):(\d{2})$/.exec(String(v || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : d; };
+  var b = toMin(s.begin, 0), e = toMin(s.end, 1439), from = Date.now(), n = null;
+  for (var k = 0; k < 400; k++) {
+    n = cronNext(s, from);
+    if (!n) return n;
+    var mm = n.getHours() * 60 + n.getMinutes();
+    if (b <= e ? (mm >= b && mm <= e) : (mm >= b || mm <= e)) return n;
+    from = n.getTime();
   }
-  h += T('<table class="container-table"><thead><tr><th>Dataset</th><th>Planning</th><th>Rétention</th><th>Récursif</th><th style="text-align:center;">Activée</th><th>Actions</th></tr></thead><tbody>');
+  return null;
+}
+function snapTasksView() {
+  var on = _snapTasks.filter(function(t) { return t.enabled; }).length;
+  snapHead(T('Snapshots périodiques'), {
+    sub: _snapTasks.length ? webEsc(_snapTasks.length > 1 ? Tf('{0} tâches, dont {1} activées.', _snapTasks.length, on) : (on ? T('1 tâche, activée.') : T('1 tâche, désactivée.'))) : '',
+    actions: '<button class="fs-btn" onclick="loadSnapshots()">' + T('Actualiser') + '</button><button class="web-open" onclick="snapTaskEditor(null)">' + T('Nouvelle tâche') + '</button>' });
+  var el = snapBody();
+  if (!_snapTasks.length) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('clock') + '<div class="fs-empty-title">' + T('Aucune tâche de snapshot périodique') + '</div><div>'
+      + T('Une tâche périodique prend des snapshots d\'un dataset à intervalle régulier et efface d\'elle-même les plus anciens.') + '</div>'
+      + '<button class="web-open" onclick="snapTaskEditor(null)">' + T('Planifier des snapshots') + '</button></div>';
+    return;
+  }
+  var h = '<div class="web-table snap-tasks"><div class="web-tr head"><span>Dataset</span><span>' + T('Planning') + '</span><span>' + T('Conservation') + '</span><span>' + T('Prochain passage') + '</span></div>';
   _snapTasks.forEach(function(t, i) {
-    h += '<tr>'
-      + '<td style="font-family:var(--font-mono);font-size:11px;">' + snapEsc(t.dataset || '') + '</td>'
-      + '<td>' + cronScheduleText(t.schedule || {}) + '</td>'
-      + '<td style="font-size:11px;">' + snapEsc((t.lifetime_value != null ? t.lifetime_value : '') + ' ' + snapUnitLabel(t.lifetime_unit)) + '</td>'
-      + '<td style="font-size:11px;">' + (t.recursive ? T('Oui') : T('Non')) + '</td>'
-      + '<td style="text-align:center;"><input type="checkbox" ' + (t.enabled ? 'checked' : '') + ' onchange="snapTaskToggle(' + i + ',this.checked)" style="width:14px;height:14px;cursor:pointer;"></td>'
-      + '<td style="white-space:nowrap;display:flex;gap:4px;">'
-      + '<button class="fs-btn" style="font-size:11px;padding:3px 9px;" onclick="snapTaskEditor(' + i + T(')" title="Modifier">✎</button>')
-      + '<button class="fs-btn" style="font-size:11px;padding:3px 9px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#f87171;" onclick="snapTaskDelete(' + i + T(')" title="Supprimer">🗑</button>')
-      + '</td></tr>';
+    var next = t.enabled ? snapTaskNext(t) : null, when = next ? cronWhen(next).replace(/^./, function(c) { return c.toUpperCase(); }) : '';
+    h += '<button class="web-tr' + (t.enabled ? '' : ' is-off') + '" data-task="' + i + '">'
+      + '<span class="cron-cell"><span class="web-dot' + (t.enabled ? '' : ' off') + '"></span><span class="cron-two"><strong class="mono" title="' + webEsc(t.dataset || '') + '">' + webEsc(t.dataset || '') + '</strong>'
+      + (t.recursive ? '<span class="dim">' + T('datasets enfants inclus') + '</span>' : '') + '</span></span>'
+      + '<span title="' + webEsc(cronExpr(t.schedule)) + '">' + webEsc(cronHuman(t.schedule)) + '</span>'
+      + '<span>' + webEsc(snapLife(t)) + '</span>'
+      + '<span' + (when ? ' title="' + webEsc(when) + '"' : ' class="dim"') + '>' + webEsc(t.enabled ? (when || '—') : T('Désactivée')) + '</span></button>';
   });
-  h += '</tbody></table>';
-  b.innerHTML = h;
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-task]').forEach(function(b) { b.onclick = function() { snapTaskEditor(Number(b.dataset.task)); }; });
 }
 async function snapTaskToggle(i, enabled) {
   var t = _snapTaskAt(i);
   if (!t.id) return;
-  try { await wsCall('pool.snapshottask.update', [t.id, { enabled: !!enabled }], 60000); toast(enabled ? T('Tâche activée') : T('Tâche désactivée')); t.enabled = enabled; }
-  catch(e) { toast('Err: ' + e.message); snapLoadTasks(); }
+  try { await wsCall('pool.snapshottask.update', [t.id, { enabled: !!enabled }], 60000); toast(enabled ? T('Tâche activée') : T('Tâche désactivée')); t.enabled = !!enabled; if (_snapNav === 'ds' || _snapNav === 'tasks') snapGo(_snapNav); else snapSideRender(); }
+  catch(e) { toast('Err: ' + e.message); loadSnapshots(); }
 }
 async function snapTaskDelete(i) {
   var t = _snapTaskAt(i);
   if (!t.id) return;
-  if (!await showConfirm(T('Supprimer la tâche périodique sur <strong>') + snapEsc(t.dataset) + '</strong> ?', { danger: true, ok: T('Supprimer'), icon: '🗑' })) return;
-  try { await wsCall('pool.snapshottask.delete', [t.id], 60000); toast(T('Tâche supprimée')); snapLoadTasks(); }
+  if (!await showConfirm(T('Supprimer la tâche périodique sur <strong>') + snapEsc(t.dataset) + '</strong> ?', { danger: true, ok: T('Supprimer') })) return;
+  try { await wsCall('pool.snapshottask.delete', [t.id], 60000); toast(T('Tâche supprimée')); if (_snapNav === 'task') _snapNav = _snapTaskBack; loadSnapshots(); }
   catch(e) { toast('Err: ' + e.message); }
 }
 function snapTaskPreset(v) {
   if (!v) return;
   var p = v.split(/\s+/);
   ['sk-min','sk-hour','sk-dom','sk-month','sk-dow'].forEach(function(cid, idx) { var e = document.getElementById(cid); if (e) e.value = p[idx] || '*'; });
+  snapTaskPreview();
+}
+function snapTaskFormSchedule() {
+  var g = function(cid, d) { var e = document.getElementById(cid); return e ? (e.value.trim() || d) : d; };
+  return { minute: g('sk-min', '*'), hour: g('sk-hour', '*'), dom: g('sk-dom', '*'), month: g('sk-month', '*'), dow: g('sk-dow', '*'), begin: g('sk-begin', '00:00'), end: g('sk-end', '23:59') };
+}
+function snapTaskPreview() {
+  var p = document.getElementById('sk-preview');
+  if (!p) return;
+  var s = snapTaskFormSchedule(), next = snapTaskNext({ schedule: s });
+  if (next === false) { p.innerHTML = '<span style="color:#f87171;">' + T('Ce planning n\'est pas reconnu. Chaque champ accepte un nombre, *, une liste (1,15), une plage (1-5) ou un pas (*/10).') + '</span>'; return; }
+  var human = cronHuman(s);
+  p.textContent = (human === cronExpr(s) ? '' : human + '. ') + (next ? Tf('Prochain passage : {0}.', cronWhen(next)) : T('Ce planning ne tombe sur aucune date.'));
 }
 function snapTaskEditor(i) {
-  var b = document.getElementById('snap-body');
+  var b = snapBody();
   if (!b) return;
   var t = (i != null) ? _snapTaskAt(i) : {};
   var s = t.schedule || {};
   var isNew = (i == null);
-  var dsOpts = _snapDatasets.map(function(d) { return '<option value="' + snapEsc(d) + '"' + (((t.dataset || _snapFilter) === d) ? ' selected' : '') + '>' + snapEsc(d) + '</option>'; }).join('');
+  var fromDs = (_snapNav === 'ds') ? _snapDs : null;
+  var pick = t.dataset || fromDs;
+  var dsOpts = _snapDatasets.map(function(d) { return '<option value="' + snapEsc(d) + '"' + ((pick === d) ? ' selected' : '') + '>' + snapEsc(d) + '</option>'; }).join('');
   var unitOpts = SNAP_UNITS.map(function(u) { return '<option value="' + u[0] + '"' + (((t.lifetime_unit || 'WEEK') === u[0]) ? ' selected' : '') + '>' + u[1] + '</option>'; }).join('');
   var presetOpts = CRON_PRESETS.map(function(p) { return '<option value="' + p.v + '">' + p.label + '</option>'; }).join('');
   var val = function(x, d) { return snapEsc(x != null ? x : d); };
+  var back = fromDs ? [fromDs, 'snapGo(\'ds\')'] : [T('Snapshots périodiques'), 'snapGo(\'tasks\')'];
+  _snapTaskBack = fromDs ? 'ds' : 'tasks';
+  _snapNav = 'task';
+  snapHead(isNew ? T('Nouvelle tâche de snapshot') : T('Modifier la tâche'), { back: back, narrow: true,
+    actions: isNew ? '' : '<button class="fs-btn" onclick="snapTaskDelete(' + i + ')">' + T('Supprimer') + '</button>' });
+  var sw = function(cid, name, desc, on) {
+    return '<label class="web-row" style="cursor:pointer;"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><input type="checkbox" id="' + cid + '" ' + (on ? 'checked' : '') + '></label>';
+  };
   b.innerHTML =
-    '<div style="max-width:660px;">'
-    + '<h3 style="margin:0 0 14px;">' + (isNew ? T('Nouvelle tâche de snapshot') : T('Modifier la tâche')) + '</h3>'
+    '<div style="display:flex;flex-direction:column;gap:12px;" oninput="snapTaskPreview()">'
     + '<input type="hidden" id="sk-id" value="' + (isNew ? '' : t.id) + '">'
-    + formRow('Dataset', '<select id="sk-ds" class="tnd-input">' + dsOpts + '</select>')
-    + formRow(T('Schéma de nommage'), '<input id="sk-schema" class="tnd-input" style="font-family:var(--font-mono);" value="' + val(t.naming_schema, 'auto-%Y-%m-%d_%H-%M') + '">')
-    + formRow(T('Rétention'), '<span style="display:flex;gap:8px;"><input id="sk-lifeval" class="tnd-input" type="number" min="1" style="width:90px;" value="' + val(t.lifetime_value, 2) + '"><select id="sk-lifeunit" class="tnd-input">' + unitOpts + '</select></span>')
-    + formRow(T('Modèle'), '<select class="tnd-input" onchange="snapTaskPreset(this.value)">' + presetOpts + '</select>')
-    + '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:6px 0 10px;">'
+    + formRow('Dataset', '<select id="sk-ds" style="' + iStyle() + ';font-family:var(--font-mono);">' + dsOpts + '</select>')
+    + formRow(T('Conservation'), '<span style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;"><input id="sk-lifeval" type="number" min="1" style="' + iStyle() + '" value="' + val(t.lifetime_value, 2) + '"><select id="sk-lifeunit" style="' + iStyle() + '">' + unitOpts + '</select></span>')
+    + formRow(T('Modèle'), '<select style="' + iStyle() + '" onchange="snapTaskPreset(this.value)">' + presetOpts + '</select>')
+    + '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">'
       + cronField('Minute', 'sk-min', s.minute, '0')
       + cronField(T('Heure'), 'sk-hour', s.hour, '*')
       + cronField(T('Jour (mois)'), 'sk-dom', s.dom, '*')
       + cronField(T('Mois'), 'sk-month', s.month, '*')
       + cronField(T('Jour (sem.)'), 'sk-dow', s.dow, '*')
     + '</div>'
-    + '<div style="display:flex;gap:8px;margin-bottom:10px;">'
-      + T('<div style="flex:1;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px;">Début (heure)</label><input id="sk-begin" class="tnd-input" value="') + val(s.begin, '00:00') + '"></div>'
-      + T('<div style="flex:1;"><label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px;">Fin (heure)</label><input id="sk-end" class="tnd-input" value="') + val(s.end, '23:59') + '"></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+      + cronField(T('Début (heure)'), 'sk-begin', s.begin, '00:00')
+      + cronField(T('Fin (heure)'), 'sk-end', s.end, '23:59')
     + '</div>'
-    + T('<label class="tnd-switch" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;"><span>Récursif (datasets enfants)</span><input type="checkbox" id="sk-rec" ') + (t.recursive ? 'checked' : '') + '></label>'
-    + T('<label class="tnd-switch" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;"><span>Autoriser les snapshots vides</span><input type="checkbox" id="sk-empty" ') + ((isNew || t.allow_empty) ? 'checked' : '') + '></label>'
-    + T('<label class="tnd-switch" style="display:flex;justify-content:space-between;gap:10px;margin-bottom:14px;"><span>Activée</span><input type="checkbox" id="sk-enabled" ') + ((isNew || t.enabled) ? 'checked' : '') + '></label>'
-    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
-      + T('<button class="fs-btn" onclick="snapLoadTasks()">Annuler</button>')
-      + T('<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="snapTaskSave()">Enregistrer</button>')
-    + '</div></div>';
+    + '<p class="web-note" id="sk-preview" style="margin:-4px 0 0;" aria-live="polite"></p>'
+    + formRow(T('Schéma de nommage'), '<input id="sk-schema" style="' + iStyle() + ';font-family:var(--font-mono);" value="' + val(t.naming_schema, 'auto-%Y-%m-%d_%H-%M') + '" autocomplete="off" spellcheck="false">')
+    + '<div class="web-group">'
+      + sw('sk-rec', T('Récursif'), T('Prend aussi les datasets enfants.'), !!t.recursive)
+      + sw('sk-empty', T('Autoriser les snapshots vides'), T('Prend le snapshot même si rien n\'a changé depuis le précédent.'), isNew || !!t.allow_empty)
+      + sw('sk-enabled', T('Activée'), T('Désactivée, la tâche est gardée mais ne se lance plus.'), isNew || !!t.enabled)
+    + '</div>'
+    + '<div class="web-foot"><button class="fs-btn" onclick="' + back[1] + '">' + T('Annuler') + '</button>'
+      + '<button class="fs-btn web-primary" onclick="snapTaskSave()">' + T('Enregistrer') + '</button></div></div>';
+  snapTaskPreview();
 }
 async function snapTaskSave() {
   var idv = document.getElementById('sk-id').value;
@@ -13821,21 +14046,14 @@ async function snapTaskSave() {
     recursive: document.getElementById('sk-rec').checked,
     allow_empty: document.getElementById('sk-empty').checked,
     enabled: document.getElementById('sk-enabled').checked,
-    schedule: {
-      minute: document.getElementById('sk-min').value.trim() || '*',
-      hour: document.getElementById('sk-hour').value.trim() || '*',
-      dom: document.getElementById('sk-dom').value.trim() || '*',
-      month: document.getElementById('sk-month').value.trim() || '*',
-      dow: document.getElementById('sk-dow').value.trim() || '*',
-      begin: document.getElementById('sk-begin').value.trim() || '00:00',
-      end: document.getElementById('sk-end').value.trim() || '23:59'
-    }
+    schedule: snapTaskFormSchedule()
   };
   try {
     if (idv) await wsCall('pool.snapshottask.update', [Number(idv), payload], 120000);
     else await wsCall('pool.snapshottask.create', [payload], 120000);
     toast(T('✅ Tâche enregistrée'));
-    snapLoadTasks();
+    _snapNav = _snapTaskBack; if (_snapTaskBack === 'ds') _snapDs = ds;
+    loadSnapshots();
   } catch(e) { toast('Err: ' + e.message); }
 }
 
@@ -18623,7 +18841,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   <div class="resize-handle" data-win="bootenv"></div>
 </div>
 
-<div class="window panel-win" id="win-snapshots" style="top:55px;left:170px;width:960px;height:600px;">
+<div class="window" id="win-snapshots" style="top:55px;left:170px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="snapshots">
     <span class="window-icon">📸</span>
     <span class="window-title">Snapshots ZFS</span>
@@ -18632,8 +18850,17 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn max" onclick="toggleMaxWin('snapshots')"></button>
       <button class="win-btn cls" onclick="closeWin('snapshots')"></button>
     </div></div>
-  <div class="window-body">
-    <div id="snapshots-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="snap-side" aria-label="Snapshots ZFS"></nav>
+      <section class="web-main">
+        <header class="web-head" id="snap-head"></header>
+        <div class="web-body" id="snapshots-content">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>
+        </div>
+      </section>
+    </div>
   </div>
   <div class="resize-handle" data-win="snapshots"></div>
 </div>
