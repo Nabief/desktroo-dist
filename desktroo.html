@@ -962,18 +962,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-act:hover { background:rgba(var(--accent-rgb),0.16); border-color:rgba(var(--accent2-rgb),0.45); color:var(--accent2); }
   .web-act.danger { color:#f87171; }
   .web-act.danger:hover { background:rgba(224,82,82,0.16); border-color:rgba(224,82,82,0.45); color:#f87171; }
-  /* ===== Sites Web — fenêtre à deux volets : colonne de navigation à gauche (comme Fichiers), contenu à droite.
-     La fenêtre s'élargit d'elle-même tant qu'elle contient « .web-shell » ; les autres écrans de la modale ne changent pas. ===== */
-  #modal-create-app:has(.web-shell) > div {
-    width:var(--dk-mw, min(1040px,95vw)) !important; max-width:none !important;
-    height:var(--dk-mh, min(740px,90vh)) !important; max-height:none !important;
-    position:relative; left:var(--dk-mx, 0px); top:var(--dk-my, 0px);
-    padding:0 !important; overflow:visible;
-  }
-  #modal-create-app:has(.web-shell) > div > div:first-child {
-    margin:0 !important; padding:14px 18px 14px 22px; border-bottom:1px solid var(--glass-border);
-  }
-  #modal-create-app:has(.web-shell) #create-app-form { flex:1 1 auto; min-height:0; display:flex; overflow:hidden; border-radius:0 0 15px 15px; }
+  /* ===== Gabarit des gestionnaires — fenêtre à deux volets : colonne de navigation à gauche (comme Fichiers), contenu à droite. ===== */
   .web-shell { display:flex; flex:1 1 auto; min-width:0; min-height:0; }
   .web-side {
     width:236px; flex-shrink:0; display:flex; flex-direction:column; gap:2px;
@@ -1102,11 +1091,16 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
   .web-empty-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
   .web-row select.tnd-input { width:200px; flex-shrink:0; }
-  /* Téléchargements : même gabarit, mêmes dimensions que Sites Web (la vue agrandie garde les siennes). */
-  #modal-create-app.dl-wide:not(.dl-max):has(.web-shell) > div {
-    width:var(--dk-mw, min(1040px,95vw)) !important; height:var(--dk-mh, min(740px,90vh)) !important;
-  }
-  #modal-create-app.dl-wide:has(.web-shell) #create-app-form { overflow:hidden; }
+  /* Licence, dans la fenêtre « À propos » : mêmes teintes que le reste de la fenêtre, thème clair compris. */
+  #about-body .lic-card { background:rgba(255,255,255,0.035); border-color:var(--glass-border); }
+  #about-body .lic-row { border-bottom-color:var(--glass-border); }
+  #about-body .lic-row b, #about-body .lic-sub, #about-body .lic-lbl, #about-body .lic-adv summary { color:var(--text-dim) !important; }
+  [data-theme="light"] #about-body .lic-card { background:rgba(255,255,255,0.8); }
+  [data-theme="light"] #about-body :is(#lic-key, #lic-token) { background:#ffffff !important; }
+  .about-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:16px; }
+  .about-note { margin-top:14px; padding:10px 12px; border-radius:10px; font-size:13px; line-height:1.5; }
+  .about-note.up { background:rgba(240,180,41,0.12); border:1px solid rgba(240,180,41,0.35); color:#f0b429; }
+  [data-theme="light"] .about-note.up { color:#8a5a00; }
   .dl-add { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
   .dl-add-row { display:flex; align-items:flex-end; gap:12px; }
   .dl-add-row > div { flex:1; min-width:0; }
@@ -1518,14 +1512,6 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .window.maximized > .win-edge { display:none; }
   body.dk-resizing, body.dk-resizing * { user-select:none !important; -webkit-user-select:none !important; }
   body.dk-resizing iframe { pointer-events:none; }
-  /* Boîtes de gestionnaire (Sites Web, Téléchargements) : mêmes poignées, visibles seulement en mode « fenêtre large ». */
-  #modal-create-app > div > .win-edge { display:none; }
-  #modal-create-app:has(.web-shell) > div > .win-edge,
-  #modal-create-app.dl-wide:not(.dl-max) > div > .win-edge { display:block; }
-  /* … et elles se déplacent par leur barre de titre, comme les fenêtres du bureau. */
-  #modal-create-app:has(.web-shell) > div > div:first-child,
-  #modal-create-app.dl-wide:not(.dl-max) > div > div:first-child { cursor:move; user-select:none; -webkit-user-select:none; }
-  #modal-create-app > div > div:first-child button { cursor:pointer; }
 
   /* ===== CONTEXT MENU ===== */
   #ctx-menu {
@@ -2691,30 +2677,6 @@ select option{ background:#101b2e; color:#e9eef7; }
   .jh-comment { color:#6b7a99; font-style:italic; }
 
 /* MDM-INSTALLED-APP-EDIT-CSS-BEGIN */
-#modal-create-app.dl-wide > div {
-  width: var(--dk-mw, min(900px, 95vw)) !important;
-  max-width: none !important;
-  height: var(--dk-mh, min(680px, 88vh)) !important;
-  max-height: none !important;
-  min-width: 420px;
-  min-height: 320px;
-  position: relative; left: var(--dk-mx, 0px); top: var(--dk-my, 0px);
-  resize: none !important;
-  overflow: visible !important;
-}
-#modal-create-app.dl-wide.dl-max > div {
-  left: 0; top: 0;
-  width: 96vw !important;
-  max-width: 96vw !important;
-  height: 93vh !important;
-  max-height: 93vh !important;
-  resize: none !important;
-}
-#modal-create-app.dl-wide #create-app-form {
-  flex: 1 1 auto;
-  overflow: auto;
-  min-height: 0;
-}
 #modal-create-app.mdm-app-edit-open > div {
   width: min(920px, 94vw) !important;
   max-width: 920px !important;
@@ -3510,7 +3472,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "de tolérance restant": "of grace period left",
 "Renouveler —": "Renew —",
 "Activer / S'abonner": "Activate / Subscribe",
-"🔑 Licence / Abonnement": "🔑 License / Subscription",
 "✅ Abonnement actif": "✅ Subscription active",
 "🎁 Essai en cours": "🎁 Trial in progress",
 "⏳ Expiré — période de tolérance": "⏳ Expired — grace period",
@@ -3861,7 +3822,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Version installée": "Installed version",
 "Dernière version": "Latest version",
 "⬆ Une mise à jour est disponible.": "⬆ An update is available.",
-"⬆ Mettre à jour maintenant": "⬆ Update now",
 "✓ Tu es à jour.": "✓ You are up to date.",
 "Forcer la mise à jour": "Force update",
 "Lancer la mise à jour ? Le service va redémarrer (~30 s).": "Start the update? The service will restart (~30 s).",
@@ -3886,7 +3846,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "📊 Widgets affichés": "📊 Widgets shown",
 "📊 Widgets masqués": "📊 Widgets hidden",
 "Téléchargements": "Downloads",
-"Réduire": "Minimize",
 "Agrandir": "Maximize",
 "Auto (recommandé)": "Auto (recommended)",
 "(débrideur)": "(debrid service)",
@@ -4884,7 +4843,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Suppression impossible :": "Unable to delete:",
 "Taille reçue incorrecte :": "Incorrect size received:",
 "Téléchargement incomplet :": "Incomplete download:",
-"Téléchargements :": "Downloads:",
 "extraction :": "extraction:",
 "Le mot de passe est envoyé directement à TrueNAS et n’est pas enregistré par Desktroo.": "The password is sent directly to TrueNAS and is not stored by Desktroo.",
 "SUPPRIMER": "DELETE",
@@ -6135,7 +6093,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Le fournisseur limite la fréquence des appels : la clé n'a pas pu être vérifiée. Attends quelques minutes avant de retester.": "The provider limits how often it can be called: the key could not be checked. Wait a few minutes before testing again.",
 "Le fournisseur refuse cette clé : révoquée, régénérée ou expirée. Crée une nouvelle clé sur son site et colle-la ici.": "The provider rejects this key: revoked, regenerated or expired. Create a new key on its site and paste it here.",
 "Le fournisseur n'accepte pas les connexions venant de l'adresse de ce NAS (serveur ou VPN).": "The provider does not accept connections from this NAS's address (server or VPN).",
-"vérifiée il y a moins de dix minutes": "checked less than ten minutes ago"
+"vérifiée il y a moins de dix minutes": "checked less than ten minutes ago",
+"Mettre à jour maintenant": "Update now"
 }
 </script>
 <script id="dk-i18n">
@@ -8951,18 +8910,7 @@ function licRenderBanner(){
   }
 }
 function licStart(){ licRefresh(); if (_licTimer) clearInterval(_licTimer); _licTimer = setInterval(licRefresh, 300000); }
-function openLicense(){
-  var m = document.getElementById('lic-modal');
-  if (!m) {
-    m = document.createElement('div'); m.id = 'lic-modal'; m.className = 'lic-modal-overlay';
-    m.innerHTML = T('<div class="lic-modal"><div class="lic-modal-head"><b>🔑 Licence / Abonnement</b><button class="lic-modal-x" onclick="closeLicense()">✕</button></div><div id="license-body" class="lic-modal-body"></div></div>');
-    m.addEventListener('click', function(e){ if (e.target === m) closeLicense(); });
-    document.body.appendChild(m);
-  }
-  m.style.display = 'flex';
-  loadLicense();
-}
-function closeLicense(){ var m = document.getElementById('lic-modal'); if (m) m.style.display = 'none'; }
+// La licence s'affiche dans la fenêtre « À propos », page « Licence » : voir openLicense() et aboutLicView().
 function loadLicense(){
   var el = document.getElementById('license-body'); if (!el) return;
   el.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
@@ -9051,11 +8999,6 @@ async function licActivate(){
     + '.lic-expired{background:rgba(248,113,113,.2);border:1px solid rgba(248,113,113,.55);color:#fee2e2;}'
     + '.lic-grace{background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.5);color:#fde68a;}'
     + '.lic-banner-btn{background:var(--accent);color:var(--accent-ink);font-family:var(--font-display);border:none;padding:6px 13px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;}'
-    + '.lic-modal-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);}'
-    + '.lic-modal{background:#0f1a2e;color:#e9eef7;width:min(560px,94vw);max-height:88vh;overflow:auto;border-radius:14px;border:1px solid rgba(255,255,255,.14);box-shadow:0 24px 70px rgba(0,0,0,.55);}'
-    + '.lic-modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.1);font-size:15px;}'
-    + '.lic-modal-x{background:transparent;border:none;color:#9db0d0;font-size:16px;cursor:pointer;}'
-    + '.lic-modal-body{padding:18px;}'
     + '.lic-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px 14px;margin-bottom:14px;}'
     + '.lic-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;}'
     + '.lic-row:last-child{border-bottom:none;}'
@@ -9854,43 +9797,17 @@ function webTypeLabel(s) {
   else if (s.type) parts.push(s.type);
   return parts.join(', ');
 }
-// Gabarit commun des boîtes de gestionnaire (Sites Web, Téléchargements…) : colonne de navigation
-// à gauche, contenu à droite. Un seul gestionnaire occupe la boîte à la fois ; « key » dit lequel.
-// Rend true quand la structure vient d'être posée (la colonne est alors à remplir).
-function mgrShell(key, title) {
-  const form = document.getElementById('create-app-form');
-  document.getElementById('create-app-title').textContent = title;
-  let fresh = false;
-  if (!form.querySelector('.web-shell[data-mgr="' + key + '"]')) {
-    form.innerHTML = '<div class="web-shell" data-mgr="' + key + '">'
-      + '<nav class="web-side" id="web-side" aria-label="' + webEsc(title) + '"></nav>'
-      + '<section class="web-main"><header class="web-head" id="web-head"></header><div class="web-body narrow" id="web-body"></div></section>'
-      + '</div>';
-    fresh = true;
-  }
-  document.getElementById('modal-create-app').style.display = 'flex';
-  return fresh;
-}
-function mgrBody() { return document.getElementById('web-body'); }
-// En-tête d'un écran. o.back : [libellé, appel] de l'écran parent — o.sub, o.actions : HTML — o.wide : pleine largeur.
-function mgrHead(title, o) {
-  o = o || {};
-  document.getElementById('web-head').innerHTML = '<div class="web-head-text">'
-    + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
-    + '<h4 class="web-title">' + webEsc(title) + '</h4>'
-    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
-    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
-  const body = mgrBody();
-  body.classList.toggle('narrow', !o.wide);
-  body.scrollTop = 0;
-}
+// Sites Web et Téléchargements sont des fenêtres du bureau, au gabarit commun (voir wmHead / wmBody).
+// Options d'en-tête de ces deux gestionnaires : o.wide = pleine largeur (sinon contenu étroit).
+function mgrOpts(o) { o = o || {}; return { back: o.back, sub: o.sub, actions: o.actions, narrow: !o.wide }; }
+// Un écran de Sites Web est demandé alors que la fenêtre est fermée : elle s'ouvre, sans imposer sa page d'accueil.
+var _webQuietOpen = false;
 function webShell() {
-  if (mgrShell('web', T('Sites Web'))) {
-    webSideRender();
-    if (!_webLoaded) webLoad().catch(function(){});
-  }
+  if (wmVisible('websites')) return;
+  _webQuietOpen = true;
+  try { openApp('websites'); } finally { _webQuietOpen = false; }
 }
-function webBody() { webShell(); return mgrBody(); }
+function webBody() { webShell(); return wmBody('web'); }
 // o.site : écran d'un site (repère sur le site, retour vers sa page) — o.root : c'est la page du site elle-même.
 // o.nav : rubrique de la colonne — le reste comme mgrHead.
 function webHead(title, o) {
@@ -9898,7 +9815,7 @@ function webHead(title, o) {
   webShell();
   if (o.site && o.site.id) { _webNav = 'site'; _webSel = o.site.id; }
   else if (o.nav) _webNav = o.nav;
-  mgrHead(title, { back: (o.site && o.site.id && !o.root) ? [o.site.name, 'webSiteView()'] : o.back, sub: o.sub, actions: o.actions, wide: o.wide });
+  wmHead('web', title, mgrOpts({ back: (o.site && o.site.id && !o.root) ? [o.site.name, 'webSiteView()'] : o.back, sub: o.sub, actions: o.actions, wide: o.wide }));
   webSideRender();
 }
 function webSideRender() {
@@ -9944,8 +9861,11 @@ function webLoad() {
   _webLoading.then(done, done);
   return _webLoading;
 }
-async function openWebsites() {
-  webShell();
+function openWebsites() { openApp('websites'); }
+// À l'ouverture de la fenêtre : la liste des sites, puis le site sélectionné.
+async function loadWebsites() {
+  webSideRender();
+  if (_webQuietOpen) { if (!_webLoaded) webLoad().catch(function(){}); return; }
   if (!_webLoaded) {
     webHead(T('Sites Web'), { nav:'site' });
     webBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
@@ -9958,7 +9878,7 @@ async function webRenderList() {
   catch(e) {
     if (!_webLoaded) {
       webHead(T('Sites Web'), { nav:'site' });
-      webBody().innerHTML = errHtml(T('Erreur: ') + e.message) + '<div style="text-align:center;"><button class="fs-btn" onclick="openWebsites()">' + T('Réessayer') + '</button></div>';
+      webBody().innerHTML = errHtml(T('Erreur: ') + e.message) + '<div style="text-align:center;"><button class="fs-btn" onclick="loadWebsites()">' + T('Réessayer') + '</button></div>';
       return;
     }
     toast('❌ ' + e.message);
@@ -10003,10 +9923,9 @@ function webSiteView(id) {
   h += '<div class="web-group" style="margin-top:18px;">' + row('webDelete', T('Supprimer le site'), T('Avec ou sans son dossier et sa base de données'), ' danger') + '</div>';
   webBody().innerHTML = h;
 }
-// Ferme la fenêtre et ouvre le dossier du site dans Fichiers.
+// Ouvre le dossier du site dans Fichiers, qui passe devant.
 function webOpenFolder(enc) {
   const path = decodeURIComponent(enc);
-  closeCreateApp();
   openApp('fs1');
   setTimeout(function(){ try { setActiveFsWin('fs1'); fsNavigate(path); } catch(e) {} }, 350);
 }
@@ -12520,7 +12439,10 @@ function openApp(id) {
     cron:         loadCron,
     bootenv:      loadBootenv,
     snapshots:    loadSnapshots,
-    maintenance:  loadMaintenance
+    maintenance:  loadMaintenance,
+    websites:     loadWebsites,
+    downloads:    loadDownloads,
+    about:        loadAbout
   };
   if (loaders[id]) loaders[id]();
 }
@@ -12584,7 +12506,6 @@ function addTaskbarBtn(id, win, customTitle) {
 }
 
 // Met les boutons de la barre en accord avec les fenêtres : « active » = affichée, « front » = au premier plan.
-// (Téléchargements, qui n'est pas une fenêtre du bureau, gère lui-même « active ».)
 var _tbSyncQueued = false;
 function tbSync() {
   if (_tbSyncQueued) return;
@@ -12599,20 +12520,17 @@ function tbSync() {
       b.classList.toggle('active', vis);
       if (vis && z > bestZ) { bestZ = z; best = b; }
     });
-    var m = document.getElementById('modal-create-app'), dl = document.querySelector('#taskbar-apps [data-win="downloads"]');
-    if (dl && m && m.style.display !== 'none' && m.classList.contains('dl-wide')) best = dl;   // la boîte passe devant les fenêtres
     // on ne touche une classe que si elle change : sinon l'observateur ci-dessous se rappellerait sans fin
     btns.forEach(function(b) { b.classList.toggle('front', b === best); });
   });
 }
 document.addEventListener('DOMContentLoaded', function() {
   if (!window.MutationObserver) return;
-  // une fenêtre s'affiche, se réduit ou se ferme ; un bouton apparaît ou disparaît ; la boîte de gestionnaire s'ouvre ou se ferme
+  // une fenêtre s'affiche, se réduit ou se ferme ; un bouton apparaît ou disparaît
   var mo = new MutationObserver(tbSync);
   mo.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
-  var tb = document.getElementById('taskbar-apps'), m = document.getElementById('modal-create-app');
+  var tb = document.getElementById('taskbar-apps');
   if (tb) new MutationObserver(tbSync).observe(tb, { childList: true });
-  if (m) new MutationObserver(tbSync).observe(m, { attributes: true, attributeFilter: ['style'] });
 });
 
 function removeTaskbarBtn(id) {
@@ -12672,62 +12590,6 @@ function setupWinEdges(win) {
       win.style.left = l + 'px'; win.style.top = t + 'px';
     };
   });
-}
-// Boîte de gestionnaire : elle est centrée, donc on décale de la moitié de ce qu'on ajoute
-// pour que seul le bord tiré se déplace. Taille et décalage passent par des variables CSS,
-// que seules les boîtes larges lisent : les petites boîtes de dialogue ne sont pas touchées.
-function dkModalEdges() {
-  var m = document.getElementById('modal-create-app'), box = m && m.querySelector(':scope > div');
-  dkAddEdges(box, function(dir) {
-    var r = box.getBoundingClientRect();
-    var mx0 = parseFloat(box.style.getPropertyValue('--dk-mx')) || 0, my0 = parseFloat(box.style.getPropertyValue('--dk-my')) || 0;
-    var maxW = window.innerWidth - 16, maxH = window.innerHeight - 16;
-    var minW = box.querySelector('.web-shell') ? 720 : 560, minH = 360;
-    var sx = dir.indexOf('e') >= 0 ? 1 : dir.indexOf('w') >= 0 ? -1 : 0, sy = dir.indexOf('s') >= 0 ? 1 : dir.indexOf('n') >= 0 ? -1 : 0;
-    return function(dx, dy) {
-      var w = Math.max(minW, Math.min(maxW, r.width + sx * dx)), h = Math.max(minH, Math.min(maxH, r.height + sy * dy));
-      box.style.setProperty('--dk-mw', w + 'px');
-      box.style.setProperty('--dk-mh', h + 'px');
-      box.style.setProperty('--dk-mx', (mx0 + sx * (w - r.width) / 2) + 'px');
-      box.style.setProperty('--dk-my', (my0 + sy * (h - r.height) / 2) + 'px');
-    };
-  });
-}
-// Déplacement d'une boîte large par sa barre de titre : même décalage (--dk-mx / --dk-my) que le
-// redimensionnement. La barre reste toujours saisissable : elle ne sort pas de l'écran.
-function dkModalDrag() {
-  var m = document.getElementById('modal-create-app'), box = m && m.querySelector(':scope > div');
-  var bar = box && box.querySelector(':scope > div');
-  if (!bar || bar._dkDrag) return;
-  bar._dkDrag = true;
-  bar.addEventListener('pointerdown', function(e) {
-    if (e.button !== 0 || e.target.closest('button, a, input, select, textarea')) return;
-    if (!(box.querySelector('.web-shell') || (m.classList.contains('dl-wide') && !m.classList.contains('dl-max')))) return;
-    e.preventDefault();
-    var r = box.getBoundingClientRect();
-    var mx0 = parseFloat(box.style.getPropertyValue('--dk-mx')) || 0, my0 = parseFloat(box.style.getPropertyValue('--dk-my')) || 0;
-    var minDx = 120 - r.right, maxDx = window.innerWidth - 120 - r.left, minDy = -r.top, maxDy = window.innerHeight - 48 - r.top;
-    try { bar.setPointerCapture(e.pointerId); } catch (_) {}
-    document.body.classList.add('dk-resizing');
-    var onMove = function(mv) {
-      var dx = Math.max(minDx, Math.min(maxDx, mv.clientX - e.clientX)), dy = Math.max(minDy, Math.min(maxDy, mv.clientY - e.clientY));
-      box.style.setProperty('--dk-mx', (mx0 + dx) + 'px');
-      box.style.setProperty('--dk-my', (my0 + dy) + 'px');
-    };
-    var onUp = function() {
-      bar.removeEventListener('pointermove', onMove);
-      bar.removeEventListener('pointerup', onUp);
-      bar.removeEventListener('pointercancel', onUp);
-      document.body.classList.remove('dk-resizing');
-    };
-    bar.addEventListener('pointermove', onMove);
-    bar.addEventListener('pointerup', onUp);
-    bar.addEventListener('pointercancel', onUp);
-  });
-}
-function dkModalResetSize() {
-  var m = document.getElementById('modal-create-app'), box = m && m.querySelector(':scope > div');
-  if (box) ['--dk-mw', '--dk-mh', '--dk-mx', '--dk-my'].forEach(function(p) { box.style.removeProperty(p); });
 }
 
 // ===========================
@@ -12830,8 +12692,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.window-titlebar').forEach(setupDragWin);
   document.querySelectorAll('.resize-handle').forEach(setupResizeHandle);
   document.querySelectorAll('.window').forEach(setupWinEdges);
-  dkModalEdges();
-  dkModalDrag();
 
   // Click on desktop to bring windows to front
   document.addEventListener('mousedown', function(e) {
@@ -12905,35 +12765,58 @@ function dkWaitHtml(state, title, text, extra) {
     + (extra || '') + '</div>';
 }
 function dkCardName() { return '<div class="dk-card-name" translate="no">Desktr<span class="dk-oo">oo</span></div>'; }
-async function tndAbout() {
-  document.getElementById('create-app-title').textContent = T('À propos');
-  var m = document.getElementById('modal-create-app'); m.style.display = 'flex';
-  var box = document.getElementById('create-app-form');
-  box.innerHTML = '<div class="fs-loading" style="height:100px;"><div class="spinner"></div></div>';
+// ── Fenêtre « À propos » : la version de Desktroo et sa mise à jour, puis la licence ──
+var _about = { nav: 'desk', busy: false };
+function tndAbout() { aboutGo('desk'); }
+function openLicense() { aboutGo('lic'); }
+function aboutGo(k) {
+  _about.nav = _about.busy ? 'desk' : k;   // pendant une mise à jour, la page de suivi reste affichée
+  var w = document.getElementById('win-about');
+  if (!w || !w.classList.contains('visible')) { openApp('about'); return; }   // l'ouverture affiche la page
+  bringToFront(w);
+  loadAbout();
+}
+function loadAbout() {
+  wmSide('about', wmSideTitle('Desktroo')
+    + wmNav({ active: _about.nav === 'desk', call: "aboutGo('desk')", icon: 'refresh', name: T('Version') })
+    + wmNav({ active: _about.nav === 'lic', call: "aboutGo('lic')", icon: 'key', name: T('Licence') }));
+  if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la page
+  if (_about.nav === 'lic') aboutLicView(); else aboutDeskView();
+}
+function aboutLicView() {
+  wmHead('about', T('Licence'), { narrow: true, sub: T('Abonnement Desktroo') });
+  wmBody('about').innerHTML = '<div id="license-body"></div>';
+  loadLicense();
+}
+async function aboutDeskView() {
+  wmHead('about', T('À propos'), { narrow: true });
+  var box = wmBody('about');
+  if (!document.getElementById('about-card')) box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
   var v = { version: '?', latest: '', update_available: false };
   try { v = await fileops('GET', 'version'); } catch (e) {}
+  if (_about.nav !== 'desk' || _about.busy) return;
   var up = !!v.update_available;
   var latestStyle = up ? 'background:rgba(240,180,41,0.15);color:#f0b429;border:1px solid rgba(240,180,41,0.4);' : '';
-  var h = '<div style="display:flex;flex-direction:column;gap:14px;">'
-    + '<div class="tnd-panel dk-card"><div class="dk-card-text">'
+  box.innerHTML = '<div class="tnd-panel dk-card" id="about-card"><div class="dk-card-text">'
     + dkCardName() + '<div class="dk-card-sub">' + T('Le bureau web pour votre TrueNAS') + '</div>'
     + T('<div class="tnd-row" style="justify-content:space-between;"><span class="tnd-muted">Version installée</span><span class="tnd-badge">') + (v.version || '?') + '</span></div>'
     + T('<div class="tnd-row" style="justify-content:space-between;"><span class="tnd-muted">Dernière version</span><span class="tnd-badge" style="') + latestStyle + '">' + (v.latest || '—') + '</span></div>'
     + '</div>' + dkHero('') + '</div>'
     + (up
-        ? T('<div style="background:rgba(240,180,41,0.12);border:1px solid rgba(240,180,41,0.35);color:#f0b429;padding:8px 10px;border-radius:8px;font-size:13px;">⬆ Une mise à jour est disponible.</div>')
-          + T('<button class="fs-btn" style="width:100%;justify-content:center;background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="tndDoUpdate()">⬆ Mettre à jour maintenant</button>')
-        : T('<div class="tnd-muted" style="font-size:12px;">✓ Tu es à jour.</div>')
-          + T('<button class="fs-btn" style="width:100%;justify-content:center;" onclick="tndDoUpdate()">Forcer la mise à jour</button>'))
-    + T('<div style="text-align:right;"><button class="fs-btn" onclick="closeCreateApp()">Fermer</button></div>')
-    + '</div>';
-  box.innerHTML = h;
+        ? '<div class="about-note up">' + T('⬆ Une mise à jour est disponible.') + '</div>'
+          + '<div class="about-actions"><button class="web-open" onclick="tndDoUpdate()">' + T('Mettre à jour maintenant') + '</button></div>'
+        : '<p class="web-note">' + T('✓ Tu es à jour.') + '</p>'
+          + '<div class="about-actions"><button class="fs-btn" onclick="tndDoUpdate()">' + T('Forcer la mise à jour') + '</button></div>');
 }
 async function tndDoUpdate() {
   if (!await showConfirm(T('Lancer la mise à jour ? Le service va redémarrer (~30 s).'))) return;
-  var box = document.getElementById('create-app-form');
-  var titleEl = document.getElementById('create-app-title');
-  if (titleEl) titleEl.textContent = T('Mise à jour en cours');
+  // Le suivi s'affiche dans la fenêtre « À propos », qu'on ouvre au besoin.
+  _about.busy = true; _about.nav = 'desk';
+  var aw = document.getElementById('win-about');
+  if (aw && aw.classList.contains('visible')) { bringToFront(aw); loadAbout(); } else openApp('about');
+  wmHead('about', T('Mise à jour en cours'), { narrow: true });
+  var box = wmBody('about');
+  box.innerHTML = '';
   // Indicateur de progression : la carte (et son logo animé) est posée une fois, seuls les étapes et le message changent.
   function _ic(st) {
     if (st === 'done')   return '✓';
@@ -13102,40 +12985,37 @@ function dlPrefSet(k, v) {
   } catch (e) {}
 }
 function dlIsDone(d) { return d.status === 'done' || d.status === 'canceled'; }
-async function openDownloads() {
-  var m = document.getElementById('modal-create-app');
-  var fresh = mgrShell('dl', T('Téléchargements'));
-  m.classList.add('dl-wide');
-  dlWindowChrome();
-  dlTaskbarBtn();
-  if (_dlPollTimer) clearInterval(_dlPollTimer);
+function openDownloads() { openApp('downloads'); }
+// La liste se rafraîchit chaque seconde tant que la fenêtre est affichée ; réduite, elle attend ; fermée, on arrête.
+function dlPollStart() {
+  if (_dlPollTimer) return;
   _dlPollTimer = setInterval(function() {
-    var mm = document.getElementById('modal-create-app');
-    if (!mm || mm.style.display === 'none' || !mm.classList.contains('dl-wide')) {
-      clearInterval(_dlPollTimer); _dlPollTimer = null; return;
-    }
-    dlRefreshList();
+    if (!document.querySelector('#taskbar-apps [data-win="downloads"]')) { clearInterval(_dlPollTimer); _dlPollTimer = null; return; }
+    if (wmVisible('downloads')) dlRefreshList();
   }, 1000);
-  if (!fresh) { dlSideRender(); dlRefreshList(); return; }   // fenêtre réduite puis rouverte : on la retrouve telle quelle
+}
+// À l'ouverture de la fenêtre : la file d'attente.
+async function loadDownloads() {
+  dlPollStart();
   _dlNav = 'queue';
   dlHead(T('File d\'attente'), { wide:true });
-  mgrBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
+  wmBody('dl').innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
   try {
     var pr = await fileops('GET', 'premium/status');
     _dlPremConf = (pr && pr.providers) || {};
   } catch (e) {}
   var err = await dlRefreshList();
-  if (!document.querySelector('.web-shell[data-mgr="dl"]')) return;
-  if (err) { mgrBody().innerHTML = errHtml(T('Erreur: ') + err); return; }
+  if (!wmVisible('downloads') || _dlNav !== 'queue') return;
+  if (err) { wmBody('dl').innerHTML = errHtml(T('Erreur: ') + err); return; }
   dlGo('queue');
 }
 function dlGo(k) {
   _dlNav = k;
   ({ queue: dlListView, done: dlListView, options: dlOptionsView, premium: dlPremiumPanel, browser: dlBrowserPanel })[k]();
 }
-function dlHead(title, o) { mgrHead(title, o); dlSideRender(); }
+function dlHead(title, o) { wmHead('dl', title, mgrOpts(o)); dlSideRender(); }
 function dlSideRender() {
-  var el = document.querySelector('.web-shell[data-mgr="dl"] .web-side');
+  var el = document.getElementById('dl-side');
   if (!el) return;
   var nav = function(k, icon, label, counted) {
     return '<button class="web-nav' + (_dlNav === k ? ' active' : '') + '" onclick="dlGo(\'' + k + '\')">' + webIcon(icon) + '<span class="web-nav-name">' + label + '</span>'
@@ -13169,7 +13049,7 @@ function dlListView() {
       + '</div></div>';
   }
   h += '<div id="dl-list" class="dl-list"></div>';
-  mgrBody().innerHTML = h;
+  wmBody('dl').innerHTML = h;
   dlListFill();
   var dd = document.getElementById('dl-dir');
   if (dd) dd.addEventListener('change', function() { if (dd.value.trim()) dlPrefSet('dir', dd.value.trim()); });
@@ -13185,9 +13065,9 @@ function dlListFill() {
 }
 async function dlOptionsView() {
   dlHead(T('Options'), { wide:true, sub: T('Elles s\'appliquent aux prochains téléchargements ajoutés.') });
-  mgrBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
+  wmBody('dl').innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
   try { var pr = await fileops('GET', 'premium/status'); _dlPremConf = (pr && pr.providers) || {}; } catch (e) {}
-  if (_dlNav !== 'options' || !document.querySelector('.web-shell[data-mgr="dl"]')) return;
+  if (_dlNav !== 'options' || !wmVisible('downloads')) return;
   var p = dlPrefs();
   var premOpts = T('<option value="auto">Auto (recommandé)</option>');
   DL_PROVIDERS.forEach(function (x) {
@@ -13198,7 +13078,7 @@ async function dlOptionsView() {
     tag = tag || 'div';
     return '<' + tag + ' class="web-row"><span class="web-row-text"><span class="web-row-name">' + name + '</span>' + (desc ? '<span class="web-row-desc">' + desc + '</span>' : '') + '</span>' + control + '</' + tag + '>';
   };
-  mgrBody().innerHTML = '<div class="web-group">'
+  wmBody('dl').innerHTML = '<div class="web-group">'
     + row(T('Connexions par lien'), T('Plusieurs connexions accélèrent les gros fichiers.'), '<select id="dl-conn" class="tnd-input"><option value="1">1 (simple)</option><option value="2">2</option><option value="4">4</option><option value="8">8</option><option value="16">16</option></select>')
     + row(T('Téléchargements simultanés'), T('Les suivants attendent dans la file.'), '<select id="dl-maxc" class="tnd-input"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="8">8</option><option value="10">10</option></select>')
     + row(T('Débrideur / compte premium'), '', '<select id="dl-premium" class="tnd-input">' + premOpts + '</select>')
@@ -13212,82 +13092,6 @@ async function dlOptionsView() {
   set('dl-extract', p.extract).addEventListener('change', function() { dlPrefSet('extract', this.checked); });
   set('dl-autoremove', p.autoremove).addEventListener('change', function() { dlPrefSet('autoremove', this.checked); });
 }
-// Contrôles de fenêtre unifiés (mêmes « feux tricolores » que les autres fenêtres).
-function dlWindowChrome() {
-  var _m = document.getElementById('modal-create-app');
-  var hdr = _m ? _m.querySelector(':scope > div > div') : null;
-  if (!hdr) return;
-  var defBtn = hdr.querySelector('button');
-  if (defBtn) defBtn.style.display = 'none';
-  var old = document.getElementById('dl-winctl');
-  if (old) old.remove();
-  var ctl = document.createElement('div');
-  ctl.id = 'dl-winctl';
-  ctl.className = 'window-controls';
-  ctl.innerHTML =
-      T('<button class="win-btn min" title="Réduire" onclick="dlMinimize()"></button>')
-    + T('<button class="win-btn max" title="Agrandir" onclick="dlToggleMax()"></button>')
-    + T('<button class="win-btn cls" title="Fermer" onclick="dlClose()"></button>');
-  hdr.appendChild(ctl);
-}
-// Bouton de barre des tâches identique aux autres fenêtres.
-function dlTaskbarBtn() {
-  var tb = document.getElementById('taskbar-apps');
-  if (!tb) return;
-  var b = tb.querySelector('[data-win="downloads"]');
-  if (!b) {
-    b = document.createElement('button');
-    b.className = 'taskbar-app-btn active';
-    b.dataset.win = 'downloads';
-    dkBarBtnFill(b, T('Téléchargements'), '⬇️');
-    b.onclick = function() {
-      var m = document.getElementById('modal-create-app');
-      if (!m || m.style.display === 'none' || !m.classList.contains('dl-wide')) openDownloads();
-      else dlMinimize();
-    };
-    tb.appendChild(b);
-  }
-  b.classList.add('active');
-}
-function dlMinimize() {
-  var _m = document.getElementById('modal-create-app');
-  if (_m) _m.style.display = 'none';
-  if (_dlPollTimer) { clearInterval(_dlPollTimer); _dlPollTimer = null; }
-  var b = document.querySelector('#taskbar-apps [data-win="downloads"]');
-  if (b) b.classList.remove('active');
-  dlBadgeUpdate();
-}
-function dlToggleMax() {
-  var _m = document.getElementById('modal-create-app');
-  if (!_m) return;
-  _m.classList.toggle('dl-max');
-}
-// Rend la boîte à son état ordinaire (taille, bouton ✕, barre des tâches) sans la fermer.
-function dlDetach() {
-  if (_dlPollTimer) { clearInterval(_dlPollTimer); _dlPollTimer = null; }
-  var _m = document.getElementById('modal-create-app');
-  if (_m) {
-    _m.classList.remove('dl-wide', 'dl-max');
-    var hdr = _m.querySelector(':scope > div > div');
-    if (hdr) { var defBtn = hdr.querySelector('button'); if (defBtn) defBtn.style.display = ''; }
-    var ctl = document.getElementById('dl-winctl'); if (ctl) ctl.remove();
-  }
-  removeTaskbarBtn('downloads');
-  dlBadgeUpdate();
-}
-function dlClose() {
-  dlDetach();
-  closeCreateApp();
-}
-// Téléchargements réduit, puis un autre écran prend la boîte (À propos, Sites Web…) : il ne doit pas
-// hériter de la taille ni des boutons de Téléchargements.
-document.addEventListener('DOMContentLoaded', function() {
-  var form = document.getElementById('create-app-form'), m = document.getElementById('modal-create-app');
-  if (!form || !m || !window.MutationObserver) return;
-  new MutationObserver(function() {
-    if (m.classList.contains('dl-wide') && !form.querySelector('.web-shell[data-mgr="dl"]')) dlDetach();
-  }).observe(form, { childList: true });
-});
 async function dlMaxConcurrentSave() {
   var el = document.getElementById('dl-maxc');
   if (!el) return;
@@ -13379,9 +13183,8 @@ function dlOpenDir(enc) {
   var dir = decodeURIComponent(enc);
   try {
     var w = document.getElementById('win-fs1');
-    if (w && w.classList.contains('visible')) { setActiveFsWin('fs1'); fsNavigate(dir); }
+    if (w && w.classList.contains('visible')) { bringToFront(w); setActiveFsWin('fs1'); fsNavigate(dir); }
     else { openApp('fs1'); setTimeout(function() { setActiveFsWin('fs1'); fsNavigate(dir); }, 400); }
-    dlClose();
   } catch(e) {}
 }
 
@@ -13511,7 +13314,7 @@ function dlFmtUntil(u) {
 async function dlPremiumPanel() {
   _dlNav = 'premium';
   dlHead(T('Comptes premium & débrideurs'), { wide:true });
-  const box = mgrBody();
+  const box = wmBody('dl');
   box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
   let st = {};
   try { const r = await fileops('GET', 'premium/status'); st = r.providers || {}; } catch(e) {}
@@ -13687,7 +13490,7 @@ function dlCopyLinkCode() { copyText(encodeURIComponent(dlLinkCode())); }
 function dlBrowserPanel() {
   _dlNav = 'browser';
   dlHead(T('Ajouter depuis le navigateur'), { wide:true });
-  var box = mgrBody();
+  var box = wmBody('dl');
   var base = location.origin + '/fileops', tok = getFileopsToken();
   var zip = 'https://github.com/Nabief/desktroo-dist/raw/main/desktroo-dl-extension.zip';
   var code = function(t) { return '<code>' + t + '</code>'; };
@@ -19016,7 +18819,7 @@ function openCreateApp(appName, train) {
   document.getElementById('modal-create-app').style.display = 'flex';
 }
 function openEditApp(appName) { _editingApp = appName; openCreateApp(appName, null); }
-function closeCreateApp() { document.getElementById('modal-create-app').style.display = 'none'; dkModalResetSize(); }
+function closeCreateApp() { document.getElementById('modal-create-app').style.display = 'none'; }
 
 async function buildEditForm(appName) {
   const formEl = document.getElementById('create-app-form');
@@ -23349,6 +23152,79 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   <div class="resize-handle" data-win="access"></div>
 </div>
 <!-- MDM-ACCESS-CENTER-HTML-END -->
+<!-- Sites Web, Téléchargements, À propos : des fenêtres comme les autres -->
+<div class="window" id="win-websites" style="top:56px;left:150px;width:1080px;height:700px;">
+  <div class="window-titlebar" data-win="websites">
+    <span class="window-icon">🌍</span>
+    <span class="window-title">Sites Web</span>
+    <div class="window-controls">
+      <button class="win-btn min" onclick="minimizeWin('websites')"></button>
+      <button class="win-btn max" onclick="toggleMaxWin('websites')"></button>
+      <button class="win-btn cls" onclick="closeWin('websites')"></button>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="web-side" aria-label="Sites Web"></nav>
+      <section class="web-main">
+        <header class="web-head" id="web-head"></header>
+        <div class="web-body" id="web-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="resize-handle" data-win="websites"></div>
+</div>
+<div class="window" id="win-downloads" style="top:62px;left:190px;width:1080px;height:700px;">
+  <div class="window-titlebar" data-win="downloads">
+    <span class="window-icon">⬇️</span>
+    <span class="window-title">Téléchargements</span>
+    <div class="window-controls">
+      <button class="win-btn min" onclick="minimizeWin('downloads')"></button>
+      <button class="win-btn max" onclick="toggleMaxWin('downloads')"></button>
+      <button class="win-btn cls" onclick="closeWin('downloads')"></button>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="dl-side" aria-label="Téléchargements"></nav>
+      <section class="web-main">
+        <header class="web-head" id="dl-head"></header>
+        <div class="web-body" id="dl-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="resize-handle" data-win="downloads"></div>
+</div>
+<div class="window" id="win-about" style="top:90px;left:300px;width:820px;height:600px;">
+  <div class="window-titlebar" data-win="about">
+    <span class="window-icon">ℹ️</span>
+    <span class="window-title">À propos</span>
+    <div class="window-controls">
+      <button class="win-btn min" onclick="minimizeWin('about')"></button>
+      <button class="win-btn max" onclick="toggleMaxWin('about')"></button>
+      <button class="win-btn cls" onclick="closeWin('about')"></button>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="about-side" aria-label="À propos"></nav>
+      <section class="web-main">
+        <header class="web-head" id="about-head"></header>
+        <div class="web-body" id="about-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="resize-handle" data-win="about"></div>
+</div>
 </div><!-- fin de #desktop : les boîtes modales restent au niveau de la page -->
 <div id="modal-lv-create" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:var(--surface-2,#16243f);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;">
