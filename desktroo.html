@@ -6254,7 +6254,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "{0} caractères au moins.": "At least {0} characters.",
 "Cette valeur a un format imposé, à saisir toi-même :": "This value has a required format, to type yourself:",
 "Installation de {0} (catalogue : {1}, train {2}, version {3})": "Installing {0} (catalog: {1}, train {2}, version {3})",
-"Causes habituelles : une image impossible à télécharger, un dossier que l'application ne peut pas écrire, ou un réglage qu'elle refuse. La raison exacte est notée par TrueNAS dans /var/log/app_lifecycle.log.": "Usual causes: an image that cannot be downloaded, a folder the application cannot write to, or a setting it rejects. TrueNAS records the exact reason in /var/log/app_lifecycle.log."
+"Causes habituelles : une image impossible à télécharger, un dossier que l'application ne peut pas écrire, ou un réglage qu'elle refuse. La raison exacte est notée par TrueNAS dans /var/log/app_lifecycle.log.": "Usual causes: an image that cannot be downloaded, a folder the application cannot write to, or a setting it rejects. TrueNAS records the exact reason in /var/log/app_lifecycle.log.",
+"Le service redémarre": "The service is restarting"
 }
 </script>
 <script id="dk-i18n">
@@ -7384,7 +7385,7 @@ function initDesktop(sysInfo) {
   jobsBadgeStart();
   licStart();
   tndLoadConfig();
-  setTimeout(tndCheckUpdate, 4000);
+  tndWatchStart();
   setupContextMenu();
   setupWindowDrag();
   toast(T('✅ Bienvenue sur Desktroo !'), 3000);
@@ -12988,8 +12989,7 @@ function truenasUiBase() {
 }
 async function tndLoadConfig() {
   try {
-    var v = await fileops('GET', 'version');
-    _tndUpdate = v || null;
+    var v = await tndVersionFetch();
     if (v && v.truenas_host) _truenasHost = String(v.truenas_host).trim();
     if (v && v.truenas_ip) _truenasIp = String(v.truenas_ip).trim();
   } catch (e) {}
@@ -13242,13 +13242,13 @@ async function aboutDeskView() {
   var box = aboutBody(), tag = T('Le bureau web pour votre TrueNAS');
   // Le temps de la vérification, le logo tourne ; les lignes arrivent ensuite.
   if (!document.getElementById('about-list')) box.innerHTML = '<div class="about-page">' + aboutHero('busy', tag) + '</div>';
-  var got = await Promise.all([fileops('GET', 'version').catch(function() { return null; }), _licInfo ? null : licRefresh()]);
+  var got = await Promise.all([tndVersionFetch().catch(function() { return null; }), _licInfo ? null : licRefresh()]);
   var v = got[0] || { version: '?', latest: '', update_available: false };
   if (_about.nav !== 'desk' || _about.busy) return;
   var up = !!v.update_available, lic = aboutLicLabel();
   var chev = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>', out = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M11 7H6v11h11v-5"/></svg>';
-  var rows = '<div class="about-row"><span>' + T('Version installée') + '</span><span class="about-val">' + webEsc(v.version || '?')
-      + (up || !v.latest ? '' : '<span class="about-chip ok">' + T('À jour') + '</span>') + '</span></div>'
+  var rows = '<div class="about-row"><span>' + T('Version installée') + '</span><span class="about-val">' + webEsc(v.lag ? DK_PAGE_VERSION : (v.version || '?'))
+      + (v.lag ? '<span class="about-chip warn">' + T('Le service redémarre') + '</span>' : (up || !v.latest ? '' : '<span class="about-chip ok">' + T('À jour') + '</span>')) + '</span></div>'
     + (up ? '<div class="about-row"><span>' + T('Dernière version') + '</span><span class="about-val">' + webEsc(v.latest) + '<span class="about-chip warn">' + T('Disponible') + '</span></span></div>' : '')
     + '<button class="about-row" onclick="aboutGo(\'lic\')"><span>' + T('Licence') + '</span><span class="about-val">'
       + (lic ? '<span class="about-chip' + (lic[1] ? ' ' + lic[1] : '') + '">' + lic[0] + '</span>' : '') + chev + '</span></button>'
@@ -13298,8 +13298,8 @@ async function tndDoUpdate() {
   render('active', 'pending', T('Téléchargement depuis GitHub…'));
 
   // Version cible (pour détecter la fin effective du redémarrage).
-  var expectedLatest = '';
-  try { var v0 = await fileops('GET', 'version'); expectedLatest = (v0 && v0.latest) || ''; } catch (e) {}
+  var expectedLatest = '', boot0 = '', ver0 = '';
+  try { var v0 = await fileops('GET', 'version'); expectedLatest = (v0 && v0.latest) || ''; boot0 = (v0 && v0.boot) || ''; ver0 = (v0 && v0.version) || ''; } catch (e) {}
   var subEl = document.getElementById('dk-up-sub');
   if (subEl && expectedLatest) subEl.textContent = T('Mise à jour') + ' — ' + ((v0.version && v0.version !== expectedLatest) ? v0.version + ' → ' : 'version ') + expectedLatest;
 
@@ -13313,7 +13313,7 @@ async function tndDoUpdate() {
 
   // Phase de reprise : sonder /version jusqu'au retour du service.
   var start = Date.now();
-  var TIMEOUT = 120000;
+  var TIMEOUT = 240000;
   var sawDown = false;
   await new Promise(function (r) { setTimeout(r, 4000); }); // laisser le redémarrage débuter
 
@@ -13326,7 +13326,11 @@ async function tndDoUpdate() {
       return;
     }
     fileops('GET', 'version').then(function (v) {
-      var back = sawDown || !expectedLatest || (v && v.version === expectedLatest);
+      // Le serveur web redémarre en une seconde, l'ancien service répond encore une dizaine de secondes ensuite :
+      // une coupure suivie d'une réponse ne prouve donc rien. Le nouveau service se reconnaît à son identifiant de
+      // démarrage, ou à défaut à la version attendue.
+      var fresh = !!v && ((v.boot && String(v.boot) !== String(boot0)) || (!!expectedLatest && ver0 !== expectedLatest && v.version === expectedLatest));
+      var back = fresh || (sawDown && !boot0 && !expectedLatest);
       if (!back) {
         // L'ancienne instance répond encore : redémarrage pas encore effectif.
         render('done', 'active', T('Redémarrage en cours… (') + elapsed + ' s)');
@@ -13343,19 +13347,58 @@ async function tndDoUpdate() {
     });
   })();
 }
-var _tndUpdate = null;
+// Version de cette page, posée à la publication (ship1.sh). Juste après une mise à jour, la page chargée est déjà la
+// nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
+// et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
+// annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
+var DK_PAGE_VERSION = '2.29.2';
+function dkVerCmp(a, b) {
+  var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
+  for (var i = 0; i < Math.max(x.length, y.length); i++) {
+    var d = (+x[i] || 0) - (+y[i] || 0);
+    if (d) return d < 0 ? -1 : 1;
+  }
+  return 0;
+}
+var _tndUpdate = null, _tndTimer = null, _tndFastUntil = 0, _tndToasted = '', _tndShown = null;
+// Lit la version auprès du service. « lag » : le service qui répond est plus ancien que cette page (il redémarre).
+async function tndVersionFetch() {
+  var v = await fileops('GET', 'version');
+  if (v && /^\d+\.\d/.test(DK_PAGE_VERSION)) {
+    v.lag = !!v.version && dkVerCmp(v.version, DK_PAGE_VERSION) < 0;
+    if (v.update_available && v.latest && dkVerCmp(v.latest, DK_PAGE_VERSION) <= 0) v.update_available = false;
+  }
+  _tndUpdate = v || null;
+  return v;
+}
+function tndVersionKey(v) { return v ? [v.version, v.latest, v.update_available ? 1 : 0, v.lag ? 1 : 0].join('|') : ''; }
+// Tout ce qui affiche l'état de la mise à jour : widget des alertes, fenêtre Alertes, fenêtre « À propos ».
+function tndVersionShow() {
+  try { loadNotifs(); } catch (e) {}
+  if (wmVisible('notifs')) { try { loadAlertsWindow(); } catch (e) {} }
+  if (wmVisible('about') && _about.nav === 'desk' && !_about.busy) { try { aboutDeskView(); } catch (e) {} }
+}
+function tndWatchStart() {
+  _tndFastUntil = Date.now() + 5 * 60000;
+  clearTimeout(_tndTimer);
+  _tndTimer = setTimeout(tndCheckUpdate, 4000);
+}
+// Vérifie, affiche si quelque chose a changé, et se reprogramme : toutes les 6 s tant que le service redémarre ou ne
+// répond pas (pendant les cinq premières minutes), puis toutes les 30 minutes pour apprendre une nouvelle version.
 async function tndCheckUpdate() {
-  try {
-    var v = await fileops('GET', 'version');
-    _tndUpdate = v || null;
-    if (tndUpdatePending()) {
+  clearTimeout(_tndTimer);
+  var v = null, failed = false;
+  try { v = await tndVersionFetch(); } catch (e) { failed = true; }
+  if (!failed) {
+    if (tndUpdatePending() && _tndToasted !== v.latest) {
+      _tndToasted = v.latest;
       toast(T('⬆ Mise à jour ') + (v.latest || '') + T(' disponible — voir Alertes'), 8000);
     }
-    try { loadNotifs(); } catch (e) {}
-    if (document.getElementById('win-notifs') && document.getElementById('win-notifs').classList.contains('visible')) {
-      try { loadAlertsWindow(); } catch (e) {}
-    }
-  } catch (e) {}
+    var key = tndVersionKey(v);
+    if (key !== _tndShown) { _tndShown = key; tndVersionShow(); }
+  }
+  var soon = (failed || (v && v.lag)) && Date.now() < _tndFastUntil;
+  _tndTimer = setTimeout(tndCheckUpdate, soon ? 6000 : 30 * 60000);
 }
 // Une MàJ est-elle en attente (dispo ET non masquée pour cette version) ?
 function tndUpdatePending() {
@@ -14966,7 +15009,7 @@ async function loadAlertsWindow() {
   if (!el) return;
   el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
   try {
-    try { _tndUpdate = await fileops('GET', 'version'); } catch (e) {}
+    try { await tndVersionFetch(); } catch (e) {}
     var upCard = tndUpdateCardHtml() + appUpCardsHtml();
     const alerts = ensureArray(await socketCall('/alert/list')).filter(function(a){ return !a.dismissed; });
     if (!alerts.length && !upCard) {

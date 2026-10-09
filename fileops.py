@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.29.1'
+APP_VERSION = '2.29.2'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -609,6 +609,12 @@ def _truenas_ip():
     return host
 
 
+# Identifiant de démarrage du service. Après une mise à jour, l'ancien service répond encore quelques secondes
+# (Docker lui laisse dix secondes pour s'arrêter) : la page attend de voir cet identifiant changer avant de se
+# recharger, au lieu de croire que le premier service qui répond est le nouveau.
+_BOOT_ID = "%x" % int(_login_time.time() * 1000)
+
+
 def _version_status():
     latest = ''
     try:
@@ -625,7 +631,7 @@ def _version_status():
             upd = _norm(latest) > _norm(APP_VERSION)
         except Exception:
             upd = (latest != APP_VERSION)
-    return {'version': APP_VERSION, 'latest': latest, 'update_available': bool(upd),
+    return {'version': APP_VERSION, 'latest': latest, 'update_available': bool(upd), 'boot': _BOOT_ID,
             'truenas_host': SSH_HOST, 'truenas_ip': _truenas_ip()}
 
 
@@ -7714,7 +7720,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             try:
                 self._json(200, _version_status())
             except Exception as e:
-                self._json(200, {'version': APP_VERSION, 'latest': '', 'update_available': False, 'error': str(e)})
+                self._json(200, {'version': APP_VERSION, 'latest': '', 'update_available': False, 'boot': _BOOT_ID, 'error': str(e)})
             return
 
         # MDM-DOWNLOADS-V1 : liste des téléchargements
