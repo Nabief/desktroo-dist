@@ -604,6 +604,21 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .dk-wait summary { cursor:pointer; }
   .dk-wait-small { min-height:0; padding:28px 18px; }
   .dk-wait-small .dk-hero { width:64px; height:64px; }
+  /* Installation depuis le catalogue : valeurs obligatoires à renseigner, et échec de démarrage */
+  .ci-req { margin-top:14px; padding:12px 14px 2px; max-height:236px; overflow:auto; border:1px solid rgba(var(--accent-rgb),0.3); border-radius:10px; background:rgba(var(--accent-rgb),0.06); }
+  .ci-req-title { font-size:13px; font-weight:600; color:var(--text); }
+  .ci-req-sub { margin:2px 0 10px; font-size:11px; color:var(--text-dim); }
+  .ci-req .form-group { margin-bottom:12px; }
+  .ci-req label { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .ci-req label code { font-family:var(--font-mono); font-size:10px; opacity:.75; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ci-req-line { display:flex; gap:6px; align-items:stretch; }
+  .ci-req-hint { margin-top:5px; font-size:10.5px; line-height:1.4; color:var(--text-dim); }
+  .ci-req-line input, .ci-req-line select { flex:1; min-width:0; }
+  .ci-req-line select { padding:10px 14px; border-radius:var(--radius-sm); background:rgba(255,255,255,0.07); border:1px solid var(--glass-border); color:var(--text); font-size:14px; outline:none; }
+  .ci-fail { display:flex; flex-direction:column; align-items:flex-start; gap:7px; padding:11px 13px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:11.5px; line-height:1.5; }
+  .ci-fail b { color:var(--text); font-size:12.5px; font-weight:600; }
+  .ci-fail summary { cursor:pointer; }
+  .ci-fail pre { margin:6px 0 0; padding:8px 10px; border-radius:8px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:10.5px; white-space:pre-wrap; word-break:break-word; }
   .dk-wait pre { margin:8px 0 0; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:11px; text-align:left; white-space:pre-wrap; word-break:break-word; }
   .dk-steps { display:flex; flex-direction:column; gap:10px; font-size:13.5px; }
   .dk-step { display:flex; align-items:center; gap:10px; }
@@ -6225,7 +6240,21 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Revenir à « À propos »": "Back to “About”",
 "Copier le signalement": "Copy the report",
 "Le signalement n'est pas parti.": "The report was not sent.",
-"Un souci, une idée ?": "A problem, an idea?"
+"Un souci, une idée ?": "A problem, an idea?",
+"À renseigner": "To fill in",
+"Sans ces valeurs, l'application ne démarre pas.": "Without these values, the application does not start.",
+"Masquer": "Hide",
+"Choisir…": "Choose…",
+"Le JSON n'est plus lisible : corrige-le avant de remplir ce champ.": "The JSON can no longer be read: fix it before filling in this field.",
+"À renseigner avant d'installer : {0}.": "To fill in before installing: {0}.",
+"{0} n'a pas démarré : TrueNAS a annulé l'installation.": "{0} did not start: TrueNAS cancelled the installation.",
+"{0} n'a pas démarré.": "{0} did not start.",
+"{0} caractères exactement.": "Exactly {0} characters.",
+"De {0} à {1} caractères.": "{0} to {1} characters.",
+"{0} caractères au moins.": "At least {0} characters.",
+"Cette valeur a un format imposé, à saisir toi-même :": "This value has a required format, to type yourself:",
+"Installation de {0} (catalogue : {1}, train {2}, version {3})": "Installing {0} (catalog: {1}, train {2}, version {3})",
+"Causes habituelles : une image impossible à télécharger, un dossier que l'application ne peut pas écrire, ou un réglage qu'elle refuse. La raison exacte est notée par TrueNAS dans /var/log/app_lifecycle.log.": "Usual causes: an image that cannot be downloaded, a folder the application cannot write to, or a setting it rejects. TrueNAS records the exact reason in /var/log/app_lifecycle.log."
 }
 </script>
 <script id="dk-i18n">
@@ -24699,6 +24728,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
           '<datalist id="ci-version-list"></datalist>' +
         '</div>' +
       '</div>' +
+      '<div id="ci-required"></div>' +
       '<div class="form-group" style="margin-top:14px;margin-bottom:0;">' +
         T('<label>Valeurs de configuration JSON</label>') +
         '<textarea id="ci-values" spellcheck="false" style="width:100%;height:150px;box-sizing:border-box;background:rgba(0,0,0,.3);' +
@@ -24715,6 +24745,11 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 
     modal.style.display = 'flex';
     attachJsonHighlight(document.getElementById('ci-values'));
+    // Le JSON retouché à la main peut faire apparaître d'autres champs obligatoires (un dossier, par exemple).
+    document.getElementById('ci-values').addEventListener('input', function () {
+      clearTimeout(currentCatalogInstall && currentCatalogInstall.reqTimer);
+      if (currentCatalogInstall) currentCatalogInstall.reqTimer = setTimeout(ciRenderRequired, 350);
+    });
     document.getElementById('ci-train').addEventListener('change', refreshCatalogVersionV3);
     refreshCatalogVersionV3();
   }
@@ -24749,6 +24784,235 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     }
     return [];
   }
+  // ── Champs obligatoires ──
+  // TrueNAS accepte une chaîne vide pour un champ obligatoire dont la valeur par défaut est "" : l'installation
+  // part, puis l'application ne démarre pas (Vaultwarden sans mot de passe de base de données) et TrueNAS répond
+  // seulement « Failed 'up' action ». Ces champs sont donc demandés ici, avant d'installer.
+  function ciEmpty(v) { return v === '' || v === null || v === undefined; }
+  function ciSibling(attrs, scope, name) {
+    if (scope && scope[name] !== undefined) return scope[name];
+    for (var i = 0; i < (attrs || []).length; i++) {
+      if (attrs[i] && attrs[i].variable === name) return (attrs[i].schema || {})['default'];
+    }
+    return undefined;
+  }
+  // Un champ est-il affiché ? « show_if » compare des champs voisins. Une condition qu'on ne sait pas lire masque
+  // le champ : mieux vaut ne pas le demander que bloquer une installation à tort.
+  function ciShown(sc, attrs, scope) {
+    if (sc.hidden) return false;
+    if (!Array.isArray(sc.show_if)) return true;
+    return sc.show_if.every(function (c) {
+      if (!Array.isArray(c) || c.length < 3) return false;
+      var cur = ciSibling(attrs, scope, c[0]);
+      if (c[1] === '=') return cur === c[2];
+      if (c[1] === '!=') return cur !== c[2];
+      return false;
+    });
+  }
+  function ciMissing(questions, values, path, out) {
+    (questions || []).forEach(function (q) {
+      if (!q || !q.variable) return;
+      var sc = q.schema || {};
+      if (!ciShown(sc, questions, values)) return;
+      var p = path.concat(q.variable);
+      var v = values ? values[q.variable] : undefined;
+      if (sc.type === 'dict') {
+        ciMissing(sc.attrs || [], (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}, p, out);
+        return;
+      }
+      if (sc.type === 'list' || sc.type === 'boolean' || !sc.required) return;
+      if (ciEmpty(v === undefined ? sc['default'] : v)) {
+        out.push({ key: p.join('.'), path: p, label: String(q.label || q.variable), schema: sc, description: q.description || '' });
+      }
+    });
+    return out;
+  }
+  function ciValues() {
+    var ta = document.getElementById('ci-values');
+    try {
+      var v = JSON.parse((ta && ta.value) || '{}');
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : null;
+    } catch (e) { return null; }
+  }
+  function ciGet(values, path) {
+    var v = values;
+    for (var i = 0; i < path.length; i++) {
+      if (!v || typeof v !== 'object') return undefined;
+      v = v[path[i]];
+    }
+    return v;
+  }
+  function ciSet(values, path, val) {
+    var v = values;
+    for (var i = 0; i < path.length - 1; i++) {
+      if (!v[path[i]] || typeof v[path[i]] !== 'object' || Array.isArray(v[path[i]])) v[path[i]] = {};
+      v = v[path[i]];
+    }
+    v[path[path.length - 1]] = val;
+  }
+  function ciRandom(abc, n) {
+    var limit = 256 - (256 % abc.length), out = '', buf = new Uint8Array(64);
+    while (out.length < n) {
+      crypto.getRandomValues(buf);
+      for (var i = 0; i < buf.length && out.length < n; i++) if (buf[i] < limit) out += abc[buf[i] % abc.length];
+    }
+    return out;
+  }
+  // Valeur secrète tirée au hasard : 24 caractères sans signes (ils cassent certaines adresses de connexion) ni
+  // caractères qui se confondent, à la longueur imposée par le catalogue s'il en impose une. Certaines clés doivent
+  // être en hexadécimal : on l'essaie aussi. Rien n'est proposé si aucun des deux ne respecte le format demandé.
+  function ciPassword(sc) {
+    sc = sc || {};
+    var n = 24;
+    if (typeof sc.min_length === 'number' && sc.min_length > n) n = sc.min_length;
+    if (typeof sc.max_length === 'number' && sc.max_length < n) n = sc.max_length;
+    var re = null;
+    if (sc.valid_chars) { try { re = new RegExp(sc.valid_chars); } catch (e) { re = null; } }
+    var tries = [ciRandom('ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789', n), ciRandom('abcdef0123456789', n)];
+    for (var i = 0; i < tries.length; i++) if (!re || re.test(tries[i])) return tries[i];
+    return '';
+  }
+  function ciPlain(html) { return String(html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); }
+  // Ce que le catalogue dit du champ : sa description, et la longueur attendue.
+  function ciHint(m) {
+    var sc = m.schema, parts = [], d = ciPlain(m.description);
+    if (d) parts.push(d.length > 170 ? d.slice(0, 168) + '…' : d);
+    var a = sc.min_length, b = sc.max_length;
+    if (typeof a === 'number' && a === b) parts.push(Tf('{0} caractères exactement.', a));
+    else if (typeof a === 'number' && typeof b === 'number') parts.push(Tf('De {0} à {1} caractères.', a, b));
+    else if (typeof a === 'number' && a > 1) parts.push(Tf('{0} caractères au moins.', a));
+    return parts.join(' ');
+  }
+  function ciAsked() {
+    if (!currentCatalogInstall) return [];
+    var asked = currentCatalogInstall.asked || {};
+    return Object.keys(asked).map(function (k) { return asked[k]; });
+  }
+  // Affiche un champ par valeur obligatoire manquante. Un champ déjà proposé reste affiché une fois rempli, pour
+  // pouvoir le corriger ; la liste n'est redessinée que si elle change, pour ne pas voler le curseur.
+  function ciRenderRequired() {
+    var box = document.getElementById('ci-required');
+    if (!box || !currentCatalogInstall) return [];
+    var values = ciValues();
+    if (!values) return [];
+    var asked = currentCatalogInstall.asked || (currentCatalogInstall.asked = {});
+    var miss = ciMissing(currentCatalogInstall.questions || [], values, [], []);
+    miss.forEach(function (m) { if (!asked[m.key]) asked[m.key] = m; });
+    var list = ciAsked();
+    var sig = list.map(function (m) { return m.key; }).join('|');
+    if (box.getAttribute('data-sig') !== sig) {
+      box.setAttribute('data-sig', sig);
+      if (!list.length) { box.innerHTML = ''; return miss; }
+      var quiet = 'autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore="true"';
+      box.innerHTML = '<div class="ci-req">' +
+        '<div class="ci-req-title">' + T('À renseigner') + '</div>' +
+        '<div class="ci-req-sub">' + T('Sans ces valeurs, l\'application ne démarre pas.') + '</div>' +
+        list.map(function (m, i) {
+          var sc = m.schema, id = 'ci-req-' + i, field;
+          if (Array.isArray(sc['enum']) && sc['enum'].length) {
+            field = '<select id="' + id + '"><option value=""></option>' + sc['enum'].map(function (o) {
+              var val = (o && typeof o === 'object') ? o.value : o;
+              var txt = (o && typeof o === 'object' && o.description) ? o.description : val;
+              return '<option value="' + htmlEscape(val) + '">' + htmlEscape(txt) + '</option>';
+            }).join('') + '</select>';
+          } else if (sc['private']) {
+            field = '<input id="' + id + '" type="password" ' + quiet + '>' +
+              '<button class="fs-btn" type="button" onclick="ciReqGen(' + i + ')">' + T('Générer') + '</button>' +
+              '<button class="fs-btn" type="button" id="' + id + '-see" onclick="ciReqSee(' + i + ')">' + T('Voir') + '</button>';
+          } else if (sc.type === 'hostpath') {
+            field = '<input id="' + id + '" type="text" placeholder="/mnt/…" ' + quiet + '>' +
+              '<button class="fs-btn" type="button" onclick="ciReqPick(' + i + ')">' + T('Choisir…') + '</button>';
+          } else {
+            field = '<input id="' + id + '" type="' + (sc.type === 'int' ? 'number' : 'text') + '"' + (sc.type === 'uri' ? ' placeholder="https://…"' : '') + ' ' + quiet + '>';
+          }
+          var hint = ciHint(m);
+          return '<div class="form-group">' +
+            '<label for="' + id + '"><span>' + htmlEscape(m.label) + '</span><code>' + htmlEscape(m.key) + '</code></label>' +
+            '<div class="ci-req-line">' + field + '</div>' +
+            (hint ? '<div class="ci-req-hint">' + htmlEscape(hint) + '</div>' : '') + '</div>';
+        }).join('') + '</div>';
+      list.forEach(function (m, i) {
+        var el = document.getElementById('ci-req-' + i);
+        if (!el) return;
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', function () { ciReqWrite(i, el.value); });
+      });
+    }
+    list.forEach(function (m, i) {
+      var el = document.getElementById('ci-req-' + i);
+      if (!el || el === document.activeElement) return;
+      var cur = ciGet(values, m.path);
+      el.value = ciEmpty(cur) ? '' : String(cur);
+    });
+    return miss;
+  }
+  function ciReqWrite(i, raw) {
+    var m = ciAsked()[i], ta = document.getElementById('ci-values');
+    if (!m || !ta) return;
+    var values = ciValues();
+    if (!values) { catalogStatus(T('Le JSON n\'est plus lisible : corrige-le avant de remplir ce champ.'), true); return; }
+    var val = raw;
+    if (m.schema.type === 'int') val = raw === '' || isNaN(Number(raw)) ? null : Number(raw);
+    ciSet(values, m.path, val);
+    ta.value = JSON.stringify(values, null, 2);
+    if (ta._jhUpdate) ta._jhUpdate();
+    catalogStatus('', false);
+  }
+  window.ciReqGen = function (i) {
+    var el = document.getElementById('ci-req-' + i), see = document.getElementById('ci-req-' + i + '-see');
+    var m = ciAsked()[i];
+    if (!el || !m) return;
+    var made = ciPassword(m.schema);
+    if (!made) {
+      catalogStatus(T('Cette valeur a un format imposé, à saisir toi-même : ') + (ciPlain(m.schema.valid_chars_error) || m.label), true);
+      return;
+    }
+    el.type = 'text';
+    if (see) see.textContent = T('Masquer');
+    el.value = made;
+    ciReqWrite(i, el.value);
+  };
+  window.ciReqSee = function (i) {
+    var el = document.getElementById('ci-req-' + i), see = document.getElementById('ci-req-' + i + '-see');
+    if (!el) return;
+    el.type = el.type === 'password' ? 'text' : 'password';
+    if (see) see.textContent = el.type === 'password' ? T('Voir') : T('Masquer');
+  };
+  window.ciReqPick = function (i) {
+    var el = document.getElementById('ci-req-' + i);
+    if (!el || typeof fsPickFolder !== 'function') return;
+    fsPickFolder(el.value.trim() || '/mnt', function (path) { el.value = path; ciReqWrite(i, path); });
+  };
+  // Échec : « Failed 'up' action » veut dire que les conteneurs n'ont pas démarré. TrueNAS n'en dit pas plus ici,
+  // la raison est dans son journal ; on le dit simplement, le message brut reste sous « Détail technique ».
+  function ciFail(error, appName, catalogApp, train, version) {
+    var raw = String((error && error.message) || error || '');
+    var el = document.getElementById('ci-status');
+    if (!/Failed 'up' action/i.test(raw)) {
+      catalogStatus(T('Échec : ') + raw, true);
+      toast('❌ ' + raw);
+      return;
+    }
+    if (currentCatalogInstall) {
+      currentCatalogInstall.lastFail = Tf('Installation de {0} (catalogue : {1}, train {2}, version {3})', appName, catalogApp, train, version) + '\n' + raw;
+    }
+    if (el) {
+      el.style.color = '';
+      el.innerHTML = '<div class="ci-fail">' +
+        '<b>' + htmlEscape(Tf('{0} n\'a pas démarré : TrueNAS a annulé l\'installation.', appName)) + '</b>' +
+        '<span>' + T('Causes habituelles : une image impossible à télécharger, un dossier que l\'application ne peut pas écrire, ou un réglage qu\'elle refuse. La raison exacte est notée par TrueNAS dans /var/log/app_lifecycle.log.') + '</span>' +
+        '<details><summary>' + T('Détail technique') + '</summary><pre>' + htmlEscape(raw) + '</pre></details>' +
+        '<button class="fs-btn" type="button" onclick="ciReport()">' + T('Signaler un problème') + '</button>' +
+        '</div>';
+    }
+    toast('❌ ' + Tf('{0} n\'a pas démarré.', appName));
+  }
+  // Le signalement reprend l'application, la version et le message de TrueNAS, jamais les valeurs saisies (mots de passe).
+  window.ciReport = function () {
+    var text = (currentCatalogInstall && currentCatalogInstall.lastFail) || '';
+    if (typeof closeCreateApp === 'function') closeCreateApp();
+    if (typeof dkReport === 'function') dkReport(text);
+  };
+
   async function refreshCatalogVersionV3() {
     if (!currentCatalogInstall) return;
 
@@ -24790,6 +25054,9 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
           if (_ta._jhUpdate) _ta._jhUpdate();
         }
       }
+      currentCatalogInstall.questions = _q || [];
+      currentCatalogInstall.asked = {};
+      ciRenderRequired();
     } catch (e) {}
 
     listEl.innerHTML = versions.map(function (version) {
@@ -24883,6 +25150,16 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       return;
     }
 
+    var missing = ciMissing((currentCatalogInstall && currentCatalogInstall.questions) || [], values, [], []);
+    if (missing.length) {
+      ciRenderRequired();
+      catalogStatus(Tf('À renseigner avant d\'installer : {0}.', missing.map(function (m) { return m.label; }).join(', ')), true);
+      var firstKey = missing[0].key, firstIdx = ciAsked().map(function (m) { return m.key; }).indexOf(firstKey);
+      var firstEl = document.getElementById('ci-req-' + firstIdx);
+      if (firstEl) firstEl.focus();
+      return;
+    }
+
     var payload = {
       app_name: appName,
       catalog_app: catalogApp,
@@ -24922,8 +25199,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       if (typeof loadContainers === 'function') loadContainers();
       await loadCatalogV3();
     } catch (error) {
-      catalogStatus(T('Échec : ') + error.message, true);
-      toast('❌ ' + error.message);
+      ciFail(error, appName, catalogApp, train, version);
     } finally {
       button.disabled = false;
       button.textContent = T('Installer');
