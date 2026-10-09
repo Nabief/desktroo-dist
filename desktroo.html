@@ -1669,6 +1669,246 @@ select option{ background:#101b2e; color:#e9eef7; }
 .fs-tree-caret{ width:14px;flex-shrink:0;font-size:9px;color:var(--text-dim);text-align:center;cursor:pointer;user-select:none;transition:transform .1s; }
 .fs-tree-label{ flex:1;overflow:hidden;text-overflow:ellipsis; }
 .fs-tree-children{ }
+/* ===== FICHIERS — liste en colonnes, recherche, navigation ===== */
+.window[id^="win-fs"] { min-width:720px; min-height:460px; }
+.filestation {
+  --fs-zebra:rgba(255,255,255,0.028); --fs-hover:rgba(255,255,255,0.075); --fs-line:rgba(255,255,255,0.07);
+  --fs-head-bg:#0e1a2f; --fs-sel:rgba(var(--accent-rgb),0.17);
+}
+[data-theme="light"] .filestation {
+  --fs-zebra:rgba(13,27,53,0.035); --fs-hover:rgba(13,27,53,0.075); --fs-line:rgba(0,0,0,0.09);
+  --fs-head-bg:#eef4fc; --fs-sel:rgba(var(--accent-rgb),0.15);
+}
+/* Icônes dessinées : une teinte par famille de fichiers, le vert de la charte pour les dossiers. */
+.fs-ic { display:block; width:22px; height:22px; flex-shrink:0; color:var(--text-dim); }
+.fs-ic-dir, .fs-ic-pool { color:var(--accent); }
+.fs-ic-image { color:#b794f6; } .fs-ic-video { color:#f472b6; } .fs-ic-audio { color:#38bdf8; }
+.fs-ic-archive { color:#fbbf24; } .fs-ic-pdf { color:#f87171; } .fs-ic-doc { color:#60a5fa; }
+.fs-ic-sheet { color:#2dd4bf; } .fs-ic-slides { color:#fb923c; }
+.fs-ic-script, .fs-ic-config { color:#a5b4fc; } .fs-ic-disk { color:#94a3b8; }
+[data-theme="light"] .fs-ic-image { color:#7c3aed; } [data-theme="light"] .fs-ic-video { color:#db2777; }
+[data-theme="light"] .fs-ic-audio { color:#0284c7; } [data-theme="light"] .fs-ic-archive { color:#b45309; }
+[data-theme="light"] .fs-ic-pdf { color:#dc2626; } [data-theme="light"] .fs-ic-doc { color:#2563eb; }
+[data-theme="light"] .fs-ic-sheet { color:#0d9488; } [data-theme="light"] .fs-ic-slides { color:#ea580c; }
+[data-theme="light"] .fs-ic-script, [data-theme="light"] .fs-ic-config { color:#4f46e5; }
+[data-theme="light"] .fs-ic-disk { color:#64748b; }
+
+/* Colonne de gauche */
+.fs-sidebar { width:212px; padding:10px 0 14px; }
+.fs-sidebar-section { padding:0 10px; margin-bottom:10px; }
+.fs-sidebar-title { padding:8px 10px 6px; }
+.fs-item { padding:7px 10px; font-size:13px; color:var(--text); gap:10px; }
+.fs-item svg { width:16px !important; height:16px !important; }
+.fs-item.active { background:rgba(var(--accent-rgb),0.18); color:var(--accent2); }
+.fs-item.drop-target, .fs-tree-row.drop-target { background:rgba(var(--accent-rgb),0.25); }
+[data-theme="light"] .fs-sidebar { background:rgba(13,27,53,0.045); border-right-color:rgba(0,0,0,0.09); }
+[data-theme="light"] .fs-item.active, [data-theme="light"] .fs-tree-row.active { color:#0b7a4c; }
+.fs-tree-row { gap:6px; padding:5px 8px; border-radius:8px; font-size:12.5px; transition:background .12s, color .12s; }
+.fs-tree-row:hover { background:var(--fs-hover, rgba(255,255,255,0.07)); }
+.fs-tree-row.on-path > .fs-tree-label { font-weight:600; }
+.fs-tree-row.active { background:rgba(var(--accent-rgb),0.18); color:var(--accent2); font-weight:600; }
+.fs-tree-caret { display:flex; align-items:center; justify-content:center; width:14px; height:14px; transition:transform .12s; }
+.fs-tree-caret svg { width:10px; height:10px; }
+.fs-tree-row.open > .fs-tree-caret { transform:rotate(90deg); }
+.fs-tree-icon .fs-ic { width:16px; height:16px; }
+.fs-tree-note { font-size:11px; color:var(--text-dim); padding:3px 8px; }
+.fs-pool-use { display:flex; align-items:center; gap:8px; margin:0 8px 6px 34px; font-size:10.5px; color:var(--text-dim); white-space:nowrap; }
+.fs-pool-use:empty { display:none; }
+.fs-pool-bar { flex:1; min-width:30px; height:3px; border-radius:2px; background:rgba(255,255,255,0.1); overflow:hidden; }
+[data-theme="light"] .fs-pool-bar { background:rgba(13,27,53,0.12); }
+.fs-pool-bar i { display:block; height:100%; border-radius:2px; background:var(--accent); }
+.fs-pool-bar i.warn { background:var(--warning); } .fs-pool-bar i.crit { background:var(--danger); }
+
+/* Barre d'adresse : précédent, suivant, parent, chemin, recherche */
+.fs-main { container-type:inline-size; container-name:fsmain; }
+.fs-address-bar { gap:4px; padding:10px 12px 0; }
+.fs-nav-btn, .fs-path-copy, .fs-search-go, .fs-search-clear {
+  display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  border:0; background:none; color:var(--text-dim); cursor:pointer; transition:background .15s, color .15s;
+}
+.fs-nav-btn { width:30px; height:30px; border-radius:9px; }
+.fs-nav-btn svg { width:16px; height:16px; }
+.fs-nav-btn:hover:not(:disabled), .fs-path-copy:hover, .fs-search-go:hover, .fs-search-clear:hover { background:var(--fs-hover); color:var(--text); }
+.fs-nav-btn:disabled { opacity:.32; cursor:default; }
+.fs-pathbox, .fs-searchbox {
+  display:flex; align-items:center; height:32px; border-radius:10px;
+  background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); transition:border-color .15s, background .15s;
+}
+[data-theme="light"] .fs-pathbox, [data-theme="light"] .fs-searchbox { background:#ffffff; border-color:rgba(0,0,0,0.14); }
+.fs-pathbox { flex:1; min-width:0; margin:0 4px; padding:0 3px 0 5px; }
+.fs-path { flex:1; min-width:0; background:none; border:0; border-radius:0; padding:0; overflow-x:auto; }
+.fs-crumb { padding:3px 7px; border-radius:7px; font-size:12.5px; display:inline-flex; align-items:center; }
+.fs-crumb svg { width:14px; height:14px; }
+.fs-crumb:hover { background:var(--fs-hover); }
+.fs-crumb.cur { color:var(--text); font-weight:600; }
+.fs-crumb-sep { margin:0; opacity:.45; }
+.fs-path-copy, .fs-search-go, .fs-search-clear { width:24px; height:24px; border-radius:7px; }
+.fs-path-copy svg, .fs-search-go svg, .fs-search-clear svg { width:14px; height:14px; }
+.fs-searchbox { width:212px; flex-shrink:0; padding:0 3px; margin-left:4px; }
+.fs-searchbox:focus-within { border-color:rgba(var(--accent2-rgb),0.55); }
+.fs-searchbox.on { border-color:rgba(var(--accent2-rgb),0.6); background:rgba(var(--accent-rgb),0.10); }
+.fs-searchbox input { flex:1; min-width:0; height:100%; padding:0 4px; border:0; outline:0; background:none; color:var(--text); font:inherit; font-size:12.5px; }
+.fs-searchbox input::placeholder { color:var(--text-dim); opacity:.8; }
+.fs-search-clear { display:none; }
+.fs-searchbox.on .fs-search-clear { display:inline-flex; }
+
+/* Barre d'outils */
+.fs-toolbar { gap:5px; padding:9px 12px 10px; border-bottom:1px solid var(--fs-line); flex-wrap:nowrap; overflow:hidden; }
+.fs-toolbar > *, .fs-sel-acts > * { flex-shrink:0; }
+.fs-toolbar > .fstb-spacer { flex:1 1 0; min-width:0; }
+.fs-sel-acts { display:none; align-items:center; gap:5px; margin-left:3px; padding-left:8px; border-left:1px solid var(--glass-border); }
+.fs-sel-acts.has-sel { display:inline-flex; }
+.fs-sort-ctl { display:none; align-items:center; gap:5px; }
+.fs-main:has(.fs-view-grid) .fs-sort-ctl { display:inline-flex; }
+.fs-seg { display:inline-flex; padding:2px; gap:2px; border-radius:999px; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); }
+[data-theme="light"] .fs-seg { background:#ffffff; border-color:rgba(0,0,0,0.14); }
+.fs-seg .fstb-btn { padding:4px 9px; border:0; background:none; box-shadow:none; }
+.fs-seg .fstb-btn.active { background:rgba(var(--accent-rgb),0.24); color:var(--accent2); }
+[data-theme="light"] .fs-seg .fstb-btn { background:none; box-shadow:none; }
+[data-theme="light"] .fs-seg .fstb-btn.active { background:rgba(var(--accent-rgb),0.16); }
+
+/* Bandeau de recherche : la recherche reste ouverte tant qu'on ne la ferme pas */
+.fs-searchbar {
+  display:flex; align-items:center; gap:10px; flex-shrink:0; margin:10px 12px 0; padding:6px 6px 6px 12px;
+  border-radius:10px; background:rgba(var(--accent-rgb),0.10); border:1px solid rgba(var(--accent-rgb),0.26);
+  font-size:12.5px; color:var(--text);
+}
+.fs-searchbar[hidden] { display:none; }
+.fs-searchbar > svg { width:15px; height:15px; flex-shrink:0; color:var(--accent2); }
+.fs-searchbar-text { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fs-searchbar .fstb-btn { padding:5px 11px; }
+
+/* Zone des fichiers */
+.fs-files {
+  --fs-cols:28px minmax(0,1fr) 150px 88px 148px;
+  position:relative; outline:none; padding:12px; gap:4px;
+  grid-template-columns:repeat(auto-fill,minmax(104px,1fr));
+}
+.fs-files.fs-busy > .fs-file { opacity:.5; transition:opacity .2s .15s; }
+.fs-files.fs-state { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.fs-files .dk-wait { min-height:0; padding:24px 20px; }
+.fs-head { display:none; }
+.fs-file { border:1px solid transparent; transition:background .12s; }
+.fs-file:hover { background:var(--fs-hover); }
+.fs-file.selected { background:var(--fs-sel); }
+.fs-file.dragging { opacity:.45; }
+.fs-file.drop-target { outline:2px dashed var(--accent); outline-offset:-2px; background:var(--fs-sel); }
+.fs-file-icon { font-size:0; line-height:0; }
+.fs-file-text { min-width:0; max-width:100%; }
+.fs-file-name { font-size:13px; }
+.fs-file-type, .fs-file-size, .fs-file-date, .fs-file-where { display:none; }
+
+/* Vue liste : colonnes, en-tête fixe, une ligne sur deux teintée */
+.fs-files.fs-view-list { display:flex; flex-direction:column; gap:0; padding:0 8px 10px; }
+.fs-view-list .fs-head {
+  display:grid; grid-template-columns:var(--fs-cols); align-items:center; flex-shrink:0;
+  position:sticky; top:0; z-index:2; margin:0 -8px 4px; padding:0 19px;
+  background:var(--fs-head-bg); border-bottom:1px solid var(--fs-line);
+}
+.fs-head button {
+  display:flex; align-items:center; gap:5px; min-width:0; padding:9px 0 8px; border:0; background:none;
+  color:var(--text-dim); font:inherit; font-size:11.5px; font-weight:600; text-align:left; cursor:pointer; white-space:nowrap;
+}
+.fs-head button:hover, .fs-head button.on { color:var(--text); }
+.fs-head button svg { width:11px; height:11px; flex-shrink:0; color:var(--accent2); }
+.fs-head button[data-sort="size"] { justify-content:flex-end; padding-right:20px; }
+.fs-view-list .fs-file {
+  display:grid; grid-template-columns:var(--fs-cols); align-items:center; gap:0; flex-shrink:0;
+  min-height:34px; padding:3px 10px; border-radius:8px; text-align:left; scroll-margin-top:40px;
+}
+.fs-view-list .fs-file:nth-child(odd) { background:var(--fs-zebra); }
+.fs-view-list .fs-file:hover { background:var(--fs-hover); }
+.fs-view-list .fs-file.selected { background:var(--fs-sel); box-shadow:inset 3px 0 0 var(--accent); }
+.fs-view-list .fs-file.fs-first-file { margin-top:6px; }
+.window-icon .fs-ic { width:20px; height:20px; }
+.fs-view-list .fs-file-icon { width:22px; }
+.fs-view-list .fs-file-name { max-width:none; font-size:13px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; word-break:normal; }
+.fs-view-list .fs-file.is-dir .fs-file-name { font-weight:600; }
+.fs-view-list .fs-file-type, .fs-view-list .fs-file-size, .fs-view-list .fs-file-date {
+  display:block; margin:0; font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.fs-view-list .fs-file-size { text-align:right; padding-right:20px; font-variant-numeric:tabular-nums; }
+.fs-view-list .fs-file-date { font-variant-numeric:tabular-nums; }
+.fs-view-list .fs-file-where {
+  display:inline-flex; align-items:center; gap:5px; max-width:100%; margin-top:1px; padding:0; border:0; background:none;
+  color:var(--text-dim); font:inherit; font-size:11.5px; text-align:left; cursor:pointer;
+}
+.fs-file-where span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fs-file-where svg { width:11px; height:11px; flex-shrink:0; opacity:.7; }
+.fs-file-where:hover { color:var(--accent2); text-decoration:underline; }
+.fs-searching .fs-file { min-height:44px; }
+/* Fenêtre moins large : les actions sur la sélection se réduisent à leur icône, la barre reste sur une ligne. */
+@container fsmain (max-width:1020px) {
+  .fs-sel-acts .fstb-btn:not([id$="-fs-btn-reveal"]) > span { display:none; }
+  .fs-sel-acts .fstb-btn:not([id$="-fs-btn-reveal"]) { padding:6px; }
+}
+@container fsmain (max-width:640px) {
+  .fs-toolbar > .fstb-btn > span:not(.fstb-badge), .fs-sel-acts .fstb-btn > span { display:none; }
+  .fs-toolbar > .fstb-btn, .fs-sel-acts .fstb-btn { padding:6px; }
+  .fs-searchbox { width:150px; }
+  .fs-files { --fs-cols:28px minmax(0,1fr) 88px 132px; }
+  .fs-view-list .fs-file-type, .fs-head button[data-sort="type"] { display:none; }
+}
+@container fsmain (max-width:470px) {
+  .fs-files { --fs-cols:28px minmax(0,1fr) 88px; }
+  .fs-view-list .fs-file-date, .fs-head button[data-sort="date"] { display:none; }
+}
+
+/* Vue mosaïque */
+.fs-view-grid .fs-file { gap:7px; padding:14px 8px 10px; border-radius:12px; }
+.fs-view-grid .fs-file.selected { border-color:rgba(var(--accent2-rgb),0.45); }
+.fs-view-grid .fs-ic { width:46px; height:46px; }
+.fs-view-grid .fs-file-name {
+  max-width:100%; font-size:12px; line-height:1.3; word-break:break-word;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.fs-view-grid .fs-file.is-dir .fs-file-name { font-weight:600; }
+
+/* Dossier partagé sur le réseau : pastille sur l'icône */
+.fs-shared .fs-file-icon::after, .fs-view-list .fs-shared .fs-file-icon::after {
+  content:''; position:absolute; right:-4px; bottom:-3px; width:11px; height:11px; border-radius:50%;
+  font-size:0; filter:none; box-shadow:0 0 0 2px var(--fs-head-bg);
+  background:var(--info) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23061224' stroke-width='3' stroke-linecap='round'><circle cx='6' cy='12' r='2'/><circle cx='18' cy='6' r='2'/><circle cx='18' cy='18' r='2'/><path d='M8 11l8-4M8 13l8 4'/></svg>") center/8px no-repeat;
+}
+.fs-view-grid .fs-shared .fs-file-icon::after { right:-2px; bottom:0; width:16px; height:16px; background-size:11px; }
+
+/* Dossier vide, aucun résultat */
+.fs-empty { display:flex; flex-direction:column; align-items:center; gap:8px; max-width:380px; padding:30px 20px; text-align:center; color:var(--text-dim); font-size:12.5px; line-height:1.55; }
+.fs-empty > svg { width:54px; height:54px; margin-bottom:4px; color:var(--accent); opacity:.6; }
+.fs-empty-title { font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--text); }
+.fs-empty .fstb-btn { margin-top:8px; }
+
+/* Barre d'état */
+.fs-statusbar {
+  display:flex; align-items:center; justify-content:space-between; gap:14px; flex-shrink:0; min-height:29px; padding:5px 14px;
+  border-top:1px solid var(--fs-line); background:rgba(0,0,0,0.12); font-size:11.5px; color:var(--text-dim);
+}
+[data-theme="light"] .fs-statusbar { background:rgba(13,27,53,0.035); }
+.fs-statusbar span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.fs-statusbar span:last-child { flex-shrink:0; }
+
+/* Volet d'aperçu */
+.fs-preview { width:240px; background:rgba(0,0,0,0.14); }
+[data-theme="light"] .fs-preview { background:rgba(13,27,53,0.04); }
+.fs-preview-icon { display:flex; justify-content:center; padding:24px 0 12px; font-size:0; }
+.fs-preview-icon .fs-ic { width:62px; height:62px; }
+.fs-preview-name { font-size:13px; padding:0 14px 3px; }
+.fs-preview-kind { padding:0 14px 12px; text-align:center; font-size:11.5px; color:var(--text-dim); }
+.fs-preview-meta { padding:4px 14px; font-size:11.5px; }
+.fs-preview-meta-row { gap:12px; padding:6px 0; border-bottom-color:var(--fs-line); }
+.fs-preview-meta-row span:last-child { color:var(--text); text-align:right; word-break:break-all; }
+.fs-preview-actions { padding:12px 14px 14px; }
+.fs-preview-actions .fstb-btn { justify-content:center; padding:8px 12px; }
+.fs-preview-actions .fstb-btn.primary, [data-theme="light"] .fs-preview-actions .fstb-btn.primary { background:var(--accent); border-color:transparent; color:var(--accent-ink); font-weight:600; }
+.fs-preview-actions .fstb-btn.primary:hover, [data-theme="light"] .fs-preview-actions .fstb-btn.primary:hover { background:var(--accent2); color:var(--accent-ink); }
+[data-theme="light"] .filestation .fstb-btn.danger { color:#dc2626; border-color:rgba(220,38,38,0.32); }
+[data-theme="light"] .filestation .fstb-btn.danger:hover { background:#fdecec; border-color:rgba(220,38,38,0.55); color:#b91c1c; }
+
+/* Menu contextuel de Fichiers */
+[id$="-fs-ctx"] { max-height:calc(100vh - 16px); overflow-y:auto; }
+[id$="-fs-ctx"] .ctx-item { padding:6px 12px; font-size:12.5px; }
+[id$="-fs-ctx"] .ctx-item.danger { color:#f87171; }
+.fs-drop-icon svg { width:46px; height:46px; color:var(--accent); }
 
 /* ===== bloc 4 (extrait de desktroo.html) ===== */
 #modal-catalog-detail {
@@ -2820,28 +3060,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Aperçu": "Preview",
 "Fermer": "Close",
 "⬇ Télécharger": "⬇ Download",
-"✏️ Renommer": "✏️ Rename",
 "🗑 Supprimer": "🗑 Delete",
-"📂 Ouvrir": "📂 Open",
-"🗂 Ouvrir dans un onglet": "🗂 Open in a tab",
-"⬇️ Télécharger": "⬇️ Download",
-"✏️ Éditer": "✏️ Edit",
-"📦 Extraire ici": "📦 Extract here",
-"🗜️ Compresser (zip)": "🗜️ Compress (zip)",
-"🔑 Somme de contrôle": "🔑 Checksum",
-"🔗 Partager (lien public)": "🔗 Share (public link)",
-"🖧 Partager en réseau (SMB/NFS)": "🖧 Share on the network (SMB/NFS)",
-"🌐 Servir sur le web": "🌐 Serve on the web",
 "📋 Copier": "📋 Copy",
-"✂️ Couper": "✂️ Cut",
-"📌 Coller": "📌 Paste",
-"➡️ Déplacer vers…": "➡️ Move to…",
-"⧉ Copier vers…": "⧉ Copy to…",
-"🗑️ Supprimer": "🗑️ Delete",
-"📁 Nouveau dossier": "📁 New folder",
-"📄 Nouveau document": "📄 New document",
-"⬆️ Uploader ici": "⬆️ Upload here",
-"🗔 Nouvelle fenêtre FS": "🗔 New FS window",
 "📁 Fichiers": "📁 Files",
 "📋 Copié :": "📋 Copied:",
 "élément": "item",
@@ -2922,7 +3142,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Extraire directement dans le dossier courant": "Extract directly into the current folder",
 "📦 Extraire": "📦 Extract",
 "✅ Extrait": "✅ Extracted",
-"Recherche…": "Searching…",
 "résultat": "result",
 "(limité à 500)": "(limited to 500)",
 "Aucun résultat": "No results",
@@ -4593,7 +4812,51 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Sans confirmation, le NAS revient à l'ancien réglage dans {0} secondes.": "Without confirmation, the NAS goes back to the previous setting in {0} seconds.",
 "Annuler le changement": "Undo the change",
 "Garder": "Keep",
-"Changement annulé": "Change undone"
+"Changement annulé": "Change undone",
+"Dossier précédent": "Back",
+"Dossier suivant": "Forward",
+"Emplacement": "Location",
+"Modifié": "Modified",
+"Hier": "Yesterday",
+"Aujourd'hui": "Today",
+"Ouvrir le dossier qui contient cet élément": "Open the folder that contains this item",
+"Ouvrir l'emplacement": "Open location",
+"Nouvelle fenêtre": "New window",
+"Ouvrir": "Open",
+"Ouvrir dans un onglet": "Open in a tab",
+"Extraire ici": "Extract here",
+"Compresser (zip)": "Compress (zip)",
+"Somme de contrôle": "Checksum",
+"Partager (lien public)": "Share (public link)",
+"Servir sur le web": "Serve on the web",
+"Couper": "Cut",
+"Coller": "Paste",
+"Déplacer vers…": "Move to…",
+"Copier vers…": "Copy to…",
+"Tableur": "Spreadsheet",
+"Présentation": "Presentation",
+"Texte": "Text",
+"Image disque": "Disk image",
+"dossier": "folder",
+"dossiers": "folders",
+"fichier": "file",
+"fichiers": "files",
+"+ {0} autres dossiers": "+ {0} more folders",
+"{0} libres": "{0} free",
+"{0} libres sur {1}": "{0} free of {1}",
+"{0} utilisés sur {1}": "{0} used of {1}",
+"Ce dossier ne s'ouvre pas": "This folder cannot be opened",
+"Ce dossier est vide": "This folder is empty",
+"Glissez des fichiers ici pour les envoyer sur le NAS, ou créez un dossier.": "Drag files here to send them to the NAS, or create a folder.",
+"Aucun nom ne contient « {0} » dans ce dossier ni dans ses sous-dossiers.": "No name contains “{0}” in this folder or its subfolders.",
+"Dans ce dossier": "In this folder",
+"Recherche de « {0} » dans {1} et ses sous-dossiers…": "Searching for “{0}” in {1} and its subfolders…",
+"Aucun résultat pour « {0} » dans {1} et ses sous-dossiers": "No results for “{0}” in {1} and its subfolders",
+"{0} résultats pour « {1} » dans {2} et ses sous-dossiers": "{0} results for “{1}” in {2} and its subfolders",
+"1 résultat pour « {0} » dans {1} et ses sous-dossiers": "1 result for “{0}” in {1} and its subfolders",
+"Recherche en cours": "Searching",
+"« {0} » dans {1} et ses sous-dossiers": "“{0}” in {1} and its subfolders",
+"La recherche n'a pas abouti": "The search did not complete"
 }
 </script>
 <script id="dk-i18n">
@@ -5969,18 +6232,28 @@ function setGauge(fillId, pctId, pct) {
 }
 
 // ---- Arborescence navigable (barre latérale) ----
-function fsTreeNode(path, name, depth, icon) {
+// La fenêtre Fichiers qui contient cet élément devient la fenêtre active.
+function fsWinOf(node) {
+  try { var w = node && node.closest ? node.closest('.window') : null; if (w && w.id) setActiveFsWin(w.id.replace(/^win-/, '')); } catch (_) {}
+}
+var FS_TREE_MAX = 300;   // au-delà, l'arbre renvoie vers la liste plutôt que d'aligner des milliers de lignes
+function fsTreeNode(path, name, depth, kind) {
   const wrap = document.createElement('div');
   const row = document.createElement('div');
   row.className = 'fs-tree-row';
-  row.style.paddingLeft = (6 + depth * 12) + 'px';
+  row.dataset.path = path;
+  row.title = path;
+  row.style.paddingLeft = (6 + depth * 14) + 'px';
   const caret = document.createElement('span');
   caret.className = 'fs-tree-caret';
-  caret.textContent = '▶';
+  caret.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>';
+  const ic = document.createElement('span');
+  ic.className = 'fs-tree-icon';
+  ic.innerHTML = fsIcon('', true, kind === 'pool' ? 'pool' : null);
   const lbl = document.createElement('span');
   lbl.className = 'fs-tree-label';
-  lbl.textContent = (icon || '📁') + ' ' + name;
-  row.appendChild(caret); row.appendChild(lbl);
+  lbl.textContent = name;
+  row.appendChild(caret); row.appendChild(ic); row.appendChild(lbl);
   const kids = document.createElement('div');
   kids.className = 'fs-tree-children';
   kids.style.display = 'none';
@@ -5988,33 +6261,52 @@ function fsTreeNode(path, name, depth, icon) {
   function toggle() {
     open = !open;
     kids.style.display = open ? 'block' : 'none';
-    caret.textContent = open ? '▼' : '▶';
+    row.classList.toggle('open', open);
     if (open && !loaded) { loaded = true; fsTreeLoad(kids, path, depth + 1); }
   }
+  row._open = function(){ if (!open) toggle(); };
   caret.onclick = function(e){ e.stopPropagation(); toggle(); };
-  lbl.onclick = function(){ setActiveFsWin(_activeFsId); fsNavigate(path); if (!open) toggle(); };
+  row.onclick = function(){ fsWinOf(row); fsNavigate(path); if (!open) toggle(); };
   // Réception drag & drop (déplacer vers ce dossier)
-  row.addEventListener('dragover', function(e){ if (e.dataTransfer.types.includes('text/plain')) { e.preventDefault(); row.style.background = 'rgba(var(--accent-rgb),0.25)'; } });
-  row.addEventListener('dragleave', function(){ row.style.background = ''; });
-  row.addEventListener('drop', function(e){ row.style.background = ''; fsSidebarDrop(e, path); });
-  wrap.appendChild(row); wrap.appendChild(kids);
+  row.addEventListener('dragover', function(e){ if (e.dataTransfer.types.includes('text/plain')) { e.preventDefault(); row.classList.add('drop-target'); } });
+  row.addEventListener('dragleave', function(){ row.classList.remove('drop-target'); });
+  row.addEventListener('drop', function(e){ row.classList.remove('drop-target'); fsWinOf(row); fsSidebarDrop(e, path); });
+  wrap.appendChild(row);
+  if (kind === 'pool') {
+    // Occupation du pool, sous son nom : remplie par fsPoolMeters() à chaque relevé.
+    const use = document.createElement('div');
+    use.className = 'fs-pool-use';
+    use.dataset.pool = name;
+    wrap.appendChild(use);
+  }
+  wrap.appendChild(kids);
   return wrap;
 }
 async function fsTreeLoad(container, path, depth, attempt) {
-  const pad = (6 + depth * 12) + 'px';
-  container.innerHTML = '<div style="padding-left:' + pad + ';font-size:11px;color:var(--text-dim);">…</div>';
+  const pad = (6 + depth * 14 + 20) + 'px';
+  container.innerHTML = '<div class="fs-tree-note" style="padding-left:' + pad + ';">…</div>';
   try {
     const raw = await fileops('GET', 'list?path=' + encodeURIComponent(path));
-    const dirs = ensureArray(raw).filter(function(e){ return e.is_dir; }).sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+    const dirs = ensureArray(raw).filter(function(e){ return e.is_dir; }).sort(function(a,b){ return fsNameCmp(a.name, b.name); });
     container.innerHTML = '';
-    if (!dirs.length) { container.innerHTML = '<div style="padding-left:' + pad + T(';font-size:11px;color:var(--text-dim);">(aucun sous-dossier)</div>'); return; }
-    dirs.forEach(function(d){ container.appendChild(fsTreeNode(path.replace(/\/$/, '') + '/' + d.name, d.name, depth)); });
+    if (!dirs.length) { container.innerHTML = '<div class="fs-tree-note" style="padding-left:' + pad + ';">' + T('(aucun sous-dossier)') + '</div>'; return; }
+    dirs.slice(0, FS_TREE_MAX).forEach(function(d){ container.appendChild(fsTreeNode(path.replace(/\/$/, '') + '/' + d.name, d.name, depth)); });
+    if (dirs.length > FS_TREE_MAX) {
+      const more = document.createElement('div');
+      more.className = 'fs-tree-note';
+      more.style.cssText = 'padding-left:' + pad + ';cursor:pointer;';
+      more.textContent = Tf('+ {0} autres dossiers', dirs.length - FS_TREE_MAX);
+      more.onclick = function(){ fsWinOf(more); fsNavigate(path); };
+      container.appendChild(more);
+    }
+    fsTreeSync();
   } catch(e) {
     // Le service de fichiers peut ne pas répondre un instant (redémarrage après une mise à
     // jour) : on réessaie seul quelques fois, et un clic relance le chargement.
     attempt = attempt || 0;
     const err = document.createElement('div');
-    err.style.cssText = 'padding-left:' + pad + ';font-size:11px;color:#f87171;cursor:pointer;';
+    err.className = 'fs-tree-note';
+    err.style.cssText = 'padding-left:' + pad + ';color:#f87171;cursor:pointer;';
     err.textContent = T('erreur — cliquer pour réessayer');
     err.title = (e && e.message) ? Tdyn(e.message) : '';
     err.onclick = function(ev){ ev.stopPropagation(); fsTreeLoad(container, path, depth, 0); };
@@ -6022,6 +6314,39 @@ async function fsTreeLoad(container, path, depth, attempt) {
     container.appendChild(err);
     if (attempt < 4) setTimeout(function(){ if (err.isConnected) fsTreeLoad(container, path, depth, attempt + 1); }, 5000);
   }
+}
+// L'arbre suit le dossier affiché : la branche qui y mène se déplie, le dossier courant est marqué.
+function fsTreeSync() {
+  var win = document.getElementById('win-' + _activeFsId);
+  if (!win) return;
+  var cur = String(currentFsPath || '/');
+  if (cur.length > 1) cur = cur.replace(/\/+$/, '') || '/';
+  win.querySelectorAll('.fs-tree-row[data-path]').forEach(function(r){
+    var p = r.dataset.path, anc = cur.indexOf(p + '/') === 0;
+    r.classList.toggle('active', cur === p);
+    r.classList.toggle('on-path', anc);
+    if (anc && r._open) r._open();
+  });
+  win.querySelectorAll('.fs-item[data-path]').forEach(function(i){ i.classList.toggle('active', i.dataset.path === cur); });
+}
+// Occupation des pools : petite jauge sous chaque pool de la colonne, et espace libre dans la barre d'état.
+var _fsPoolUse = {};
+function fsPoolMeters() {
+  document.querySelectorAll('.fs-pool-use[data-pool]').forEach(function(el){
+    var u = _fsPoolUse[el.dataset.pool];
+    if (!u || !u.total) { el.innerHTML = ''; return; }
+    var pct = Math.max(0, Math.min(100, Math.round(u.used / u.total * 100)));
+    el.innerHTML = '<div class="fs-pool-bar"><i' + (pct > 85 ? ' class="crit"' : pct > 65 ? ' class="warn"' : '') + ' style="width:' + pct + '%"></i></div><span>'
+      + webEsc(Tf('{0} libres', fmtBytes(Math.max(0, u.total - u.used)))) + '</span>';
+    el.title = Tf('{0} utilisés sur {1}', fmtBytes(u.used), fmtBytes(u.total));
+  });
+  fsFreeSpace();
+}
+function fsFreeSpace() {
+  var el = fsEl('fs-free');
+  if (!el) return;
+  var m = /^\/mnt\/([^/]+)/.exec(currentFsPath || ''), u = m && _fsPoolUse[m[1]];
+  el.textContent = (u && u.total) ? Tf('{0} libres sur {1}', fmtBytes(Math.max(0, u.total - u.used)), fmtBytes(u.total)) : '';
 }
 
 async function loadPools() {
@@ -6033,14 +6358,15 @@ async function loadPools() {
       capacity: p.capacity, used: p.used, avail: p.avail, health: p.health
     }))));
     const el    = document.getElementById('widget-pools');
-    const sidebar = fsEl('fs-pools-sidebar');
+    // Toutes les fenêtres Fichiers ouvertes reçoivent l'arbre des pools.
+    const sidebars = Array.prototype.slice.call(document.querySelectorAll('[id$="-fs-pools-sidebar"]')).filter(function(s){ return !s.querySelector('.fs-tree-row') && !(s._poolsAt && Date.now() - s._poolsAt < 15000); });
+    sidebars.forEach(function(s){ s._poolsAt = Date.now(); });
     if (!pools.length) {
       el.innerHTML = T('<div style="color:var(--text-dim);font-size:12px;padding:4px 0;">Aucun pool détecté</div>');
       return;
     }
     el.innerHTML = '';
-    const rebuildTree = !sidebar.querySelector('.fs-tree-row');
-    if (rebuildTree) sidebar.innerHTML = '<div class="fs-sidebar-title">Pools</div>';
+    sidebars.forEach(function(s){ s.innerHTML = '<div class="fs-sidebar-title">Pools</div>'; });
     for (const pool of pools.slice(0, 4)) {
       // Capacité réelle via le dataset racine (ZFS utile, pas la taille brute des disques)
       let total = 0, used = 0;
@@ -6058,6 +6384,7 @@ async function loadPools() {
         used  = pool.allocated || (total - (pool.free || 0));
       }
       const pct = total ? Math.round((used / total) * 100) : 0;
+      _fsPoolUse[pool.name] = { used: used, total: total };
       // TrueNAS SCALE retourne pool.status (ONLINE/DEGRADED/FAULTED) et pool.healthy (bool)
       const health = pool.status || pool.health || (pool.healthy === false ? 'DEGRADED' : pool.healthy === true ? 'ONLINE' : null) || null;
       const fillCls = health === 'DEGRADED' ? 'fill-warn' : health === 'FAULTED' ? 'fill-crit' : pct > 85 ? 'fill-crit' : pct > 65 ? 'fill-warn' : 'fill-ok';
@@ -6081,8 +6408,10 @@ async function loadPools() {
             </tr>
           </table>
         </div>`;
-      if (rebuildTree) sidebar.appendChild(fsTreeNode('/mnt/' + pool.name, pool.name, 0, '🗄'));
+      sidebars.forEach(function(s){ s.appendChild(fsTreeNode('/mnt/' + pool.name, pool.name, 0, 'pool')); });
     }
+    fsPoolMeters();
+    if (sidebars.length) fsTreeSync();
   } catch(e) { console.warn('loadPools', e); }
 }
 
@@ -6142,17 +6471,28 @@ function fsEl(name) {
   return document.getElementById(_activeFsId + '-' + name);
 }
 function setActiveFsWin(id) {
-  _activeFsId = id;
   if (!_fsInstances[id]) _fsInstances[id] = { tabs:[], activeTab:null, tabCtr:0, path:'/mnt', selected:null };
+  if (id === _activeFsId) return;
+  // On quitte une fenêtre : son état est rangé, celui de la fenêtre visée est repris.
+  var old = _fsInstances[_activeFsId];
+  if (old) { old.tabs = _fsTabs; old.activeTab = _fsActiveTab; old.tabCtr = _fsTabCtr; old.path = currentFsPath; }
+  try { if (_fsSel.length || fsSelected) fsDeselect(); } catch (_) {}
+  _activeFsId = id;
+  var inst = _fsInstances[id];
+  _fsTabs = inst.tabs; _fsActiveTab = inst.activeTab; _fsTabCtr = inst.tabCtr || 0;
+  currentFsPath = inst.path || '/mnt';
+  var el = fsEl('fs-files');
+  _fsEntries = (el && el._fsEntries) || [];
+  _fsSel = []; fsSelected = null; _fsSelAnchor = -1;
 }
 
 // Construire HTML d'une nouvelle fenêtre File Station
 function buildFsWindowHtml(wid, top, left) {
   var t = top  || (60 + (_fsWinCtr-1)*24);
   var l = left || (60 + (_fsWinCtr-1)*24);
-  return Tt`<div class="window" id="win-${wid}" style="top:${t}px;left:${l}px;width:800px;height:560px;">
+  return Tt`<div class="window" id="win-${wid}" style="top:${t}px;left:${l}px;width:1040px;height:660px;">
   <div class="window-titlebar" data-win="${wid}" onmousedown="setActiveFsWin('${wid}')">
-    <span class="window-icon">📁</span>
+    <span class="window-icon">${fsIcon('', true)}</span>
     <span class="window-title">Fichiers</span>
     <div class="window-controls">
       <button class="win-btn min" onclick="minimizeWin('${wid}')"></button>
@@ -6162,58 +6502,69 @@ function buildFsWindowHtml(wid, top, left) {
   </div>
   <div class="window-body" style="overflow:hidden;display:flex;flex-direction:column;">
     <div id="${wid}-fs-tab-bar" class="fs-tab-bar"></div>
-    <div class="filestation" style="flex:1;min-height:0;">
+    <div class="filestation" style="flex:1;min-height:0;" onmousedown="fsMouseNav(event,'${wid}',0)" onmouseup="fsMouseNav(event,'${wid}',1)">
       <div class="fs-sidebar">
         <div class="fs-sidebar-section">
           <div class="fs-sidebar-title">Emplacements</div>
-          <div class="fs-item" onclick="setActiveFsWin('${wid}');fsNavigate('/')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Racine</div>
-          <div class="fs-item" onclick="setActiveFsWin('${wid}');fsNavigate('/mnt')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/mnt')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg> /mnt</div>
-          <div class="fs-item" onclick="setActiveFsWin('${wid}');fsNavigate('/root')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/root')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> /root</div>
-          <div class="fs-item" onclick="setActiveFsWin('${wid}');fsNavigate('/home')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/home')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> /home</div>
-          <div class="fs-item" onclick="setActiveFsWin('${wid}');fsNavigate('/tmp')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/tmp')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> /tmp</div>
+          <div class="fs-item" data-path="/" onclick="setActiveFsWin('${wid}');fsNavigate('/')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Racine</div>
+          <div class="fs-item" data-path="/mnt" onclick="setActiveFsWin('${wid}');fsNavigate('/mnt')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/mnt')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg> /mnt</div>
+          <div class="fs-item" data-path="/root" onclick="setActiveFsWin('${wid}');fsNavigate('/root')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/root')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> /root</div>
+          <div class="fs-item" data-path="/home" onclick="setActiveFsWin('${wid}');fsNavigate('/home')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/home')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> /home</div>
+          <div class="fs-item" data-path="/tmp" onclick="setActiveFsWin('${wid}');fsNavigate('/tmp')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/tmp')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> /tmp</div>
         </div>
         <div class="fs-sidebar-section" id="${wid}-fs-pools-sidebar">
           <div class="fs-sidebar-title">Pools</div>
         </div>
       </div>
       <div class="fs-main">
-        <!-- Barre d'adresse -->
+        <!-- Barre d'adresse : précédent, suivant, parent, chemin, recherche -->
         <div class="fs-address-bar">
-          <div class="fs-path" id="${wid}-fs-path" style="flex:1;">/mnt</div>
-          <input id="${wid}-fs-search" class="ed-inp" placeholder="Rechercher ici…" onkeydown="if(event.key==='Enter'){setActiveFsWin('${wid}');fsSearch();}" style="width:160px;font-size:12px;flex-shrink:0;">
-          <button class="fstb-btn fstb-icon-only" onclick="setActiveFsWin('${wid}');fsSearch()" title="Rechercher dans ce dossier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
-          <button class="fstb-btn fstb-icon-only" onclick="setActiveFsWin('${wid}');fsGoUp()" title="Dossier parent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
-          <button class="fstb-btn fstb-icon-only" onclick="setActiveFsWin('${wid}');fsRefresh()" title="Actualiser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
-          <button class="fstb-btn fstb-icon-only" onclick="setActiveFsWin('${wid}');fsCopyPath()" title="Copier le chemin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          <button class="fs-nav-btn" id="${wid}-fs-back" onclick="setActiveFsWin('${wid}');fsHistGo(-1)" title="Dossier précédent" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></button>
+          <button class="fs-nav-btn" id="${wid}-fs-fwd" onclick="setActiveFsWin('${wid}');fsHistGo(1)" title="Dossier suivant" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+          <button class="fs-nav-btn" id="${wid}-fs-up" onclick="setActiveFsWin('${wid}');fsGoUp()" title="Dossier parent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+          <div class="fs-pathbox">
+            <div class="fs-path" id="${wid}-fs-path">/mnt</div>
+            <button class="fs-path-copy" onclick="setActiveFsWin('${wid}');fsCopyPath()" title="Copier le chemin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+          </div>
+          <button class="fs-nav-btn" onclick="setActiveFsWin('${wid}');fsRefresh()" title="Actualiser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          <div class="fs-searchbox" id="${wid}-fs-searchbox">
+            <button class="fs-search-go" onclick="setActiveFsWin('${wid}');fsSearch()" title="Rechercher dans ce dossier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+            <input id="${wid}-fs-search" placeholder="Rechercher ici…" autocomplete="off" spellcheck="false" onkeydown="fsSearchKey(event,'${wid}')">
+            <button class="fs-search-clear" onclick="setActiveFsWin('${wid}');fsSearchClose()" title="Fermer la recherche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+          </div>
         </div>
         <!-- Barre d'outils -->
         <div class="fs-toolbar">
           <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsMkdirPrompt()" title="Nouveau dossier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg><span>Dossier</span></button>
           <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsNewFile()" title="Nouveau document"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg><span>Fichier</span></button>
           <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsUploadPrompt()" title="Uploader ici"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Upload</span></button>
-          <button class="fstb-btn fstb-icon-only" onclick="setActiveFsWin('${wid}');fsNewTab(currentFsPath)" title="Nouvel onglet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>
-          <button class="fstb-btn fstb-icon-only" onclick="setActiveFsWin('${wid}');fsTogglePreview()" title="Volet aperçu" id="${wid}-fs-preview-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg></button>
-          <span class="fstb-sep"></span>
-          <button class="fstb-btn fstb-icon-only fs-view-btn" data-view="grid" onclick="setActiveFsWin('${wid}');fsSetView('grid')" title="Mosaïque"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></button>
-          <button class="fstb-btn fstb-icon-only fs-view-btn" data-view="list" onclick="setActiveFsWin('${wid}');fsSetView('list')" title="Liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
-          <span class="fstb-sep"></span>
-          <select class="fstb-select" id="${wid}-fs-sortsel" onchange="setActiveFsWin('${wid}');fsSetSort(this.value)" title="Trier par"><option value="name">Nom</option><option value="size">Taille</option><option value="type">Type</option><option value="date">Date</option></select>
-          <button class="fstb-btn fstb-icon-only" id="${wid}-fs-sortdir" onclick="setActiveFsWin('${wid}');fsToggleSortDir()" title="Sens du tri"><span class="fs-sortdir-arrow">↑</span></button>
-          <span class="fstb-sep"></span>
-          <button class="fstb-btn primary" id="${wid}-fs-btn-dl" onclick="setActiveFsWin('${wid}');fsDownloadSelected()" style="display:none" title="Télécharger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Télécharger</span></button>
-          <button class="fstb-btn" id="${wid}-fs-btn-edit" onclick="setActiveFsWin('${wid}');fsEditSelected()" style="display:none" title="Éditer le fichier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg><span>Éditer</span></button>
-          <button class="fstb-btn" id="${wid}-fs-btn-share" onclick="setActiveFsWin('${wid}');fsShareSelected()" style="display:none" title="Créer un lien de partage public"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Partager</span></button>
-          <button class="fstb-btn" id="${wid}-fs-btn-netshare" onclick="setActiveFsWin('${wid}');fsNetShareSelected()" style="display:none" title="Partager en réseau (SMB/NFS)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg><span>Réseau</span></button>
-          <button class="fstb-btn fstb-icon-only" id="${wid}-fs-btn-ren" onclick="setActiveFsWin('${wid}');fsRenamePrompt()" style="display:none" title="Renommer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-          <button class="fstb-btn danger fstb-icon-only" id="${wid}-fs-btn-del" onclick="setActiveFsWin('${wid}');fsDeleteSelected()" style="display:none" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          <span class="fs-sel-acts" id="${wid}-fs-sel-acts">
+            <button class="fstb-btn primary" id="${wid}-fs-btn-dl" onclick="setActiveFsWin('${wid}');fsDownloadSelected()" style="display:none" title="Télécharger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Télécharger</span></button>
+            <button class="fstb-btn" id="${wid}-fs-btn-reveal" onclick="setActiveFsWin('${wid}');fsRevealSelected()" style="display:none" title="Ouvrir le dossier qui contient cet élément"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 11 15 14 12 17"/><line x1="9" y1="14" x2="15" y2="14"/></svg><span>Emplacement</span></button>
+            <button class="fstb-btn" id="${wid}-fs-btn-edit" onclick="setActiveFsWin('${wid}');fsEditSelected()" style="display:none" title="Éditer le fichier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg><span>Éditer</span></button>
+            <button class="fstb-btn" id="${wid}-fs-btn-share" onclick="setActiveFsWin('${wid}');fsShareSelected()" style="display:none" title="Créer un lien de partage public"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Partager</span></button>
+            <button class="fstb-btn" id="${wid}-fs-btn-netshare" onclick="setActiveFsWin('${wid}');fsNetShareSelected()" style="display:none" title="Partager en réseau (SMB/NFS)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg><span>Réseau</span></button>
+            <button class="fstb-btn fstb-icon-only" id="${wid}-fs-btn-ren" onclick="setActiveFsWin('${wid}');fsRenamePrompt()" style="display:none" title="Renommer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+            <button class="fstb-btn danger fstb-icon-only" id="${wid}-fs-btn-del" onclick="setActiveFsWin('${wid}');fsDeleteSelected()" style="display:none" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          </span>
           <span class="fstb-spacer"></span>
           <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsShareManage()" title="Mes liens de partage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Liens</span><span class="fstb-badge fs-links-badge zero" id="${wid}-fs-links-badge">0</span></button>
+          <span class="fs-sort-ctl">
+            <select class="fstb-select" id="${wid}-fs-sortsel" onchange="setActiveFsWin('${wid}');fsSetSort(this.value)" title="Trier par"><option value="name">Nom</option><option value="size">Taille</option><option value="type">Type</option><option value="date">Date</option></select>
+            <button class="fstb-btn fstb-icon-only" id="${wid}-fs-sortdir" onclick="setActiveFsWin('${wid}');fsToggleSortDir()" title="Sens du tri"><span class="fs-sortdir-arrow">↑</span></button>
+          </span>
+          <span class="fs-seg">
+            <button class="fstb-btn fstb-icon-only fs-view-btn" data-view="list" onclick="setActiveFsWin('${wid}');fsSetView('list')" title="Liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button>
+            <button class="fstb-btn fstb-icon-only fs-view-btn" data-view="grid" onclick="setActiveFsWin('${wid}');fsSetView('grid')" title="Mosaïque"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></button>
+          </span>
+          <button class="fstb-btn fstb-icon-only" onclick="setActiveFsWin('${wid}');fsTogglePreview()" title="Volet aperçu" id="${wid}-fs-preview-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg></button>
         </div>
-        <div id="${wid}-fs-status" style="padding:3px 12px;font-size:11px;color:var(--text-dim);border-bottom:1px solid var(--glass-border);min-height:22px;line-height:22px;"></div>
         <div class="fs-drop-zone" id="${wid}-fs-drop-zone" style="position:relative;flex:1;overflow:hidden;display:flex;flex-direction:column;">
-          <div class="fs-drop-overlay" id="${wid}-fs-drop-overlay" style="display:none;position:fixed;z-index:9990;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(var(--accent-rgb),0.18);backdrop-filter:blur(3px);border:2px dashed var(--accent);border-radius:var(--radius);"><div class="fs-drop-icon">⬆️</div><div class="fs-drop-label">Déposer pour uploader</div></div>
-          <div class="fs-files" id="${wid}-fs-files"><div class="fs-loading"><div class="spinner"></div> Chargement...</div></div>
+          <div class="fs-drop-overlay" id="${wid}-fs-drop-overlay" style="display:none;position:fixed;z-index:9990;pointer-events:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(var(--accent-rgb),0.18);backdrop-filter:blur(3px);border:2px dashed var(--accent);border-radius:var(--radius);"><div class="fs-drop-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="fs-drop-label">Déposer pour uploader</div></div>
+          <div class="fs-searchbar" id="${wid}-fs-searchbar" hidden></div>
+          <div class="fs-files fs-state" id="${wid}-fs-files" tabindex="0" onkeydown="fsKey(event,'${wid}')"><div class="fs-loading"><div class="spinner"></div> Chargement...</div></div>
         </div>
+        <div class="fs-statusbar"><span id="${wid}-fs-status"></span><span id="${wid}-fs-free"></span></div>
         <input type="file" id="${wid}-fs-upload-input" style="display:none" multiple onchange="setActiveFsWin('${wid}');fsDoUpload(this.files)">
       </div>
       <!-- Preview panel -->
@@ -6224,39 +6575,41 @@ function buildFsWindowHtml(wid, top, left) {
         </div>
         <div id="${wid}-fs-preview-body" class="fs-preview-body-scroll"></div>
         <div class="fs-preview-actions">
-          <button class="fs-btn" id="${wid}-fs-preview-dl" style="display:none;" onclick="setActiveFsWin('${wid}');fsDownloadSelected()">⬇ Télécharger</button>
-          <button class="fs-btn" onclick="setActiveFsWin('${wid}');fsRenamePrompt()">✏️ Renommer</button>
-          <button class="fs-btn" onclick="setActiveFsWin('${wid}');fsDeleteSelected()" style="color:#f87171;">🗑 Supprimer</button>
+          <button class="fstb-btn primary" id="${wid}-fs-preview-dl" style="display:none;" onclick="setActiveFsWin('${wid}');fsDownloadSelected()">Télécharger</button>
+          <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsRenamePrompt()">Renommer</button>
+          <button class="fstb-btn danger" onclick="setActiveFsWin('${wid}');fsDeleteSelected()">Supprimer</button>
         </div>
       </div>
     </div>
   </div>
-  <div id="${wid}-fs-ctx" style="position:fixed;display:none;z-index:99999;background:rgba(11,21,38,.97);border:1px solid var(--glass-border);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:6px;min-width:185px;backdrop-filter:blur(16px);">
-        <div class="ctx-item" id="${wid}-fsctx-open" onclick="setActiveFsWin('${wid}');fsCtxOpen()">📂 Ouvrir</div>
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsNewTab(fsSelected&&fsSelected.type==='DIRECTORY'?fsSelected.path:currentFsPath)">🗂 Ouvrir dans un onglet</div>
-        <div class="ctx-item" id="${wid}-fsctx-dl"   onclick="setActiveFsWin('${wid}');fsDownloadSelected()">⬇️ Télécharger</div>
-        <div class="ctx-item" id="${wid}-fsctx-edit" onclick="setActiveFsWin('${wid}');fsEditSelected()">✏️ Éditer</div>
-        <div class="ctx-item" id="${wid}-fsctx-extract" onclick="setActiveFsWin('${wid}');fsExtractSelected()">📦 Extraire ici</div>
-        <div class="ctx-item" id="${wid}-fsctx-compress" onclick="setActiveFsWin('${wid}');fsCompressSelected()">🗜️ Compresser (zip)</div>
-        <div class="ctx-item" id="${wid}-fsctx-perm" onclick="setActiveFsWin('${wid}');fsPermSelected()">🔒 Permissions</div>
-        <div class="ctx-item" id="${wid}-fsctx-cksum" onclick="setActiveFsWin('${wid}');fsChecksumSelected()">🔑 Somme de contrôle</div>
-        <div class="ctx-item" id="${wid}-fsctx-share" onclick="setActiveFsWin('${wid}');fsShareSelected()">🔗 Partager (lien public)</div>
-        <div class="ctx-item" id="${wid}-fsctx-netshare" onclick="setActiveFsWin('${wid}');fsNetShareSelected()">🖧 Partager en réseau (SMB/NFS)</div>
-        <div class="ctx-item" id="${wid}-fsctx-serve" onclick="setActiveFsWin('${wid}');fsServeSelected()">🌐 Servir sur le web</div>
-        <hr class="ctx-separator">
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsCopy()">📋 Copier</div>
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsCut()">✂️ Couper</div>
-        <div class="ctx-item fsctx-paste" onclick="setActiveFsWin('${wid}');fsPaste()" style="display:none;">📌 Coller</div>
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsMoveTo()">➡️ Déplacer vers…</div>
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsCopyTo()">⧉ Copier vers…</div>
-        <hr class="ctx-separator">
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsRenamePrompt()">✏️ Renommer</div>
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsDeleteSelected()" style="color:#f87171;">🗑️ Supprimer</div>
-        <hr class="ctx-separator">
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsMkdirPrompt()">📁 Nouveau dossier</div>
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsNewFile()">📄 Nouveau document</div>
-        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsUploadPrompt()">⬆️ Uploader ici</div>
-        <div class="ctx-item" onclick="openNewFsWindow()">🗔 Nouvelle fenêtre FS</div>
+  <div id="${wid}-fs-ctx" style="position:fixed;display:none;z-index:99999;background:rgba(11,21,38,.97);border:1px solid var(--glass-border);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:6px;min-width:200px;backdrop-filter:blur(16px);">
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-open" onclick="setActiveFsWin('${wid}');fsCtxOpen()">Ouvrir</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-reveal" onclick="setActiveFsWin('${wid}');fsRevealSelected()">Ouvrir l'emplacement</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-tab" onclick="setActiveFsWin('${wid}');fsNewTab(fsSelected&&fsSelected.type==='DIRECTORY'?fsSelected.path:currentFsPath)">Ouvrir dans un onglet</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-dl"   onclick="setActiveFsWin('${wid}');fsDownloadSelected()">Télécharger</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-edit" onclick="setActiveFsWin('${wid}');fsEditSelected()">Éditer</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-extract" onclick="setActiveFsWin('${wid}');fsExtractSelected()">Extraire ici</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-compress" onclick="setActiveFsWin('${wid}');fsCompressSelected()">Compresser (zip)</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-perm" onclick="setActiveFsWin('${wid}');fsPermSelected()">Permissions</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-cksum" onclick="setActiveFsWin('${wid}');fsChecksumSelected()">Somme de contrôle</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-share" onclick="setActiveFsWin('${wid}');fsShareSelected()">Partager (lien public)</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-netshare" onclick="setActiveFsWin('${wid}');fsNetShareSelected()">Partager en réseau (SMB/NFS)</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-serve" onclick="setActiveFsWin('${wid}');fsServeSelected()">Servir sur le web</div>
+        <hr class="ctx-separator fsctx-sel">
+        <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsCopy()">Copier</div>
+        <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsCut()">Couper</div>
+        <div class="ctx-item fsctx-paste" onclick="setActiveFsWin('${wid}');fsPaste()" style="display:none;">Coller</div>
+        <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsMoveTo()">Déplacer vers…</div>
+        <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsCopyTo()">Copier vers…</div>
+        <hr class="ctx-separator fsctx-sel">
+        <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsRenamePrompt()">Renommer</div>
+        <div class="ctx-item fsctx-sel danger" onclick="setActiveFsWin('${wid}');fsDeleteSelected()">Supprimer</div>
+        <hr class="ctx-separator fsctx-new-sep">
+        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsMkdirPrompt()">Nouveau dossier</div>
+        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsNewFile()">Nouveau document</div>
+        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsUploadPrompt()">Uploader ici</div>
+        <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsRefresh()">Actualiser</div>
+        <div class="ctx-item" onclick="openNewFsWindow()">Nouvelle fenêtre</div>
       </div>
   <div class="resize-handle" data-win="${wid}"></div>
 </div>`;
@@ -6270,6 +6623,8 @@ function openNewFsWindow() {
   div.innerHTML = buildFsWindowHtml(wid, 80 + (_fsWinCtr-1)*28, 80 + (_fsWinCtr-1)*28);
   var win = div.firstElementChild;
   document.body.appendChild(win);
+  // Le menu contextuel sort de la fenêtre : dedans, le flou d'arrière-plan fausserait sa position.
+  (function(){ var c = document.getElementById(wid + '-fs-ctx'); if (c) document.body.appendChild(c); })();
   // Enregistrer le resize handle
   setupResizeHandle(win.querySelector('.resize-handle'));
   setupDragWin(win.querySelector('.window-titlebar'));
@@ -6279,6 +6634,7 @@ function openNewFsWindow() {
   addTaskbarBtn(wid, win, T('📁 Fichiers ') + _fsWinCtr);
   fsInitTabs();
   fsNavigate('/mnt');
+  loadPools();
   // Drag & drop sur la zone
   setTimeout(function(){ fsSetupDropZone(wid); }, 50);
 }
@@ -6297,7 +6653,7 @@ function closeFsWin(wid) {
     else { win.classList.remove('visible'); }
   }
   removeTaskbarBtn(wid);
-  if (_activeFsId === wid) _activeFsId = 'fs1';
+  if (_activeFsId === wid) { _activeFsId = ''; setActiveFsWin('fs1'); }
 }
 
 // Drag & drop : utiliser la drop-zone (évite le flickering des enfants)
@@ -6415,26 +6771,23 @@ function fsHidePreview() {
   if (panel) panel.classList.add('hidden');
 }
 function fsShowPreview(entry) {
-  // Ouvrir le volet si fermé
   var panel = fsEl('fs-preview');
-  if (panel && panel.classList.contains('hidden')) return; // volet fermé, pas d'aperçu
-  var panel = fsEl('fs-preview');
-  if (!panel || panel.classList.contains('hidden')) return;
+  if (!panel || panel.classList.contains('hidden')) return; // volet fermé, pas d'aperçu
   var body  = fsEl('fs-preview-body');
   var dlBtn = fsEl('fs-preview-dl');
   if (!body) return;
   var isDir  = entry.type === 'DIRECTORY';
-  var icon   = isDir ? '📁' : getFileIcon(entry.name);
   var ext    = (entry.name||'').split('.').pop().toLowerCase();
   var isImg  = ['jpg','jpeg','png','gif','webp','svg','bmp'].indexOf(ext) >= 0;
   var isTxt  = ['txt','md','log','sh','py','js','ts','json','xml','yml','yaml','conf','ini','css','html'].indexOf(ext) >= 0;
-  var size   = entry.size ? fmtBytes(entry.size) : '—';
-  var html   = '<div class="fs-preview-icon">' + icon + '</div>'
-    + '<div class="fs-preview-name">' + entry.name + '</div>'
+  function row(label, value) { return '<div class="fs-preview-meta-row"><span>' + label + '</span><span>' + webEsc(value) + '</span></div>'; }
+  var html   = '<div class="fs-preview-icon">' + fsIcon(entry.name, isDir) + '</div>'
+    + '<div class="fs-preview-name">' + webEsc(entry.name) + '</div>'
+    + '<div class="fs-preview-kind">' + webEsc(fsKindLabel(entry.name, isDir)) + '</div>'
     + '<div class="fs-preview-meta">'
-    + '<div class="fs-preview-meta-row"><span>Type</span><span>' + (isDir?T('Dossier'):ext.toUpperCase()||'—') + '</span></div>'
-    + (entry.size ? T('<div class="fs-preview-meta-row"><span>Taille</span><span>') + size + '</span></div>' : '')
-    + T('<div class="fs-preview-meta-row"><span>Chemin</span><span style="font-size:9px;text-align:right;max-width:100px;word-break:break-all;">') + entry.path + '</span></div>'
+    + (isDir ? '' : row(T('Taille'), fmtBytes(entry.size || 0)))
+    + (entry.mtime ? row(T('Modifié'), fsFmtDate(entry.mtime)) : '')
+    + row(T('Emplacement'), fsParentOf(entry.path))
     + '</div>';
   if (isImg) {
     html += '<div id="fs-preview-img-wrap"></div>';
@@ -6489,6 +6842,7 @@ function fsActiveTabPath() {
 
 function fsTabActivate(id) {
   _fsActiveTab = id;
+  if (_fsInstances[_activeFsId]) _fsInstances[_activeFsId].activeTab = id;
   var t = _fsTabs.find(function(t){ return t.id === id; });
   if (t) fsNavigate(t.path);
   else fsRenderTabs();
@@ -6557,19 +6911,22 @@ function fsInitTabs() {
   if (typeof updateShareCount === 'function') updateShareCount();
 }
 
-function fsCrumbEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fsCrumbEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fsRenderBreadcrumb(path){
   var el = fsEl('fs-path');
   if (!el) return;
   var parts = String(path||'/').replace(/\/+$/,'').split('/').filter(Boolean);
-  var html = T('<span class="fs-crumb" onclick="fsCrumbNav(this,\'/\')" title="Racine">/</span>');
+  var html = '<span class="fs-crumb' + (parts.length ? '' : ' cur') + '" onclick="fsCrumbNav(this,\'/\')" title="' + T('Racine') + '">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>';
   var built = '';
-  parts.forEach(function(p){
+  parts.forEach(function(p, i){
     built += '/' + p;
     html += '<span class="fs-crumb-sep">›</span>'
-      + '<span class="fs-crumb" onclick="fsCrumbNav(this,\'' + built.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="' + fsCrumbEsc(built) + '">' + fsCrumbEsc(p) + '</span>';
+      + '<span class="fs-crumb' + (i === parts.length - 1 ? ' cur' : '') + '" onclick="fsCrumbNav(this,\'' + built.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" title="' + fsCrumbEsc(built) + '">' + fsCrumbEsc(p) + '</span>';
   });
   el.innerHTML = html;
+  el.scrollLeft = el.scrollWidth;   // le dossier courant reste visible quand le chemin est long
+  if (!el._ro && window.ResizeObserver) { el._ro = new ResizeObserver(function(){ el.scrollLeft = el.scrollWidth; }); el._ro.observe(el); }
 }
 function fsCrumbNav(elm, path){
   try { var w = elm && elm.closest ? elm.closest('.window') : null; if (w && w.id) setActiveFsWin(w.id.replace(/^win-/,'')); } catch(_){}
@@ -6626,36 +6983,148 @@ function fsSetSort(field){
   _fsSort.field = field;
   try { localStorage.setItem('fsSortField', field); } catch(e){}
   fsSyncSortUI();
-  if (currentFsPath) fsNavigate(currentFsPath);
+  fsRerender();
 }
 function fsToggleSortDir(){
   _fsSort.dir = _fsSort.dir === 1 ? -1 : 1;
   try { localStorage.setItem('fsSortDir', String(_fsSort.dir)); } catch(e){}
   fsSyncSortUI();
-  if (currentFsPath) fsNavigate(currentFsPath);
+  fsRerender();
 }
 function fsSyncSortUI(){
   document.querySelectorAll('[id$="-fs-sortsel"]').forEach(function(s){ s.value = _fsSort.field; });
   document.querySelectorAll('[id$="-fs-sortdir"] .fs-sortdir-arrow').forEach(function(a){ a.textContent = _fsSort.dir === 1 ? '↑' : '↓'; });
 }
 
-async function fsNavigate(path) {
+// ── Genres de fichiers : une icône dessinée et un libellé par famille ─────────
+var FS_KINDS = {
+  image:'jpg jpeg png gif webp svg bmp tif tiff heic avif ico', video:'mp4 mkv avi mov webm m4v wmv flv mpg mpeg',
+  audio:'mp3 flac wav ogg m4a aac opus wma', archive:'zip rar tar 7z gz bz2 xz tgz zst', pdf:'pdf',
+  doc:'doc docx odt rtf', sheet:'xls xlsx ods csv', slides:'ppt pptx odp',
+  script:'sh py js ts php c cpp h go rs java sql html css bat ps1', config:'json xml yml yaml conf ini toml env cfg',
+  text:'txt md log', disk:'iso img vmdk qcow2 vdi raw'
+};
+var _fsKindOf = null, _fsKindL = null;
+function fsKind(name, isDir) {
+  if (isDir) return 'dir';
+  if (!_fsKindOf) {
+    _fsKindOf = {};
+    Object.keys(FS_KINDS).forEach(function(k){ FS_KINDS[k].split(' ').forEach(function(x){ _fsKindOf[x] = k; }); });
+  }
+  return _fsKindOf[fsTypeExt(name)] || 'file';
+}
+function fsKindLabel(name, isDir) {
+  if (!_fsKindL || _fsKindL._lang !== DK_LANG) {
+    _fsKindL = { _lang: DK_LANG, dir:T('Dossier'), image:T('Image'), video:T('Vidéo'), audio:T('Audio'), archive:T('Archive'),
+      pdf:T('Document'), doc:T('Document'), sheet:T('Tableur'), slides:T('Présentation'), script:T('Script'),
+      config:T('Configuration'), text:T('Texte'), disk:T('Image disque'), file:T('Fichier') };
+  }
+  var ext = isDir ? '' : fsTypeExt(name).toUpperCase();
+  return _fsKindL[fsKind(name, isDir)] + (ext && ext.length <= 5 ? ' ' + ext : '');
+}
+var FS_GLYPH = (function(){
+  var lines = '<path d="M11 16.2h10M11 19.8h10M11 23.4h6"/>';
+  return {
+    image:'<circle cx="12.6" cy="16.2" r="1.7" fill="currentColor" stroke="none"/><path d="M9.6 24.6l4.2-4.6 2.8 2.7 2.4-2.5 3.5 4.4z" fill="currentColor" stroke="none"/>',
+    video:'<path d="M13.3 15.4v8.4l7.2-4.2z" fill="currentColor" stroke="none"/>',
+    audio:'<circle cx="13.3" cy="23" r="2.1" fill="currentColor" stroke="none"/><path d="M15.4 23v-8.4l5.2-1.3v2.9"/>',
+    archive:'<path d="M16 13.4v5.4"/><rect x="13.7" y="19.4" width="4.6" height="4.8" rx="1.3" fill="currentColor" stroke="none"/>',
+    pdf:lines, doc:lines, text:lines,
+    sheet:'<rect x="10.5" y="15" width="11" height="9.6" rx="1.3"/><path d="M10.5 19.8h11M16 15v9.6"/>',
+    slides:'<rect x="10.5" y="15" width="11" height="6.8" rx="1.3"/><path d="M16 21.8v3M13.4 24.8h5.2"/>',
+    script:'<path d="M13.7 16l-3.2 3.7 3.2 3.7M18.3 16l3.2 3.7-3.2 3.7"/>',
+    config:'<path d="M10.8 17h3.6M18.2 17h3M10.8 22.6h1.8M16.4 22.6h4.8"/><circle cx="16.3" cy="17" r="1.8"/><circle cx="14.5" cy="22.6" r="1.8"/>',
+    disk:'<circle cx="16" cy="19.8" r="5"/><circle cx="16" cy="19.8" r="1.3" fill="currentColor" stroke="none"/>'
+  };
+})();
+function fsIcon(name, isDir, kind) {
+  var k = kind || fsKind(name, isDir);
+  if (k === 'dir') return '<svg class="fs-ic fs-ic-dir" viewBox="0 0 32 32" aria-hidden="true"><path d="M3.5 9.5a3 3 0 0 1 3-3h5.9a3 3 0 0 1 2.2 1l1.5 1.6h9.4a3 3 0 0 1 3 3V23a3 3 0 0 1-3 3h-19a3 3 0 0 1-3-3z" fill="currentColor" opacity=".42"/><path d="M3.5 14a2.6 2.6 0 0 1 2.6-2.6h19.8a2.6 2.6 0 0 1 2.6 2.6v9a3 3 0 0 1-3 3h-19a3 3 0 0 1-3-3z" fill="currentColor"/></svg>';
+  if (k === 'pool') return '<svg class="fs-ic fs-ic-pool" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="16" cy="8.4" rx="10" ry="3.9" fill="currentColor" fill-opacity=".22"/><path d="M6 8.4v7.6c0 2.2 4.5 3.9 10 3.9s10-1.7 10-3.9V8.4M6 16v7.6c0 2.2 4.5 3.9 10 3.9s10-1.7 10-3.9V16"/></svg>';
+  return '<svg class="fs-ic fs-ic-' + k + '" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<path d="M8.5 3.5h10.2l6.8 6.8v15.2a3 3 0 0 1-3 3h-14a3 3 0 0 1-3-3v-19a3 3 0 0 1 3-3z" fill="currentColor" fill-opacity=".13"/><path d="M18.5 3.8v6.7h6.7"/>'
+    + (FS_GLYPH[k] || '') + '</svg>';
+}
+// Date courte pour la liste : « Aujourd'hui 09:12 », « Hier 18:40 », sinon le jour. La date complète reste en infobulle.
+function fsFmtWhen(t) {
+  if (!t) return '';
+  var ms = t > 1e12 ? t : t * 1000, d = new Date(ms);
+  if (isNaN(d.getTime())) return '';
+  var now = new Date(), day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  var hm = d.toLocaleTimeString(DK_LOCALE, { hour:'2-digit', minute:'2-digit' });
+  if (ms >= day0 && ms < day0 + 864e5) return T('Aujourd\'hui') + ' ' + hm;
+  if (ms >= day0 - 864e5 && ms < day0) return T('Hier') + ' ' + hm;
+  return d.toLocaleDateString(DK_LOCALE, { day:'numeric', month:'short', year:'numeric' });
+}
+function fsParentOf(p) { p = String(p || '/'); var i = p.lastIndexOf('/'); return i > 0 ? p.substring(0, i) : '/'; }
+function fsCtxHide() { document.querySelectorAll('[id$="-fs-ctx"]').forEach(function(c){ c.style.display = 'none'; }); }
+// Le menu s'ouvre sous le pointeur, puis remonte ou recule s'il dépasse de l'écran.
+function fsCtxPlace(ctx, e) {
+  ctx.style.display = 'block';
+  ctx.style.left = Math.max(8, Math.min(e.clientX, window.innerWidth - ctx.offsetWidth - 8)) + 'px';
+  ctx.style.top = Math.max(8, Math.min(e.clientY, window.innerHeight - ctx.offsetHeight - 8)) + 'px';
+}
+
+// ── Navigation : un historique par onglet (précédent / suivant) ───────────────
+function fsCurTab() { return _fsTabs.find(function(t){ return t.id === _fsActiveTab; }) || null; }
+function fsHistGo(d) {
+  var t = fsCurTab();
+  if (!t || !t.hist) return;
+  var i = t.hi + d;
+  if (i < 0 || i >= t.hist.length) return;
+  t.hi = i;
+  fsNavigate(t.hist[i], { hist:true });
+}
+function fsSyncNav() {
+  var t = fsCurTab(), b = fsEl('fs-back'), f = fsEl('fs-fwd'), u = fsEl('fs-up');
+  if (b) b.disabled = !(t && t.hist && t.hi > 0);
+  if (f) f.disabled = !(t && t.hist && t.hi < t.hist.length - 1);
+  if (u) u.disabled = (currentFsPath === '/');
+}
+// Boutons latéraux de la souris : précédent (3) et suivant (4).
+function fsMouseNav(e, wid, up) {
+  if (e.button !== 3 && e.button !== 4) return;
+  e.preventDefault();
+  if (up) { setActiveFsWin(wid); fsHistGo(e.button === 3 ? -1 : 1); }
+}
+
+var _fsReqSeq = 0;
+async function fsNavigate(path, opts) {
+  opts = opts || {};
+  path = String(path || '/');
+  if (path.length > 1) path = path.replace(/\/+$/, '') || '/';
+  const el = fsEl('fs-files');
+  if (!el) return;
+  const prev = el._fsPath;
+  const same = prev === path && !el._fsSearch && !!el.querySelector('.fs-file');
+  const scroll = el.scrollTop;
   currentFsPath = path;
+  el._fsPath = path;
+  if (_fsInstances[_activeFsId]) _fsInstances[_activeFsId].path = path;
   fsRenderBreadcrumb(path);
   fsSyncSortUI();
-  // Mettre à jour l'onglet actif
-  if (_fsActiveTab) {
-    var _t = _fsTabs.find(function(t){ return t.id === _fsActiveTab; });
-    if (_t) {
-      _t.path  = path;
-      _t.label = path.replace(/\/$/, '').split('/').pop() || '/';
-      fsRenderTabs();
-    }
+  // Onglet actif : chemin, libellé, historique
+  var _t = fsCurTab();
+  if (_t) {
+    _t.path  = path;
+    _t.label = path.split('/').pop() || '/';
+    if (!_t.hist) { _t.hist = []; _t.hi = -1; }
+    if (!opts.hist && _t.hist[_t.hi] !== path) { _t.hist = _t.hist.slice(0, _t.hi + 1); _t.hist.push(path); _t.hi = _t.hist.length - 1; }
+    fsRenderTabs();
   }
-  const el = fsEl('fs-files');
-  el.style.display = '';
+  fsSyncNav();
+  // Une réponse qui arrive après un autre déplacement est ignorée.
+  const req = el._fsReq = ++_fsReqSeq;
+  el._fsSearch = null; el._fsItems = null;
+  var _st = fsEl('fs-status'); if (_st) _st.dataset.base = '';
   var _ssrch = fsEl('fs-search'); if (_ssrch) _ssrch.value = '';
-  el.innerHTML = T('<div class="fs-loading" style="grid-column:1/-1;"><div class="spinner"></div> Chargement...</div>');
+  fsDeselect();
+  fsSearchUi(el);
+  fsFreeSpace();
+  fsTreeSync();
+  el.style.display = '';
+  if (same) el.classList.add('fs-busy');   // simple actualisation : la liste reste en place le temps de la réponse
+  else { el._fsEntries = _fsEntries = []; el.className = 'fs-files fs-state'; el.innerHTML = T('<div class="fs-loading"><div class="spinner"></div> Chargement...</div>'); }
   try {
     // Listing via le sidecar fileops (local, indépendant du middleware TrueNAS → rapide).
     // Repli automatique sur l'API TrueNAS en cas d'échec.
@@ -6667,108 +7136,242 @@ async function fsNavigate(path) {
       });
     } catch (_fe) {
       const result = await socketCall('/filesystem/listdir', 'POST', { path });
-      items = ensureArray(result);
-    }
-    if (!items.length) {
-      el.innerHTML = T('<div class="empty-state" style="grid-column:1/-1;height:200px;"><div class="es-icon">📂</div><span>Dossier vide</span></div>');
-      return;
-    }
-    fsDeselect();
-    el.innerHTML = '';
-    el.className = 'fs-files fs-view-' + _fsView;
-    items = fsSortItems(items);
-    fsEl('fs-status').textContent = Tt`${items.length} élément${items.length>1?'s':''}`;
-    _fsEntries = [];
-    items.forEach((item, _idx) => {
-      const isDir  = item.type === 'DIRECTORY';
-      const icon   = isDir ? '📁' : getFileIcon(item.name);
-      const fpath  = (path.endsWith('/') ? path : path + '/') + item.name;
-      const entry  = { path: fpath, name: item.name, type: item.type, size: item.size, mtime: item.mtime };
-      _fsEntries.push(entry);
-      const div    = document.createElement('div');
-      div.className = 'fs-file';
-      div.dataset.path = fpath;
-      const szTxt = isDir ? T('Dossier') : fmtBytes(item.size || 0);
-      const dtTxt = fsFmtDate(item.mtime);
-      div.innerHTML = `<div class="fs-file-icon">${icon}</div><div class="fs-file-name">${item.name}</div><div class="fs-file-size">${szTxt}</div><div class="fs-file-date">${dtTxt}</div>`;
-      div.onclick      = (function(en, ix){ return function(e){ e.stopPropagation(); fsTileClick(e, en, ix); }; })(entry, _idx);
-      div.ondblclick   = () => { if (isDir) fsNavigate(fpath); else fsShowPreview({ name: item.name, path: fpath, type: item.type }); };
-      (function(wid){ div.oncontextmenu = (e) => { setActiveFsWin(wid); fsShowCtx(e, entry); }; })(_activeFsId);
-
-      // ── Drag & drop interne ──────────────────────────────────────────────
-      div.draggable = true;
-      div.addEventListener('dragstart', function(e) {
-        _internalDrag = true;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', fpath);
-        setTimeout(() => div.classList.add('dragging'), 0);
-        fsSelect(entry);
+      items = ensureArray(result).map(function(e){
+        return { name:e.name, type: e.type === 'DIRECTORY' ? 'DIRECTORY' : 'FILE', size:e.size, mtime:e.mtime };
       });
-      div.addEventListener('dragend', function() {
-        _internalDrag = false;
-        div.classList.remove('dragging');
-        document.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
-      });
-      // Réception sur un dossier
-      if (isDir) {
-        div.addEventListener('dragover', function(e) {
-          if (!e.dataTransfer.types.includes('text/plain')) return;
-          e.preventDefault(); e.stopPropagation();
-          e.dataTransfer.dropEffect = 'move';
-          div.classList.add('drop-target');
-        });
-        div.addEventListener('dragleave', function() { div.classList.remove('drop-target'); });
-        div.addEventListener('drop', function(e) {
-          e.preventDefault(); e.stopPropagation();
-          div.classList.remove('drop-target');
-          var srcPath = e.dataTransfer.getData('text/plain');
-          if (!srcPath || srcPath === fpath) return;
-          var srcName = srcPath.split('/').pop();
-          var dstPath = fpath.replace(/\/$/, '') + '/' + srcName;
-          fileops('POST', 'move', { src: srcPath, dst: dstPath })
-            .then(() => { toast(T('✅ Déplacé vers ') + item.name); fsRefresh(); })
-            .catch(err => toast('❌ ' + err.message));
-        });
-      }
-      el.appendChild(div);
-    });
-    // Clic sur zone vide → désélection
-    el.onclick = (e) => { if (e.target === el) fsDeselect(); };
-    el.oncontextmenu = (function(wid) { return function(e) {
-      if (e.target !== el) return; // géré par fsShowCtx sur les items
-      e.preventDefault(); e.stopPropagation();
-      setActiveFsWin(wid);
-      fsDeselect();
-      const ctx = fsEl('fs-ctx');
-      if (!ctx) return;
-      document.querySelectorAll('[id$="-fs-ctx"]').forEach(function(c){ if(c !== ctx) c.style.display='none'; });
-      var pasteEl = ctx.querySelector('.fsctx-paste');
-      if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
-      var _fo=fsEl('fsctx-open'); if(_fo) _fo.style.display='none';
-      var _fd=fsEl('fsctx-dl');   if(_fd) _fd.style.display='none';
-      ctx.style.left = Math.min(e.clientX, window.innerWidth-200)+'px';
-      ctx.style.top  = Math.min(e.clientY, window.innerHeight-260)+'px';
-      ctx.style.display='block';
-    }; })(_activeFsId);
-    // S'assurer que le drop zone est toujours actif
-    fsEnsureDropZone(_activeFsId);
-    fsSyncViewButtons();
-    fsMarkShared();
+    }
+    if (el._fsReq !== req) return;
+    fsRenderEntries(el, items);
+    el.scrollTop = same ? scroll : 0;
+    // En remontant d'un cran, le dossier d'où l'on vient reste repéré.
+    if (prev && prev !== path && fsParentOf(prev) === path && el.id === _activeFsId + '-fs-files') {
+      var back = _fsEntries.find(function(x){ return x.path === prev; });
+      if (back) { fsSelect(back); var row = el.querySelector('.fs-file.selected'); if (row) row.scrollIntoView({ block:'nearest' }); }
+    }
   } catch(e) {
-    el.innerHTML = Tt`<div class="empty-state" style="grid-column:1/-1;height:200px;"><div class="es-icon">⚠️</div><span>Erreur: ${e.message}</span></div>`;
+    if (el._fsReq !== req) return;
+    el._fsEntries = _fsEntries = [];
+    el.className = 'fs-files fs-state';
+    el.innerHTML = dkWaitHtml('error', T('Ce dossier ne s\'ouvre pas'), webEsc(Tdyn((e && e.message) || '')),
+      '<button class="fstb-btn" onclick="fsWinOf(this);fsRefresh()">' + T('Réessayer') + '</button>');
   }
 }
 
-function getFileIcon(name) {
-  if (!name) return '📄';
-  const ext = name.split('.').pop().toLowerCase();
-  const map = { mp4:'🎬',mkv:'🎬',avi:'🎬',mov:'🎬',mp3:'🎵',flac:'🎵',wav:'🎵',
-    jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',webp:'🖼️',svg:'🖼️',
-    pdf:'📕',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📋',pptx:'📋',
-    zip:'📦',rar:'📦',tar:'📦','7z':'📦',gz:'📦',
-    sh:'⚙️',py:'🐍',js:'📜',ts:'📜',json:'{}',xml:'📋',yml:'⚙️',yaml:'⚙️',
-    iso:'💿',img:'💿',vmdk:'🖥️', txt:'📄',md:'📄',log:'📋' };
-  return map[ext] || '📄';
+// ── Rendu de la liste : le même pour un dossier et pour des résultats de recherche ──
+var FS_SVG_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+function fsRenderEntries(el, items) {
+  var wid = el.id.replace(/-fs-files$/, '');
+  var S = el._fsSearch || null;
+  var dir = el._fsPath || '/';
+  el._fsItems = items;
+  items = fsSortItems(items);
+  // Barre d'état : ce que contient la liste
+  var nd = 0, nf = 0, tot = 0;
+  items.forEach(function(i){ if (i.type === 'DIRECTORY') nd++; else { nf++; tot += (i.size || 0); } });
+  var parts = [];
+  if (nd) parts.push(nd + ' ' + (nd > 1 ? T('dossiers') : T('dossier')));
+  if (nf) parts.push(nf + ' ' + (nf > 1 ? T('fichiers') : T('fichier')) + (tot ? ' (' + fmtBytes(tot) + ')' : ''));
+  var st = document.getElementById(wid + '-fs-status');
+  if (st) { st.dataset.base = parts.join(', '); st.textContent = st.dataset.base; }
+  fsSearchUi(el, items.length);
+  // Clic dans le vide → désélection ; clic droit dans le vide → menu du dossier
+  el.onclick = function(e){ if (e.target === el || e.target.classList.contains('fs-empty')) { setActiveFsWin(wid); fsDeselect(); } };
+  el.oncontextmenu = function(e) {
+    if (e.target.closest && e.target.closest('.fs-file')) return; // géré par fsShowCtx sur les éléments
+    e.preventDefault(); e.stopPropagation();
+    setActiveFsWin(wid);
+    fsDeselect();
+    const ctx = fsEl('fs-ctx');
+    if (!ctx) return;
+    document.querySelectorAll('[id$="-fs-ctx"]').forEach(function(c){ if (c !== ctx) c.style.display = 'none'; });
+    ctx.querySelectorAll('.fsctx-sel').forEach(function(x){ x.style.display = 'none'; });
+    var pasteEl = ctx.querySelector('.fsctx-paste'), sep = ctx.querySelector('.fsctx-new-sep');
+    if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
+    if (sep) sep.style.display = _fsClipboard ? '' : 'none';
+    fsCtxPlace(ctx, e);
+  };
+  if (!items.length) {
+    el.className = 'fs-files fs-state';
+    el.innerHTML = S
+      ? '<div class="fs-empty">' + FS_SVG_SEARCH + '<div class="fs-empty-title">' + T('Aucun résultat') + '</div><div>'
+        + webEsc(Tf('Aucun nom ne contient « {0} » dans ce dossier ni dans ses sous-dossiers.', S.q)) + '</div>'
+        + '<button class="fstb-btn" onclick="fsWinOf(this);fsSearchClose()">' + T('Fermer la recherche') + '</button></div>'
+      : '<div class="fs-empty">' + fsIcon('', true) + '<div class="fs-empty-title">' + T('Ce dossier est vide') + '</div><div>'
+        + T('Glissez des fichiers ici pour les envoyer sur le NAS, ou créez un dossier.') + '</div></div>';
+    el._fsEntries = [];
+    if (wid === _activeFsId) _fsEntries = el._fsEntries;
+    fsEnsureDropZone(wid);
+    fsSyncViewButtons();
+    return;
+  }
+  el.className = 'fs-files ' + (S ? 'fs-view-list fs-searching' : 'fs-view-' + _fsView);
+  el.innerHTML = '';
+  // En-tête de colonnes (vue liste) : un clic trie, un second inverse le sens
+  var head = document.createElement('div');
+  head.className = 'fs-head';
+  var arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="'
+    + (_fsSort.dir === 1 ? '6 15 12 9 18 15' : '6 9 12 15 18 9') + '"/></svg>';
+  head.innerHTML = '<span></span>' + [['name', T('Nom')], ['type', T('Type')], ['size', T('Taille')], ['date', T('Modifié')]].map(function(c){
+    var on = _fsSort.field === c[0];
+    return '<button type="button" data-sort="' + c[0] + '"' + (on ? ' class="on"' : '') + '>' + c[1] + (on ? arrow : '') + '</button>';
+  }).join('');
+  head.onclick = function(e){
+    var b = e.target.closest ? e.target.closest('button[data-sort]') : null;
+    if (!b) return;
+    e.stopPropagation();
+    setActiveFsWin(wid);
+    if (_fsSort.field === b.dataset.sort) fsToggleSortDir(); else fsSetSort(b.dataset.sort);
+  };
+  var frag = document.createDocumentFragment();
+  frag.appendChild(head);
+  var sbase = S ? S.base.replace(/\/+$/, '') : '';
+  var whereIc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+  var entries = [], firstFile = true;
+  items.forEach(function(item, idx) {
+    const isDir  = item.type === 'DIRECTORY';
+    const fpath  = item.path || ((dir.endsWith('/') ? dir : dir + '/') + item.name);
+    const entry  = { path: fpath, name: item.name, type: item.type, size: item.size, mtime: item.mtime };
+    entries.push(entry);
+    const div    = document.createElement('div');
+    div.className = 'fs-file' + (isDir ? ' is-dir' : '') + (!isDir && firstFile && nd ? ' fs-first-file' : '');
+    if (!isDir) firstFile = false;
+    div.dataset.path = fpath;
+    div.title = item.name;
+    const kind = (isDir && !S && dir === '/mnt') ? 'pool' : null;
+    var where = '';
+    if (S) {
+      // Résultat de recherche : le dossier qui le contient, cliquable pour s'y rendre
+      var parent = fsParentOf(fpath);
+      var rel = parent === (sbase || '/') ? T('Dans ce dossier') : (parent.indexOf(sbase + '/') === 0 ? parent.slice(sbase.length + 1) : parent);
+      where = '<button type="button" class="fs-file-where" title="' + webEsc(T('Ouvrir l\'emplacement') + ' : ' + parent) + '">' + whereIc + '<span>' + webEsc(rel) + '</span></button>';
+    }
+    div.innerHTML = '<div class="fs-file-icon">' + fsIcon(item.name, isDir, kind) + '</div>'
+      + '<div class="fs-file-text"><div class="fs-file-name">' + webEsc(item.name) + '</div>' + where + '</div>'
+      + '<div class="fs-file-type">' + webEsc(kind === 'pool' ? 'Pool' : fsKindLabel(item.name, isDir)) + '</div>'
+      + '<div class="fs-file-size">' + (isDir ? '—' : fmtBytes(item.size || 0)) + '</div>'
+      + '<div class="fs-file-date" title="' + webEsc(fsFmtDate(item.mtime)) + '">' + webEsc(fsFmtWhen(item.mtime) || '—') + '</div>';
+    div.onclick      = function(e){ e.stopPropagation(); fsCtxHide(); setActiveFsWin(wid); fsTileClick(e, entry, idx); try { el.focus({ preventScroll:true }); } catch (_) {} };
+    div.ondblclick   = function(){ setActiveFsWin(wid); fsOpenEntry(entry); };
+    div.oncontextmenu = function(e){ setActiveFsWin(wid); fsShowCtx(e, entry); };
+    if (S) {
+      var wb = div.querySelector('.fs-file-where');
+      wb.onclick = function(e){ e.stopPropagation(); setActiveFsWin(wid); fsReveal(fpath); };
+      wb.ondblclick = function(e){ e.stopPropagation(); };
+    }
+
+    // ── Drag & drop interne ──────────────────────────────────────────────
+    div.draggable = true;
+    div.addEventListener('dragstart', function(e) {
+      _internalDrag = true;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', fpath);
+      setTimeout(function(){ div.classList.add('dragging'); }, 0);
+      setActiveFsWin(wid);
+      fsSelect(entry);
+    });
+    div.addEventListener('dragend', function() {
+      _internalDrag = false;
+      div.classList.remove('dragging');
+      document.querySelectorAll('.drop-target').forEach(function(x){ x.classList.remove('drop-target'); });
+    });
+    // Réception sur un dossier
+    if (isDir) {
+      div.addEventListener('dragover', function(e) {
+        if (!e.dataTransfer.types.includes('text/plain')) return;
+        e.preventDefault(); e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        div.classList.add('drop-target');
+      });
+      div.addEventListener('dragleave', function() { div.classList.remove('drop-target'); });
+      div.addEventListener('drop', function(e) {
+        e.preventDefault(); e.stopPropagation();
+        div.classList.remove('drop-target');
+        var srcPath = e.dataTransfer.getData('text/plain');
+        if (!srcPath || srcPath === fpath) return;
+        var srcName = srcPath.split('/').pop();
+        var dstPath = fpath.replace(/\/$/, '') + '/' + srcName;
+        setActiveFsWin(wid);
+        fileops('POST', 'move', { src: srcPath, dst: dstPath })
+          .then(function(){ toast(T('✅ Déplacé vers ') + item.name); fsRefresh(); })
+          .catch(function(err){ toast('❌ ' + err.message); });
+      });
+    }
+    frag.appendChild(div);
+  });
+  el.appendChild(frag);
+  el._fsEntries = entries;
+  if (wid === _activeFsId) _fsEntries = entries;
+  // S'assurer que le drop zone est toujours actif
+  fsEnsureDropZone(wid);
+  fsSyncViewButtons();
+  fsMarkShared(el);
+}
+// Nouveau tri ou nouveau sens : la liste est reclassée sur place, sans rappeler le serveur.
+function fsRerender() {
+  var el = fsEl('fs-files');
+  if (!el || !el._fsItems) { if (currentFsPath && el && !el._fsSearch) fsNavigate(currentFsPath, { hist:true }); return; }
+  var keep = {}, scroll = el.scrollTop;
+  fsSelList().forEach(function(s){ keep[s.path] = 1; });
+  fsRenderEntries(el, el._fsItems);
+  el.scrollTop = scroll;
+  _fsSel = _fsEntries.filter(function(x){ return keep[x.path]; });
+  if (_fsSel.length) fsRenderSel();
+}
+// Double-clic ou Entrée : un dossier s'ouvre, un fichier texte part dans l'éditeur, le reste s'affiche dans le volet d'aperçu.
+function fsOpenEntry(entry) {
+  if (!entry) return;
+  if (entry.type === 'DIRECTORY') { fsNavigate(entry.path); return; }
+  var k = fsKind(entry.name, false);
+  if (k === 'script' || k === 'config' || k === 'text' || (k === 'file' && (entry.size || 0) <= 524288)) { fsEditFile(entry.path, entry.name); return; }
+  var panel = fsEl('fs-preview');
+  if (panel) panel.classList.remove('hidden');
+  fsShowPreview(entry);
+}
+// Va dans le dossier qui contient un élément (résultat de recherche) et le repère dans la liste.
+async function fsReveal(path) {
+  await fsNavigate(fsParentOf(path));
+  var en = _fsEntries.find(function(x){ return x.path === path; });
+  if (!en) return;
+  fsSelect(en);
+  var el = fsEl('fs-files'), row = el && el.querySelector('.fs-file.selected');
+  if (row) row.scrollIntoView({ block:'center' });
+}
+function fsRevealSelected() { if (fsSelected) fsReveal(fsSelected.path); }
+// Clavier dans la liste : flèches, Entrée, Retour arrière, Suppr, F2, Échap, Ctrl+A.
+function fsKey(e, wid) {
+  if (e.target !== e.currentTarget && e.target.closest && e.target.closest('input,textarea,select')) return;
+  if (e.altKey) return;
+  setActiveFsWin(wid);
+  var el = fsEl('fs-files'), n = _fsEntries.length, k = e.key;
+  var cur = fsSelected ? _fsEntries.findIndex(function(x){ return x.path === fsSelected.path; }) : -1;
+  function pick(i) {
+    if (!n) return;
+    i = Math.max(0, Math.min(n - 1, i));
+    _fsSel = [_fsEntries[i]]; _fsSelAnchor = i;
+    fsRenderSel();
+    var row = el.querySelector('.fs-file.selected');
+    if (row) row.scrollIntoView({ block:'nearest' });
+  }
+  var cols = 1;
+  if (el.classList.contains('fs-view-grid')) {
+    var rows = el.querySelectorAll('.fs-file');
+    if (rows.length) { cols = 0; for (var i = 0; i < rows.length && rows[i].offsetTop === rows[0].offsetTop; i++) cols++; }
+  }
+  if ((e.ctrlKey || e.metaKey) && (k === 'a' || k === 'A')) { _fsSel = _fsEntries.slice(); if (_fsSel.length) fsRenderSel(); }
+  else if (e.ctrlKey || e.metaKey) return;
+  else if (k === 'ArrowDown') pick(cur < 0 ? 0 : cur + cols);
+  else if (k === 'ArrowUp') pick(cur < 0 ? 0 : cur - cols);
+  else if (k === 'ArrowRight' && cols > 1) pick(cur < 0 ? 0 : cur + 1);
+  else if (k === 'ArrowLeft' && cols > 1) pick(cur < 0 ? 0 : cur - 1);
+  else if (k === 'Home') pick(0);
+  else if (k === 'End') pick(n - 1);
+  else if (k === 'Enter') { if (fsSelected && _fsSel.length === 1) fsOpenEntry(fsSelected); }
+  else if (k === 'Backspace') { if (el._fsSearch) fsSearchClose(); else if (currentFsPath !== '/') fsGoUp(); }
+  else if (k === 'Delete') { if (fsSelList().length) fsDeleteSelected(); }
+  else if (k === 'F2') { if (fsSelected && _fsSel.length === 1) fsRenamePrompt(); }
+  else if (k === 'Escape') { if (_fsSel.length) fsDeselect(); else if (el._fsSearch) fsSearchClose(); }
+  else return;
+  e.preventDefault(); e.stopPropagation();
 }
 
 function fsSidebarDrop(e, destPath) {
@@ -6782,19 +7385,24 @@ function fsSidebarDrop(e, destPath) {
     .catch(err => toast('❌ ' + err.message));
 }
 function fsGoUp() {
-  const parts = currentFsPath.replace(/\/$/, '').split('/');
-  parts.pop();
-  fsNavigate(parts.join('/') || '/mnt');
+  if (currentFsPath === '/') return;
+  fsNavigate(fsParentOf(String(currentFsPath).replace(/\/+$/, '')));
 }
-function fsRefresh() { fsNavigate(currentFsPath); }
+// Actualiser : la recherche en cours est relancée telle quelle, sinon le dossier est relu.
+function fsRefresh() {
+  var el = fsEl('fs-files');
+  if (el && el._fsSearch) return fsSearch(el._fsSearch.q, true);
+  return fsNavigate(currentFsPath, { hist:true });
+}
 
 // ---- Modes d'affichage (mosaïque / liste / détails) ----
-var _fsView = (function(){ try { var v = localStorage.getItem('fsViewMode'); return v === 'list' ? 'list' : 'grid'; } catch(e){ return 'grid'; } })();
+var _fsView = (function(){ try { var v = localStorage.getItem('fsViewMode'); return v === 'grid' ? 'grid' : 'list'; } catch(e){ return 'list'; } })();
 function fsSetView(m){
-  if (m !== 'grid' && m !== 'list') m = 'grid';
+  if (m !== 'grid' && m !== 'list') m = 'list';
   _fsView = m;
   try { localStorage.setItem('fsViewMode', m); } catch(e){}
   document.querySelectorAll('.fs-files').forEach(function(c){
+    if (c._fsSearch || c.classList.contains('fs-state')) return;   // résultats de recherche : toujours en liste
     c.classList.remove('fs-view-grid','fs-view-list','fs-view-details');
     c.classList.add('fs-view-' + m);
   });
@@ -6832,16 +7440,18 @@ async function fsLoadShares(){
   _fsSharesTs = Date.now();
   return set;
 }
-async function fsMarkShared(){
+async function fsMarkShared(cont){
   try {
     if (!_fsSharedPaths || (Date.now() - _fsSharesTs) > 30000) await fsLoadShares();
   } catch(e){ return; }
   if (!_fsSharedPaths) return;
-  var cont = fsEl('fs-files');
+  cont = cont || fsEl('fs-files');
   if (!cont) return;
   cont.querySelectorAll('.fs-file').forEach(function(el){
     var p = (el.dataset.path || '').replace(/\/+$/, '');
-    el.classList.toggle('fs-shared', _fsSharedPaths.has(p));
+    var on = _fsSharedPaths.has(p);
+    el.classList.toggle('fs-shared', on);
+    if (on) { var t = el.querySelector('.fs-file-type'); if (t) t.textContent = T('Dossier partagé'); }
   });
 }
 
@@ -6864,27 +7474,33 @@ function fsTileClick(e, entry, idx){
   }
   fsRenderSel();
 }
+function fsScope(){ return fsEl('fs-files') || document; }
+// Les actions sur la sélection n'apparaissent dans la barre d'outils que s'il y a une sélection.
+function fsSelBar(on){ var g = fsEl('fs-sel-acts'); if (g) g.classList.toggle('has-sel', !!on); }
 function fsRenderSel(){
-  document.querySelectorAll('.fs-file').forEach(function(el){ el.classList.remove('selected'); });
-  _fsSel.forEach(function(s){ var el = document.querySelector('.fs-file[data-path="' + CSS.escape(s.path) + '"]'); if (el) el.classList.add('selected'); });
+  var sc = fsScope();
+  sc.querySelectorAll('.fs-file.selected').forEach(function(el){ el.classList.remove('selected'); });
+  _fsSel.forEach(function(s){ var el = sc.querySelector('.fs-file[data-path="' + CSS.escape(s.path) + '"]'); if (el) el.classList.add('selected'); });
   if (_fsSel.length === 0) { fsDeselect(); return; }
   if (_fsSel.length === 1) { fsSelect(_fsSel[0]); return; }
   fsSelectMulti();
 }
 function fsSelectMulti(){
   fsSelected = _fsSel[_fsSel.length - 1];
-  ['fs-btn-dl','fs-btn-edit','fs-btn-share','fs-btn-netshare','fs-btn-ren'].forEach(function(id){ var e = fsEl(id); if (e) e.style.display = 'none'; });
+  ['fs-btn-dl','fs-btn-edit','fs-btn-share','fs-btn-netshare','fs-btn-ren','fs-btn-reveal'].forEach(function(id){ var e = fsEl(id); if (e) e.style.display = 'none'; });
   var _de = fsEl('fs-btn-del'); if (_de) _de.style.display = '';
+  fsSelBar(true);
   if (typeof fsHidePreview === 'function') fsHidePreview();
   var tot = 0; _fsSel.forEach(function(s){ tot += (s.size || 0); });
-  fsEl('fs-status').textContent = _fsSel.length + T(' éléments sélectionnés') + (tot ? '  —  ' + fmtBytes(tot) : '');
+  var _stm = fsEl('fs-status'); if (_stm) _stm.textContent = _fsSel.length + T(' éléments sélectionnés') + (tot ? '  —  ' + fmtBytes(tot) : '');
 }
 function fsSelList(){ return _fsSel.length ? _fsSel.slice() : (fsSelected ? [fsSelected] : []); }
 
 function fsSelect(item) {
   _fsSel = [item];
-  document.querySelectorAll('.fs-file').forEach(el => el.classList.remove('selected'));
-  const el = document.querySelector(`.fs-file[data-path="${CSS.escape(item.path)}"]`);
+  const sc = fsScope();
+  sc.querySelectorAll('.fs-file.selected').forEach(el => el.classList.remove('selected'));
+  const el = sc.querySelector(`.fs-file[data-path="${CSS.escape(item.path)}"]`);
   if (el) el.classList.add('selected');
   fsSelected = item;
   const isFile = item.type !== 'DIRECTORY';
@@ -6894,13 +7510,15 @@ function fsSelect(item) {
   var _ns=fsEl('fs-btn-netshare'); if(_ns) _ns.style.display = isFile ? 'none' : '';
   var _rn=fsEl('fs-btn-ren'); if(_rn) _rn.style.display='';
   var _de=fsEl('fs-btn-del'); if(_de) _de.style.display='';
+  // Dans des résultats de recherche : aller au dossier qui contient l'élément
+  var _rv=fsEl('fs-btn-reveal'); if(_rv) _rv.style.display = (sc._fsSearch ? '' : 'none');
+  fsSelBar(true);
   fsShowPreview(item);
-  fsEl('fs-status').textContent =
-    `${isFile ? '📄' : '📁'} ${item.name}${item.size ? '  —  ' + fmtBytes(item.size) : ''}`;
+  var _st=fsEl('fs-status'); if(_st) _st.textContent = item.name + (isFile ? '  —  ' + fmtBytes(item.size || 0) : '');
 }
 
 function fsDeselect() {
-  document.querySelectorAll('.fs-file').forEach(el => el.classList.remove('selected'));
+  fsScope().querySelectorAll('.fs-file.selected').forEach(el => el.classList.remove('selected'));
   fsSelected = null;
   _fsSel = []; _fsSelAnchor = -1;
   var _dl2=fsEl('fs-btn-dl'); if(_dl2) _dl2.style.display='none';
@@ -6909,7 +7527,10 @@ function fsDeselect() {
   var _ns2=fsEl('fs-btn-netshare'); if(_ns2) _ns2.style.display='none';
   var _rn2=fsEl('fs-btn-ren'); if(_rn2) _rn2.style.display='none';
   var _de2=fsEl('fs-btn-del'); if(_de2) _de2.style.display='none';
-  fsEl('fs-status').textContent = '';
+  var _rv2=fsEl('fs-btn-reveal'); if(_rv2) _rv2.style.display='none';
+  fsSelBar(false);
+  // La barre d'état revient au contenu du dossier
+  var _st2=fsEl('fs-status'); if(_st2) _st2.textContent = _st2.dataset.base || '';
 }
 
 // ---- Context menu fichier ----
@@ -6923,7 +7544,9 @@ function fsShowCtx(e, item) {
   // Masquer tout autre menu ctx ouvert
   document.querySelectorAll('[id$="-fs-ctx"]').forEach(function(c){ if(c !== ctx) c.style.display='none'; });
   // Mettre à jour les items selon le type
+  ctx.querySelectorAll('.fsctx-sel, .fsctx-new-sep').forEach(function(x){ x.style.display = ''; });
   var isDir = item.type === 'DIRECTORY';
+  var _frv=fsEl('fsctx-reveal'); if(_frv) _frv.style.display = (fsScope()._fsSearch ? '' : 'none');
   var _fo=fsEl('fsctx-open'); if(_fo) _fo.style.display = isDir ? '' : 'none';
   var _fd=fsEl('fsctx-dl');   if(_fd) _fd.style.display = isDir ? 'none' : '';
   var _fe=fsEl('fsctx-edit'); if(_fe) _fe.style.display = isDir ? 'none' : '';
@@ -6933,15 +7556,13 @@ function fsShowCtx(e, item) {
   var _fsv=fsEl('fsctx-serve'); if(_fsv) _fsv.style.display = isDir ? '' : 'none';
   // En multi-sélection : masquer les actions propres à un seul élément
   if (multi) {
-    ['fsctx-open','fsctx-dl','fsctx-edit','fsctx-extract','fsctx-netshare','fsctx-serve','fsctx-share','fsctx-perm','fsctx-cksum'].forEach(function(id){ var el=fsEl(id); if(el) el.style.display='none'; });
+    ['fsctx-open','fsctx-reveal','fsctx-tab','fsctx-dl','fsctx-edit','fsctx-extract','fsctx-netshare','fsctx-serve','fsctx-share','fsctx-perm','fsctx-cksum'].forEach(function(id){ var el=fsEl(id); if(el) el.style.display='none'; });
   }
   // Coller disponible ?
   var pasteEl = ctx.querySelector('.fsctx-paste');
   if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
   // Positionner
-  ctx.style.left    = Math.min(e.clientX, window.innerWidth  - 200) + 'px';
-  ctx.style.top     = Math.min(e.clientY, window.innerHeight - 260) + 'px';
-  ctx.style.display = 'block';
+  fsCtxPlace(ctx, e);
 }
 document.addEventListener('click', () => { document.querySelectorAll('[id$="-fs-ctx"]').forEach(function(c){ c.style.display='none'; }); });
 // Bloquer menu contextuel natif sur les fs-files pour ne pas interférer
@@ -7344,34 +7965,78 @@ async function fsExtractGo(encSrc) {
     closeCreateApp(); fsRefresh();
   } catch(e) { toast('❌ ' + e.message); btn.disabled = false; btn.textContent = T('📦 Extraire'); }
 }
-async function fsSearch() {
-  const inp = fsEl('fs-search'); const q = inp ? inp.value.trim() : '';
-  if (!q) { fsRefresh(); return; }
-  const el = fsEl('fs-files'); el.style.display = 'block';
-  el.innerHTML = T('<div class="fs-loading"><div class="spinner"></div> Recherche…</div>');
+// ── Recherche : les résultats sont de vrais éléments (sélection, menu, aperçu, glisser-déposer),
+//    et la recherche reste ouverte tant qu'on ne la ferme pas. ──
+function fsSearchUi(el, n) {
+  var wid = el.id.replace(/-fs-files$/, ''), S = el._fsSearch || null;
+  var box = document.getElementById(wid + '-fs-searchbox'), bar = document.getElementById(wid + '-fs-searchbar');
+  if (box) box.classList.toggle('on', !!S);
+  if (!bar) return;
+  if (!S) { bar.hidden = true; bar.innerHTML = ''; return; }
+  var inp = document.getElementById(wid + '-fs-search');
+  if (inp && document.activeElement !== inp) inp.value = S.q;
+  var name = S.base.replace(/\/+$/, '').split('/').pop() || '/';
+  var txt = n == null ? Tf('Recherche de « {0} » dans {1} et ses sous-dossiers…', S.q, name)
+    : n === 0 ? Tf('Aucun résultat pour « {0} » dans {1} et ses sous-dossiers', S.q, name)
+    : (n > 1 ? Tf('{0} résultats pour « {1} » dans {2} et ses sous-dossiers', n, S.q, name) : Tf('1 résultat pour « {0} » dans {1} et ses sous-dossiers', S.q, name))
+      + (S.truncated ? T(' (limité à 500)') : '');
+  bar.hidden = false;
+  bar.innerHTML = FS_SVG_SEARCH + '<span class="fs-searchbar-text" title="' + webEsc(S.base) + '">' + webEsc(txt) + '</span>'
+    + '<button type="button" class="fstb-btn" onclick="setActiveFsWin(\'' + wid + '\');fsSearchClose()">' + T('Fermer la recherche') + '</button>';
+}
+async function fsSearch(q, keep) {
+  const inp = fsEl('fs-search');
+  const el = fsEl('fs-files');
+  if (!el) return;
+  if (q == null) q = inp ? inp.value.trim() : '';
+  if (!q) { if (el._fsSearch) fsSearchClose(); return; }
+  const base = currentFsPath || '/';
+  const req = el._fsReq = ++_fsReqSeq;
+  fsDeselect();
+  var st = fsEl('fs-status'); if (st) { st.dataset.base = ''; st.textContent = ''; }
+  // « keep » : même recherche relancée après une action (renommer, supprimer…) — les lignes restent en place.
+  const soft = !!keep && !!el._fsSearch && !!el.querySelector('.fs-file');
+  const scroll = el.scrollTop;
+  el._fsSearch = { q: q, base: base, truncated: false };
+  el._fsItems = null;
+  el.style.display = '';
+  if (soft) el.classList.add('fs-busy');
+  else {
+    el._fsEntries = _fsEntries = [];
+    fsSearchUi(el);
+    el.className = 'fs-files fs-state';
+    el.innerHTML = dkWaitHtml('busy', T('Recherche en cours'), webEsc(Tf('« {0} » dans {1} et ses sous-dossiers', q, base)));
+  }
   try {
-    const r = await fileops('GET', 'search?path=' + encodeURIComponent(currentFsPath) + '&q=' + encodeURIComponent(q));
-    const res = r.results || [];
-    fsEl('fs-status').textContent = res.length + T(' résultat') + (res.length>1?'s':'') + T(' pour « ') + q + ' »' + (r.truncated ? T(' (limité à 500)') : '');
-    if (!res.length) { el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">🔍</div><span>Aucun résultat</span></div>'); return; }
-    let h = '';
-    res.forEach(function(it){
-      const parent = it.path.substring(0, it.path.lastIndexOf('/')) || '/';
-      h += '<div class="fs-search-row" data-path="' + String(it.path).replace(/"/g,'&quot;') + '" data-dir="' + (it.is_dir?'1':'0') + '" style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;">'
-        + '<span style="font-size:20px;flex-shrink:0;">' + (it.is_dir?'📁':getFileIcon(it.name)) + '</span>'
-        + '<div style="flex:1;min-width:0;"><div style="font-size:13px;word-break:break-all;">' + String(it.name).replace(/</g,'&lt;') + '</div>'
-        + '<div style="font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + String(parent).replace(/</g,'&lt;') + '</div></div>'
-        + (it.is_dir?'':'<span style="font-size:11px;color:var(--text-dim);flex-shrink:0;">' + fmtBytes(it.size) + '</span>')
-        + '</div>';
+    const r = await fileops('GET', 'search?path=' + encodeURIComponent(base) + '&q=' + encodeURIComponent(q));
+    if (el._fsReq !== req) return;
+    el._fsSearch.truncated = !!r.truncated;
+    const items = (r.results || []).map(function(it){
+      return { name: it.name, path: it.path, type: it.is_dir ? 'DIRECTORY' : 'FILE', size: it.size, mtime: it.mtime };
     });
-    el.innerHTML = h;
-    el.querySelectorAll('.fs-search-row').forEach(function(row){
-      row.onmouseenter = function(){ row.style.background = 'rgba(255,255,255,0.06)'; };
-      row.onmouseleave = function(){ row.style.background = ''; };
-      row.onclick = function(){ const p = row.dataset.path; if (row.dataset.dir === '1') fsNavigate(p); else fsNavigate(p.substring(0, p.lastIndexOf('/'))); };
-      row.ondblclick = function(){ const p = row.dataset.path; if (row.dataset.dir !== '1') fsEditFile(p, p.split('/').pop()); };
-    });
-  } catch(e) { el.innerHTML = ''; toast('❌ ' + e.message); }
+    fsRenderEntries(el, items);
+    el.scrollTop = soft ? scroll : 0;
+  } catch(e) {
+    if (el._fsReq !== req) return;
+    el._fsEntries = _fsEntries = [];
+    fsSearchUi(el);
+    el.className = 'fs-files fs-state';
+    el.innerHTML = dkWaitHtml('error', T('La recherche n\'a pas abouti'), webEsc(Tdyn((e && e.message) || '')),
+      '<div style="display:flex;gap:8px;"><button class="fstb-btn" onclick="fsWinOf(this);fsSearchClose()">' + T('Fermer la recherche') + '</button>'
+      + '<button class="fstb-btn primary" onclick="fsWinOf(this);fsRefresh()">' + T('Réessayer') + '</button></div>');
+  }
+}
+function fsSearchClose() {
+  var inp = fsEl('fs-search'); if (inp) inp.value = '';
+  fsNavigate(currentFsPath, { hist:true });
+}
+function fsSearchKey(e, wid) {
+  if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); setActiveFsWin(wid); fsSearch(); }
+  else if (e.key === 'Escape') {
+    e.preventDefault(); e.stopPropagation(); setActiveFsWin(wid);
+    var el = fsEl('fs-files');
+    if (el && el._fsSearch) fsSearchClose(); else { e.target.value = ''; e.target.blur(); }
+  }
 }
 async function fsChecksumSelected() {
   if (!fsSelected || fsSelected.type === 'DIRECTORY') { toast(T('Sélectionnez un fichier')); return; }

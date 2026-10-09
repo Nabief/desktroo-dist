@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.5.0'
+APP_VERSION = '2.6.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -7118,13 +7118,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                             is_dir = False
                         size = 0
                         mtime = 0
-                        if not is_dir:
-                            try:
-                                st = e.stat(follow_symlinks=False)
+                        # Date de modification pour tout le monde (colonne « Modifié »), taille pour les fichiers.
+                        try:
+                            st = e.stat(follow_symlinks=False)
+                            mtime = st.st_mtime
+                            if not is_dir:
                                 size = st.st_size
-                                mtime = st.st_mtime
-                            except OSError:
-                                pass
+                        except OSError:
+                            pass
                         entries.append({
                             'name':   e.name,
                             'is_dir': is_dir,
@@ -7170,13 +7171,16 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     for full in lines:
                         if full == base:
                             continue
+                        isd, sz, mt = False, 0, 0
                         try:
                             isd = os.path.isdir(full)
-                            sz = 0 if isd else os.path.getsize(full)
+                            st = os.stat(full)
+                            mt = st.st_mtime
+                            sz = 0 if isd else st.st_size
                         except OSError:
-                            isd, sz = False, 0
+                            pass
                         results.append({'name': os.path.basename(full.rstrip('/')),
-                                        'path': full, 'is_dir': isd, 'size': sz})
+                                        'path': full, 'is_dir': isd, 'size': sz, 'mtime': mt})
                 else:
                     # 2) Repli Python (si `find` indisponible)
                     import time as _t
@@ -7185,12 +7189,15 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                         for nm in list(dirs) + list(files):
                             if q in nm.lower():
                                 full = os.path.join(root, nm)
+                                isd, sz, mt = False, 0, 0
                                 try:
                                     isd = os.path.isdir(full)
-                                    sz = 0 if isd else os.path.getsize(full)
+                                    st = os.stat(full)
+                                    mt = st.st_mtime
+                                    sz = 0 if isd else st.st_size
                                 except OSError:
-                                    isd, sz = False, 0
-                                results.append({'name': nm, 'path': full, 'is_dir': isd, 'size': sz})
+                                    pass
+                                results.append({'name': nm, 'path': full, 'is_dir': isd, 'size': sz, 'mtime': mt})
                                 if len(results) >= limit:
                                     break
                         if len(results) >= limit or (_t.time() - start) > 30:
