@@ -6,7 +6,8 @@
 <title>Desktroo</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231a2c4b'/%3E%3Cstop offset='1' stop-color='%230b1526'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='15' fill='url(%23t)'/%3E%3Ccircle cx='26' cy='37' r='11' fill='none' stroke='%23e9eef7' stroke-width='6'/%3E%3Crect x='37' y='12' width='6.5' height='38' rx='3.25' fill='%23e9eef7'/%3E%3Ccircle cx='26' cy='37' r='4.6' fill='%233ecf8e'/%3E%3C/svg%3E">
 <script>/* Thème persistant : appliqué avant le rendu pour éviter tout flash */
-try { document.documentElement.setAttribute('data-theme', localStorage.getItem('tn-theme') === 'light' ? 'light' : 'dark'); } catch(e) {}</script>
+try { document.documentElement.setAttribute('data-theme', localStorage.getItem('tn-theme') === 'light' ? 'light' : 'dark');
+      var dkA = localStorage.getItem('tn-accent'); if (/^(blue|red|amber|yellow|gray)$/.test(dkA || '')) document.documentElement.setAttribute('data-accent', dkA); } catch(e) {}</script>
 <style id="dk-fonts">
 /* Polices de la charte Desktroo, embarquées (sous-ensemble latin, graisse variable) :
    aucun appel à un serveur tiers, le bureau reste autonome sur le réseau local.
@@ -53,13 +54,13 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .tnd-pre      { max-height:340px; overflow:auto; background:rgba(0,0,0,0.28); border:1px solid var(--glass-border); border-radius:var(--radius-sm); padding:10px; font-size:11px; line-height:1.45; white-space:pre-wrap; word-break:break-word; color:var(--text); }
   /* Badges & boîtes de statut */
   .tnd-badge    { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:999px; font-size:10px; background:rgba(var(--accent-rgb),0.18); color:var(--accent2); }
-  .tnd-ok-box   { padding:10px; border:1px solid rgba(62,207,142,.35); border-radius:var(--radius-sm); background:rgba(62,207,142,.08); color:var(--success); font-size:13px; }
+  .tnd-ok-box   { padding:10px; border:1px solid rgba(var(--success-rgb),.35); border-radius:var(--radius-sm); background:rgba(var(--success-rgb),.08); color:var(--success); font-size:13px; }
   .tnd-err-box  { padding:10px; border:1px solid rgba(224,82,82,.4); border-radius:var(--radius-sm); background:rgba(224,82,82,.1); color:#f87171; font-size:12px; word-break:break-word; }
   /* Boutons pilule unifiés */
   .tnd-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 13px; border-radius:999px; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); color:var(--text); font-size:12px; font-weight:500; line-height:1; cursor:pointer; white-space:nowrap; transition:background .15s,border-color .15s,color .15s; }
   .tnd-btn:hover { background:rgba(var(--accent-rgb),0.16); border-color:rgba(var(--accent2-rgb),0.45); color:var(--accent2); }
-  .tnd-btn.primary { background:rgba(62,207,142,0.15); border-color:rgba(62,207,142,0.3); color:var(--success); }
-  .tnd-btn.primary:hover { background:rgba(62,207,142,0.24); }
+  .tnd-btn.primary { background:rgba(var(--accent-rgb),0.15); border-color:rgba(var(--accent-rgb),0.3); color:var(--accent2); }
+  .tnd-btn.primary:hover { background:rgba(var(--accent-rgb),0.24); }
   .tnd-btn.danger { color:#f87171; }
   .tnd-btn.danger:hover { background:rgba(224,82,82,0.16); border-color:rgba(224,82,82,0.45); color:#f87171; }
   /* Champs de formulaire */
@@ -116,6 +117,9 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     --text-dim: #9db0d0;
     --danger: #e05252;
     --success: #3ecf8e;
+    --success-rgb: 62,207,142;
+    --brand: #3ecf8e;                 /* teinte vive de la marque : logo, fonds intégrés */
+    --brand-rgb: 62,207,142;
     --warning: #f59e0b;
     --radius: 16px;
     --radius-sm: 11px;
@@ -151,16 +155,16 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #wallpaper, .wp-art {
     background-color:#0a1220;
     background-image:
-      radial-gradient(58% 62% at 76% 2%, rgba(62,207,142,0.27), transparent 70%),
+      radial-gradient(58% 62% at 76% 2%, rgba(var(--brand-rgb),0.27), transparent 70%),
       radial-gradient(46% 52% at 9% 12%, rgba(90,169,255,0.21), transparent 70%),
-      radial-gradient(64% 56% at 98% 108%, rgba(62,207,142,0.15), transparent 68%),
+      radial-gradient(64% 56% at 98% 108%, rgba(var(--brand-rgb),0.15), transparent 68%),
       linear-gradient(165deg, #0e1c33 0%, #0a1220 46%, #070d18 100%);
   }
   #wallpaper::before, .wp-art::before {
     content:''; position:absolute; inset:0; pointer-events:none;
     background:
-      radial-gradient(130% 96% at 50% 130%, transparent 61.55%, rgba(62,207,142,0.34) 61.8%, transparent 62.25%),
-      radial-gradient(152% 106% at 45% 141%, transparent 63.5%, rgba(62,207,142,0.16) 63.72%, transparent 64.1%),
+      radial-gradient(130% 96% at 50% 130%, transparent 61.55%, rgba(var(--brand-rgb),0.34) 61.8%, transparent 62.25%),
+      radial-gradient(152% 106% at 45% 141%, transparent 63.5%, rgba(var(--brand-rgb),0.16) 63.72%, transparent 64.1%),
       radial-gradient(178% 118% at 40% 154%, transparent 65.3%, rgba(90,169,255,0.14) 65.5%, transparent 65.85%);
   }
   /* Trame discrète, concentrée sous le halo principal. */
@@ -176,9 +180,9 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   /* Aurore : deux voiles larges, sans arcs ni trame. */
   #wallpaper[data-preset="aurore"], .wp-art[data-preset="aurore"] {
     background-image:
-      radial-gradient(95% 46% at 26% -4%, rgba(62,207,142,0.34), transparent 72%),
+      radial-gradient(95% 46% at 26% -4%, rgba(var(--brand-rgb),0.34), transparent 72%),
       radial-gradient(85% 42% at 88% 10%, rgba(90,169,255,0.30), transparent 72%),
-      radial-gradient(70% 46% at 56% 34%, rgba(62,207,142,0.10), transparent 72%),
+      radial-gradient(70% 46% at 56% 34%, rgba(var(--brand-rgb),0.10), transparent 72%),
       linear-gradient(180deg, #0c1932 0%, #0a1220 58%, #070d18 100%);
   }
   /* Nuit : le navy seul, pour qui veut un bureau sans décor. */
@@ -216,7 +220,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     position:fixed; inset:0; z-index:1000;
     display:flex; align-items:center; justify-content:center;
     background:
-      radial-gradient(60% 60% at 70% 0%, rgba(62,207,142,0.16), transparent 70%),
+      radial-gradient(60% 60% at 70% 0%, rgba(var(--brand-rgb),0.16), transparent 70%),
       radial-gradient(50% 50% at 15% 10%, rgba(90,169,255,0.14), transparent 70%),
       #0a1220;
     transition: opacity 0.6s ease;
@@ -605,7 +609,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .mnt-disks { --wt-cols:62px minmax(90px,1.25fr) minmax(112px,1.25fr) 74px 104px minmax(64px,.8fr) 52px; }
   .mnt-temp {
     position:relative; flex-shrink:0; width:180px; height:5px; margin-left:6px; border-radius:3px;
-    background:linear-gradient(90deg, #3ecf8e 0 56%, #f59e0b 68%, #e05252 80% 100%);
+    background:linear-gradient(90deg, var(--success) 0 56%, #f59e0b 68%, #e05252 80% 100%);
   }
   .mnt-temp i { position:absolute; top:-5px; width:3px; height:15px; margin-left:-1.5px; border-radius:2px; background:var(--text); }
   .mnt-scan {
@@ -839,7 +843,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-nav.active .web-nav-meta { color:inherit; opacity:.75; }
   .web-dot {
     width:8px; height:8px; margin:0 4px; border-radius:50%; flex-shrink:0;
-    background:var(--success); box-shadow:0 0 0 3px rgba(62,207,142,0.16);
+    background:var(--success); box-shadow:0 0 0 3px rgba(var(--success-rgb),0.16);
   }
   .web-dot.off { background:none; box-shadow:inset 0 0 0 1.5px var(--text-dim); }
   .web-dot.warn { background:var(--warning); box-shadow:0 0 0 3px rgba(245,158,11,0.16); }
@@ -1046,7 +1050,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .pool-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
   .pool-name { font-size:15px; font-weight:700; }
   .pool-status { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
-  .pool-status.ONLINE { background:rgba(62,207,142,0.15); color:var(--success); }
+  .pool-status.ONLINE { background:rgba(var(--success-rgb),0.15); color:var(--success); }
   .pool-status.DEGRADED { background:rgba(245,158,11,0.15); color:var(--warning); }
   .pool-status.FAULTED { background:rgba(224,82,82,0.15); color:var(--danger); }
   .pool-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
@@ -1061,7 +1065,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .disk-name { font-weight:600; }
   .disk-size { color:var(--text-dim); font-size:11px; }
   .disk-status { font-size:11px; padding:2px 8px; border-radius:10px; }
-  .disk-status.ONLINE { background:rgba(62,207,142,0.15); color:var(--success); }
+  .disk-status.ONLINE { background:rgba(var(--success-rgb),0.15); color:var(--success); }
 
   /* ===== PROTECTION DES DONNÉES, CERTIFICATS, TERMINAL ===== */
   #win-dataprotect, #win-certs, #win-terminal { min-width:860px; min-height:520px; }
@@ -1267,7 +1271,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .app-card-ver { font-size:10px; color:var(--text-dim); }
   .app-card-status { display:flex; align-items:center; justify-content:space-between; }
   .app-running { font-size:11px; padding:2px 8px; border-radius:10px; }
-  .app-running.active { background:rgba(62,207,142,0.15); color:var(--success); }
+  .app-running.active { background:rgba(var(--success-rgb),0.15); color:var(--success); }
   .app-running.inactive { background:rgba(148,163,184,0.15); color:var(--text-dim); }
   .app-running.deploying { background:rgba(245,158,11,0.15); color:var(--warning); }
 
@@ -1279,7 +1283,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .container-table td { padding:10px 12px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.04); }
   .container-table tr:hover td { background:rgba(255,255,255,0.03); }
   .container-state { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
-  .container-state.running { background:rgba(62,207,142,0.15); color:var(--success); }
+  .container-state.running { background:rgba(var(--success-rgb),0.15); color:var(--success); }
   .container-state.stopped { background:rgba(148,163,184,0.15); color:var(--text-dim); }
   .container-state.error   { background:rgba(224,82,82,0.15); color:var(--danger); }
   .state-dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
@@ -1391,6 +1395,42 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; height:100%; color:var(--text-dim); font-size:13px; }
   .empty-state .es-icon { font-size:48px; opacity:0.4; }
 
+  /* ===== COULEUR D'ACCENT : le vert de la charte peut céder la place à une autre teinte =====
+     --accent : aplats ; --accent2 : texte et bordures ; --accent-ink : texte posé sur l'aplat ;
+     --brand : teinte vive, la même en clair et en sombre (logo, fonds intégrés). */
+  [data-accent="blue"]   { --accent:#4d9fff; --accent-rgb:77,159,255;  --accent2:#7fbaff; --accent2-rgb:127,186,255; --accent-ink:#031a36; --brand:#4d9fff; --brand-rgb:77,159,255; }
+  [data-accent="red"]    { --accent:#f25f66; --accent-rgb:242,95,102;  --accent2:#ff8a8f; --accent2-rgb:255,138,143; --accent-ink:#2e0508; --brand:#f25f66; --brand-rgb:242,95,102; }
+  [data-accent="amber"]  { --accent:#f5a524; --accent-rgb:245,165,36;  --accent2:#ffc05c; --accent2-rgb:255,192,92;  --accent-ink:#2b1a00; --brand:#f5a524; --brand-rgb:245,165,36; }
+  [data-accent="yellow"] { --accent:#f0d43a; --accent-rgb:240,212,58;  --accent2:#f7e277; --accent2-rgb:247,226,119; --accent-ink:#2a2400; --brand:#f0d43a; --brand-rgb:240,212,58; }
+  [data-accent="gray"]   { --accent:#aab5c8; --accent-rgb:170,181,200; --accent2:#c8d0de; --accent2-rgb:200,208,222; --accent-ink:#0f1520; --brand:#aab5c8; --brand-rgb:170,181,200; }
+  /* En clair, l'accent est assombri pour rester lisible en texte ; le jaune garde un aplat vif et une encre sombre. */
+  [data-theme="light"][data-accent="blue"]   { --accent:#1766d6; --accent-rgb:23,102,214; --accent2:#1766d6; --accent2-rgb:23,102,214; --accent-ink:#ffffff; }
+  [data-theme="light"][data-accent="red"]    { --accent:#c9303a; --accent-rgb:201,48,58;  --accent2:#c9303a; --accent2-rgb:201,48,58;  --accent-ink:#ffffff; }
+  [data-theme="light"][data-accent="amber"]  { --accent:#a66300; --accent-rgb:166,99,0;   --accent2:#a66300; --accent2-rgb:166,99,0;   --accent-ink:#ffffff; }
+  [data-theme="light"][data-accent="yellow"] { --accent:#e3c019; --accent-rgb:227,192,25; --accent2:#7a6400; --accent2-rgb:122,100,0;  --accent-ink:#2a2400; }
+  [data-theme="light"][data-accent="gray"]   { --accent:#4b5768; --accent-rgb:75,87,104;  --accent2:#4b5768; --accent2-rgb:75,87,104;  --accent-ink:#ffffff; }
+  /* Le logo prend la teinte choisie */
+  .dk-h-arc { stroke:var(--brand); }
+  .dk-h-dot { fill:var(--brand); }
+  /* Page « Couleur du thème » */
+  .look-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; margin-top:6px; }
+  .look-swatch {
+    display:flex; align-items:center; gap:13px; padding:12px 14px; border:1px solid var(--glass-border); border-radius:13px;
+    background:rgba(255,255,255,0.03); color:var(--text); font:inherit; text-align:left; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .look-swatch:hover { background:rgba(255,255,255,0.06); }
+  .look-swatch.active { border-color:var(--sw); box-shadow:inset 0 0 0 1px var(--sw); }
+  .look-swatch:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  [data-theme="light"] .look-swatch { background:rgba(255,255,255,0.7); }
+  .look-disc { display:grid; place-items:center; flex:0 0 auto; width:34px; height:34px; border-radius:50%; background:var(--sw); box-shadow:inset 0 0 0 1px rgba(0,0,0,0.12); }
+  .look-disc svg { width:17px; height:17px; color:#0b1526; }
+  .look-text { display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .look-name { font-size:13.5px; font-weight:600; }
+  .look-note { font-size:11.5px; color:var(--text-dim); }
+  .look-demo { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:14px 16px; border:1px solid var(--glass-border); border-radius:13px; background:rgba(255,255,255,0.03); }
+  .look-demo > * { pointer-events:none; }
+  .look-demo-nav { width:auto; }
+
   /* ===== THEME CLAIR ===== */
   [data-theme="light"] {
     /* Accent assombri : le vert de la charte n'est pas lisible en texte sur fond clair. */
@@ -1423,19 +1463,19 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] .web-act:hover,
   [data-theme="light"] .fstb-btn:hover,
   [data-theme="light"] .fs-btn:hover { background:#ecf8f2; border-color:rgba(var(--accent-rgb),0.45); color:var(--accent); }
-  [data-theme="light"] .tnd-btn.primary { background:rgba(62,207,142,0.16); border-color:rgba(62,207,142,0.45); color:#0e9d63; }
+  [data-theme="light"] .tnd-btn.primary { background:rgba(var(--accent-rgb),0.16); border-color:rgba(var(--accent-rgb),0.45); color:var(--accent2); }
   [data-theme="light"] .tnd-btn.danger,
   [data-theme="light"] .web-act.danger { color:#dc2626; border-color:rgba(220,38,38,0.35); }
   [data-theme="light"] .web-side { background:rgba(13,27,53,0.045); border-right-color:rgba(0,0,0,0.09); }
   [data-theme="light"] .web-side-sep { background:rgba(0,0,0,0.09); }
   [data-theme="light"] .web-tabs { border-bottom-color:rgba(0,0,0,0.1); }
-  [data-theme="light"] .web-tab.active { color:#0b7a4c; }
+  [data-theme="light"] .web-tab.active { color:var(--accent2); }
   [data-theme="light"] .web-count { background:rgba(0,0,0,0.07); }
   [data-theme="light"] .web-nav:hover { background:rgba(0,0,0,0.055); }
-  [data-theme="light"] .web-nav.active { background:rgba(var(--accent-rgb),0.2); color:#0b7a4c; }
+  [data-theme="light"] .web-nav.active { background:rgba(var(--accent-rgb),0.2); color:var(--accent2); }
   [data-theme="light"] .web-nav.add,
   [data-theme="light"] .web-crumb:hover,
-  [data-theme="light"] .web-facts a { color:#0b7a4c; }
+  [data-theme="light"] .web-facts a { color:var(--accent2); }
   [data-theme="light"] .web-group { background:rgba(255,255,255,0.8); border-color:rgba(0,0,0,0.12); }
   [data-theme="light"] .web-row,
   [data-theme="light"] .web-dbrow { border-top-color:rgba(0,0,0,0.08); }
@@ -1450,9 +1490,9 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] #wallpaper, [data-theme="light"] .wp-art {
     background-color:#c3d4e8;
     background-image:
-      radial-gradient(58% 62% at 76% 2%, rgba(62,207,142,0.40), transparent 70%),
+      radial-gradient(58% 62% at 76% 2%, rgba(var(--brand-rgb),0.40), transparent 70%),
       radial-gradient(46% 52% at 9% 12%, rgba(90,169,255,0.34), transparent 70%),
-      radial-gradient(64% 56% at 98% 108%, rgba(62,207,142,0.24), transparent 68%),
+      radial-gradient(64% 56% at 98% 108%, rgba(var(--brand-rgb),0.24), transparent 68%),
       linear-gradient(165deg, #cfdded 0%, #c3d4e8 50%, #b6cae1 100%);
   }
   [data-theme="light"] #wallpaper::before, [data-theme="light"] .wp-art::before {
@@ -1463,7 +1503,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
   [data-theme="light"] #wallpaper[data-preset="aurore"], [data-theme="light"] .wp-art[data-preset="aurore"] {
     background-image:
-      radial-gradient(95% 46% at 26% -4%, rgba(62,207,142,0.55), transparent 72%),
+      radial-gradient(95% 46% at 26% -4%, rgba(var(--brand-rgb),0.55), transparent 72%),
       radial-gradient(85% 42% at 88% 10%, rgba(90,169,255,0.50), transparent 72%),
       linear-gradient(180deg, #cfdded 0%, #c3d4e8 58%, #b6cae1 100%);
   }
@@ -1991,7 +2031,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 .fs-item.active { background:rgba(var(--accent-rgb),0.18); color:var(--accent2); }
 .fs-item.drop-target, .fs-tree-row.drop-target { background:rgba(var(--accent-rgb),0.25); }
 [data-theme="light"] .fs-sidebar { background:rgba(13,27,53,0.045); border-right-color:rgba(0,0,0,0.09); }
-[data-theme="light"] .fs-item.active, [data-theme="light"] .fs-tree-row.active { color:#0b7a4c; }
+[data-theme="light"] .fs-item.active, [data-theme="light"] .fs-tree-row.active { color:var(--accent2); }
 .fs-tree-row { gap:6px; padding:5px 8px; border-radius:8px; font-size:12.5px; transition:background .12s, color .12s; }
 .fs-tree-row:hover { background:var(--fs-hover, rgba(255,255,255,0.07)); }
 .fs-tree-row.on-path > .fs-tree-label { font-weight:600; }
@@ -2678,22 +2718,22 @@ select option{ background:#101b2e; color:#e9eef7; }
 
 #modal-create-app.mdm-app-edit-open #mdm-app-edit-save {
   min-width: 126px;
-  color: #c8f9e2 !important;
+  color: var(--accent2) !important;
   background: linear-gradient(
     180deg,
-    rgba(62, 207, 142, .24),
-    rgba(62, 207, 142, .14)
+    rgba(var(--accent-rgb), .24),
+    rgba(var(--accent-rgb), .14)
   ) !important;
-  border-color: rgba(62, 207, 142, .42) !important;
+  border-color: rgba(var(--accent-rgb), .42) !important;
 }
 
 #modal-create-app.mdm-app-edit-open #mdm-app-edit-save:hover:not(:disabled) {
   background: linear-gradient(
     180deg,
-    rgba(62, 207, 142, .32),
-    rgba(62, 207, 142, .19)
+    rgba(var(--accent-rgb), .32),
+    rgba(var(--accent-rgb), .19)
   ) !important;
-  border-color: rgba(62, 207, 142, .58) !important;
+  border-color: rgba(var(--accent-rgb), .58) !important;
 }
 
 #modal-create-app.mdm-app-edit-open #mdm-app-edit-status {
@@ -2802,7 +2842,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 .ac-mode-btn.active { background:rgba(var(--accent-rgb),.2); color:var(--accent2); font-weight:600; }
 .ac-mode-btn:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
 [data-theme="light"] .ac-seg { background:rgba(13,27,53,.06); border-color:rgba(0,0,0,.08); }
-[data-theme="light"] .ac-mode-btn.active { background:#ffffff; color:#0b7a4c; box-shadow:0 1px 2px rgba(0,0,0,.1); }
+[data-theme="light"] .ac-mode-btn.active { background:#ffffff; color:var(--accent2); box-shadow:0 1px 2px rgba(0,0,0,.1); }
 .web-side .snap-find { max-width:none; flex-shrink:0; margin-bottom:4px; }
 .ac-avatar {
   display:flex; align-items:center; justify-content:center; flex-shrink:0; width:28px; height:28px; border-radius:50%;
@@ -2865,9 +2905,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 .ac-history-time { flex-shrink:0; font-size:11.5px; color:var(--text-dim); white-space:nowrap; }
 
 .ac-primary-action {
-  color: #c8f9e2 !important;
-  background: rgba(62, 207, 142, .18) !important;
-  border-color: rgba(62, 207, 142, .38) !important;
+  color: var(--accent2) !important;
+  background: rgba(var(--accent-rgb), .18) !important;
+  border-color: rgba(var(--accent-rgb), .38) !important;
 }
 
 /* Demande de mot de passe SMB */
@@ -5556,7 +5596,23 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Connecté au NAS ({0})": "Connected to the NAS ({0})",
 "Connecté au conteneur Desktroo, pas au NAS": "Connected to the Desktroo container, not to the NAS",
 "Cette session tourne dans le conteneur du service Desktroo : zpool, zfs et docker n'y existent pas.": "This session runs in the Desktroo service container: zpool, zfs and docker do not exist there.",
-"Le service Desktroo n'est pas encore à jour : cette session tourne dans son conteneur. Après la mise à jour, le terminal s'ouvrira sur le NAS.": "The Desktroo service is not up to date yet: this session runs in its container. After the update, the terminal will open on the NAS."
+"Le service Desktroo n'est pas encore à jour : cette session tourne dans son conteneur. Après la mise à jour, le terminal s'ouvrira sur le NAS.": "The Desktroo service is not up to date yet: this session runs in its container. After the update, the terminal will open on the NAS.",
+"Vert": "Green",
+"Bleu": "Blue",
+"Rouge": "Red",
+"Ambre": "Amber",
+"Jaune": "Yellow",
+"Gris": "Gray",
+"couleur d'origine": "original color",
+"Couleur du thème": "Theme color",
+"La couleur des boutons, des sélections et du logo. Les voyants d'état gardent leur vert, leur orange et leur rouge.": "The color of buttons, selections and the logo. Status lights keep their green, orange and red.",
+"Bouton principal": "Primary button",
+"Bouton secondaire": "Secondary button",
+"Élément choisi": "Selected item",
+"Aussi": "Also",
+"Les fonds intégrés prennent la couleur choisie": "Built-in wallpapers take the chosen color",
+"Ce choix est gardé dans ce navigateur : chaque poste peut avoir sa couleur.": "This choice is kept in this browser: each computer can have its own color.",
+"Vert, bleu, rouge, ambre, jaune ou gris": "Green, blue, red, amber, yellow or gray"
 }
 </script>
 <script id="dk-i18n">
@@ -6025,6 +6081,10 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="user-drop-item" onclick="dkToggleLang()" translate="no">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
           <span id="dk-lang-other"></span>
+        </div>
+        <div class="user-drop-item" onclick="document.getElementById('user-dropdown').style.display='none';openApp('control');cpGo('look')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>
+          <span>Couleur du thème</span>
         </div>
         <div class="user-drop-item" onclick="logout()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
@@ -8679,7 +8739,7 @@ async function fsPermSelected() {
     + T('<div><label style="font-size:11px;color:var(--text-dim);">Groupe (nom ou gid)</label><input id="pm-group" value="') + (p.group || p.gid || '') + '" style="' + iStyle() + '" /></div>'
     + '</div>';
   if (isDir) f += T('<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);cursor:pointer;"><input type="checkbox" id="pm-rec" style="width:15px;height:15px;"> Appliquer récursivement au contenu du dossier</label>');
-  f += T('<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;"><button class="fs-btn" onclick="closeCreateApp()">Annuler</button><button class="fs-btn" id="pm-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="fsPermSave()">✓ Appliquer</button></div>');
+  f += T('<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;"><button class="fs-btn" onclick="closeCreateApp()">Annuler</button><button class="fs-btn" id="pm-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="fsPermSave()">✓ Appliquer</button></div>');
   f += '</div>';
   document.getElementById('create-app-form').innerHTML = f;
   permFromOctal();
@@ -9001,7 +9061,7 @@ function fsShareSelected() {
      + T('<button class="fs-btn" onclick="fsShareManage()">🗂 Mes liens</button>')
      + '<span style="flex:1;"></span>'
      + T('<button class="fs-btn" onclick="closeCreateApp()">Fermer</button>')
-     + T('<button class="fs-btn" id="sh-create-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="fsShareCreate()">🔗 Créer le lien</button>')
+     + T('<button class="fs-btn" id="sh-create-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="fsShareCreate()">🔗 Créer le lien</button>')
      + '</div></div>';
   document.getElementById('create-app-form').innerHTML = f;
   document.getElementById('modal-create-app').style.display = 'flex';
@@ -9025,7 +9085,7 @@ async function fsShareCreate() {
     const url = shareBaseUrl() + (r.url_path || ('/s/' + r.token));
     const box = document.getElementById('sh-result');
     box.style.display = '';
-    box.innerHTML = '<div style="margin-top:4px;padding:10px;border:1px solid rgba(62,207,142,.35);border-radius:10px;background:rgba(62,207,142,.08);">'
+    box.innerHTML = '<div style="margin-top:4px;padding:10px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);">'
       + T('<div style="font-size:12px;color:var(--success);margin-bottom:6px;">✅ Lien créé</div>')
       + '<div style="display:flex;gap:6px;">'
       + '<input id="sh-url" readonly value="' + url.replace(/"/g,'&quot;') + '" style="' + iStyle() + ';flex:1;font-size:12px;" onclick="this.select()"/>'
@@ -9111,7 +9171,7 @@ function fsNetShareSelected() {
   f += '<div id="ns-result" style="display:none;"></div>';
   f += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">'
      + T('<button class="fs-btn" onclick="closeCreateApp()">Fermer</button>')
-     + T('<button class="fs-btn" id="ns-create-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="fsNetShareCreate()">✓ Créer le partage</button>')
+     + T('<button class="fs-btn" id="ns-create-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="fsNetShareCreate()">✓ Créer le partage</button>')
      + '</div></div>';
   document.getElementById('create-app-form').innerHTML = f;
   document.getElementById('modal-create-app').style.display = 'flex';
@@ -9157,7 +9217,7 @@ async function fsNetShareCreate() {
     await socketCall(ep, 'POST', payload);
     const box = document.getElementById('ns-result');
     box.style.display = '';
-    box.innerHTML = '<div style="padding:10px;border:1px solid rgba(62,207,142,.35);border-radius:10px;background:rgba(62,207,142,.08);color:var(--success);font-size:13px;">'
+    box.innerHTML = '<div style="padding:10px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);color:var(--success);font-size:13px;">'
       + T('✅ Partage ') + (isSMB?'SMB':'NFS') + T(' créé pour ce dossier.</div>');
     toast(T('✅ Partage réseau créé'));
     if (isSMB) toast(T('💡 Vérifiez que le service SMB est démarré (Services)'));
@@ -9437,7 +9497,7 @@ function webNewForm(prefill) {
   f += formRow(T('Nom de domaine (optionnel)') + hb(T('Laisse vide pour un accès en IP:port. Renseigne un domaine pour le servir derrière un reverse-proxy (NPMplus) ou le proxy intégré. Le proxy route le domaine vers ce site.')), T('<input id="web-sn" placeholder="ex: monsite.mondomaine.fr" style="') + iStyle() + '" />');
   f += '<div class="web-foot">'
     + '<button class="fs-btn" onclick="webSiteView()">' + T('Annuler') + '</button>'
-    + T('<button class="fs-btn" id="web-create-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webCreate()">✓ Créer</button>')
+    + T('<button class="fs-btn" id="web-create-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="webCreate()">✓ Créer</button>')
     + '</div></div>';
   box.innerHTML = f;
   if (prefill.type) document.getElementById('web-type').value = prefill.type;
@@ -9567,7 +9627,7 @@ function webSslPrestashop(id) {
   box.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;">'
     + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.5;">Force le HTTPS de la boutique (PS_SSL_ENABLED). À <b>activer</b> uniquement si le site est servi derrière un reverse-proxy HTTPS (NPMplus) et consulté via <code>https://') + (s.server_name || 'votre-domaine') + T('</code>.<br>En cas de <b>boucle de redirection</b> (« too many redirects »), <b>désactive</b>-le.</div>')
     + '<div class="web-act-row">'
-    + '<button class="web-act" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webSslApply(\'' + id + T('\',true)">🔒 Activer le SSL</button>')
+    + '<button class="web-act" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="webSslApply(\'' + id + T('\',true)">🔒 Activer le SSL</button>')
     + '<button class="web-act" style="color:#f5b74e;border-color:rgba(245,183,78,0.4);" onclick="webSslApply(\'' + id + T('\',false)">🔓 Désactiver le SSL</button>')
     + '</div><div id="web-ssl-result"></div></div>';
 }
@@ -9761,7 +9821,7 @@ function webPhpRender() {
   h += '<input id="php-ext-extra" value="' + extraExt.replace(/"/g,'&quot;') + T('" placeholder="autres extensions (séparées par un espace)" style="') + iStyle() + ';margin-top:6px;" /></div>';
   h += T('<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;">💡 Les extensions se compilent en arrière-plan (1–2 min selon la version). Les réglages ini sont appliqués par rechargement de php-fpm.</div>');
   h += '<div class="web-foot" style="margin-top:12px;">'
-    + T('<button class="fs-btn" id="php-save-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webPhpSave()">✓ Enregistrer PHP ') + _phpCurVer + '</button>'
+    + T('<button class="fs-btn" id="php-save-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="webPhpSave()">✓ Enregistrer PHP ') + _phpCurVer + '</button>'
     + '</div>';
   box.innerHTML = h;
 }
@@ -9870,7 +9930,7 @@ function webAppRender(prefill) {
   f += T('<details style="font-size:12px;color:var(--text-dim);"><summary style="cursor:pointer;">URL de téléchargement (avancé)</summary><input id="app-url" placeholder="laisser vide = version par défaut" style="') + iStyle() + ';margin-top:6px;" /></details>';
   f += '<div id="app-result" style="display:none;"></div>';
   f += '<div class="web-foot">'
-    + T('<button class="fs-btn" id="app-install-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webAppInstall()">⬇ Installer</button>')
+    + T('<button class="fs-btn" id="app-install-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="webAppInstall()">⬇ Installer</button>')
     + '</div></div>';
   box.innerHTML = f;
   if (prefill.app) document.getElementById('app-key').value = prefill.app;
@@ -9925,7 +9985,7 @@ async function webAppInstall() {
   try {
     const r = await fileops('POST', 'apps/install', payload);
     const url = webUrl(r.site);
-    let h = '<div style="margin-top:6px;padding:12px;border:1px solid rgba(62,207,142,.35);border-radius:10px;background:rgba(62,207,142,.08);">'
+    let h = '<div style="margin-top:6px;padding:12px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);">'
       + '<div style="font-size:13px;color:var(--success);margin-bottom:8px;">✅ ' + (r.app||'') + T(' installé</div>');
     if (r.auto_installed) {
       const lu = r.login_url || url;
@@ -9958,7 +10018,7 @@ let _dbCreds = {};
 async function webDbView() {
   webHead(T('Bases de données'), { nav:'db', wide:true, actions:
       T('<button class="fs-btn" onclick="webPmaQuick()" title="Installer / ouvrir phpMyAdmin">🔧 phpMyAdmin</button>')
-    + T('<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webDbCreate()">+ Nouvelle base</button>') });
+    + T('<button class="fs-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="webDbCreate()">+ Nouvelle base</button>') });
   const box = webBody();
   box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
   try {
@@ -10031,7 +10091,7 @@ function webDbCreate() {
   f += '<div id="db-new-result"></div>';
   f += '<div class="web-foot">'
     + '<button class="fs-btn" onclick="webDbView()">' + T('Annuler') + '</button>'
-    + T('<button class="fs-btn" id="db-new-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="webDbCreateGo()">✓ Créer</button>')
+    + T('<button class="fs-btn" id="db-new-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="webDbCreateGo()">✓ Créer</button>')
     + '</div></div>';
   box.innerHTML = f;
   setTimeout(function(){ var e = document.getElementById('db-new-name'); if (e) e.focus(); }, 30);
@@ -10046,7 +10106,7 @@ async function webDbCreateGo() {
     const r = await fileops('POST', 'db/create', payload);
     const d = r.db;
     const rbox = document.getElementById('db-new-result');
-    rbox.innerHTML = '<div style="padding:10px;border:1px solid rgba(62,207,142,.35);border-radius:10px;background:rgba(62,207,142,.08);">'
+    rbox.innerHTML = '<div style="padding:10px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);">'
       + T('<div style="font-size:13px;color:var(--success);margin-bottom:6px;">✅ Base créée</div>')
       + '<div class="tnd-code">'
       + credLine(T('hôte'), d.host + ':' + d.port) + credLine('base', d.name) + credLine(T('utilisateur'), d.user) + credLine(T('mot de passe'), d.password)
@@ -10105,7 +10165,7 @@ async function webNpmPanel() {
   const ip = st.nas_ip || webSiteHost();
   let h = '<div style="display:flex;flex-direction:column;gap:12px;">';
   if (st.running) {
-    h += T('<div style="padding:10px;border:1px solid rgba(62,207,142,.35);border-radius:10px;background:rgba(62,207,142,.08);font-size:13px;color:var(--success);">✅ Reverse-proxy détecté : ') + (st.containers||[]).join(', ') + '</div>'
+    h += T('<div style="padding:10px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);font-size:13px;color:var(--success);">✅ Reverse-proxy détecté : ') + (st.containers||[]).join(', ') + '</div>'
       + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Ouvre l\'admin NPMplus (souvent <b>https://') + ip + T(':81</b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont sur la page de chaque site, sous « Fiche proxy ».</div>');
   } else {
     const cmds = T('mkdir -p /mnt/<pool>/apps/npmplus && cd /mnt/<pool>/apps/npmplus   # remplace <pool> par ton pool\n')
@@ -12157,7 +12217,7 @@ async function tndAbout() {
     + '</div>' + dkHero('') + '</div>'
     + (up
         ? T('<div style="background:rgba(240,180,41,0.12);border:1px solid rgba(240,180,41,0.35);color:#f0b429;padding:8px 10px;border-radius:8px;font-size:13px;">⬆ Une mise à jour est disponible.</div>')
-          + T('<button class="fs-btn" style="width:100%;justify-content:center;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="tndDoUpdate()">⬆ Mettre à jour maintenant</button>')
+          + T('<button class="fs-btn" style="width:100%;justify-content:center;background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="tndDoUpdate()">⬆ Mettre à jour maintenant</button>')
         : T('<div class="tnd-muted" style="font-size:12px;">✓ Tu es à jour.</div>')
           + T('<button class="fs-btn" style="width:100%;justify-content:center;" onclick="tndDoUpdate()">Forcer la mise à jour</button>'))
     + T('<div style="text-align:right;"><button class="fs-btn" onclick="closeCreateApp()">Fermer</button></div>')
@@ -12279,7 +12339,7 @@ function tndUpdateCardHtml() {
     + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
     + T('<span style="color:var(--warning);font-size:11px;font-weight:700;">MISE À JOUR</span>')
     + '<span style="color:var(--text-dim);font-size:11px;">Desktroo</span>'
-    + T('<button onclick="tndAbout()" style="margin-left:auto;background:rgba(62,207,142,0.15);border:1px solid rgba(62,207,142,0.3);color:var(--success);border-radius:4px;padding:3px 11px;cursor:pointer;font-size:11px;">Mettre à jour</button>')
+    + T('<button onclick="tndAbout()" style="margin-left:auto;background:rgba(var(--accent-rgb),0.15);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent2);border-radius:4px;padding:3px 11px;cursor:pointer;font-size:11px;">Mettre à jour</button>')
     + T('<button onclick="tndDismissUpdate()" style="background:rgba(255,255,255,0.07);border:none;color:var(--text-dim);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;">Effacer</button>')
     + '</div>'
     + '<div style="font-size:13px;line-height:1.5;">Version <b>' + (v.latest || '') + T('</b> disponible (installée : ') + (v.version || '?') + ').</div>'
@@ -12708,7 +12768,7 @@ function jobsRenderPopover() {
       + '</div>'
       + (desc ? '<div style="font-size:11px;color:var(--text-dim);margin:2px 0 5px;">' + jobsEsc(desc) + '</div>' : '<div style="height:4px;"></div>')
       + '<div style="height:6px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">'
-      + '<div style="height:100%;width:' + (pct != null ? pct : 100) + '%;background:linear-gradient(90deg,#3ecf8e,#0ea5e9);' + (pct == null ? 'opacity:0.35;' : '') + '"></div>'
+      + '<div style="height:100%;width:' + (pct != null ? pct : 100) + '%;background:linear-gradient(90deg,var(--accent),var(--info));' + (pct == null ? 'opacity:0.35;' : '') + '"></div>'
       + '</div></div>';
   });
   box.innerHTML = h;
@@ -12765,7 +12825,7 @@ async function dlPremiumPanel() {
       + '<button class="fs-btn" title="' + (conf ? T('Éditer') : T('Configurer')) + '" style="font-size:11px;padding:3px 11px;border-radius:99px;" onclick="dlPremiumEdit(\'' + p.id + '\')">✎</button>'
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:6px;">'
-      + '<span class="tnd-badge" style="font-size:9.5px;padding:1px 7px;background:' + (conf ? 'rgba(62,207,142,0.15)' : 'rgba(255,255,255,0.05)') + ';color:' + (conf ? 'var(--success)' : 'var(--text-dim)') + ';border:1px solid ' + (conf ? 'rgba(62,207,142,0.4)' : 'var(--glass-border)') + ';">' + (conf ? T('✓ Configuré') : T('○ Non config.')) + '</span>'
+      + '<span class="tnd-badge" style="font-size:9.5px;padding:1px 7px;background:' + (conf ? 'rgba(var(--success-rgb),0.15)' : 'rgba(255,255,255,0.05)') + ';color:' + (conf ? 'var(--success)' : 'var(--text-dim)') + ';border:1px solid ' + (conf ? 'rgba(var(--success-rgb),0.4)' : 'var(--glass-border)') + ';">' + (conf ? T('✓ Configuré') : T('○ Non config.')) + '</span>'
       + '<span style="flex:1;"></span><span style="font-size:9px;color:var(--text-dim);">' + typ + '</span>'
       + '</div>'
       + '</div>';
@@ -12816,7 +12876,7 @@ async function dlPremiumEdit(id) {
     + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
     + '<button class="fs-btn" onclick="dlPremiumTest(\'' + id + T('\')">Tester</button>')
     + '<button class="fs-btn" style="color:#f87171;" onclick="dlPremiumRemove(\'' + id + T('\')">Retirer</button>')
-    + '<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="dlPremiumSave(\'' + id + T('\')">Enregistrer</button>')
+    + '<button class="fs-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="dlPremiumSave(\'' + id + T('\')">Enregistrer</button>')
     + '</div></div>';
   ov.addEventListener('click', function(e){ if (e.target === ov) dlPremiumEditClose(); });
   document.body.appendChild(ov);
@@ -12880,7 +12940,7 @@ function dlBmFn(T, U) {
   });
   box.innerHTML=T('<div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:12px;"><b style="flex:1;">Envoyer au NAS</b><label style="font-size:12px;cursor:pointer;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="__tnall"> tout</label><span id="__tncnt" style="font-size:12px;color:#9db0d0;min-width:60px;text-align:right;"></span></div>')
     +'<div style="overflow:auto;padding:6px 12px;flex:1;">'+rows+'</div>'
-    +T('<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);display:flex;gap:8px;justify-content:flex-end;"><button id="__tncancel" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#e9eef7;cursor:pointer;">Annuler</button><button id="__tnsend" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(62,207,142,.4);background:rgba(62,207,142,.2);color:#3ecf8e;cursor:pointer;">Envoyer</button></div>');
+    +T('<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.1);display:flex;gap:8px;justify-content:flex-end;"><button id="__tncancel" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#e9eef7;cursor:pointer;">Annuler</button><button id="__tnsend" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.2);color:var(--accent2);cursor:pointer;">Envoyer</button></div>');
   ov.appendChild(box); document.body.appendChild(ov);
   function cbs(){ return box.querySelectorAll('.__tnc'); }
   function upd(){ var n=0,t=0; cbs().forEach(function(c){ t++; if(c.checked) n++; }); box.querySelector('#__tncnt').textContent=n+' / '+t; }
@@ -12915,7 +12975,7 @@ function dlBrowserPanel() {
     + T('<button class="fs-btn" style="padding:11px 18px;" onclick="dlCopyBookmarklet()">📋 Copier le code</button>')
     + '</div></div>';
   h += T('<div class="tnd-panel" style="padding:20px 22px;"><div class="tnd-title" style="margin-bottom:14px;">Extension navigateur — clic droit (Chrome/Edge & Firefox)</div>')
-    + T('<div style="margin-bottom:18px;"><a class="fs-btn" href="https://github.com/Nabief/desktroo-dist/raw/main/desktroo-dl-extension.zip" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);padding:11px 20px;">⬇ Télécharger l\'extension (.zip)</a></div>')
+    + T('<div style="margin-bottom:18px;"><a class="fs-btn" href="https://github.com/Nabief/desktroo-dist/raw/main/desktroo-dl-extension.zip" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);padding:11px 20px;">⬇ Télécharger l\'extension (.zip)</a></div>')
     + T('<div class="tnd-hint" style="margin-bottom:18px;line-height:1.7;">Décompresse le zip, puis dans <code>chrome://extensions</code> → active le <b>Mode développeur</b> → <b>Charger l\'extension non empaquetée</b> → sélectionne le dossier décompressé. Dans ses <b>options</b>, colle ces deux valeurs :</div>')
     + '<div class="tnd-code" style="display:flex;flex-direction:column;gap:14px;padding:16px 18px;">'
     + '<div style="display:flex;gap:14px;align-items:center;"><span style="color:var(--text-dim);min-width:68px;">URL</span><span style="flex:1;word-break:break-all;">' + base + '</span><button class="fs-btn" style="font-size:11px;padding:6px 11px;" onclick="copyText(\'' + encodeURIComponent(base) + '\')">📋</button></div>'
@@ -16146,7 +16206,7 @@ async function loadSysConfig() {
       + r(T('NTP serveur 1'),'<input id="sc-ntp1" value="' + ((cfg.ntpservers||[])[0]||'') + '" style="' + s + '" />')
       + r(T('NTP serveur 2'),'<input id="sc-ntp2" value="' + ((cfg.ntpservers||[])[1]||'') + '" style="' + s + '" />')
       + '<div style="margin-top:12px;">'
-      + T('<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="saveSysConfig()">Enregistrer</button>')
+      + T('<button class="fs-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="saveSysConfig()">Enregistrer</button>')
       + '</div></div></div>';
   } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
 }
@@ -16967,6 +17027,51 @@ function siView(soft) {
 }
 
 // ===========================
+// COULEUR DU THÈME — le vert de la charte peut céder la place à une autre teinte
+// Seule la couleur d'accent change (boutons, sélections, logo, fonds intégrés) ; les voyants d'état gardent leurs couleurs.
+// Le choix est gardé dans ce navigateur, comme le mode clair ou sombre et le fond d'écran.
+// ===========================
+function dkAccents() {
+  return [{ key: 'green', label: T('Vert'), note: T('couleur d\'origine'), color: '#3ecf8e' }, { key: 'blue', label: T('Bleu'), color: '#4d9fff' }, { key: 'red', label: T('Rouge'), color: '#f25f66' },
+    { key: 'amber', label: T('Ambre'), color: '#f5a524' }, { key: 'yellow', label: T('Jaune'), color: '#f0d43a' }, { key: 'gray', label: T('Gris'), color: '#aab5c8' }];
+}
+function dkAccentGet() {
+  try { var a = localStorage.getItem('tn-accent'); return /^(blue|red|amber|yellow|gray)$/.test(a || '') ? a : 'green'; } catch (e) { return 'green'; }
+}
+// L'icône de l'onglet suit la couleur choisie.
+function dkAccentFavicon() {
+  var l = document.querySelector('link[rel="icon"]'), c = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
+  if (!l || !/^#[0-9a-f]{6}$/i.test(c)) return;
+  l.setAttribute('href', String(l.getAttribute('href') || '').replace(/fill='%23[0-9a-fA-F]{6}'\/%3E%3C\/svg%3E$/, "fill='%23" + c.slice(1) + "'/%3E%3C/svg%3E"));
+}
+function dkAccentSet(a) {
+  a = /^(blue|red|amber|yellow|gray)$/.test(a || '') ? a : 'green';
+  if (a === 'green') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', a);
+  try { if (a === 'green') localStorage.removeItem('tn-accent'); else localStorage.setItem('tn-accent', a); } catch (e) {}
+  dkAccentFavicon();
+  if (wmVisible('control') && _cp.nav === 'look') loadControl();
+}
+// Page « Couleur du thème » du Panneau de configuration.
+function cpLookView() {
+  var cur = dkAccentGet();
+  wmHead('cp', T('Couleur du thème'), { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true,
+    sub: T('La couleur des boutons, des sélections et du logo. Les voyants d\'état gardent leur vert, leur orange et leur rouge.') });
+  var h = '<div class="look-grid" role="radiogroup" aria-label="' + webEsc(T('Couleur du thème')) + '">';
+  dkAccents().forEach(function(a) {
+    h += '<button class="look-swatch' + (a.key === cur ? ' active' : '') + '" role="radio" aria-checked="' + (a.key === cur) + '" onclick="dkAccentSet(\'' + a.key + '\')" style="--sw:' + a.color + '">'
+      + '<span class="look-disc">' + (a.key === cur ? webIcon('check') : '') + '</span><span class="look-text"><span class="look-name">' + webEsc(a.label) + '</span>' + (a.note ? '<span class="look-note">' + webEsc(a.note) + '</span>' : '') + '</span></button>';
+  });
+  h += '</div><div class="web-group-title">' + T('Aperçu') + '</div><div class="look-demo"><button class="web-open" tabindex="-1">' + T('Bouton principal') + '</button><button class="fs-btn" tabindex="-1">' + T('Bouton secondaire') + '</button>'
+    + '<span class="web-nav active look-demo-nav">' + webIcon('grid') + '<span class="web-nav-name">' + T('Élément choisi') + '</span></span><input type="checkbox" checked tabindex="-1" aria-hidden="true"></div>'
+    + '<div class="web-group-title">' + T('Aussi') + '</div><div class="web-group">'
+    + wmRow('toggleTheme();loadControl()', T('Thème clair ou sombre'), darkMode ? T('Actuellement sombre') : T('Actuellement clair'))
+    + wmRow('openWallpapers()', T('Fond d\'écran'), T('Les fonds intégrés prennent la couleur choisie')) + '</div>'
+    + '<p class="web-note">' + T('Ce choix est gardé dans ce navigateur : chaque poste peut avoir sa couleur.') + '</p>';
+  wmBody('cp').innerHTML = h;
+}
+dkAccentFavicon();
+
+// ===========================
 // PANNEAU DE CONFIGURATION — tous les réglages, rangés par domaine
 // ===========================
 var _cp = { nav: 'all', q: '' };
@@ -16974,6 +17079,7 @@ var CP_SVG = 'viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" st
 // Entrées qui n'ont pas d'icône dans le tiroir d'applications.
 function cpExtra() {
   return {
+    look: { label: T('Couleur du thème'), action: function() { cpGo('look'); }, imgStyle: 'background:conic-gradient(#3ecf8e,#4d9fff,#f25f66,#f5a524,#f0d43a,#aab5c8,#3ecf8e);', svg: '<svg ' + CP_SVG + '><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>' },
     sysconfig: { label: T('Configuration système'), action: function() { openApp('sysconfig'); }, imgStyle: 'background:linear-gradient(135deg,#475569,#94a3b8);', svg: '<svg ' + CP_SVG + '><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' },
     alertconfig: { label: T('Configuration des alertes'), action: function() { openApp('alertconfig'); }, imgStyle: 'background:linear-gradient(135deg,#f59e0b,#f97316);', svg: '<svg ' + CP_SVG + '><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/><path d="M19 3l2 2M5 3 3 5"/></svg>' },
     failover: { label: T('Haute disponibilité'), action: function() { openApp('failover'); }, imgStyle: 'background:linear-gradient(135deg,#0891b2,#22d3ee);', svg: '<svg ' + CP_SVG + '><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>' },
@@ -16991,18 +17097,19 @@ function cpGroups() {
     { key: 'system', label: T('Système'), items: [['sysinfo', T('Matériel, version et charge du NAS')], ['reports', T('Courbes de charge dans le temps')], ['sysconfig', T('Nom du NAS, fuseau horaire, serveurs de temps')],
         ['services', T('SSH, SMB, NFS et autres services')], ['cron', T('Commandes lancées à heure fixe')], ['update', T('Nouvelles versions de TrueNAS')], ['bootenv', T('Versions du système gardées sur le NAS')],
         ['notifs', T('Alertes en cours')], ['alertconfig', T('Où et quand être prévenu')], ['failover', T('Bascule entre deux contrôleurs')], ['terminal', T('Ligne de commande du NAS')], ['truenas-ui', T('L\'interface d\'origine de TrueNAS')]] },
-    { key: 'desk', label: T('Bureau Desktroo'), items: [['wallpaper', T('Image affichée derrière les fenêtres')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
+    { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
   ];
 }
 function cpEntry(id) { return cpExtra()[id] || ALL_APPS.find(function(a) { return a.id === id; }) || null; }
 function cpGo(nav) { _cp.nav = nav; _cp.q = ''; loadControl(); }
 function loadControl() {
   if (!wmBody('cp')) return;
-  var groups = cpGroups(), cur = groups.find(function(g) { return g.key === _cp.nav; });
+  var groups = cpGroups(), look = _cp.nav === 'look', cur = groups.find(function(g) { return g.key === (look ? 'desk' : _cp.nav); });
   if (!cur) _cp.nav = 'all';
   var h = wmNav({ active: _cp.nav === 'all', call: 'cpGo(\'all\')', icon: 'grid', name: T('Tous les réglages') }) + wmSep() + wmSideTitle(T('Domaines'));
-  groups.forEach(function(g) { h += wmNav({ active: _cp.nav === g.key, call: 'cpGo(\'' + g.key + '\')', name: g.label, count: g.items.filter(function(it) { return cpEntry(it[0]); }).length }); });
+  groups.forEach(function(g) { h += wmNav({ active: (look ? 'desk' : _cp.nav) === g.key, call: 'cpGo(\'' + g.key + '\')', name: g.label, count: g.items.filter(function(it) { return cpEntry(it[0]); }).length }); });
   wmSide('cp', h);
+  if (look) { cpLookView(); return; }
   wmHead('cp', cur ? cur.label : T('Panneau de configuration'), { sub: cur ? '' : T('Tous les réglages du NAS et du bureau, rangés par domaine.'),
     actions: '<input id="cp-search" class="snap-find" type="search" placeholder="' + webEsc(T('Rechercher un réglage')) + '" aria-label="' + webEsc(T('Rechercher un réglage')) + '" value="' + webEsc(_cp.q) + '" oninput="cpFilter(this.value)">' });
   cpRender();
@@ -17131,7 +17238,7 @@ function catalogCustomYaml() {
     + formRow('docker-compose (YAML)', '<textarea id="ca-yaml-body" class="tnd-input" rows="14" spellcheck="false" placeholder="services:&#10;  web:&#10;    image: nginx:alpine&#10;    ports:&#10;      - \\"8095:80\\"" style="font-family:var(--font-mono);font-size:12.5px;resize:vertical;white-space:pre;overflow-wrap:normal;"></textarea>')
     + '<div id="ca-yaml-status" style="min-height:16px;font-size:12px;color:var(--text-dim);word-break:break-word;margin:4px 0 10px;"></div>'
     + T('<div style="display:flex;gap:8px;justify-content:flex-end;"><button class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
-    + T('<button class="fs-btn" id="ca-yaml-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="catalogYamlInstall()">⬇ Installer</button></div>');
+    + T('<button class="fs-btn" id="ca-yaml-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="catalogYamlInstall()">⬇ Installer</button></div>');
   attachJsonHighlight(document.getElementById('ca-yaml-body'), yamlHighlight);
 }
 async function catalogYamlInstall() {
@@ -17262,7 +17369,7 @@ function catalogFilter(q) {
     detailBtn.onclick = (function(app){ return function(ev){ ev.stopPropagation(); catalogShowDetail(app); }; })(a);
     var installBtn = document.createElement('button');
     installBtn.className = 'fs-btn';
-    installBtn.style.cssText = 'font-size:11px;flex:1;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);';
+    installBtn.style.cssText = 'font-size:11px;flex:1;background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);';
     installBtn.textContent = T('+ Installer');
     installBtn.onclick = (function(n, t){ return function(ev){ ev.stopPropagation(); openCreateApp(n, t); }; })(name, a.train || a.catalog || '');
     btnWrap.appendChild(detailBtn);
@@ -17364,7 +17471,7 @@ async function buildEditForm(appName) {
       + '<textarea id="app-cfg-json" style="width:100%;height:260px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px;color:var(--text);font-family:var(--font-mono);font-size:11px;resize:vertical;">' + json.replace(/</g,'&lt;') + '</textarea>'
       + '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">'
       + T('<button class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
-      + Tt`<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="saveEditApp('${appName}')">Enregistrer</button>`
+      + Tt`<button class="fs-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="saveEditApp('${appName}')">Enregistrer</button>`
       + '</div>';
   } catch(e) { formEl.innerHTML = errHtml(T('Config indisponible: ') + e.message); }
 }
@@ -17403,7 +17510,7 @@ function buildCreateForm(appName, train) {
   f += '</div>';
   f += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">'
     + T('<button class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
-    + Tt`<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="saveCreateApp('${appName}','${train}')" >Lancer</button>`
+    + Tt`<button class="fs-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="saveCreateApp('${appName}','${train}')" >Lancer</button>`
     + '</div></div>';
   formEl.innerHTML = f;
 }
@@ -21789,7 +21896,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     <!-- Boutons -->
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button class="fs-btn" onclick="libvirt2CreateClose()">Annuler</button>
-      <button id="lvc-save-btn" class="fs-btn" onclick="libvirt2CreateSave()" style="background:rgba(62,207,142,0.2);border-color:rgba(62,207,142,0.4);color:var(--success);">✓ Créer la VM</button>
+      <button id="lvc-save-btn" class="fs-btn" onclick="libvirt2CreateSave()" style="background:rgba(var(--accent-rgb),0.2);border-color:rgba(var(--accent-rgb),0.4);color:var(--accent2);">✓ Créer la VM</button>
     </div>
   </div>
 </div>
@@ -21923,7 +22030,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     <div class="cat-detail-footer">
       <button type="button" class="fs-btn" onclick="closeCatalogDetail()">Fermer</button>
       <button type="button" id="cdd-install-btn" class="fs-btn"
-        style="background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.35);color:var(--success,#3ecf8e);">+ Installer</button>
+        style="background:rgba(var(--accent-rgb),.15);border-color:rgba(var(--accent-rgb),.35);color:var(--accent2);">+ Installer</button>
     </div>
   </div>
 </div>
@@ -22105,7 +22212,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       + '<div id="catalog-install-error" style="min-height:18px;margin-bottom:8px;color:var(--danger);font-size:11px;"></div>'
       + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
       + T('  <button type="button" class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
-      + T('  <button type="button" id="catalog-install-submit" class="fs-btn" style="background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.35);color:var(--success,#3ecf8e);">Installer</button>')
+      + T('  <button type="button" id="catalog-install-submit" class="fs-btn" style="background:rgba(var(--accent-rgb),.15);border-color:rgba(var(--accent-rgb),.35);color:var(--accent2);">Installer</button>')
       + '</div>';
 
     byId('catalog-install-app').textContent = context.catalog_app;
@@ -22537,8 +22644,8 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       var install = document.createElement('button');
       install.className = 'fs-btn';
       install.style.cssText =
-        'font-size:11px;flex:1;background:rgba(62,207,142,.15);' +
-        'border-color:rgba(62,207,142,.3);color:var(--success);';
+        'font-size:11px;flex:1;background:rgba(var(--accent-rgb),.15);' +
+        'border-color:rgba(var(--accent-rgb),.3);color:var(--accent2);';
       install.textContent = T('+ Installer');
       install.onclick = function (event) {
         event.stopPropagation();
@@ -22678,7 +22785,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">' +
         T('<button class="fs-btn" type="button" onclick="closeCreateApp()">Annuler</button>') +
         '<button class="fs-btn" id="ci-install-btn" type="button" ' +
-          'style="background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.3);color:var(--success);" ' +
+          'style="background:rgba(var(--accent-rgb),.15);border-color:rgba(var(--accent-rgb),.3);color:var(--accent2);" ' +
           T('onclick="saveCatalogInstallV3()">Installer</button>') +
       '</div>';
 
@@ -23417,7 +23524,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     var save = makeButton(
       T('Enregistrer'),
       T('Enregistrer et redéployer l’application'),
-      'background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.32);color:var(--success);'
+      'background:rgba(var(--accent-rgb),.15);border-color:rgba(var(--accent-rgb),.32);color:var(--accent2);'
     );
     save.id = 'mdm-app-edit-save';
     save.onclick = saveEditAppIntegrated;
