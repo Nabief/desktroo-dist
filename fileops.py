@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.22.1'
+APP_VERSION = '2.23.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -3647,19 +3647,26 @@ def _web_proxy_set(enabled):
 
 # ── Couleur du thème de l'installation ────────────────────────────────────────
 # Chaque navigateur peut choisir sa couleur ; celle-ci est proposée à ceux qui n'ont rien choisi,
-# écran de connexion compris. Ce n'est qu'un nom de couleur : la lecture est ouverte sans jeton.
+# écran de connexion compris. Ce n'est qu'une couleur (un nom de la palette, ou une teinte libre
+# « #rrggbb ») : la lecture est ouverte sans jeton.
 BRANDING_FILE = os.path.join(ACCESS_DATA_DIR, 'branding.json')
 _BRAND_ACCENTS = ('green', 'blue', 'red', 'amber', 'yellow', 'gray')
+_BRAND_HEX = re.compile(r'#[0-9a-f]{6}')
+
+
+def _branding_ok(accent):
+    return isinstance(accent, str) and (accent in _BRAND_ACCENTS or _BRAND_HEX.fullmatch(accent) is not None)
 
 
 def _branding_get():
     data = _access_read_json(BRANDING_FILE, {})
     accent = data.get('accent') if isinstance(data, dict) else None
-    return {'accent': accent if accent in _BRAND_ACCENTS else 'green'}
+    return {'accent': accent if _branding_ok(accent) else 'green'}
 
 
 def _branding_set(accent):
-    if accent not in _BRAND_ACCENTS:
+    accent = str(accent or '').strip().lower()
+    if not _branding_ok(accent):
         raise ValueError('couleur inconnue')
     _access_write_json(BRANDING_FILE, {'accent': accent})
     return _branding_get()

@@ -5,10 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Desktroo</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231a2c4b'/%3E%3Cstop offset='1' stop-color='%230b1526'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='15' fill='url(%23t)'/%3E%3Ccircle cx='26' cy='37' r='11' fill='none' stroke='%23e9eef7' stroke-width='6'/%3E%3Crect x='37' y='12' width='6.5' height='38' rx='3.25' fill='%23e9eef7'/%3E%3Ccircle cx='26' cy='37' r='4.6' fill='%233ecf8e'/%3E%3C/svg%3E">
-<script>/* Thème persistant : appliqué avant le rendu pour éviter tout flash */
+<script>/* Couleur libre : toute la palette (aplat, texte, encre, en sombre et en clair) se calcule depuis la teinte choisie.
+   En sombre, la teinte est éclaircie jusqu'à se lire sur le fond nuit ; en clair, assombrie jusqu'à se lire en texte. */
+function dkAccentCss(hex) {
+  var n = parseInt(String(hex).slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn, s = d ? d / (1 - Math.abs(2 * l - 1)) : 0, h = 0;
+  if (d) { h = 60 * (mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4); if (h < 0) h += 360; }
+  var rgb = function(li) {
+    var c = (1 - Math.abs(2 * li - 1)) * s, x = c * (1 - Math.abs(h / 60 % 2 - 1)), m = li - c / 2;
+    var t = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    return t.map(function(v) { return Math.max(0, Math.min(255, Math.round((v + m) * 255))); });
+  };
+  var lum = function(c) { return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; };
+  var hx = function(c) { return '#' + c.map(function(v) { return ('0' + v.toString(16)).slice(-2); }).join(''); };
+  var decl = function(o) { return Object.keys(o).map(function(k) { return '--' + k + ':' + o[k] + ';'; }).join(''); };
+  var vars = function(a, a2, ink) { return decl({ 'accent': hx(a), 'accent-rgb': a.join(','), 'accent2': hx(a2), 'accent2-rgb': a2.join(','), 'accent-ink': ink }); };
+  var dl = Math.max(0.5, Math.min(0.8, l)), ll = Math.min(0.5, l);
+  while (lum(rgb(dl)) < 0.5 && dl < 0.86) dl += 0.02;
+  while (lum(rgb(ll)) > 0.4 && ll > 0.1) ll -= 0.02;
+  var da = rgb(dl), la = rgb(ll), ink = rgb(0.08);
+  return 'html[data-accent="custom"]{' + vars(da, rgb(Math.min(0.9, dl + 0.09)), hx(ink)) + decl({ 'brand': hx(da), 'brand-rgb': da.join(',') }) + '}'
+       + 'html[data-theme="light"][data-accent="custom"]{' + vars(la, la, '#ffffff') + '}';
+}
+/* Thème persistant : appliqué avant le rendu pour éviter tout flash */
 try { document.documentElement.setAttribute('data-theme', localStorage.getItem('tn-theme') === 'light' ? 'light' : 'dark');
-      var dkA = localStorage.getItem('tn-accent'); if (!/^(green|blue|red|amber|yellow|gray)$/.test(dkA || '')) dkA = localStorage.getItem('tn-accent-default');
-      if (/^(blue|red|amber|yellow|gray)$/.test(dkA || '')) document.documentElement.setAttribute('data-accent', dkA); } catch(e) {}</script>
+      var dkA = localStorage.getItem('tn-accent'); if (!/^(green|blue|red|amber|yellow|gray|#[0-9a-f]{6})$/.test(dkA || '')) dkA = localStorage.getItem('tn-accent-default');
+      if (/^#[0-9a-f]{6}$/.test(dkA || '')) { var dkS = document.createElement('style'); dkS.id = 'dk-accent-custom'; dkS.textContent = dkAccentCss(dkA); document.head.appendChild(dkS); dkA = 'custom'; }
+      if (/^(blue|red|amber|yellow|gray|custom)$/.test(dkA || '')) document.documentElement.setAttribute('data-accent', dkA); } catch(e) {}</script>
 <style id="dk-fonts">
 /* Polices de la charte Desktroo, embarquées (sous-ensemble latin, graisse variable) :
    aucun appel à un serveur tiers, le bureau reste autonome sur le réseau local.
@@ -1523,13 +1546,14 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   /* ===== TOAST ===== */
   #toasts { position:fixed; top:16px; left:calc(var(--wa-l) + (100vw - var(--wa-l) - var(--wa-r)) / 2); transform:translateX(-50%); z-index:2147483647; align-items:center; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
   .toast {
-    background:rgba(15,26,46,0.96); border:1px solid var(--glass-border);
-    border-radius:var(--radius-sm); padding:10px 16px; font-size:13px;
+    background:linear-gradient(rgba(var(--accent-rgb),0.17), rgba(var(--accent-rgb),0.17)), rgba(13,23,42,0.97);
+    border:1px solid rgba(var(--accent-rgb),0.5);
+    border-radius:var(--radius-sm); padding:12px 20px; font-size:14.5px; font-weight:500;
     box-shadow:var(--shadow); backdrop-filter:blur(16px);
     animation:toast-in 0.3s ease; white-space:nowrap;
   }
   @keyframes toast-in { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:none; } }
-  [data-theme="light"] .toast { background:rgba(255,255,255,0.97); border-color:rgba(0,0,0,0.12); color:#1a2440; box-shadow:0 8px 28px rgba(0,0,0,0.18); }
+  [data-theme="light"] .toast { background:linear-gradient(rgba(var(--accent-rgb),0.11), rgba(var(--accent-rgb),0.11)), rgba(255,255,255,0.98); border-color:rgba(var(--accent-rgb),0.45); color:#1a2440; box-shadow:0 8px 28px rgba(0,0,0,0.18); }
 
   /* ===== MISC ===== */
   .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; height:100%; color:var(--text-dim); font-size:13px; }
@@ -1579,6 +1603,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .look-mini.active { box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--sw); }
   .look-mini:focus-visible { outline:2px solid var(--accent2); outline-offset:3px; }
   .look-mini svg { width:15px; height:15px; color:#0b1526; }
+  .look-mini-pick:not(.active) { box-shadow:inset 0 0 0 1.5px rgba(128,140,160,0.7); color:var(--text-dim); font-size:17px; line-height:1; }
 
   /* ===== THEME CLAIR ===== */
   [data-theme="light"] {
@@ -1880,6 +1905,13 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   :is(html[data-bar="left"], html[data-bar="right"]) .tb-ic { display:grid; place-items:center; width:24px; height:24px; font-size:18px; font-weight:700; color:var(--text); }
   :is(html[data-bar="left"], html[data-bar="right"]) .tb-ic svg { width:20px; height:20px; }
   :is(html[data-bar="left"], html[data-bar="right"]) .tb-lb { display:none; }
+  html[data-bar-nologo] .taskbar-brand { display:none; }
+  /* Menu du clic droit sur la barre : même habit que celui du bureau. */
+  #bar-ctx {
+    position:fixed; z-index:9999; display:none; min-width:200px; padding:6px;
+    background:rgba(15,26,46,0.96); border:1px solid var(--glass-border); border-radius:var(--radius-sm); box-shadow:var(--shadow); backdrop-filter:blur(20px);
+  }
+  [data-theme="light"] #bar-ctx { background:rgba(255,255,255,0.98); border-color:rgba(0,0,0,0.12); box-shadow:0 12px 40px rgba(0,0,0,0.18); }
   /* Marque : en barre verticale, le « d » seul. */
   :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-brand { font-size:28px; }
   :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-brand > span { display:none; }
@@ -5912,8 +5944,15 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Transparence": "Transparency",
 "Le fond d'écran reste flouté derrière la barre, même très transparente. La couleur du texte s'adapte seule au fond choisi.": "The wallpaper stays blurred behind the bar, even when very transparent. The text color adapts to the chosen background on its own.",
 "Rétablir la barre d'origine": "Restore the original bar",
-"Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre ouvre cette page.": "These settings are kept in this browser. Right-clicking the bar opens this page.",
-"Position, masquage, fond et transparence": "Position, auto-hide, background and transparency"
+"Position, masquage, fond et transparence": "Position, auto-hide, background and transparency",
+"Personnalisée": "Custom",
+"Cacher le logo Desktroo": "Hide the Desktroo logo",
+"Afficher le logo Desktroo": "Show the Desktroo logo",
+"Garder la barre affichée": "Keep the bar visible",
+"Masquer la barre automatiquement": "Hide the bar automatically",
+"Réglages de la barre système": "System bar settings",
+"Le logo au milieu de la barre disparaît ; la place revient aux fenêtres ouvertes.": "The logo in the middle of the bar goes away; the space goes to the open windows.",
+"Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre propose les plus courants.": "These settings are kept in this browser. Right-clicking the bar offers the most common ones."
 }
 </script>
 <script id="dk-i18n">
@@ -17481,7 +17520,8 @@ function siView(soft) {
 // Deux niveaux : la couleur de l'installation (gardée par le service, proposée à tous, écran de connexion compris)
 // et, s'il en choisit une, celle du poste (gardée dans le navigateur), qui passe devant.
 // ===========================
-var DK_ACCENT_RE = /^(green|blue|red|amber|yellow|gray)$/;
+var DK_ACCENT_RE = /^(green|blue|red|amber|yellow|gray|#[0-9a-f]{6})$/;   // un nom de la palette, ou une couleur libre
+function dkAccentIsHex(a) { return /^#[0-9a-f]{6}$/.test(a || ''); }
 var _dkAccentDefault = 'green';
 try { var _dkA0 = localStorage.getItem('tn-accent-default'); if (DK_ACCENT_RE.test(_dkA0 || '')) _dkAccentDefault = _dkA0; } catch (e) {}
 function dkAccents() {
@@ -17498,16 +17538,31 @@ function dkAccentFavicon() {
   l.setAttribute('href', String(l.getAttribute('href') || '').replace(/fill='%23[0-9a-fA-F]{6}'\/%3E%3C\/svg%3E$/, "fill='%23" + c.slice(1) + "'/%3E%3C/svg%3E"));
 }
 function dkAccentApply() {
-  var a = dkAccentGet();
-  if (a === 'green') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', a);
+  var a = dkAccentGet(), st = document.getElementById('dk-accent-custom');
+  if (dkAccentIsHex(a)) {   // couleur libre : sa palette tient dans une feuille de style à part
+    if (!st) { st = document.createElement('style'); st.id = 'dk-accent-custom'; document.head.appendChild(st); }
+    st.textContent = dkAccentCss(a);
+    document.documentElement.setAttribute('data-accent', 'custom');
+  } else if (a === 'green') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', a);
   dkAccentFavicon();
   dkBarApply();   // la barre peut porter la couleur du thème
   if (wmVisible('control') && (_cp.nav === 'look' || _cp.nav === 'bar')) loadControl();
 }
 // Choix du poste. Vide : on suit l'installation.
 function dkAccentSet(a) {
-  try { if (DK_ACCENT_RE.test(a || '')) localStorage.setItem('tn-accent', a); else localStorage.removeItem('tn-accent'); } catch (e) {}
+  a = String(a || '').toLowerCase();
+  try { if (DK_ACCENT_RE.test(a)) localStorage.setItem('tn-accent', a); else localStorage.removeItem('tn-accent'); } catch (e) {}
   dkAccentApply();
+}
+// Pendant qu'on choisit une couleur libre : la page suit, sans être redessinée (le sélecteur resterait sinon fermé).
+function dkAccentLive(input) {
+  var a = String(input.value || '').toLowerCase();
+  if (!dkAccentIsHex(a)) return;
+  input.parentNode.style.setProperty('--sw', a);
+  try { localStorage.setItem('tn-accent', a); } catch (e) {}
+  var keep = _cp.nav; _cp.nav = '';   // dkAccentApply redessine la page « look » : on l'en empêche le temps du geste
+  dkAccentApply();
+  _cp.nav = keep;
 }
 // Couleur de l'installation : lue sans jeton, pour teinter aussi l'écran de connexion.
 async function dkAccentDefaultLoad() {
@@ -17522,7 +17577,8 @@ async function dkAccentDefaultLoad() {
   } catch (e) {}
 }
 async function dkAccentDefaultSet(a) {
-  if (!DK_ACCENT_RE.test(a || '')) return;
+  a = String(a || '').toLowerCase();
+  if (!DK_ACCENT_RE.test(a)) return;
   try {
     var r = await fileops('POST', 'branding', { accent: a });
     _dkAccentDefault = (r && DK_ACCENT_RE.test(r.accent || '')) ? r.accent : a;
@@ -17533,7 +17589,10 @@ async function dkAccentDefaultSet(a) {
 }
 // Page « Couleur du thème » du Panneau de configuration.
 function cpLookView() {
-  var local = dkAccentLocal(), list = dkAccents(), def = list.find(function(a) { return a.key === _dkAccentDefault; }) || list[0];
+  var local = dkAccentLocal(), list = dkAccents();
+  var def = list.find(function(a) { return a.key === _dkAccentDefault; }) || (dkAccentIsHex(_dkAccentDefault) ? { key: _dkAccentDefault, label: T('Personnalisée'), color: _dkAccentDefault } : list[0]);
+  var brand = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim().toLowerCase();
+  var pick = function(v) { return dkAccentIsHex(v) ? v : (dkAccentIsHex(brand) ? brand : '#3ecf8e'); };   // teinte de départ du sélecteur
   wmHead('cp', T('Couleur du thème'), { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true,
     sub: T('La couleur des boutons, des sélections et du logo. Les voyants d\'état gardent leur vert, leur orange et leur rouge.') });
   var sw = function(key, color, label, note, on, call) {
@@ -17543,11 +17602,18 @@ function cpLookView() {
   var h = '<div class="web-group-title" style="margin-top:6px;">' + T('Sur ce poste') + '</div><div class="look-grid" role="radiogroup" aria-label="' + webEsc(T('Sur ce poste')) + '">'
     + sw('', def.color, T('Celle de l\'installation'), Tf('actuellement {0}', def.label.toLowerCase()), !local, 'dkAccentSet(\'\')');
   list.forEach(function(a) { h += sw(a.key, a.color, a.label, '', local === a.key, 'dkAccentSet(\'' + a.key + '\')'); });
+  var lOn = dkAccentIsHex(local);
+  h += '<label class="look-swatch bar-pick' + (lOn ? ' active' : '') + '" style="--sw:' + pick(local) + '"><span class="look-disc">' + (lOn ? webIcon('check') : '') + '</span>'
+    + '<span class="look-text"><span class="look-name">' + T('Autre couleur') + '</span><span class="look-note">' + T('à choisir') + '</span></span>'
+    + '<input type="color" value="' + pick(local) + '" aria-label="' + webEsc(T('Autre couleur')) + '" oninput="dkAccentLive(this)" onchange="dkAccentSet(this.value)"></label>';
   h += '</div><div class="web-group-title">' + T('Aperçu') + '</div><div class="look-demo"><button class="web-open" tabindex="-1">' + T('Bouton principal') + '</button><button class="fs-btn" tabindex="-1">' + T('Bouton secondaire') + '</button>'
     + '<span class="web-nav active look-demo-nav">' + webIcon('grid') + '<span class="web-nav-name">' + T('Élément choisi') + '</span></span><input type="checkbox" checked tabindex="-1" aria-hidden="true"></div>'
     + '<div class="web-group-title">' + T('Pour toute l\'installation') + '</div><div class="look-install"><span class="look-install-text">'
     + T('Couleur proposée à tous les postes qui n\'ont pas choisi la leur, écran de connexion compris.') + '</span><span class="look-minis" role="radiogroup" aria-label="' + webEsc(T('Pour toute l\'installation')) + '">'
     + list.map(function(a) { var on = a.key === _dkAccentDefault; return '<button class="look-mini' + (on ? ' active' : '') + '" role="radio" aria-checked="' + on + '" title="' + webEsc(a.label) + '" aria-label="' + webEsc(a.label) + '" style="--sw:' + a.color + '" onclick="dkAccentDefaultSet(\'' + a.key + '\')">' + (on ? webIcon('check') : '') + '</button>'; }).join('')
+    + (function() { var on = dkAccentIsHex(_dkAccentDefault), c = pick(_dkAccentDefault);
+        return '<label class="look-mini look-mini-pick bar-pick' + (on ? ' active' : '') + '" title="' + webEsc(T('Autre couleur')) + '" style="--sw:' + (on ? c : 'transparent') + '">' + (on ? webIcon('check') : '<span aria-hidden="true">+</span>')
+          + '<input type="color" value="' + c + '" aria-label="' + webEsc(T('Autre couleur')) + '" onchange="dkAccentDefaultSet(this.value)"></label>'; })()
     + '</span></div>'
     + '<div class="web-group-title">' + T('Aussi') + '</div><div class="web-group">'
     + wmRow('toggleTheme();loadControl()', T('Thème clair ou sombre'), darkMode ? T('Actuellement sombre') : T('Actuellement clair'))
@@ -17569,6 +17635,7 @@ function dkBarGet() {
   return {
     pos: /^(top|bottom|left|right)$/.test(c.pos) ? c.pos : 'top',
     hide: c.hide === true,
+    logo: c.logo !== false,   // le logo Desktroo au milieu de la barre
     bg: /^(theme|black|white|accent|custom)$/.test(c.bg) ? c.bg : 'theme',
     color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color.toLowerCase() : '#27406b',
     t: (typeof c.t === 'number' && c.t >= 0 && c.t <= 100) ? Math.round(c.t) : null   // transparence en % ; null : celle du thème
@@ -17596,6 +17663,7 @@ function dkBarApply() {
   var c = dkBarGet(), root = document.documentElement, bar = document.getElementById('taskbar'), base = dkBarBase();
   if (c.pos === 'top') root.removeAttribute('data-bar'); else root.setAttribute('data-bar', c.pos);
   if (c.hide) root.setAttribute('data-bar-hide', ''); else root.removeAttribute('data-bar-hide');
+  if (c.logo) root.removeAttribute('data-bar-nologo'); else root.setAttribute('data-bar-nologo', '');
   var rgb = dkBarRgb(c);
   if (rgb) root.style.setProperty('--bar-rgb', rgb.join(',')); else root.style.removeProperty('--bar-rgb');
   if (c.t != null) root.style.setProperty('--bar-alpha', (1 - c.t / 100).toFixed(2)); else root.style.removeProperty('--bar-alpha');
@@ -17673,7 +17741,7 @@ function dkBarBusy() {
   var bar = document.getElementById('taskbar');
   if (!bar) return false;
   var open = function(id) { var e = document.getElementById(id); return !!e && e.style.display === 'block'; };
-  return open('user-dropdown') || open('jobs-popover') || bar.matches(':hover') || !!bar.querySelector(':focus-visible');
+  return open('user-dropdown') || open('jobs-popover') || open('bar-ctx') || bar.matches(':hover') || !!bar.querySelector(':focus-visible');
 }
 function dkBarReveal(ms) {
   var bar = document.getElementById('taskbar');
@@ -17703,13 +17771,30 @@ function dkBarMaybeHide() {
   bar.addEventListener('pointerdown', function() { dkBarReveal(900); }, true);
   bar.addEventListener('pointerleave', function() { if (dkBarHiding()) { clearTimeout(_dkBarTimer); _dkBarTimer = setTimeout(dkBarMaybeHide, 450); } });
   bar.addEventListener('focusin', function() { dkBarReveal(900); });
-  // clic droit sur la barre : ses réglages
+  // clic droit sur la barre : ses réglages courants
   bar.addEventListener('contextmenu', function(e) {
     if (e.target.closest('.user-dropdown, #jobs-popover')) return;
     e.preventDefault();
-    openApp('control'); cpGo('bar');
+    dkBarCtx(e);
   });
 })();
+// Menu du clic droit sur la barre. Il a son propre élément : celui du bureau est réécrit par d'autres menus.
+function dkBarCtx(e) {
+  var m = document.getElementById('bar-ctx'), c = dkBarGet();
+  if (!m) { m = document.createElement('div'); m.id = 'bar-ctx'; m.setAttribute('role', 'menu'); document.body.appendChild(m); }
+  var item = function(call, label) { return '<div class="ctx-item" role="menuitem" onclick="' + call + '">' + label + '</div>'; };
+  m.innerHTML = item('dkBarSet({logo:' + !c.logo + '})', c.logo ? T('Cacher le logo Desktroo') : T('Afficher le logo Desktroo'))
+    + item('dkBarSet({hide:' + !c.hide + '})', c.hide ? T('Garder la barre affichée') : T('Masquer la barre automatiquement'))
+    + '<hr class="ctx-separator">' + item('openApp(\'control\');cpGo(\'bar\')', T('Réglages de la barre système'));
+  m.style.display = 'block';
+  m.style.left = Math.max(4, Math.min(e.clientX, window.innerWidth  - m.offsetWidth  - 8)) + 'px';
+  m.style.top  = Math.max(4, Math.min(e.clientY, window.innerHeight - m.offsetHeight - 8)) + 'px';
+  setTimeout(function() {
+    var close = function() { m.style.display = 'none'; document.removeEventListener('click', close); document.removeEventListener('contextmenu', close, true); };
+    document.addEventListener('click', close);
+    document.addEventListener('contextmenu', close, true);
+  }, 0);
+}
 
 // ── Page « Barre système » du Panneau de configuration ──
 function cpBarView() {
@@ -17726,6 +17811,7 @@ function cpBarView() {
   });
   h += '</div><div class="web-group" style="margin-top:14px;">'
     + wmSwitch('bar-hide', T('Masquer automatiquement'), T('La barre se retire au bord de l\'écran et revient quand le pointeur touche ce bord. Les fenêtres profitent de toute la place.'), c.hide, 'onchange="dkBarSet({hide:this.checked})"')
+    + wmSwitch('bar-nologo', T('Cacher le logo Desktroo'), T('Le logo au milieu de la barre disparaît ; la place revient aux fenêtres ouvertes.'), !c.logo, 'onchange="dkBarSet({logo:!this.checked})"')
     + '</div>';
   // Fond
   var disc = function(rgb, on) { return '<span class="look-disc' + (dkLum(rgb) < 0.5 ? ' on-dark' : '') + '">' + (on ? webIcon('check') : '') + '</span>'; };
@@ -17751,7 +17837,7 @@ function cpBarView() {
     + '<span class="bar-range-ends">' + same.none + '</span><output id="bar-t-out" for="bar-t">' + Tf('{0} %', t) + '</output></div>'
     + '<p class="web-note">' + T('Le fond d\'écran reste flouté derrière la barre, même très transparente. La couleur du texte s\'adapte seule au fond choisi.') + '</p>';
   if (stored) h += '<p style="margin:14px 0 0;"><button class="fs-btn" onclick="dkBarReset()">' + T('Rétablir la barre d\'origine') + '</button></p>';
-  h += '<p class="web-note">' + T('Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre ouvre cette page.') + '</p>';
+  h += '<p class="web-note">' + T('Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre propose les plus courants.') + '</p>';
   wmBody('cp').innerHTML = h;
 }
 dkBarApply();
