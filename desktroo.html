@@ -194,6 +194,139 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #wallpaper[data-preset="nuit"]::before,   .wp-art[data-preset="nuit"]::before,
   #wallpaper[data-preset="aurore"]::after,  #wallpaper[data-preset="nuit"]::after { display:none; }
 
+  /* ── Fonds animés ──
+     Mêmes dessins que Desktroo et Aurore, mis en mouvement. Tout bouge par « transform » et
+     « opacity » seulement : le navigateur déplace des calques déjà peints, sans rien redessiner.
+     Les halos avancent par petits pas, tous au même instant (dix par seconde, invisibles sur un
+     dégradé flou : durée en secondes × 1,25 = pas par tronçon), pour ne pas recomposer l'écran
+     soixante fois par seconde. Les mesures sont en unités du
+     conteneur (cqw/cqh) : le même dessin sert au bureau et aux vignettes du sélecteur. */
+  #wallpaper[data-preset$="-live"], .wp-art[data-preset$="-live"] { container-type:size; }
+  #wallpaper[data-preset="desktroo-live"], .wp-art[data-preset="desktroo-live"] {
+    background-image: linear-gradient(165deg, #0e1c33 0%, #0a1220 46%, #070d18 100%);
+  }
+  #wallpaper[data-preset="aurore-live"], .wp-art[data-preset="aurore-live"] {
+    background-image: linear-gradient(180deg, #0c1932 0%, #0a1220 58%, #070d18 100%);
+  }
+  #wallpaper[data-preset$="-live"]::before, .wp-art[data-preset$="-live"]::before,
+  #wallpaper[data-preset="aurore-live"]::after { display:none; }
+  .wp-live { position:absolute; inset:0; overflow:hidden; pointer-events:none; --wp-k:1; }
+  @supports not (width:1cqw) { .wp-live { display:none; } }
+
+  /* Halo : peint au quart de sa taille puis agrandi quatre fois, pour un calque léger. */
+  .wp-halo {
+    --rgb:var(--brand-rgb);
+    position:absolute; left:calc(var(--x) - var(--w) / 4); top:calc(var(--y) - var(--h) / 4);
+    width:calc(var(--w) / 2); height:calc(var(--h) / 2);
+    background:radial-gradient(closest-side, rgba(var(--rgb), calc(var(--a) * var(--wp-k))), transparent 70%);
+    transform:scale(4);
+    animation:var(--loop) var(--dur) steps(var(--pas, 70)) infinite;
+  }
+  .wp-halo.blue, .wp-ring.blue, .wp-orbit.blue { --rgb:90,169,255; }
+
+  /* Horizon : trois grands cercles dont seul le sommet est visible. */
+  .wp-ring {
+    --rgb:var(--brand-rgb);
+    position:absolute; left:calc(var(--cx) - var(--r)); top:var(--top);
+    width:calc(2 * var(--r)); height:calc(2 * var(--r)); box-sizing:border-box;
+    border-radius:50%; border:max(1px, 0.11cqw) solid rgba(var(--rgb), var(--a));
+    box-shadow:0 0 0.45cqw rgba(var(--rgb), calc(var(--a) * 0.9)), inset 0 0 0.45cqw rgba(var(--rgb), calc(var(--a) * 0.9));
+  }
+  /* Une lueur glisse le long de chaque arc : le pivot est au centre du cercle et tourne,
+     comme l'arc du logo autour de son point. */
+  .wp-orbit {
+    --rgb:var(--brand-rgb);
+    position:absolute; left:var(--cx); top:calc(var(--top) + var(--r)); width:0; height:0; opacity:0;
+    animation:wp-glide var(--dur) linear var(--delay, 0s) infinite;
+  }
+  .wp-comet {
+    position:absolute; left:-10cqw; top:calc(-1 * var(--r) - max(0.25px, 0.03cqw)); width:10cqw; height:max(1.5px, 0.16cqw);
+    border-radius:1cqw; background:linear-gradient(90deg, transparent, rgba(var(--rgb),0.10) 35%, rgba(var(--rgb),0.95));
+  }
+  .wp-comet::after {
+    content:''; position:absolute; right:-0.2cqw; top:50%; width:0.5cqw; height:0.5cqw; min-width:3px; min-height:3px;
+    transform:translateY(-50%); border-radius:50%; background:#fff;
+    box-shadow:0 0 0.9cqw 0.25cqw rgba(var(--rgb),0.75), 0 0 2.6cqw 0.6cqw rgba(var(--rgb),0.28);
+  }
+  .wp-orbit.rev .wp-comet { left:0; transform:scaleX(-1); }
+  @keyframes wp-glide {
+    0%   { transform:rotate(var(--a0)); opacity:0; }
+    3%   { opacity:1; }
+    31%  { opacity:1; }
+    34%, 100% { transform:rotate(var(--a1)); opacity:0; }
+  }
+  @keyframes wp-d1 {
+    0% { transform:translate(4.50cqw, 0.00cqh) scale(4.219); }
+    12.5% { transform:translate(3.18cqw, 2.47cqh) scale(4.278); }
+    25% { transform:translate(0.00cqw, 3.50cqh) scale(4.174); }
+    37.5% { transform:translate(-3.18cqw, 2.47cqh) scale(3.968); }
+    50% { transform:translate(-4.50cqw, 0.00cqh) scale(3.781); }
+    62.5% { transform:translate(-3.18cqw, -2.47cqh) scale(3.722); }
+    75% { transform:translate(-0.00cqw, -3.50cqh) scale(3.826); }
+    87.5% { transform:translate(3.18cqw, -2.47cqh) scale(4.032); }
+    100% { transform:translate(4.50cqw, -0.00cqh) scale(4.219); }
+  }
+  @keyframes wp-d2 {
+    0% { transform:translate(-0.64cqw, 4.46cqh) scale(4.186); }
+    12.5% { transform:translate(3.05cqw, 3.57cqh) scale(4.349); }
+    25% { transform:translate(4.96cqw, 0.58cqh) scale(4.308); }
+    37.5% { transform:translate(3.96cqw, -2.75cqh) scale(4.087); }
+    50% { transform:translate(0.64cqw, -4.46cqh) scale(3.814); }
+    62.5% { transform:translate(-3.05cqw, -3.57cqh) scale(3.651); }
+    75% { transform:translate(-4.96cqw, -0.58cqh) scale(3.692); }
+    87.5% { transform:translate(-3.96cqw, 2.75cqh) scale(3.913); }
+    100% { transform:translate(-0.64cqw, 4.46cqh) scale(4.186); }
+  }
+  @keyframes wp-d3 {
+    0% { transform:translate(-5.99cqw, 0.12cqh) scale(3.758); }
+    12.5% { transform:translate(-4.42cqw, -2.03cqh) scale(3.681); }
+    25% { transform:translate(-0.25cqw, -3.00cqh) scale(3.791); }
+    37.5% { transform:translate(4.06cqw, -2.21cqh) scale(4.023); }
+    50% { transform:translate(5.99cqw, -0.12cqh) scale(4.242); }
+    62.5% { transform:translate(4.42cqw, 2.03cqh) scale(4.319); }
+    75% { transform:translate(0.25cqw, 3.00cqh) scale(4.209); }
+    87.5% { transform:translate(-4.06cqw, 2.21cqh) scale(3.977); }
+    100% { transform:translate(-5.99cqw, 0.12cqh) scale(3.758); }
+  }
+  @keyframes wp-v1 {
+    0% { transform:translate(11.00cqw, 0.00cqh) rotate(4.32deg) scale(4.376); }
+    12.5% { transform:translate(7.78cqw, 2.83cqh) rotate(1.27deg) scale(4.477); }
+    25% { transform:translate(0.00cqw, 4.00cqh) rotate(-2.52deg) scale(4.298); }
+    37.5% { transform:translate(-7.78cqw, 2.83cqh) rotate(-4.84deg) scale(3.945); }
+    50% { transform:translate(-11.00cqw, 0.00cqh) rotate(-4.32deg) scale(3.624); }
+    62.5% { transform:translate(-7.78cqw, -2.83cqh) rotate(-1.27deg) scale(3.523); }
+    75% { transform:translate(-0.00cqw, -4.00cqh) rotate(2.52deg) scale(3.702); }
+    87.5% { transform:translate(7.78cqw, -2.83cqh) rotate(4.84deg) scale(4.055); }
+    100% { transform:translate(11.00cqw, -0.00cqh) rotate(4.32deg) scale(4.376); }
+  }
+  @keyframes wp-v2 {
+    0% { transform:translate(-6.64cqw, 3.38cqh) rotate(5.87deg) scale(3.912); }
+    12.5% { transform:translate(-0.39cqw, 5.00cqh) rotate(3.25deg) scale(4.329); }
+    25% { transform:translate(6.08cqw, 3.69cqh) rotate(-1.26deg) scale(4.553); }
+    37.5% { transform:translate(8.99cqw, 0.22cqh) rotate(-5.04deg) scale(4.453); }
+    50% { transform:translate(6.64cqw, -3.38cqh) rotate(-5.87deg) scale(4.088); }
+    62.5% { transform:translate(0.39cqw, -5.00cqh) rotate(-3.25deg) scale(3.671); }
+    75% { transform:translate(-6.08cqw, -3.69cqh) rotate(1.26deg) scale(3.447); }
+    87.5% { transform:translate(-8.99cqw, -0.22cqh) rotate(5.04deg) scale(3.547); }
+    100% { transform:translate(-6.64cqw, 3.38cqh) rotate(5.87deg) scale(3.912); }
+  }
+  @keyframes wp-v3 {
+    0% { transform:translate(-9.15cqw, -5.30cqh) rotate(-0.73deg) scale(3.371); }
+    12.5% { transform:translate(1.02cqw, -6.98cqh) rotate(2.27deg) scale(3.640); }
+    25% { transform:translate(10.60cqw, -4.58cqh) rotate(3.93deg) scale(4.119); }
+    37.5% { transform:translate(13.96cqw, 0.51cqh) rotate(3.30deg) scale(4.529); }
+    50% { transform:translate(9.15cqw, 5.30cqh) rotate(0.73deg) scale(4.629); }
+    62.5% { transform:translate(-1.02cqw, 6.98cqh) rotate(-2.27deg) scale(4.360); }
+    75% { transform:translate(-10.60cqw, 4.58cqh) rotate(-3.93deg) scale(3.881); }
+    87.5% { transform:translate(-13.96cqw, -0.51cqh) rotate(-3.30deg) scale(3.471); }
+    100% { transform:translate(-9.15cqw, -5.30cqh) rotate(-0.73deg) scale(3.371); }
+  }
+  /* Animations réduites demandées par le système : le fond reste fixe, sans lueurs. */
+  @media (prefers-reduced-motion: reduce) {
+    .wp-halo { animation:none; }
+    .wp-orbit { display:none; }
+  }
+
   /* Sélecteur de fond d'écran */
   .wp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(146px, 1fr)); gap:12px; }
   .wp-tile { position:relative; border-radius:var(--radius-sm); border:1px solid var(--glass-border); background:rgba(255,255,255,0.04); overflow:hidden; cursor:pointer; outline:none; transition:border-color .15s, box-shadow .15s; }
@@ -1523,6 +1656,15 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] #wallpaper[data-preset="nuit"], [data-theme="light"] .wp-art[data-preset="nuit"] {
     background-image: linear-gradient(180deg, #cbdaeb 0%, #bccfe4 100%);
   }
+  [data-theme="light"] #wallpaper[data-preset="desktroo-live"], [data-theme="light"] .wp-art[data-preset="desktroo-live"] {
+    background-image: linear-gradient(165deg, #cfdded 0%, #c3d4e8 50%, #b6cae1 100%);
+  }
+  [data-theme="light"] #wallpaper[data-preset="aurore-live"], [data-theme="light"] .wp-art[data-preset="aurore-live"] {
+    background-image: linear-gradient(180deg, #cfdded 0%, #c3d4e8 58%, #b6cae1 100%);
+  }
+  [data-theme="light"] .wp-live { --wp-k:1.55; }
+  [data-theme="light"] .wp-ring { border-color:rgba(255,255,255, calc(var(--a) * 2.2)); box-shadow:0 0 0.45cqw rgba(255,255,255, calc(var(--a) * 1.6)), inset 0 0 0.45cqw rgba(255,255,255, calc(var(--a) * 1.6)); }
+  [data-theme="light"] .wp-comet { background:linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 35%, #fff); }
   [data-theme="light"] #taskbar {
     background:rgba(220,235,252,0.95);
     border-bottom:1px solid rgba(0,0,0,0.10);
@@ -5632,7 +5774,10 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Couleur proposée à tous les postes qui n'ont pas choisi la leur, écran de connexion compris.": "Color offered to every computer that has not chosen its own, sign-in screen included.",
 "Le choix « sur ce poste » est gardé dans ce navigateur ; celui de l'installation est gardé sur le NAS.": "The “on this computer” choice is kept in this browser; the installation's is kept on the NAS.",
 "Icônes rangées": "Icons tidied up",
-"▦ Ranger les icônes": "▦ Tidy up icons"
+"▦ Ranger les icônes": "▦ Tidy up icons",
+"Desktroo animé": "Animated Desktroo",
+"Aurore animée": "Animated Aurora",
+"Ce poste demande de réduire les animations : les fonds animés y restent fixes.": "This device asks for reduced motion: animated wallpapers stay still here."
 }
 </script>
 <script id="dk-i18n">
@@ -13071,10 +13216,33 @@ function showConfirm(msg, opts) {
 // et les images du dossier « wallpapers » de l'installation, servies par fileops.
 // Le choix est mémorisé par navigateur (localStorage 'dk-wallpaper').
 var WP_PRESETS = [
-  { id:'desktroo', label:'Desktroo' },
-  { id:'aurore',   label:T('Aurore') },
-  { id:'nuit',     label:T('Nuit') }
+  { id:'desktroo',      label:'Desktroo' },
+  { id:'desktroo-live', label:T('Desktroo animé'), live:true },
+  { id:'aurore',        label:T('Aurore') },
+  { id:'aurore-live',   label:T('Aurore animée'), live:true },
+  { id:'nuit',          label:T('Nuit') }
 ];
+// Calques d'un fond animé (halos, arcs, lueurs) ; vide pour un fond fixe. Positions en unités du
+// conteneur : le même contenu sert au bureau et à la vignette du sélecteur.
+function wpLiveHtml(id) {
+  var vars = function(o) { return Object.keys(o).map(function(k) { return '--' + k + ':' + o[k]; }).join(';'); };
+  var W = function(n) { return n + 'cqw'; }, H = function(n) { return n + 'cqh'; }, S = function(n) { return n + 's'; }, D = function(n) { return n + 'deg'; };
+  var halo = function(cls, x, y, w, h, a, loop, dur, pas) {
+    return '<i class="wp-halo' + cls + '" style="' + vars({ x: W(x), y: H(y), w: W(w), h: H(h), a: a, loop: loop, dur: S(dur), pas: pas }) + '"></i>';
+  };
+  var arc = function(cls, cx, top, r, a, dur, delay, a0, a1) {
+    return '<i class="wp-ring' + cls.replace(' rev', '') + '" style="' + vars({ cx: W(cx), top: H(top), r: W(r), a: a }) + '"></i>'
+         + '<i class="wp-orbit' + cls + '" style="' + vars({ cx: W(cx), top: H(top), r: W(r), dur: S(dur), delay: S(delay), a0: D(a0), a1: D(a1) }) + '"><i class="wp-comet"></i></i>';
+  };
+  if (id === 'desktroo-live') return '<div class="wp-live">'
+    + halo('', 76, 2, 58, 62, 0.27, 'wp-d1', 56, 70) + halo(' blue', 9, 12, 46, 52, 0.21, 'wp-d2', 68, 85) + halo('', 98, 108, 64, 56, 0.15, 'wp-d3', 80, 100)
+    + arc('', 50, 70.7, 159, 0.34, 38, -36, -19.5, 23) + arc(' rev', 45, 73.5, 207, 0.16, 53, -40, 16.5, -16.5) + arc(' blue', 40, 76.7, 264, 0.14, 67, -37, -9.5, 16.5)
+    + '</div>';
+  if (id === 'aurore-live') return '<div class="wp-live">'
+    + halo('', 26, -4, 95, 46, 0.34, 'wp-v1', 48, 60) + halo(' blue', 88, 10, 85, 42, 0.30, 'wp-v2', 60, 75) + halo('', 56, 34, 78, 50, 0.13, 'wp-v3', 72, 90)
+    + '</div>';
+  return '';
+}
 var WP_MAX_BYTES = 20 * 1024 * 1024;
 var _wpCurrentUrl = null;   // URL objet du fond affiché
 var _wpThumbUrls  = [];     // URL objet des vignettes du sélecteur
@@ -13106,11 +13274,13 @@ function wpShowPreset(id) {
   wp.style.backgroundImage = '';
   wp.classList.remove('custom-bg');
   if (known && id !== 'desktroo') wp.setAttribute('data-preset', id); else wp.removeAttribute('data-preset');
+  wp.innerHTML = known ? wpLiveHtml(id) : '';
   if (_wpCurrentUrl) { URL.revokeObjectURL(_wpCurrentUrl); _wpCurrentUrl = null; }
 }
 function wpShowImage(url, isObjectUrl) {
   var wp = document.getElementById('wallpaper');
   wp.removeAttribute('data-preset');
+  wp.innerHTML = '';
   wp.style.backgroundImage = 'url("' + url + '")';
   wp.classList.add('custom-bg');
   if (_wpCurrentUrl && _wpCurrentUrl !== url) URL.revokeObjectURL(_wpCurrentUrl);
@@ -13166,7 +13336,7 @@ function wpRender(data) {
   WP_PRESETS.forEach(function(p) {
     var sel = cur.type === 'preset' && (cur.id || 'desktroo') === p.id;
     h += '<div class="wp-tile' + (sel ? ' selected' : '') + '" role="button" tabindex="0" data-wp-preset="' + p.id + '">'
-       + '<span class="wp-thumb wp-art"' + (p.id !== 'desktroo' ? ' data-preset="' + p.id + '"' : '') + '></span>'
+       + '<span class="wp-thumb wp-art"' + (p.id !== 'desktroo' ? ' data-preset="' + p.id + '"' : '') + '>' + wpLiveHtml(p.id) + '</span>'
        + '<span class="wp-name">' + p.label + '</span></div>';
   });
   if (hasLocal) {
@@ -13189,6 +13359,8 @@ function wpRender(data) {
     ? T('<div class="wp-hint">Les images ajoutées sont enregistrées sur le NAS, dans <code>') + wpEsc(data.dir || '') + '</code>. '
       + T('Vous pouvez aussi y déposer vos fichiers depuis le module Fichiers : JPG, PNG, WebP, AVIF ou GIF, 20 Mo au plus.</div>')
     : T('<div class="wp-hint">Le dossier de fonds d’écran du NAS ne répond pas. Une image ajoutée maintenant ne sera conservée que dans ce navigateur.</div>');
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)
+    h += '<div class="wp-hint">' + T('Ce poste demande de réduire les animations : les fonds animés y restent fixes.') + '</div>';
   box.innerHTML = h;
 
   var grid = box.querySelector('.wp-grid');
