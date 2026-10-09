@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.26.0'
+APP_VERSION = '2.26.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -3981,7 +3981,19 @@ def _weather_search(query, lang='fr'):
 # ── Conteneurs Docker de l'hôte (fenêtre Conteneurs) ──────────────────────────
 # Lecture par SSH, comme pour les sites web. Les variables d'environnement des conteneurs
 # (souvent des mots de passe) ne sortent jamais d'ici.
-_CT_DOCKER = 'D=$(sudo -n docker version >/dev/null 2>&1 && echo "sudo -n docker" || echo docker); '
+# Les commandes sont lancées par « sh -c » : l'interpréteur de l'utilisateur TrueNAS est zsh, qui ne découpe pas
+# « $D ps » en « sudo -n docker ps » (il cherchait une commande nommée « sudo -n docker » et la fenêtre
+# retombait toujours en vue réduite). Si Docker ne répond ni avec sudo ni sans, sa propre erreur est renvoyée.
+_CT_DOCKER = ('if sudo -n docker version >/dev/null 2>&1; then D="sudo -n docker"; '
+              'elif docker version >/dev/null 2>&1; then D=docker; '
+              'else E=$(sudo -n docker version 2>&1 >/dev/null | tail -n 1); '
+              '[ -n "$E" ] || E=$(docker version 2>&1 >/dev/null | tail -n 1); '
+              'echo "${E:-Docker ne répond pas sur le NAS}" >&2; exit 3; fi; ')
+
+
+def _ct_sh(script):
+    return 'sh -c ' + shq(_CT_DOCKER + script)
+
 
 
 def _ct_id(value):
@@ -4029,8 +4041,7 @@ def _ct_trim(c):
 
 
 def _ct_list():
-    cmd = (_CT_DOCKER + 'ids=$($D ps -aq 2>/dev/null) || { echo "Docker ne répond pas sur le NAS" >&2; exit 3; }; '
-           '[ -z "$ids" ] && echo "[]" || $D inspect $ids')
+    cmd = _ct_sh('ids=$($D ps -aq) || exit 3; [ -z "$ids" ] && echo "[]" || $D inspect $ids')
     raw = json.loads(ssh_ok(cmd, timeout=45) or '[]')
     items = [_ct_trim(c) for c in raw if isinstance(c, dict)]
     items.sort(key=lambda x: (x['project'] or '~', x['name']))
@@ -4053,7 +4064,7 @@ def _ct_size(text):
 
 
 def _ct_stats():
-    cmd = _CT_DOCKER + "$D stats --no-stream --format '{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}'"
+    cmd = _ct_sh("$D stats --no-stream --format '{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}'")
     out = ssh_ok(cmd, timeout=45)
     res = {}
     for line in out.splitlines():
@@ -4073,7 +4084,7 @@ def _ct_stats():
 def _ct_logs(cid, lines=300):
     cid = _ct_id(cid)
     n = max(20, min(2000, int(lines)))
-    out, err, code = ssh_exec(_CT_DOCKER + '$D logs --tail %d --timestamps %s 2>&1' % (n, cid), timeout=45)
+    out, err, code = ssh_exec(_ct_sh('$D logs --tail %d --timestamps %s 2>&1' % (n, cid)), timeout=45)
     if code != 0 and not out:
         raise RuntimeError(err or 'journal illisible')
     return out[-400000:]
@@ -4081,7 +4092,7 @@ def _ct_logs(cid, lines=300):
 
 def _ct_restart(cid):
     cid = _ct_id(cid)
-    ssh_ok(_CT_DOCKER + '$D restart -t 20 %s' % cid, timeout=90)
+    ssh_ok(_ct_sh('$D restart -t 20 %s' % cid), timeout=90)
     return True
 
 

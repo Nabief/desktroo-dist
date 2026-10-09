@@ -6120,7 +6120,12 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Pas d'installation sur ordinateur. Sur Android : menu, puis « Installer ».": "No installation on desktop. On Android: menu, then “Install”.",
 "L'application installée reste une fenêtre sur ce NAS : elle a besoin de le joindre, et se met à jour avec lui.": "The installed app remains a window onto this NAS: it needs to reach it, and updates along with it.",
 "Installer l'application": "Install the app",
-"Desktroo dans sa propre fenêtre, lancé depuis l'ordinateur": "Desktroo in its own window, launched from the computer"
+"Desktroo dans sa propre fenêtre, lancé depuis l'ordinateur": "Desktroo in its own window, launched from the computer",
+"Le service Desktroo n'est pas à jour : mettez Desktroo à jour, puis rouvrez cette fenêtre.": "The Desktroo service is out of date: update Desktroo, then reopen this window.",
+"L'utilisateur SSH de Desktroo n'a pas le sudo sans mot de passe. Dans TrueNAS : Identifiants, Utilisateurs, cet utilisateur, puis « Autoriser toutes les commandes sudo sans mot de passe ».": "Desktroo's SSH user does not have passwordless sudo. In TrueNAS: Credentials, Users, that user, then “Allow all sudo commands with no password”.",
+"Docker est arrêté : le service Applications de TrueNAS n'est pas démarré, ou aucun pool ne lui est attribué.": "Docker is stopped: the TrueNAS Apps service is not started, or no pool is assigned to it.",
+"La commande docker est introuvable sur le NAS : le service Applications de TrueNAS n'est pas configuré.": "The docker command was not found on the NAS: the TrueNAS Apps service is not set up.",
+"Desktroo n'arrive pas à ouvrir de session SSH sur le NAS : service SSH arrêté, ou identifiants à revoir.": "Desktroo cannot open an SSH session on the NAS: SSH service stopped, or credentials to review."
 }
 </script>
 <script id="dk-i18n">
@@ -12118,6 +12123,18 @@ function ctPortsText(c, max) {
   l = l.filter(function(x, i) { return l.indexOf(x) === i; });
   return l.length > (max || 99) ? l.slice(0, max).join(', ') + '…' : l.join(', ');
 }
+// Ce que la réponse du NAS veut dire, en clair, quand Docker n'a pas pu être interrogé.
+function ctWhyHint(why) {
+  var w = String(why || '');
+  if (!w) return '';
+  if (/Docker ne répond pas sur le NAS/i.test(w)) return T('Le service Desktroo n\'est pas à jour : mettez Desktroo à jour, puis rouvrez cette fenêtre.');
+  if (/password is required|terminal is required|permission denied|not allowed to (run|execute)|not in the sudoers/i.test(w))
+    return T('L\'utilisateur SSH de Desktroo n\'a pas le sudo sans mot de passe. Dans TrueNAS : Identifiants, Utilisateurs, cet utilisateur, puis « Autoriser toutes les commandes sudo sans mot de passe ».');
+  if (/cannot connect to the docker daemon|daemon running/i.test(w)) return T('Docker est arrêté : le service Applications de TrueNAS n\'est pas démarré, ou aucun pool ne lui est attribué.');
+  if (/not found/i.test(w)) return T('La commande docker est introuvable sur le NAS : le service Applications de TrueNAS n\'est pas configuré.');
+  if (/authentication|timed out|connection refused|no route|unreachable|ssh/i.test(w)) return T('Desktroo n\'arrive pas à ouvrir de session SSH sur le NAS : service SSH arrêté, ou identifiants à revoir.');
+  return '';
+}
 function ctAllView(soft) {
   var list = _ct.group == null ? _ct.list : _ct.list.filter(function(c) { return c.app === _ct.group; });
   var run = list.filter(function(c) { return ctStateInfo(c).key === 'run'; }).length, n = list.length, grouped = _ct.group != null;
@@ -12127,7 +12144,7 @@ function ctAllView(soft) {
     actions: (app ? '<button class="fs-btn" onclick="appRename(' + wmQ(_ct.group) + ')">' + T('Renommer') + '</button><button class="fs-btn" onclick="appsOpen(' + wmQ(_ct.group) + ')">' + T('Voir l\'application') + '</button>' : '') + '<button class="fs-btn" onclick="loadContainers()">' + T('Actualiser') + '</button>' });
   var el = wmBody('ct'), h = '';
   if (_ct.docker === false) h += '<div class="snap-warn ct-reduced"><strong>' + T('Vue réduite.') + '</strong> ' + T('Desktroo n\'a pas pu interroger Docker sur le NAS : seuls les conteneurs des applications TrueNAS sont listés, sans charge ni journal.')
-    + (_ct.why ? '<span class="dim mono">' + webEsc(_ct.why) + '</span>' : '') + '</div>';
+    + (ctWhyHint(_ct.why) ? '<span class="dim">' + ctWhyHint(_ct.why) + '</span>' : '') + (_ct.why ? '<span class="dim mono">' + webEsc(_ct.why) + '</span>' : '') + '</div>';
   if (!n) {
     el.innerHTML = h + '<div class="fs-empty">' + webIcon('layers') + '<div class="fs-empty-title">' + T('Aucun conteneur') + '</div><div>'
       + T('Chaque application installée fait tourner un ou plusieurs conteneurs : ils apparaîtront ici.') + '</div><button class="web-open" onclick="openApp(\'catalog\')">' + T('Parcourir le catalogue') + '</button></div>';
