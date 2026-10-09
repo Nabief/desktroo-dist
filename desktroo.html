@@ -3477,7 +3477,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Déposer pour uploader": "Drop to upload",
 "Aperçu": "Preview",
 "Fermer": "Close",
-"⬇ Télécharger": "⬇ Download",
 "🗑 Supprimer": "🗑 Delete",
 "📋 Copier": "📋 Copy",
 "📁 Fichiers": "📁 Files",
@@ -3977,13 +3976,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Envoi…": "Sending…",
 "Erreur :": "Error:",
 "Ajouter depuis le navigateur": "Add from the browser",
-"Bookmarklet — rapide, sans installation": "Bookmarklet — quick, no installation",
-"Fais glisser ce bouton dans ta barre de favoris. Ensuite, sur n'importe quel site : sélectionne un ou plusieurs liens (ou rien pour détecter automatiquement les liens d'hébergeurs), puis clique le favori — les liens partent dans la file du NAS.": "Drag this button to your bookmarks bar. Then, on any site: select one or more links (or nothing to detect file host links automatically), then click the bookmark — the links are sent to the NAS queue.",
-"📥 Envoyer au NAS": "📥 Send to NAS",
-"📋 Copier le code": "📋 Copy the code",
-"Extension navigateur — clic droit (Chrome/Edge & Firefox)": "Browser extension — right-click (Chrome/Edge & Firefox)",
-"⬇ Télécharger l'extension (.zip)": "⬇ Download the extension (.zip)",
-"Décompresse le zip, puis dans \u003ccode>chrome://extensions\u003c/code> → active le \u003cb>Mode développeur\u003c/b> → \u003cb>Charger l'extension non empaquetée\u003c/b> → sélectionne le dossier décompressé. Dans ses \u003cb>options\u003c/b>, colle ces deux valeurs :": "Unzip the archive, then in \u003ccode>chrome://extensions\u003c/code> → enable \u003cb>Developer mode\u003c/b> → \u003cb>Load unpacked\u003c/b> → select the unzipped folder. In its \u003cb>options\u003c/b>, paste these two values:",
 "Jeton": "Token",
 "Confirmer": "Confirm",
 "Aurore": "Aurora",
@@ -6125,7 +6117,21 @@ select option{ background:#101b2e; color:#e9eef7; }
 "L'utilisateur SSH de Desktroo n'a pas le sudo sans mot de passe. Dans TrueNAS : Identifiants, Utilisateurs, cet utilisateur, puis « Autoriser toutes les commandes sudo sans mot de passe ».": "Desktroo's SSH user does not have passwordless sudo. In TrueNAS: Credentials, Users, that user, then “Allow all sudo commands with no password”.",
 "Docker est arrêté : le service Applications de TrueNAS n'est pas démarré, ou aucun pool ne lui est attribué.": "Docker is stopped: the TrueNAS Apps service is not started, or no pool is assigned to it.",
 "La commande docker est introuvable sur le NAS : le service Applications de TrueNAS n'est pas configuré.": "The docker command was not found on the NAS: the TrueNAS Apps service is not set up.",
-"Desktroo n'arrive pas à ouvrir de session SSH sur le NAS : service SSH arrêté, ou identifiants à revoir.": "Desktroo cannot open an SSH session on the NAS: SSH service stopped, or credentials to review."
+"Desktroo n'arrive pas à ouvrir de session SSH sur le NAS : service SSH arrêté, ou identifiants à revoir.": "Desktroo cannot open an SSH session on the NAS: SSH service stopped, or credentials to review.",
+"Extension Desktroo pour le navigateur": "Desktroo browser extension",
+"Un clic droit sur un lien l'envoie ici. Sur une page entière, elle liste les liens et tu coches ceux à prendre. Son icône montre les téléchargements en cours.": "Right-click a link to send it here. On a whole page, it lists the links and you check the ones to take. Its icon shows the downloads in progress.",
+"Télécharge l'extension, puis décompresse le fichier zip dans un dossier que tu garderas.": "Download the extension, then unzip the file into a folder you will keep.",
+"Télécharger l'extension": "Download the extension",
+"Dans Chrome, Edge ou Brave, ouvre {0}, active le « Mode développeur », clique « Charger l'extension non empaquetée » et choisis ce dossier.": "In Chrome, Edge or Brave, open {0}, turn on “Developer mode”, click “Load unpacked” and choose that folder.",
+"Reviens sur cet onglet, clique sur l'icône Desktroo dans la barre du navigateur, puis « Relier à ce Desktroo ». Le navigateur te demande d'autoriser l'extension sur cette adresse : c'est la seule qu'elle pourra contacter.": "Come back to this tab, click the Desktroo icon in the browser toolbar, then “Link to this Desktroo”. The browser asks you to allow the extension on this address: it is the only one it will be able to contact.",
+"Firefox : {0}, « Ce Firefox », « Charger un module complémentaire temporaire », puis le fichier manifest.json du dossier. Chargée ainsi, l'extension est retirée à la fermeture de Firefox.": "Firefox: {0}, “This Firefox”, “Load Temporary Add-on”, then the manifest.json file in the folder. Loaded this way, the extension is removed when Firefox closes.",
+"Relier depuis un autre navigateur": "Link from another browser",
+"Si Desktroo n'est pas ouvert dans le navigateur où se trouve l'extension, copie ce code et colle-le dans ses réglages. Il contient ton jeton d'accès : ne le partage pas.": "If Desktroo is not open in the browser where the extension lives, copy this code and paste it into its settings. It contains your access token: do not share it.",
+"Copier le code de connexion": "Copy the connection code",
+"Adresse et jeton, pour une saisie à la main": "Address and token, to enter by hand",
+"Favori à glisser, sans installation": "Bookmark to drag, nothing to install",
+"Fais glisser ce bouton dans ta barre de favoris. Ensuite, sur n'importe quel site : sélectionne un ou plusieurs liens (ou rien, pour détecter les liens d'hébergeurs), puis clique le favori. Les liens partent dans la file du NAS.": "Drag this button to your bookmarks bar. Then, on any site: select one or more links (or nothing, to detect file-host links), then click the bookmark. The links go to the NAS queue.",
+"Copier le code du favori": "Copy the bookmark code"
 }
 </script>
 <script id="dk-i18n">
@@ -13604,7 +13610,7 @@ async function dlPremiumRemove(id) {
   catch(e) { toast('❌ ' + e.message); }
 }
 
-// ── Ajouter depuis le navigateur (bookmarklet à sélecteur + infos extension) ──
+// ── Ajouter depuis le navigateur (extension Desktroo, code de connexion, favori à sélecteur) ──
 function dlBmFn(T, U) {
   var H = ['1fichier.com','rapidgator.net','uptobox.com','turbobit.net','nitroflare.com','ddownload.com','mega.nz','mediafire.com','fikper.com','uploaded.net','katfile.com','gofile.io','pixeldrain.com','krakenfiles.com','send.cm','1cloudfile.com','dailyuploads.net','usersdrive.com','file.al','frdl.to','hitfile.net','filespace.com','clicknupload.org','wupfile.com','hexload.com','elitefile.net'];
   var E = /\.(zip|rar|7z|iso|mkv|mp4|avi|pdf|tar|gz|exe|dmg|apk|epub|flac|mp3|mov|wmv|m4v|bin|img)(\?|$)/i;
@@ -13654,31 +13660,62 @@ function dlBookmarkletHref() {
 function dlCopyBookmarklet() {
   copyText(encodeURIComponent(dlBookmarkletHref()));
 }
+// Code de connexion pour l'extension : l'adresse du service et le jeton, en un seul texte à coller.
+function dlLinkCode() {
+  var j = JSON.stringify({ u: location.origin + '/fileops', t: getFileopsToken() });
+  return 'desktroo:' + btoa(unescape(encodeURIComponent(j)));
+}
+function dlCopyLinkCode() { copyText(encodeURIComponent(dlLinkCode())); }
 function dlBrowserPanel() {
   _dlNav = 'browser';
   dlHead(T('Ajouter depuis le navigateur'), { wide:true });
   var box = mgrBody();
   var base = location.origin + '/fileops', tok = getFileopsToken();
-  var h = '<div style="display:flex;flex-direction:column;gap:20px;">';
-  h += T('<div class="tnd-panel" style="padding:20px 22px;"><div class="tnd-title" style="margin-bottom:12px;">Bookmarklet — rapide, sans installation</div>')
-    + T('<div class="tnd-hint" style="margin-bottom:18px;line-height:1.7;">Fais glisser ce bouton dans ta barre de favoris. Ensuite, sur n\'importe quel site : sélectionne un ou plusieurs liens (ou rien pour détecter automatiquement les liens d\'hébergeurs), puis clique le favori — les liens partent dans la file du NAS.</div>')
-    + '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
-    + T('<a id="dl-bm-link" class="fs-btn" style="text-decoration:none;background:rgba(var(--accent-rgb),0.2);border-color:rgba(var(--accent-rgb),0.35);color:var(--accent2);padding:11px 20px;cursor:grab;">📥 Envoyer au NAS</a>')
-    + T('<button class="fs-btn" style="padding:11px 18px;" onclick="dlCopyBookmarklet()">📋 Copier le code</button>')
-    + '</div></div>';
-  h += T('<div class="tnd-panel" style="padding:20px 22px;"><div class="tnd-title" style="margin-bottom:14px;">Extension navigateur — clic droit (Chrome/Edge & Firefox)</div>')
-    + T('<div style="margin-bottom:18px;"><a class="fs-btn" href="https://github.com/Nabief/desktroo-dist/raw/main/desktroo-dl-extension.zip" target="_blank" rel="noopener" style="text-decoration:none;background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);padding:11px 20px;">⬇ Télécharger l\'extension (.zip)</a></div>')
-    + T('<div class="tnd-hint" style="margin-bottom:18px;line-height:1.7;">Décompresse le zip, puis dans <code>chrome://extensions</code> → active le <b>Mode développeur</b> → <b>Charger l\'extension non empaquetée</b> → sélectionne le dossier décompressé. Dans ses <b>options</b>, colle ces deux valeurs :</div>')
-    + '<div class="tnd-code" style="display:flex;flex-direction:column;gap:14px;padding:16px 18px;">'
-    + '<div style="display:flex;gap:14px;align-items:center;"><span style="color:var(--text-dim);min-width:68px;">URL</span><span style="flex:1;word-break:break-all;">' + base + '</span><button class="fs-btn" style="font-size:11px;padding:6px 11px;" onclick="copyText(\'' + encodeURIComponent(base) + '\')">📋</button></div>'
-    + T('<div style="display:flex;gap:14px;align-items:center;"><span style="color:var(--text-dim);min-width:68px;">Jeton</span><span style="flex:1;word-break:break-all;">') + String(tok).replace(/</g,'&lt;') + '</span><button class="fs-btn" style="font-size:11px;padding:6px 11px;" onclick="copyText(\'' + encodeURIComponent(tok) + '\')">📋</button></div>'
+  var zip = 'https://github.com/Nabief/desktroo-dist/raw/main/desktroo-dl-extension.zip';
+  var code = function(t) { return '<code>' + t + '</code>'; };
+  var step = function(n, body) {
+    return '<li style="display:flex;gap:12px;align-items:flex-start;"><span aria-hidden="true" style="flex:0 0 24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:rgba(var(--accent-rgb),0.16);color:var(--accent2);">' + n + '</span><div style="flex:1;min-width:0;font-size:13px;line-height:1.6;">' + body + '</div></li>';
+  };
+  var val = function(label, shown, value) {
+    return '<div style="display:flex;gap:12px;align-items:center;"><span style="flex:0 0 64px;color:var(--text-dim);font-size:12px;">' + label + '</span><span class="mono" style="flex:1;min-width:0;font-size:12px;word-break:break-all;">' + shown
+      + '</span><button class="fs-btn" style="font-size:12px;padding:5px 12px;" onclick="copyText(\'' + encodeURIComponent(value) + '\')">' + T('Copier') + '</button></div>';
+  };
+  var h = '<div style="display:flex;flex-direction:column;gap:16px;">';
+  // L'extension : le chemin conseillé
+  h += '<div class="tnd-panel" style="padding:20px 22px;">'
+    + '<div class="tnd-title" style="font-size:15px;margin-bottom:6px;">' + T('Extension Desktroo pour le navigateur') + '</div>'
+    + '<div class="tnd-hint" style="font-size:12.5px;line-height:1.6;margin-bottom:18px;">' + T('Un clic droit sur un lien l\'envoie ici. Sur une page entière, elle liste les liens et tu coches ceux à prendre. Son icône montre les téléchargements en cours.') + '</div>'
+    + '<ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;">'
+    + step(1, T('Télécharge l\'extension, puis décompresse le fichier zip dans un dossier que tu garderas.')
+        + '<div style="margin-top:10px;"><a class="fs-btn" href="' + zip + '" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;background:var(--accent);border-color:var(--accent);color:var(--accent-ink, #04231a);font-weight:600;padding:9px 18px;">' + T('Télécharger l\'extension') + '</a></div>')
+    + step(2, Tf('Dans Chrome, Edge ou Brave, ouvre {0}, active le « Mode développeur », clique « Charger l\'extension non empaquetée » et choisis ce dossier.', code('chrome://extensions')))
+    + step(3, T('Reviens sur cet onglet, clique sur l\'icône Desktroo dans la barre du navigateur, puis « Relier à ce Desktroo ». Le navigateur te demande d\'autoriser l\'extension sur cette adresse : c\'est la seule qu\'elle pourra contacter.'))
+    + '</ol>'
+    + '<div class="tnd-hint" style="font-size:12px;line-height:1.6;margin-top:16px;">' + Tf('Firefox : {0}, « Ce Firefox », « Charger un module complémentaire temporaire », puis le fichier manifest.json du dossier. Chargée ainsi, l\'extension est retirée à la fermeture de Firefox.', code('about:debugging')) + '</div>'
+    + '</div>';
+  // Autre poste : le code de connexion, et les deux valeurs pour qui préfère les saisir
+  h += '<div class="tnd-panel" style="padding:18px 22px;">'
+    + '<div class="tnd-title" style="margin-bottom:6px;">' + T('Relier depuis un autre navigateur') + '</div>'
+    + '<div class="tnd-hint" style="font-size:12.5px;line-height:1.6;margin-bottom:14px;">' + T('Si Desktroo n\'est pas ouvert dans le navigateur où se trouve l\'extension, copie ce code et colle-le dans ses réglages. Il contient ton jeton d\'accès : ne le partage pas.') + '</div>'
+    + '<button class="fs-btn" style="padding:9px 18px;font-weight:600;" onclick="dlCopyLinkCode()">' + T('Copier le code de connexion') + '</button>'
+    + '<details style="margin-top:16px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--text-dim);">' + T('Adresse et jeton, pour une saisie à la main') + '</summary>'
+    + '<div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">'
+    + val(T('Adresse'), webEsc(base), base)
+    + val(T('Jeton'), tok ? '••••••••••••' + webEsc(String(tok).slice(-4)) : '', tok)
+    + '</div></details></div>';
+  // Le favori : sans installation
+  h += '<div class="tnd-panel" style="padding:18px 22px;">'
+    + '<div class="tnd-title" style="margin-bottom:6px;">' + T('Favori à glisser, sans installation') + '</div>'
+    + '<div class="tnd-hint" style="font-size:12.5px;line-height:1.6;margin-bottom:14px;">' + T('Fais glisser ce bouton dans ta barre de favoris. Ensuite, sur n\'importe quel site : sélectionne un ou plusieurs liens (ou rien, pour détecter les liens d\'hébergeurs), puis clique le favori. Les liens partent dans la file du NAS.') + '</div>'
+    + '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+    + '<a id="dl-bm-link" class="fs-btn" style="text-decoration:none;background:rgba(var(--accent-rgb),0.16);border-color:rgba(var(--accent-rgb),0.35);color:var(--accent2);font-weight:600;padding:9px 18px;cursor:grab;">' + T('Envoyer au NAS') + '</a>'
+    + '<button class="fs-btn" style="padding:9px 16px;" onclick="dlCopyBookmarklet()">' + T('Copier le code du favori') + '</button>'
     + '</div></div>';
   h += '</div>';
   box.innerHTML = h;
   var a = document.getElementById('dl-bm-link');
   if (a) a.href = dlBookmarkletHref();
 }
-
 
 // ===========================
 // CONFIRM MODAL
