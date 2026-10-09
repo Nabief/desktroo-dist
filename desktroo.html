@@ -1056,6 +1056,83 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .disk-status { font-size:11px; padding:2px 8px; border-radius:10px; }
   .disk-status.ONLINE { background:rgba(62,207,142,0.15); color:var(--success); }
 
+  /* ===== APPLICATIONS, CONTENEURS, CATALOGUE ===== */
+  #win-apps, #win-docker, #win-catalog { min-width:860px; min-height:520px; }
+  .web-nav > .web-count { margin-left:auto; }
+  a.web-mini { text-decoration:none; }
+  a.web-row { text-decoration:none; cursor:pointer; transition:background .15s; }
+  a.web-row:hover { background:rgba(var(--accent-rgb),0.09); }
+  a.web-row:hover .web-row-chev { color:var(--accent2); }
+  /* Pastille d'application : icône du catalogue, à défaut l'initiale sur une teinte tirée du nom */
+  .app-ico { position:relative; display:grid; place-items:center; flex:0 0 auto; width:32px; height:32px; border-radius:9px; background:hsl(var(--h,210) 34% 36%); overflow:hidden; }
+  .app-ico b { font-family:var(--font-display); font-size:14px; font-weight:700; line-height:1; color:#fff; }
+  .app-ico img { position:absolute; inset:0; width:100%; height:100%; padding:3px; box-sizing:border-box; object-fit:contain; }
+  .app-ico.has-img { background:rgba(255,255,255,0.08); }
+  .app-ico.has-img b { visibility:hidden; }
+  [data-theme="light"] .app-ico.has-img { background:#ffffff; box-shadow:inset 0 0 0 1px rgba(13,27,53,0.1); }
+  .app-ico.md { width:44px; height:44px; border-radius:12px; }
+  .app-ico.md b { font-size:18px; }
+  .app-ico.lg { width:54px; height:54px; border-radius:14px; }
+  .app-ico.lg b { font-size:22px; }
+  .app-ico.lg img { padding:5px; }
+  /* Lignes cliquables qui contiennent elles-mêmes un lien */
+  .web-tr.click { cursor:pointer; transition:background .12s; }
+  .web-tr.click:hover { background:rgba(255,255,255,0.075); }
+  .web-tr.click:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
+  [data-theme="light"] .web-tr.click:hover { background:rgba(13,27,53,0.075); }
+  .web-table.apps-list { --wt-cols:minmax(0,1.5fr) minmax(0,0.9fr) minmax(0,1fr) 150px; }
+  .web-table.apps-list .web-tr:not(.head) { min-height:58px; }
+  .apps-name { display:flex; align-items:center; gap:12px; }
+  .apps-state { display:inline-flex; align-items:center; gap:7px; }
+  .apps-up { font-size:11.5px; color:var(--accent2); }
+  .apps-open { display:flex; justify-content:flex-end; }
+  .apps-open .web-mini { padding:4px 13px; font-size:11.5px; color:var(--text); text-decoration:none; }
+  .apps-note { display:flex; align-items:center; gap:12px; margin:4px 0 16px; padding:12px 14px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.03); font-size:12.5px; }
+  .apps-note .spinner { width:15px; height:15px; flex-shrink:0; }
+  .apps-note.up { justify-content:space-between; border-color:rgba(var(--accent2-rgb),0.35); background:rgba(var(--accent-rgb),0.08); }
+  .apps-note.up > span { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .apps-note .dim { color:var(--text-dim); }
+  .web-facts dd .mono + br, .web-facts dd br { flex-basis:100%; content:''; }
+  /* Conteneurs */
+  .web-table.ct-list { --wt-cols:minmax(0,1.7fr) minmax(0,0.9fr) minmax(0,1.05fr) 84px 92px minmax(0,0.7fr); }
+  .web-table.ct-list.no-app { --wt-cols:minmax(0,1.9fr) minmax(0,1.05fr) 84px 92px minmax(0,0.8fr); }
+  .web-table.ct-list.no-stats { --wt-cols:minmax(0,1.7fr) minmax(0,0.9fr) minmax(0,1.05fr) minmax(0,0.8fr); }
+  .web-table.ct-list.no-stats.no-app { --wt-cols:minmax(0,1.9fr) minmax(0,1.05fr) minmax(0,0.9fr); }
+  .web-table.ct-list .web-tr:not(.head) { min-height:52px; }
+  .ct-reduced { margin:2px 0 14px; border-color:var(--glass-border); background:rgba(255,255,255,0.03); }
+  .ct-reduced .dim { display:block; margin-top:5px; font-size:11.5px; color:var(--text-dim); word-break:break-word; }
+  #ct-body:has(> .ct-log) { display:flex; overflow:hidden; padding-bottom:22px; }
+  .ct-log {
+    flex:1; min-height:0; margin:0; padding:14px 16px; overflow:auto; box-sizing:border-box; border-radius:12px; border:1px solid var(--glass-border);
+    background:rgba(0,0,0,0.3); color:var(--text); font-family:var(--font-mono); font-size:12px; line-height:1.6; white-space:pre-wrap; word-break:break-word; outline:none;
+  }
+  [data-theme="light"] .ct-log { background:#ffffff; }
+  .ct-log-t, .ct-log .dim { color:var(--text-dim); }
+  .ct-log-err { color:#f87171; }
+  .ct-follow { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); cursor:pointer; white-space:nowrap; }
+  .acl-sel.ct-lines { width:124px; }
+  /* Catalogue */
+  .cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(252px,1fr)); gap:12px; margin-top:6px; }
+  .cat-card {
+    display:flex; align-items:flex-start; gap:13px; min-height:106px; padding:14px; border:1px solid var(--glass-border); border-radius:14px;
+    background:rgba(255,255,255,0.03); color:var(--text); font:inherit; text-align:left; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .cat-card:hover { background:rgba(255,255,255,0.06); border-color:rgba(var(--accent2-rgb),0.4); }
+  .cat-card:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  [data-theme="light"] .cat-card { background:rgba(255,255,255,0.7); }
+  [data-theme="light"] .cat-card:hover { background:#ffffff; }
+  .cat-card-text { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; align-self:stretch; }
+  .cat-card-name { font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cat-card-desc { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:12px; line-height:1.45; color:var(--text-dim); }
+  .cat-card-foot { display:flex; align-items:center; gap:8px; margin-top:auto; padding-top:4px; font-size:11.5px; color:var(--text-dim); }
+  .cat-inst { padding:1px 8px; border-radius:999px; border:1px solid rgba(var(--accent2-rgb),0.4); font-size:10.5px; color:var(--accent2); }
+  #cat-head .snap-find { width:260px; }
+  .cat-lede { margin:4px 0 18px; font-size:14px; line-height:1.6; }
+  .cat-shots { display:flex; gap:10px; margin:0 0 18px; overflow-x:auto; }
+  .web-body.narrow > .cat-shots { max-width:none; }
+  .cat-shots img { display:block; height:150px; border-radius:10px; border:1px solid var(--glass-border); }
+  .cat-readme { font-size:12.5px; line-height:1.65; color:var(--text-dim); white-space:pre-wrap; }
+
   /* ===== APP MANAGER ===== */
   .app-manager { padding:16px; }
   .apps-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
@@ -1548,8 +1625,6 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
 
 
-  #catalog-content { scrollbar-width:none; }
-  #catalog-content::-webkit-scrollbar { display:none; }
 
   /* ===== APP DRAWER ===== */
   #app-drawer {
@@ -3247,19 +3322,10 @@ select option{ background:#101b2e; color:#e9eef7; }
 "En cours": "Running",
 "Déploiement": "Deploying",
 "Arrêté": "Stopped",
-"Ouvrir ↗": "Open ↗",
-"Aucune application / container": "No applications / containers",
-"⬆ Mise à jour dispo.": "⬆ Update available",
-"Aucun container": "No containers",
 "Modifier la configuration": "Edit configuration",
-"▶ Démarrage de": "▶ Starting",
 "démarré": "started",
-"Arrêter le container": "Stop container",
 "Arrêter": "Stop",
-"⏹ Arrêt de": "⏹ Stopping",
 "arrêté": "stopped",
-"Supprimer le container": "Delete container",
-"🗑 Suppression de": "🗑 Deleting",
 "Redémarrer le serveur \u003cstrong>TrueNAS\u003c/strong> ?": "Restart the \u003cstrong>TrueNAS\u003c/strong> server?",
 "Le NAS sera indisponible quelques minutes.": "The NAS will be unavailable for a few minutes.",
 "Redémarrer": "Restart",
@@ -3961,7 +4027,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Application «": "Application “",
 "» installée.": "” installed.",
 "Erreur d’installation :": "Installation error:",
-"Catalogue indisponible :": "Catalog unavailable:",
 "aucune application retournée": "no application returned",
 "non indiqué": "not specified",
 "Détails": "Details",
@@ -3992,14 +4057,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Arrêter l’application": "Stop application",
 "Arrêt en cours": "Stopping",
 "Erreur": "Error",
-"Double-cliquez pour modifier la configuration": "Double-click to edit the configuration",
 "Application personnalisée": "Custom application",
 "Catalogue": "Catalog",
-"Une opération TrueNAS est en cours": "A TrueNAS operation is in progress",
-"Arrêter puis redémarrer": "Stop then restart",
 "Démarrer": "Start",
-"✏ Modifier": "✏ Edit",
-"Modifier la configuration de": "Edit the configuration of",
 "Activé": "Enabled",
 "Désactivé": "Disabled",
 "Valeur existante conservée": "Existing value kept",
@@ -4106,7 +4166,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "enregistrés": "saved",
 "Échec, restauration des partages déjà modifiés…": "Failed, restoring already modified shares…",
 "Accès refusé par la politique Desktroo": "Access denied by Desktroo policy",
-"🔒 Accès refusé": "🔒 Access denied",
 "Droits d’accès": "Access rights",
 "Utilisateurs, groupes, partages SMB, applications": "Users, groups, SMB shares, applications",
 "Le bureau web pour votre TrueNAS": "The web desktop for your TrueNAS",
@@ -4127,9 +4186,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Redémarrer le NAS": "Restart the NAS",
 "Éteindre le NAS": "Shut down the NAS",
 "Applications installées": "Installed applications",
-"Containers Docker": "Docker containers",
-"+ Nouveau": "+ New",
-"🔍 Catalogue": "🔍 Catalog",
 "Pools, datasets, snapshots ZFS": "Pools, datasets, ZFS snapshots",
 "Comptes, groupes, permissions": "Accounts, groups, permissions",
 "Configuration système": "System configuration",
@@ -4149,7 +4205,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "🚪 Déconnexion": "🚪 Sign out",
 "+ Ajouter un utilisateur": "+ Add a user",
 "+ Ajouter": "+ Add",
-"🔍 Rechercher dans le catalogue...": "🔍 Search the catalog...",
 "Installer une app personnalisée via docker-compose": "Install a custom app via docker-compose",
 "ex: win11-pro": "e.g. win11-pro",
 "Rechercher / Remplacer (Ctrl+F)": "Search / Replace (Ctrl+F)",
@@ -4352,7 +4407,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Oui": "Yes",
 "Non": "No",
 "↺ Nouvelle session": "↺ New session",
-"＋ App perso (YAML)": "＋ Custom app (YAML)",
 "⚡ Créer une VM QEMU/KVM": "⚡ Create a QEMU/KVM VM",
 "🖥️ Type de système": "🖥️ System type",
 "⚙️ Autre": "⚙️ Other",
@@ -4889,7 +4943,147 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Les droits de tout le contenu existant seront réécrits.": "The permissions of all existing contents will be rewritten.",
 "Application…": "Applying…",
 "L'application des droits continue en arrière-plan": "Permissions are still being applied in the background",
-"Qui peut lire et écrire dans ce dataset": "Who can read and write in this dataset"
+"Qui peut lire et écrire dans ce dataset": "Who can read and write in this dataset",
+"1 application installée": "1 application installed",
+"{0} applications installées": "{0} applications installed",
+"1 en marche": "1 running",
+"{0} en marche": "{0} running",
+"aucune en marche": "none running",
+"aucun en marche": "none running",
+"Accès refusé": "Access denied",
+"Arrête l'application puis la relance": "Stops the application, then starts it again",
+"Arrêtée": "Stopped",
+"Aucun conteneur": "No container",
+"Aucune application ne correspond": "No application matches",
+"Aucune application": "No application",
+"C'est un conteneur de Desktroo : le bureau sera coupé quelques secondes.": "This is a Desktroo container: the desktop will be cut off for a few seconds.",
+"Catalogue TrueNAS": "TrueNAS catalog",
+"Catalogue TrueNAS, train {0}": "TrueNAS catalog, {0} train",
+"Catalogue d'applications": "Application catalog",
+"Catégories": "Categories",
+"Ce conteneur n'a encore rien écrit.": "This container has not written anything yet.",
+"Ce qui tourne réellement, sa charge et ses messages": "What is actually running, its load and its messages",
+"Chaque application installée fait tourner un ou plusieurs conteneurs : ils apparaîtront ici.": "Each installed application runs one or more containers: they will show up here.",
+"Conteneur": "Container",
+"Conteneurs et journal": "Containers and log",
+"Créé, jamais démarré": "Created, never started",
+"De nouvelles images sont disponibles": "New images are available",
+"Dernière mise à jour": "Last update",
+"Desktroo n'a pas pu interroger Docker sur le NAS : seuls les conteneurs des applications TrueNAS sont listés, sans charge ni journal.": "Desktroo could not query Docker on the NAS: only the containers of TrueNAS applications are listed, without load or log.",
+"Dossiers du NAS utilisés": "NAS folders in use",
+"Dossiers et volumes": "Folders and volumes",
+"Déjà installées": "Already installed",
+"Démarrage en cours": "Starting",
+"Démarre": "Starting",
+"Déploiement en cours": "Deploying",
+"En erreur": "In error",
+"En marche": "Running",
+"En marche, défaillant": "Running, unhealthy",
+"Hors applications": "Outside applications",
+"Installer depuis un fichier docker-compose": "Install from a docker-compose file",
+"Installer une autre instance": "Install another instance",
+"Installée": "Installed",
+"Installées": "Installed",
+"L'application et ses conteneurs sont retirés. Les dossiers du NAS qu'elle utilisait restent en place.": "The application and its containers are removed. The NAS folders it used stay in place.",
+"L'application redémarre pendant l'opération.": "The application restarts during the operation.",
+"La page se met à jour toute seule.": "This page refreshes by itself.",
+"Le catalogue TrueNAS en propose plusieurs centaines, prêtes à installer.": "The TrueNAS catalog offers several hundred, ready to install.",
+"Le catalogue ne répond pas": "The catalog is not responding",
+"Lecture du catalogue...": "Reading the catalog...",
+"Lecture du journal…": "Reading the log…",
+"Les applications installées depuis le catalogue apparaîtront ici.": "Applications installed from the catalog will show up here.",
+"Les applications ne répondent pas": "Applications are not responding",
+"Les conteneurs ne répondent pas": "Containers are not responding",
+"Nom technique": "Technical name",
+"Nombre de lignes": "Number of lines",
+"{0} lignes": "{0} lines",
+"Opération en cours": "Operation in progress",
+"Origine": "Source",
+"Par application": "By application",
+"Parcourir le catalogue": "Browse the catalog",
+"Ports ouverts sur le NAS": "Ports open on the NAS",
+"Ports, dossiers, variables et réglages de l'application": "Ports, folders, variables and settings of the application",
+"Processeur": "CPU",
+"Rechercher une application": "Search for an application",
+"Redémarrage en cours": "Restarting",
+"Redémarre": "Restarting",
+"Redémarrer le conteneur": "Restart the container",
+"Relance automatique": "Automatic restart",
+"Retire l'application et ses conteneurs, pas les dossiers du NAS": "Removes the application and its containers, not the NAS folders",
+"Rien ici pour l'instant": "Nothing here yet",
+"Récupération des images": "Pulling images",
+"Récupérer les images": "Pull the images",
+"Récupérer les nouvelles images de": "Pull the new images of",
+"Récupérer": "Pull",
+"Site du projet": "Project website",
+"Suivre": "Follow",
+"Suppression en cours": "Deleting",
+"Supprimer l'application": "Delete the application",
+"Tous les conteneurs": "All containers",
+"Tout le catalogue": "Whole catalog",
+"TrueNAS signale un problème sur cette fiche du catalogue : l'installation peut échouer.": "TrueNAS reports a problem with this catalog entry: installation may fail.",
+"Voir l'application installée": "View the installed application",
+"Voir l'application": "View the application",
+"Voir": "View",
+"Vue réduite.": "Reduced view.",
+"après une erreur": "after an error",
+"déjà installée": "already installed",
+"lecture seule": "read-only",
+"même version de l'application, conteneurs plus récents": "same application version, newer containers",
+"sauf arrêt demandé": "unless stopped on purpose",
+"{0} est supprimée": "{0} deleted",
+"{0} est démarrée": "{0} started",
+"{0} est arrêtée": "{0} stopped",
+"{0} a redémarré": "{0} restarted",
+"{0} est à jour": "{0} is up to date",
+"{0} : images récupérées": "{0}: images pulled",
+"à l'instant": "just now",
+"toujours": "always",
+"jamais": "never",
+"Multimédia": "Media",
+"Productivité": "Productivity",
+"Sécurité": "Security",
+"Supervision": "Monitoring",
+"Jeux": "Games",
+"Domotique": "Home automation",
+"Intelligence artificielle": "Artificial intelligence",
+"Finances": "Finance",
+"Partage de fichiers": "File sharing",
+"Sauvegarde": "Backup",
+"Développement": "Development",
+"Authentification": "Authentication",
+"Automatisation": "Automation",
+"Exploitation": "Operations",
+"Utilitaires": "Utilities",
+"Outils": "Tools",
+"Éducation": "Education",
+"Téléchargement": "Download",
+"Musique": "Music",
+"Livres": "Books",
+"Nouveautés": "New and updated",
+"Afficher la suite ({0} restantes)": "Show more ({0} left)",
+"Arrêté sur erreur": "Stopped on error",
+"code de sortie {0}": "exit code {0}",
+"Aucun titre ni description ne contient « {0} ».": "No title or description contains “{0}”.",
+"Redémarrage de {0}…": "Restarting {0}…",
+"Version {0} disponible": "Version {0} available",
+"depuis {0} h": "for {0} h",
+"depuis {0} jours": "for {0} days",
+"depuis {0} min": "for {0} min",
+"fiche du catalogue {0}": "catalog entry {0}",
+"hors applications TrueNAS (projet {0})": "outside TrueNAS applications (project {0})",
+"installée : {0}": "installed: {0}",
+"monté sur {0}": "mounted on {0}",
+"sur {0}": "of {0}",
+"vers le port {0} du conteneur": "to container port {0}",
+"vu par l'application sous {0}": "seen by the application as {0}",
+"{0} conteneurs": "{0} containers",
+"{0} conteneurs, {1} en marche": "{0} containers, {1} running",
+"{0} relances": "{0} restarts",
+"1 relance": "1 restart",
+"1 conteneur": "1 container",
+"1 conteneur arrêté": "1 container stopped",
+"1 conteneur en marche": "1 container running"
 }
 </script>
 <script id="dk-i18n">
@@ -5414,7 +5608,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <!-- APPS WINDOW -->
-<div class="window" id="win-apps" style="top:60px;left:140px;width:700px;height:560px;">
+<div class="window" id="win-apps" style="top:60px;left:140px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="apps">
     <span class="window-icon">📦</span>
     <span class="window-title">Applications</span>
@@ -5424,22 +5618,23 @@ document.addEventListener('DOMContentLoaded', function () {
       <button class="win-btn cls" onclick="closeWin('apps')"></button>
     </div>
   </div>
-  <div class="window-body">
-    <div class="app-manager">
-      <div class="container-toolbar">
-        <span style="font-size:13px;color:var(--text-dim);">Applications installées</span>
-        <button class="fs-btn" onclick="loadApps()">↻ Actualiser</button>
-      </div>
-      <div class="apps-grid" id="apps-grid">
-        <div class="fs-loading" style="height:200px;grid-column:1/-1;"><div class="spinner"></div> Chargement...</div>
-      </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="apps-side" aria-label="Applications"></nav>
+      <section class="web-main">
+        <header class="web-head" id="apps-head"></header>
+        <div class="web-body" id="apps-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="apps"></div>
 </div>
 
 <!-- DOCKER WINDOW -->
-<div class="window" id="win-docker" style="top:60px;left:180px;width:800px;height:540px;">
+<div class="window" id="win-docker" style="top:60px;left:180px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="docker">
     <span class="window-icon">🐋</span>
     <span class="window-title">Conteneurs</span>
@@ -5449,17 +5644,16 @@ document.addEventListener('DOMContentLoaded', function () {
       <button class="win-btn cls" onclick="closeWin('docker')"></button>
     </div>
   </div>
-  <div class="window-body">
-    <div class="container-manager">
-      <div class="container-toolbar">
-        <span style="font-size:13px;color:var(--text-dim);">Containers Docker</span>
-        <button class="fs-btn" onclick="loadContainers()">↻ Actualiser</button>
-        <button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="openCreateApp(null)">+ Nouveau</button>
-        <button class="fs-btn" onclick="openApp('catalog')">🔍 Catalogue</button>
-      </div>
-      <div id="containers-content">
-        <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
-      </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="ct-side" aria-label="Conteneurs"></nav>
+      <section class="web-main">
+        <header class="web-head" id="ct-head"></header>
+        <div class="web-body" id="ct-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="docker"></div>
@@ -10387,7 +10581,72 @@ async function aclSave() {
 }
 
 // ===========================
-// APP MANAGER
+// GABARIT DES GESTIONNAIRES — pièces communes
+// Une fenêtre « xxx » a une colonne #xxx-side, un en-tête #xxx-head, des onglets #xxx-tabs (facultatifs) et un corps #xxx-body.
+// ===========================
+function wmBody(id) { return document.getElementById(id + '-body'); }
+function wmVisible(id) { var w = document.getElementById('win-' + id); return !!(w && w.classList.contains('visible')); }
+// Argument de fonction pour un onclick écrit en HTML : encodé, apostrophe comprise.
+function wmQ(s) { return "'" + encodeURIComponent(String(s == null ? '' : s)).replace(/'/g, '%27') + "'"; }
+function wmHead(id, title, o) {
+  o = o || {};
+  var head = document.getElementById(id + '-head');
+  if (!head) return;
+  head.innerHTML = (o.lead || '') + '<div class="web-head-text">'
+    + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
+    + '<h4 class="web-title' + (o.mono ? ' snap-path' : '') + '">' + webEsc(title) + '</h4>'
+    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
+    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+  var tabs = document.getElementById(id + '-tabs');
+  if (tabs) tabs.innerHTML = o.tabs ? o.tabs.map(function(t) {
+    return '<button class="web-tab' + (o.tab === t[0] ? ' active' : '') + '" onclick="' + o.tabCall + '(\'' + t[0] + '\')">' + t[1] + '</button>';
+  }).join('') : '';
+  var body = wmBody(id);
+  if (body) { body.classList.toggle('narrow', !!o.narrow); if (!o.keepScroll) body.scrollTop = 0; }
+}
+function wmSide(id, html) {
+  var el = document.getElementById(id + '-side');
+  if (!el) return;
+  var sc = el.scrollTop;
+  el.innerHTML = html;
+  el.scrollTop = sc;
+}
+// Une entrée de colonne : { active, call, icon | dot | lead, name, meta }
+function wmNav(o) {
+  return '<button class="web-nav' + (o.active ? ' active' : '') + '" onclick="' + o.call + '"' + (o.title ? ' title="' + webEsc(o.title) + '"' : '') + '>'
+    + (o.icon ? webIcon(o.icon) : '') + (o.lead || '')
+    + (o.dot != null ? '<span class="web-dot' + (o.dot ? ' ' + o.dot : '') + '"></span>' : '')
+    + (o.meta != null ? '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(o.name) + '</span><span class="web-nav-meta">' + webEsc(o.meta) + '</span></span>'
+                      : '<span class="web-nav-name">' + webEsc(o.name) + '</span>')
+    + (o.count != null ? '<span class="web-count">' + o.count + '</span>' : '') + '</button>';
+}
+function wmSideTitle(label, count) { return '<div class="web-side-title"><span>' + label + '</span>' + (count != null && count !== '' ? '<span class="web-count">' + count + '</span>' : '') + '</div>'; }
+function wmSep() { return '<div class="web-side-sep"></div>'; }
+function wmLoading(id, text) { var b = wmBody(id); if (b) b.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div> ' + (text || T('Chargement...')) + '</div>'; }
+function wmFail(id, title, e, retry) {
+  var b = wmBody(id);
+  if (b) b.innerHTML = dkWaitHtml('error', title, webEsc((e && e.message) || String(e)), retry ? '<button class="web-open" onclick="' + retry + '">' + T('Réessayer') + '</button>' : '');
+}
+// Ligne d'action : nom à gauche, explication à la suite.
+function wmRow(call, name, desc, cls) {
+  return '<button class="web-row line' + (cls ? ' ' + cls : '') + '" onclick="' + call + '"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+}
+// « il y a 3 h », « il y a 2 jours » : l'ancienneté d'une date ISO.
+function wmAgo(iso) {
+  var t = Date.parse(iso || '');
+  if (!isFinite(t) || t < 86400000) return '';
+  var m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if (m < 1) return T('à l\'instant');
+  if (m < 60) return Tf('depuis {0} min', m);
+  if (m < 2880) return Tf('depuis {0} h', Math.round(m / 60));
+  return Tf('depuis {0} jours', Math.round(m / 1440));
+}
+WEB_ICONS.box = WEB_ICONS.box || '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/>';
+WEB_ICONS.grid = '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>';
+WEB_ICONS.code = '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>';
+
+// ===========================
+// APP MANAGER — applications TrueNAS installées
 // ===========================
 const APP_ICONS = { plex:'🎬', nextcloud:'☁️', jellyfin:'🎬', sonarr:'📺', radarr:'🎬', portainer:'🐋', bitwarden:'🔒', heimdall:'🏠', overseerr:'🎭', tautulli:'📊', prowlarr:'🔍', lidarr:'🎵', readarr:'📚', bazarr:'💬', qbittorrent:'⬇️', transmission:'⬇️', pihole:'🚫', 'home-assistant':'🏡', grafana:'📊', prometheus:'🔥', vaultwarden:'🔒', syncthing:'🔄', paperless:'📄', calibre:'📚', netdata:'📈' };
 function getAppIcon(name) {
@@ -10396,143 +10655,673 @@ function getAppIcon(name) {
   for (const [k,v] of Object.entries(APP_ICONS)) { if (lname.includes(k)) return v; }
   return '📦';
 }
+var _apps = [];
+var _appsLoaded = false;
+var _appsNav = 'all';      // all | one
+var _appsSel = null;
+var _appsBusy = {};        // nom → opération en cours
+var _appsTimer = null;
+var _appsSeq = 0;
 
-async function loadApps() {
-  const el = document.getElementById('apps-grid');
-  el.innerHTML = T('<div class="fs-loading" style="height:200px;grid-column:1/-1;"><div class="spinner"></div> Chargement...</div>');
-  try {
-    const raw  = await socketCall('/app');
-    const apps = ensureArray(raw);
-    if (!apps.length) {
-      el.innerHTML = T('<div class="empty-state" style="height:200px;grid-column:1/-1;"><div class="es-icon">📦</div><span>Aucune application installée</span></div>');
-      return;
-    }
-    el.innerHTML = '';
-    apps.forEach(app => {
-      const state      = (app.state || 'UNKNOWN').toUpperCase();
-      const stateCls   = state === 'ACTIVE' || state === 'RUNNING' ? 'active' : state === 'DEPLOYING' ? 'deploying' : 'inactive';
-      const stateLabel = {ACTIVE:T('Actif'),RUNNING:T('En cours'),DEPLOYING:T('Déploiement'),STOPPED:T('Arrêté')}[state] || state;
-      const ver        = app.version || app.human_version || (app.chart_metadata && app.chart_metadata.version) || '?';
-      const portal     = app.portals && (app.portals.web_portal || Object.values(app.portals)[0]);
-      el.innerHTML += `
-        <div class="app-card">
-          <div class="app-card-header">
-            <div class="app-icon-box">${getAppIcon(app.name)}</div>
-            <div>
-              <div class="app-card-name">${app.name}</div>
-              <div class="app-card-ver">v${ver}</div>
-            </div>
-          </div>
-          <div class="app-card-status">
-            <span class="app-running ${stateCls}">${stateLabel}</span>
-            ${portal ? Tt`<a href="${portal}" target="_blank" style="font-size:11px;color:var(--accent2);text-decoration:none;">Ouvrir ↗</a>` : ''}
-          </div>
-        </div>`;
-    });
-  } catch(e) {
-    el.innerHTML = errHtml(T('Erreur: ') + e.message) + '<style>.empty-state{grid-column:1/-1}</style>';
-  }
+function appKey(a) { return String((a && (a.name || a.id)) || ''); }
+function appTitle(a) { var m = (a && a.metadata) || {}; return String(m.title || (a && (a.name || a.id)) || ''); }
+function appGet(name) { return _apps.find(function(a) { return appKey(a) === name; }) || null; }
+function appStateInfo(a) {
+  var s = String((a && a.state) || '').toUpperCase(), busy = a && _appsBusy[appKey(a)];
+  if (busy) return { key: 'busy', label: busy, dot: 'warn' };
+  if (s === 'RUNNING' || s === 'ACTIVE') return { key: 'run', label: T('En marche'), dot: '' };
+  if (s === 'STOPPED') return { key: 'stop', label: T('Arrêtée'), dot: 'off' };
+  if (s === 'DEPLOYING') return { key: 'busy', label: T('Déploiement en cours'), dot: 'warn' };
+  if (s === 'STOPPING') return { key: 'busy', label: T('Arrêt en cours'), dot: 'warn' };
+  if (s === 'CRASHED') return { key: 'bad', label: T('En erreur'), dot: 'bad' };
+  return { key: 'stop', label: s || '—', dot: 'off' };
 }
-
-// ===========================
-// CONTAINER MANAGER
-// ===========================
-async function loadContainers() {
-  const el = document.getElementById('containers-content');
-  el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
-  try {
-    // TrueNAS SCALE : les "containers" sont les apps (chaque app = 1+ containers Docker)
-    const raw  = await socketCall('/app');
-    const apps = ensureArray(raw);
-    if (!apps.length) {
-      el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">🐋</div><span>Aucune application / container</span></div>');
-      return;
-    }
-    const conts = apps.map(a => ({
-      name:  a.name,
-      state: a.state || 'UNKNOWN',
-      image: a.image_updates_available ? T('⬆ Mise à jour dispo.') : (a.human_version || '—'),
-      ports: ensureArray(a.used_ports || a.active_workloads?.used_ports)
-    }));
-    renderContainers(el, conts);
-  } catch(e) {
-    el.innerHTML = errHtml(T('Erreur: ') + e.message);
-  }
+// Version de l'application elle-même, puis celle de sa fiche au catalogue.
+function appVersions(a) {
+  var m = (a && a.metadata) || {}, hv = String((a && a.human_version) || '');
+  return { app: String(m.app_version || hv.split('_')[0] || (a && a.version) || ''), pack: String((a && a.version) || '') };
 }
-
-function renderContainers(el, conts) {
-  const arr = ensureArray(conts);
-  if (!arr.length) {
-    el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">🐋</div><span>Aucun container</span></div>');
+// Adresses d'ouverture. TrueNAS les donne sur 0.0.0.0 : l'adresse du NAS prend la place.
+function appPortals(a) {
+  var p = a && a.portals, out = [];
+  var add = function(name, v) {
+    var url = typeof v === 'string' ? v : (v && typeof v.url === 'string' ? v.url : '');
+    if (!/^https?:\/\//i.test(url)) return;
+    out.push({ name: name, url: url.replace(/^(https?:\/\/)(0\.0\.0\.0|\[::\]|\$node_ip)(?=[:\/]|$)/i, '$1' + webSiteHost()) });
+  };
+  if (typeof p === 'string') add('', p);
+  else if (Array.isArray(p)) p.forEach(function(v) { add('', v); });
+  else if (p && typeof p === 'object') Object.keys(p).forEach(function(k) { add(k, p[k]); });
+  return out;
+}
+function appAllowed(name) { return typeof window.accessCanUseInstalledApp !== 'function' || window.accessCanUseInstalledApp(name); }
+// Pastille d'une application : son icône du catalogue, à défaut son initiale sur une teinte tirée du nom.
+function appIcon(name, url, cls) {
+  var n = String(name || '?').replace(/^ix-/, ''), h = 0;
+  for (var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360;
+  return '<span class="app-ico' + (cls ? ' ' + cls : '') + '" style="--h:' + h + '"><b>' + webEsc(n.charAt(0).toUpperCase()) + '</b>'
+    + (url && /^https:\/\//i.test(url) ? '<img src="' + webEsc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">' : '') + '</span>';
+}
+function appIconOf(a, cls) { return appIcon(appTitle(a) || appKey(a), ((a && a.metadata) || {}).icon, cls); }
+async function appsFetch() {
+  var r;
+  try { r = await wsCall('app.query', [[], {}], 60000); }
+  catch (e) { r = await socketCall('/app'); }
+  return ensureArray(r).filter(function(a) { return a && appKey(a); }).sort(function(a, b) { return appTitle(a).localeCompare(appTitle(b), undefined, { sensitivity: 'base' }); });
+}
+function appsGo(nav, name) {
+  _appsNav = nav === 'one' && appGet(name) ? 'one' : 'all';
+  _appsSel = _appsNav === 'one' ? name : null;
+  appsRender();
+}
+// Ouvre la fenêtre sur une application (depuis Conteneurs ou le Catalogue).
+function appsOpen(enc) {
+  _appsNav = 'one'; _appsSel = decodeURIComponent(enc);
+  var w = document.getElementById('win-apps');
+  if (w && w.classList.contains('visible') && _appsLoaded) { bringToFront(w); appsGo('one', _appsSel); } else openApp('apps');
+}
+async function loadApps(soft) {
+  var body = wmBody('apps');
+  if (!body) return;
+  var seq = ++_appsSeq;
+  if (!_appsLoaded) { wmHead('apps', T('Applications')); appsSide(); wmLoading('apps'); }
+  try {
+    var list = await appsFetch();
+    if (seq !== _appsSeq) return;
+    _apps = list; _appsLoaded = true;
+    if (_appsNav === 'one' && !appGet(_appsSel)) { _appsNav = 'all'; _appsSel = null; }
+    appsRender(soft === true);
+  } catch (e) {
+    if (seq !== _appsSeq) return;
+    _appsLoaded = false; _apps = [];
+    wmHead('apps', T('Applications')); appsSide();
+    wmFail('apps', T('Les applications ne répondent pas'), e, 'loadApps()');
+  }
+  appsWatch();
+}
+// Tant qu'une application change d'état, la fenêtre se relit toute seule.
+function appsWatch() {
+  clearTimeout(_appsTimer);
+  if (!wmVisible('apps') || !_apps.some(function(a) { var s = String(a.state || '').toUpperCase(); return s === 'DEPLOYING' || s === 'STOPPING'; })) return;
+  _appsTimer = setTimeout(function() { if (wmVisible('apps')) loadApps(true); }, 4000);
+}
+function appsRender(soft) {
+  appsSide();
+  if (_appsNav === 'one' && appGet(_appsSel)) appsOneView(soft); else appsAllView(soft);
+}
+function appsSide() {
+  var h = wmNav({ active: _appsNav === 'all', call: 'appsGo(\'all\')', icon: 'grid', name: T('Toutes les applications') })
+    + wmSep() + wmSideTitle(T('Installées'), _apps.length || '');
+  _apps.forEach(function(a) {
+    var st = appStateInfo(a);
+    h += wmNav({ active: _appsNav === 'one' && _appsSel === appKey(a), call: 'appsGo(\'one\',decodeURIComponent(' + wmQ(appKey(a)) + '))', dot: st.dot, name: appTitle(a),
+      meta: a.upgrade_available && st.key !== 'busy' ? T('Mise à jour disponible') : st.label, title: st.label });
+  });
+  if (_appsLoaded && !_apps.length) h += '<div class="web-side-empty">' + T('Aucune application') + '</div>';
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'catalog\')', icon: 'plus', name: T('Catalogue') })
+    + wmNav({ call: 'openApp(\'docker\')', icon: 'layers', name: T('Conteneurs') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/apps\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('apps', h);
+}
+function appsAllView(soft) {
+  var n = _apps.length, run = _apps.filter(function(a) { return appStateInfo(a).key === 'run'; }).length;
+  wmHead('apps', T('Applications'), { keepScroll: soft,
+    sub: n ? webEsc((n > 1 ? Tf('{0} applications installées', n) : T('1 application installée')) + ', ' + (run > 1 ? Tf('{0} en marche', run) : (run ? T('1 en marche') : T('aucune en marche')))) : '',
+    actions: '<button class="fs-btn" onclick="loadApps()">' + T('Actualiser') + '</button><button class="web-open" onclick="openApp(\'catalog\')">' + T('Installer une application') + '</button>' });
+  var el = wmBody('apps');
+  if (!n) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('box') + '<div class="fs-empty-title">' + T('Aucune application installée') + '</div><div>'
+      + T('Le catalogue TrueNAS en propose plusieurs centaines, prêtes à installer.') + '</div><button class="web-open" onclick="openApp(\'catalog\')">' + T('Parcourir le catalogue') + '</button></div>';
     return;
   }
-  conts = arr;
-  el.innerHTML = Tt`
-    <table class="container-table">
-      <thead><tr>
-        <th>Nom</th><th>Version</th><th>État</th><th>Ports</th><th>Actions</th>
-      </tr></thead>
-      <tbody>
-        ${conts.map(c => {
-          const state = c.state || c.status || 'UNKNOWN';
-          const isRunning = ['ACTIVE','running','RUNNING','DEPLOYING','STARTING'].includes(state);
-          const isStopped = ['STOPPED','exited','CRASHED','STOPPING'].includes(state);
-          const stateCls = isRunning ? 'running' : isStopped ? 'stopped' : 'error';
-          const stateLabel = isRunning ? T('Actif') : isStopped ? T('Arrêté') : state;
-          const ports = Array.isArray(c.ports) ? c.ports.slice(0,2).map(p => typeof p === 'object' ? `${p.host_port||p.containerPort}` : p).join(', ') : '';
-          const appName = (c.name||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-          return Tt`<tr>
-            <td><strong>${c.name||'—'}</strong></td>
-            <td style="color:var(--text-dim);font-size:11px;">${c.image||'—'}</td>
-            <td><span class="container-state ${stateCls}">${stateLabel}</span></td>
-            <td style="color:var(--text-dim);font-size:11px;">${ports||'—'}</td>
-            <td style="white-space:nowrap;display:flex;gap:4px;align-items:center;">
-              ${isRunning
-                ? `<button class="fs-btn" style="font-size:11px;padding:3px 10px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#f87171;" onclick="appStop('${appName}')">⏹ Stop</button>`
-                : `<button class="fs-btn" style="font-size:11px;padding:3px 10px;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="appStart('${appName}')">▶ Start</button>`
-              }
-              <button class="fs-btn" style="font-size:11px;padding:3px 8px;" onclick="openEditApp('${appName}')" title="Modifier la configuration">✏</button>
-              <button class="fs-btn" style="font-size:11px;padding:3px 8px;background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#f87171;" onclick="appDelete('${appName}')" title="Supprimer">🗑</button>
-            </td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>`;
+  var h = '<div class="web-table apps-list"><div class="web-tr head"><span>Application</span><span>Version</span><span>' + T('État') + '</span><span>' + T('Adresse') + '</span></div>';
+  _apps.forEach(function(a, i) {
+    var st = appStateInfo(a), v = appVersions(a), portal = appPortals(a)[0], ok = appAllowed(appKey(a));
+    var origin = a.custom_app ? T('Application personnalisée') : appKey(a);
+    h += '<div class="web-tr click" role="button" tabindex="0" data-app="' + i + '">'
+      + '<span class="apps-name">' + appIconOf(a) + '<span class="cron-two"><strong>' + webEsc(appTitle(a)) + '</strong><span class="dim">' + webEsc(origin) + '</span></span></span>'
+      + '<span class="cron-two"><span>' + webEsc(v.app || '—') + '</span>' + (a.upgrade_available ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
+      + '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>'
+      + '<span class="apps-open">' + (portal ? (ok && st.key === 'run' ? '<a class="web-mini" href="' + webEsc(portal.url) + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">' + T('Ouvrir') + '</a>'
+          : '<span class="dim">' + (ok ? webEsc(portal.url.replace(/^https?:\/\//, '').replace(/\/.*$/, '')) : T('Accès refusé')) + '</span>') : '<span class="dim">—</span>') + '</span></div>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-app]').forEach(function(r) {
+    var go = function() { appsGo('one', appKey(_apps[Number(r.dataset.app)])); };
+    r.onclick = go;
+    r.onkeydown = function(ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); go(); } };
+  });
 }
+// Dossiers du NAS montés dans les conteneurs d'une application.
+function appFolders(a) {
+  var seen = {}, out = [];
+  ensureArray(((a && a.active_workloads) || {}).container_details).forEach(function(c) {
+    ensureArray(c && c.volume_mounts).forEach(function(m) {
+      var src = String((m && m.source) || '');
+      if (src.indexOf('/mnt/') !== 0 || seen[src]) return;
+      seen[src] = true;
+      out.push({ source: src, destination: String(m.destination || ''), ro: String(m.mode || '').indexOf('ro') >= 0 });
+    });
+  });
+  return out;
+}
+function appPortsText(a) {
+  return ensureArray(((a && a.active_workloads) || {}).used_ports).map(function(p) {
+    var hp = ensureArray(p && p.host_ports).map(function(x) { return x && x.host_port; }).filter(Boolean);
+    return hp.length ? hp.filter(function(x, i) { return hp.indexOf(x) === i; }).join(', ') + ' → ' + p.container_port + '/' + (p.protocol || 'tcp') : '';
+  }).filter(Boolean);
+}
+function appsOneView(soft) {
+  var a = appGet(_appsSel);
+  if (!a) { appsGo('all'); return; }
+  var name = appKey(a), q = wmQ(name), st = appStateInfo(a), v = appVersions(a), portals = appPortals(a), ok = appAllowed(name), m = a.metadata || {};
+  var busy = st.key === 'busy', run = st.key === 'run';
+  var acts = '';
+  if (!busy) acts += run ? '<button class="fs-btn" onclick="appsAct(' + q + ',\'stop\')">' + T('Arrêter') + '</button>'
+                         : '<button class="' + (portals.length ? 'fs-btn' : 'web-open') + '" onclick="appsAct(' + q + ',\'start\')">' + T('Démarrer') + '</button>';
+  if (portals.length) acts += !ok ? '<button class="web-open off" disabled title="' + webEsc(T('Accès refusé par la politique Desktroo')) + '">' + T('Accès refusé') + '</button>'
+    : (run ? '<a class="web-open" href="' + webEsc(portals[0].url) + '" target="_blank" rel="noopener noreferrer">' + T('Ouvrir') + '</a>' : '');
+  wmHead('apps', appTitle(a), { keepScroll: soft, back: [T('Applications'), 'appsGo(\'all\')'], lead: appIconOf(a, 'lg'),
+    sub: '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>', actions: acts });
+  var h = '';
+  if (busy) h += '<div class="apps-note"><div class="spinner"></div><span>' + webEsc(st.label) + '. ' + T('La page se met à jour toute seule.') + '</span></div>';
+  else if (a.upgrade_available) h += '<div class="apps-note up"><span><strong>' + (a.latest_version ? webEsc(Tf('Version {0} disponible', a.latest_version)) : T('Mise à jour disponible')) + '</strong>'
+    + (v.pack ? '<span class="dim">' + webEsc(Tf('installée : {0}', v.pack)) + '</span>' : '') + '</span><button class="web-open" onclick="appsAct(' + q + ',\'upgrade\')">' + T('Mettre à jour') + '</button></div>';
+  else if (a.image_updates_available) h += '<div class="apps-note up"><span><strong>' + T('De nouvelles images sont disponibles') + '</strong><span class="dim">' + T('même version de l\'application, conteneurs plus récents') + '</span></span>'
+    + '<button class="web-open" onclick="appsAct(' + q + ',\'pull\')">' + T('Récupérer les images') + '</button></div>';
+  var nct = ensureArray((a.active_workloads || {}).container_details).length || (a.active_workloads || {}).containers || 0;
+  h += netFacts([
+    [T('État'), webEsc(st.label)],
+    ['Version', webEsc(v.app || '—') + (v.pack && v.pack !== v.app ? '<span class="dim">' + webEsc(Tf('fiche du catalogue {0}', v.pack)) + '</span>' : '')],
+    [T('Origine'), a.custom_app ? T('Application personnalisée') : webEsc(m.train ? Tf('Catalogue TrueNAS, train {0}', m.train) : T('Catalogue TrueNAS'))],
+    [T('Nom technique'), '<span class="mono">' + webEsc(name) + '</span>'],
+    [T('Adresse'), portals.map(function(p) {
+      var label = p.url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      return (ok && run ? '<a href="' + webEsc(p.url) + '" target="_blank" rel="noopener noreferrer">' + webEsc(label) + '</a>' : '<span class="mono">' + webEsc(label) + '</span>')
+        + (portals.length > 1 && p.name ? '<span class="dim">' + webEsc(p.name) + '</span>' : '');
+    }).join('<br>')],
+    ['Ports', appPortsText(a).map(function(t) { return '<span class="mono">' + webEsc(t) + '</span>'; }).join('<br>')],
+    [T('Conteneurs'), nct ? nct + '<button class="web-mini" onclick="ctOpenApp(' + q + ')">' + T('Voir') + '</button>' : '']
+  ]);
+  var folders = appFolders(a);
+  if (folders.length) {
+    h += '<div class="web-group-title">' + T('Dossiers du NAS utilisés') + '</div><div class="web-group">';
+    folders.forEach(function(f) {
+      h += '<button class="web-row" onclick="webOpenFolder(' + wmQ(f.source) + ')"><span class="web-row-text"><span class="web-row-name mono">' + webEsc(f.source) + '</span><span class="web-row-desc">'
+        + webEsc(Tf('vu par l\'application sous {0}', f.destination)) + (f.ro ? ', ' + T('lecture seule') : '') + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + (run && !busy ? wmRow('appsAct(' + q + ',\'restart\')', T('Redémarrer'), T('Arrête l\'application puis la relance')) : '')
+    + (busy ? '' : wmRow('openEditApp(decodeURIComponent(' + q + '))', T('Modifier la configuration'), T('Ports, dossiers, variables et réglages de l\'application')))
+    + wmRow('ctOpenApp(' + q + ')', T('Conteneurs et journal'), T('Ce qui tourne réellement, sa charge et ses messages'))
+    + (m.home && /^https?:\/\//i.test(m.home) ? '<a class="web-row line" href="' + webEsc(m.home) + '" target="_blank" rel="noopener noreferrer"><span class="web-row-text"><span class="web-row-name">' + T('Site du projet') + '</span><span class="web-row-desc">' + webEsc(String(m.home).replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></a>' : '')
+    + (busy ? '' : wmRow('appsDelete(' + q + ')', T('Supprimer'), T('Retire l\'application et ses conteneurs, pas les dossiers du NAS'), 'danger'))
+    + '</div>';
+  wmBody('apps').innerHTML = h;
+}
+// Appel TrueNAS qui rend un numéro de tâche : on attend sa fin.
+async function appsJob(method, params, maxWait) {
+  var r = await wsCall(method, params, 300000);
+  if (typeof r === 'number') await waitJob(r, maxWait || 600000);
+}
+async function appsAct(enc, action) {
+  var name = decodeURIComponent(enc), a = appGet(name), title = a ? appTitle(a) : name;
+  if (!name || _appsBusy[name]) return;
+  var ask = {
+    stop: [T('Arrêter l’application <strong>') + webEsc(title) + '</strong> ?', T('Arrêter')],
+    restart: [T('Redémarrer l’application <strong>') + webEsc(title) + '</strong> ?', T('Redémarrer')],
+    upgrade: [T('Mettre à jour <strong>') + webEsc(title) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">' + T('L\'application redémarre pendant l\'opération.') + '</span>', T('Mettre à jour')],
+    pull: [T('Récupérer les nouvelles images de <strong>') + webEsc(title) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">' + T('L\'application redémarre pendant l\'opération.') + '</span>', T('Récupérer')]
+  }[action];
+  if (ask && !await showConfirm(ask[0], { ok: ask[1] })) return;
+  _appsBusy[name] = { start: T('Démarrage en cours'), stop: T('Arrêt en cours'), restart: T('Redémarrage en cours'), upgrade: T('Mise à jour en cours'), pull: T('Récupération des images') }[action] || T('Opération en cours');
+  appsRender(true);
+  try {
+    if (action === 'restart') { await appsJob('app.stop', [name]); await appsJob('app.start', [name]); }
+    else if (action === 'upgrade') await appsJob('app.upgrade', [name, { app_version: 'latest' }], 1200000);
+    else if (action === 'pull') await appsJob('app.pull_images', [name, { redeploy: true }], 1200000);
+    else await appsJob(action === 'start' ? 'app.start' : 'app.stop', [name]);
+    toast('✅ ' + ({ start: Tf('{0} est démarrée', title), stop: Tf('{0} est arrêtée', title), restart: Tf('{0} a redémarré', title), upgrade: Tf('{0} est à jour', title), pull: Tf('{0} : images récupérées', title) }[action] || title));
+  } catch (e) { toast('❌ ' + title + ' : ' + ((e && e.message) || e), 9000); }
+  delete _appsBusy[name];
+  await loadApps(true);
+  if (wmVisible('docker')) loadContainers(true);
+}
+async function appsDelete(enc) {
+  var name = decodeURIComponent(enc), a = appGet(name), title = a ? appTitle(a) : name;
+  if (!await showConfirm(T('Supprimer l\'application <strong>') + webEsc(title) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">'
+    + T('L\'application et ses conteneurs sont retirés. Les dossiers du NAS qu\'elle utilisait restent en place.') + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  _appsBusy[name] = T('Suppression en cours');
+  appsRender(true);
+  try {
+    var job = await socketCall('/app/id/' + encodeURIComponent(name), 'DELETE');
+    if (typeof job === 'number') await waitJob(job, 300000);
+    toast('✅ ' + Tf('{0} est supprimée', title));
+  } catch (e) { toast('❌ ' + title + ' : ' + ((e && e.message) || e), 9000); }
+  delete _appsBusy[name];
+  await loadApps(true);
+  if (wmVisible('docker')) loadContainers(true);
+}
+// Anciens noms, encore appelés par d'autres modules.
+function appStart(name) { return appsAct(encodeURIComponent(name), 'start'); }
+function appStop(name) { return appsAct(encodeURIComponent(name), 'stop'); }
+function appDelete(name) { return appsDelete(encodeURIComponent(name)); }
 
 // ===========================
-// APP START / STOP
+// CONTAINER MANAGER — les conteneurs Docker eux-mêmes
+// Deux sources : Docker sur le NAS (par le service Desktroo : tout, avec charge et journal) et, à défaut,
+// ce que TrueNAS dit des conteneurs de ses applications.
 // ===========================
-async function appStart(name) {
-  toast(T('▶ Démarrage de ') + name + '…');
-  try {
-    const jobId = await socketCall('/app/start', 'POST', { app_name: name });
-    if (jobId) await waitJob(jobId, 60000);
-    toast('✅ ' + name + T(' démarré'));
-  } catch(e) { toast('❌ ' + e.message); }
-  loadContainers();
-}
-async function appStop(name) {
-  if (!await showConfirm(T('Arrêter le container <strong>') + name + '</strong> ?', {icon:'⏹', ok:T('Arrêter')})) return;
-  toast(T('⏹ Arrêt de ') + name + '…');
-  try {
-    const jobId = await socketCall('/app/stop', 'POST', { app_name: name });
-    if (jobId) await waitJob(jobId, 60000);
-    toast('✅ ' + name + T(' arrêté'));
-  } catch(e) { toast('❌ ' + e.message); }
-  loadContainers();
-}
+var _ct = { list: [], apps: [], docker: null, why: '', stats: null, loaded: false, nav: 'all', group: null, sel: null, seq: 0, timer: null,
+            log: { text: '', lines: 300, follow: false, timer: null, seq: 0, err: '' } };
 
-async function appDelete(name) {
-  if (!await showConfirm(T('Supprimer le container <strong>') + name + T('</strong> ?<br><small style="color:var(--text-dim)">Cette action est irréversible.</small>'), {icon:'🗑️', ok:T('Supprimer'), danger:true})) return;
-  toast(T('🗑 Suppression de ') + name + '…');
-  try {
-    var jobId = await socketCall('/app/id/' + encodeURIComponent(name), 'DELETE');
-    if (typeof jobId === 'number') await waitJob(jobId, 120000);
-    toast('✅ ' + name + T(' supprimé'));
-  } catch(e) { toast('❌ ' + e.message); }
-  loadContainers();
+function ctGet(id) { return _ct.list.find(function(c) { return c.id === id; }) || null; }
+function ctShort(id) { return String(id || '').slice(0, 12); }
+function ctStateInfo(c) {
+  var s = String((c && c.state) || '').toLowerCase(), h = String((c && c.health) || '').toLowerCase();
+  if (s === 'running') return h === 'unhealthy' ? { key: 'bad', label: T('En marche, défaillant'), dot: 'bad' } : (h === 'starting' ? { key: 'run', label: T('Démarre'), dot: 'warn' } : { key: 'run', label: T('En marche'), dot: '' });
+  if (s === 'restarting') return { key: 'busy', label: T('Redémarre'), dot: 'warn' };
+  if (s === 'paused') return { key: 'stop', label: T('En pause'), dot: 'warn' };
+  if (s === 'created') return { key: 'stop', label: T('Créé, jamais démarré'), dot: 'off' };
+  if (s === 'dead') return { key: 'bad', label: T('En erreur'), dot: 'bad' };
+  if (s === 'exited') return c.exit_code ? { key: 'bad', label: T('Arrêté sur erreur'), more: Tf('code de sortie {0}', c.exit_code), dot: 'bad' } : { key: 'stop', label: T('Arrêté'), dot: 'off' };
+  return { key: 'stop', label: s || '—', dot: 'off' };
 }
+function ctAppOf(c) { return c && c.app ? (_ct.apps.find(function(a) { return appKey(a) === c.app; }) || null) : null; }
+function ctGroupLabel(g) { if (g === '') return T('Hors applications'); var a = _ct.apps.find(function(x) { return appKey(x) === g; }); return a ? appTitle(a) : g; }
+// Conteneurs tels que TrueNAS les décrit, au même format que la liste Docker.
+function ctFromApps(apps) {
+  var out = [];
+  apps.forEach(function(a) {
+    ensureArray((a.active_workloads || {}).container_details).forEach(function(d) {
+      if (!d) return;
+      var ports = [];
+      ensureArray(d.port_config).forEach(function(p) {
+        ensureArray(p && p.host_ports).forEach(function(hp) {
+          if (hp && hp.host_port && !ports.some(function(x) { return x.host_port === String(hp.host_port) && x.container_port === String(p.container_port); }))
+            ports.push({ container_port: String(p.container_port), protocol: p.protocol || 'tcp', host_ip: hp.host_ip || '', host_port: String(hp.host_port) });
+        });
+      });
+      out.push({ id: String(d.id || appKey(a) + '/' + d.service_name), name: String(d.service_name || ''), image: String(d.image || ''), state: String(d.state || '').toLowerCase(), health: '',
+        started_at: '', exit_code: null, restart_count: null, restart_policy: '', project: 'ix-' + appKey(a), service: String(d.service_name || ''), app: appKey(a), ports: ports,
+        mounts: ensureArray(d.volume_mounts).map(function(m) { return { type: m.type || '', source: m.source || '', destination: m.destination || '', rw: String(m.mode || '').indexOf('ro') < 0 }; }), networks: [] });
+    });
+  });
+  return out;
+}
+async function loadContainers(soft) {
+  var body = wmBody('ct');
+  if (!body) return;
+  var seq = ++_ct.seq;
+  if (!_ct.loaded) { wmHead('ct', T('Conteneurs')); ctSide(); wmLoading('ct'); }
+  var r = await Promise.allSettled([appsFetch(), fileops('GET', 'containers')]);
+  if (seq !== _ct.seq) return;
+  var apps = r[0].status === 'fulfilled' ? r[0].value : null, dk = r[1].status === 'fulfilled' && r[1].value && Array.isArray(r[1].value.containers) ? r[1].value.containers : null;
+  if (!apps && !dk) {
+    _ct.loaded = false; _ct.list = [];
+    wmHead('ct', T('Conteneurs')); ctSide();
+    wmFail('ct', T('Les conteneurs ne répondent pas'), r[0].reason, 'loadContainers()');
+    return;
+  }
+  _ct.apps = apps || [];
+  _ct.docker = !!dk;
+  _ct.why = dk ? '' : String((r[1].reason && r[1].reason.message) || (r[1].value && r[1].value.error) || '');
+  if (dk) {
+    _ct.list = dk.map(function(c) {
+      var app = /^ix-/.test(c.project || '') ? c.project.slice(3) : '';
+      if (!app || !_ct.apps.some(function(a) { return appKey(a) === app; })) {
+        // rattachement par identifiant, pour les applications dont le projet porte un autre nom
+        var owner = _ct.apps.find(function(a) { return ensureArray((a.active_workloads || {}).container_details).some(function(d) { return d && d.id && (String(d.id).indexOf(c.id) === 0 || c.id.indexOf(String(d.id)) === 0); }); });
+        app = owner ? appKey(owner) : '';
+      }
+      return Object.assign({}, c, { app: app });
+    });
+  } else _ct.list = ctFromApps(_ct.apps);
+  _ct.loaded = true;
+  if (_ct.nav !== 'all' && !ctGet(_ct.sel)) { _ct.nav = 'all'; _ct.sel = null; ctLogStop(); }
+  if (_ct.group != null && !_ct.list.some(function(c) { return c.app === _ct.group; })) _ct.group = null;
+  ctRender(soft === true);
+  ctStatsLoad();
+}
+// Charge instantanée (processeur, mémoire) : relue toutes les 15 s tant que la fenêtre est ouverte.
+async function ctStatsLoad() {
+  clearTimeout(_ct.timer);
+  if (!_ct.docker || !wmVisible('docker')) return;
+  try {
+    var r = await fileops('GET', 'containers/stats');
+    if (r && r.stats) { _ct.stats = r.stats; if (wmVisible('docker') && _ct.nav !== 'log') ctRender(true); }
+  } catch (e) {}
+  _ct.timer = setTimeout(ctStatsLoad, 15000);
+}
+function ctStat(c) { return (_ct.stats && _ct.stats[ctShort(c.id)]) || null; }
+function ctGo(nav, id) {
+  ctLogStop();
+  if (nav === 'group') { _ct.nav = 'all'; _ct.group = id == null ? null : id; _ct.sel = null; }
+  else if ((nav === 'one' || nav === 'log') && ctGet(id)) { _ct.nav = nav; _ct.sel = id; if (_ct.group != null && ctGet(id).app !== _ct.group) _ct.group = null; }
+  else { _ct.nav = 'all'; _ct.sel = null; }
+  ctRender();
+  if (_ct.nav === 'log') ctLogLoad();
+}
+// Ouvre la fenêtre sur les conteneurs d'une application.
+function ctOpenApp(enc) {
+  _ct.nav = 'all'; _ct.group = decodeURIComponent(enc); _ct.sel = null;
+  var w = document.getElementById('win-docker');
+  if (w && w.classList.contains('visible') && _ct.loaded) { bringToFront(w); ctGo('group', _ct.group); } else openApp('docker');
+}
+function ctRender(soft) {
+  ctSide();
+  if (_ct.nav === 'log' && ctGet(_ct.sel)) ctLogView(soft);
+  else if (_ct.nav === 'one' && ctGet(_ct.sel)) ctOneView(soft);
+  else ctAllView(soft);
+}
+function ctSide() {
+  var groups = [], by = {};
+  _ct.list.forEach(function(c) { var g = c.app || ''; if (!by[g]) { by[g] = []; groups.push(g); } by[g].push(c); });
+  groups.sort(function(a, b) { return (a === '') - (b === '') || ctGroupLabel(a).localeCompare(ctGroupLabel(b), undefined, { sensitivity: 'base' }); });
+  var cur = _ct.nav === 'all' ? _ct.group : (ctGet(_ct.sel) || {}).app;
+  var h = wmNav({ active: _ct.nav === 'all' && _ct.group == null, call: 'ctGo(\'group\',null)', icon: 'layers', name: T('Tous les conteneurs'), count: _ct.list.length || null })
+    + wmSep() + wmSideTitle(T('Par application'));
+  groups.forEach(function(g) {
+    var l = by[g], bad = l.some(function(c) { return ctStateInfo(c).key === 'bad'; }), run = l.filter(function(c) { return ctStateInfo(c).key === 'run'; }).length;
+    h += wmNav({ active: (_ct.nav !== 'all' || _ct.group != null) && cur === g, call: 'ctGo(\'group\',decodeURIComponent(' + wmQ(g) + '))', dot: bad ? 'bad' : (run ? '' : 'off'), name: ctGroupLabel(g),
+      meta: l.length > 1 ? Tf('{0} conteneurs, {1} en marche', l.length, run) : (run ? T('1 conteneur en marche') : T('1 conteneur arrêté')) });
+  });
+  if (_ct.loaded && !_ct.list.length) h += '<div class="web-side-empty">' + T('Aucun conteneur') + '</div>';
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'apps\')', icon: 'grid', name: T('Applications') })
+    + wmNav({ call: 'openApp(\'catalog\')', icon: 'plus', name: T('Catalogue') });
+  wmSide('ct', h);
+}
+function ctPortsText(c, max) {
+  var l = ensureArray(c.ports).map(function(p) { return p.host_port; });
+  l = l.filter(function(x, i) { return l.indexOf(x) === i; });
+  return l.length > (max || 99) ? l.slice(0, max).join(', ') + '…' : l.join(', ');
+}
+function ctAllView(soft) {
+  var list = _ct.group == null ? _ct.list : _ct.list.filter(function(c) { return c.app === _ct.group; });
+  var run = list.filter(function(c) { return ctStateInfo(c).key === 'run'; }).length, n = list.length, grouped = _ct.group != null;
+  var app = grouped && _ct.group ? _ct.apps.find(function(a) { return appKey(a) === _ct.group; }) : null;
+  wmHead('ct', grouped ? ctGroupLabel(_ct.group) : T('Conteneurs'), { keepScroll: soft, back: grouped ? [T('Conteneurs'), 'ctGo(\'group\',null)'] : null,
+    sub: n ? webEsc((n > 1 ? Tf('{0} conteneurs', n) : T('1 conteneur')) + ', ' + (run > 1 ? Tf('{0} en marche', run) : (run ? T('1 en marche') : T('aucun en marche')))) : '',
+    actions: (app ? '<button class="fs-btn" onclick="appsOpen(' + wmQ(_ct.group) + ')">' + T('Voir l\'application') + '</button>' : '') + '<button class="fs-btn" onclick="loadContainers()">' + T('Actualiser') + '</button>' });
+  var el = wmBody('ct'), h = '';
+  if (_ct.docker === false) h += '<div class="snap-warn ct-reduced"><strong>' + T('Vue réduite.') + '</strong> ' + T('Desktroo n\'a pas pu interroger Docker sur le NAS : seuls les conteneurs des applications TrueNAS sont listés, sans charge ni journal.')
+    + (_ct.why ? '<span class="dim mono">' + webEsc(_ct.why) + '</span>' : '') + '</div>';
+  if (!n) {
+    el.innerHTML = h + '<div class="fs-empty">' + webIcon('layers') + '<div class="fs-empty-title">' + T('Aucun conteneur') + '</div><div>'
+      + T('Chaque application installée fait tourner un ou plusieurs conteneurs : ils apparaîtront ici.') + '</div><button class="web-open" onclick="openApp(\'catalog\')">' + T('Parcourir le catalogue') + '</button></div>';
+    return;
+  }
+  var stats = _ct.docker;
+  h += '<div class="web-table ct-list' + (stats ? '' : ' no-stats') + (grouped ? ' no-app' : '') + '"><div class="web-tr head"><span>' + T('Conteneur') + '</span>' + (grouped ? '' : '<span>Application</span>') + '<span>' + T('État') + '</span>'
+    + (stats ? '<span class="num">' + T('Processeur') + '</span><span class="num">' + T('Mémoire') + '</span>' : '') + '<span>Ports</span></div>';
+  list.forEach(function(c) {
+    var st = ctStateInfo(c), s = ctStat(c), a = ctAppOf(c);
+    h += '<button class="web-tr" data-ct="' + webEsc(c.id) + '"><span class="cron-two"><strong>' + webEsc(c.name || ctShort(c.id)) + '</strong><span class="dim mono">' + webEsc(c.image) + '</span></span>'
+      + (grouped ? '' : '<span>' + (a ? webEsc(appTitle(a)) : '<span class="dim">—</span>') + '</span>')
+      + '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>'
+      + (stats ? '<span class="num">' + (s && st.key !== 'stop' ? s.cpu.toFixed(1).replace('.', DK_LOCALE === 'fr-FR' ? ',' : '.') + ' %' : '<span class="dim">—</span>') + '</span><span class="num">' + (s && s.mem ? webEsc(mntFmtSize(s.mem)) : '<span class="dim">—</span>') + '</span>' : '')
+      + '<span class="mono dim">' + webEsc(ctPortsText(c, 3) || '—') + '</span></button>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-ct]').forEach(function(b) { b.onclick = function() { ctGo('one', b.dataset.ct); }; });
+}
+function ctOneView(soft) {
+  var c = ctGet(_ct.sel);
+  if (!c) { ctGo('all'); return; }
+  var st = ctStateInfo(c), s = ctStat(c), a = ctAppOf(c), q = wmQ(c.id);
+  wmHead('ct', c.name || ctShort(c.id), { keepScroll: soft, mono: true, back: [_ct.group != null ? ctGroupLabel(_ct.group) : T('Conteneurs'), 'ctGo(\'group\',_ct.group)'],
+    sub: '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>',
+    actions: _ct.docker ? '<button class="fs-btn" onclick="ctRestart(' + q + ')">' + T('Redémarrer') + '</button><button class="web-open" onclick="ctGo(\'log\',decodeURIComponent(' + q + '))">' + T('Journal') + '</button>' : '' });
+  var since = st.key !== 'stop' ? wmAgo(c.started_at) : '';
+  var policy = { always: T('toujours'), 'unless-stopped': T('sauf arrêt demandé'), 'on-failure': T('après une erreur'), no: T('jamais') }[c.restart_policy] || c.restart_policy;
+  var h = netFacts([
+    [T('État'), webEsc(st.label) + (st.more || since ? '<span class="dim">' + webEsc(st.more || since) + '</span>' : '')],
+    ['Image', '<span class="mono">' + webEsc(c.image) + '</span>'],
+    ['Application', a ? webEsc(appTitle(a)) + '<button class="web-mini" onclick="appsOpen(' + wmQ(c.app) + ')">' + T('Voir') + '</button>' : (c.project ? '<span class="dim">' + webEsc(Tf('hors applications TrueNAS (projet {0})', c.project)) + '</span>' : '')],
+    [T('Identifiant'), /^[0-9a-f]{12,}$/.test(c.id) ? '<span class="mono">' + webEsc(ctShort(c.id)) + '</span><button class="web-mini" onclick="copyText(' + q + ')">' + T('Copier') + '</button>' : ''],
+    [T('Processeur'), s && st.key !== 'stop' ? s.cpu.toFixed(1).replace('.', DK_LOCALE === 'fr-FR' ? ',' : '.') + ' %' : ''],
+    [T('Mémoire'), s && s.mem ? webEsc(mntFmtSize(s.mem)) + (s.mem_limit ? '<span class="dim">' + webEsc(Tf('sur {0}', mntFmtSize(s.mem_limit))) + '</span>' : '') : ''],
+    [T('Relance automatique'), policy ? webEsc(policy) + (c.restart_count ? '<span class="dim">' + webEsc(c.restart_count > 1 ? Tf('{0} relances', c.restart_count) : T('1 relance')) + '</span>' : '') : ''],
+    [T('Réseau'), ensureArray(c.networks).map(function(n) { return webEsc(n.name) + (n.ip ? '<span class="dim mono">' + webEsc(n.ip) + '</span>' : ''); }).join('<br>')]
+  ]);
+  var ports = ensureArray(c.ports);
+  if (ports.length) {
+    h += '<div class="web-group-title">' + T('Ports ouverts sur le NAS') + '</div><div class="web-group">';
+    ports.forEach(function(p) {
+      var tcp = String(p.protocol || 'tcp') === 'tcp';
+      h += '<div class="web-row"><span class="web-row-text"><span class="web-row-name mono">' + webEsc(p.host_port) + '</span><span class="web-row-desc">' + webEsc(Tf('vers le port {0} du conteneur', p.container_port + '/' + (p.protocol || 'tcp'))) + '</span></span>'
+        + (tcp && st.key === 'run' ? '<a class="web-mini" href="http://' + webEsc(webSiteHost()) + ':' + webEsc(p.host_port) + '/" target="_blank" rel="noopener noreferrer">' + T('Ouvrir') + '</a>' : '') + '</div>';
+    });
+    h += '</div>';
+  }
+  var mounts = ensureArray(c.mounts);
+  if (mounts.length) {
+    h += '<div class="web-group-title">' + T('Dossiers et volumes') + '</div><div class="web-group">';
+    mounts.forEach(function(m) {
+      var nas = String(m.source).indexOf('/mnt/') === 0, desc = webEsc(Tf('monté sur {0}', m.destination)) + (m.rw ? '' : ', ' + T('lecture seule'));
+      h += nas ? '<button class="web-row" onclick="webOpenFolder(' + wmQ(m.source) + ')"><span class="web-row-text"><span class="web-row-name mono">' + webEsc(m.source) + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>'
+               : '<div class="web-row"><span class="web-row-text"><span class="web-row-name mono dim">' + webEsc(m.source || m.type) + '</span><span class="web-row-desc">' + desc + '</span></span></div>';
+    });
+    h += '</div>';
+  }
+  wmBody('ct').innerHTML = h;
+}
+async function ctRestart(enc) {
+  var id = decodeURIComponent(enc), c = ctGet(id);
+  if (!c) return;
+  var self = /desktroo/i.test(c.name);
+  if (!await showConfirm(T('Redémarrer le conteneur <strong>') + webEsc(c.name) + '</strong> ?'
+    + (self ? '<br><span style="font-size:12px;color:var(--danger);">' + T('C\'est un conteneur de Desktroo : le bureau sera coupé quelques secondes.') + '</span>' : ''), { ok: T('Redémarrer'), danger: self })) return;
+  toast(Tf('Redémarrage de {0}…', c.name));
+  try { await fileops('POST', 'containers/restart', { id: id }); toast('✅ ' + Tf('{0} a redémarré', c.name)); }
+  catch (e) { if (e && e.message === 'LICENSE_READONLY') return; toast('❌ ' + c.name + ' : ' + ((e && e.message) || e), 9000); }
+  loadContainers(true);
+}
+// ── Journal d'un conteneur ──
+function ctLogStop() { clearTimeout(_ct.log.timer); _ct.log.timer = null; _ct.log.follow = false; _ct.log.seq++; }
+function ctLogView(soft) {
+  var c = ctGet(_ct.sel), L = _ct.log;
+  wmHead('ct', T('Journal'), { keepScroll: true, back: [c.name || ctShort(c.id), 'ctGo(\'one\',decodeURIComponent(' + wmQ(c.id) + '))'], sub: '<span class="mono">' + webEsc(c.name) + '</span>',
+    actions: '<label class="ct-follow"><input type="checkbox" id="ct-follow"' + (L.follow ? ' checked' : '') + ' onchange="ctLogFollow(this.checked)"><span>' + T('Suivre') + '</span></label>'
+      + '<select class="acl-sel ct-lines" aria-label="' + webEsc(T('Nombre de lignes')) + '" onchange="_ct.log.lines=Number(this.value);ctLogLoad()">' + [100, 300, 1000, 2000].map(function(n) { return '<option value="' + n + '"' + (L.lines === n ? ' selected' : '') + '>' + Tf('{0} lignes', n) + '</option>'; }).join('') + '</select>'
+      + '<button class="fs-btn" onclick="copyText(encodeURIComponent(_ct.log.text))">' + T('Copier') + '</button><button class="fs-btn" onclick="ctLogLoad()">' + T('Actualiser') + '</button>' });
+  if (soft && document.getElementById('ct-log')) return;
+  wmBody('ct').innerHTML = '<pre class="ct-log" id="ct-log" tabindex="0"></pre>';
+  ctLogPaint();
+}
+function ctLogPaint() {
+  var pre = document.getElementById('ct-log'), L = _ct.log;
+  if (!pre) return;
+  var atEnd = pre.scrollHeight - pre.scrollTop - pre.clientHeight < 40;
+  if (L.err) pre.innerHTML = '<span class="ct-log-err">' + webEsc(L.err) + '</span>';
+  else if (!L.text) pre.innerHTML = '<span class="dim">' + (L.loaded ? T('Ce conteneur n\'a encore rien écrit.') : T('Lecture du journal…')) + '</span>';
+  else pre.innerHTML = L.text.split('\n').map(function(line) {
+    // l'horodatage de Docker (nanosecondes, UTC) est ramené à l'heure locale, à la seconde
+    var m = /^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)\s?(.*)$/.exec(line);
+    if (!m) return webEsc(line);
+    var d = new Date(m[1].replace(/(\.\d{3})\d+Z$/, '$1Z'));
+    return '<span class="ct-log-t">' + (isNaN(d.getTime()) ? webEsc(m[1]) : d.toLocaleString(DK_LOCALE, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })) + '</span> ' + webEsc(m[2]);
+  }).join('\n');
+  if (atEnd || !L.painted) pre.scrollTop = pre.scrollHeight;
+  L.painted = true;
+}
+async function ctLogLoad() {
+  var L = _ct.log, c = ctGet(_ct.sel), seq = ++L.seq;
+  clearTimeout(L.timer);
+  if (!c || _ct.nav !== 'log') return;
+  if (L.id !== c.id) { L.id = c.id; L.text = ''; L.loaded = false; L.painted = false; L.err = ''; ctLogPaint(); }
+  try {
+    var r = await fileops('GET', 'containers/logs?id=' + encodeURIComponent(c.id) + '&lines=' + L.lines);
+    if (seq !== L.seq) return;
+    L.text = String((r && r.log) || ''); L.err = ''; L.loaded = true;
+  } catch (e) { if (seq !== L.seq) return; L.err = (e && e.message) || String(e); L.loaded = true; }
+  ctLogPaint();
+  if (L.follow && _ct.nav === 'log' && wmVisible('docker')) L.timer = setTimeout(ctLogLoad, 4000);
+}
+function ctLogFollow(on) { _ct.log.follow = !!on; clearTimeout(_ct.log.timer); if (on) ctLogLoad(); }
+
+// ===========================
+// CATALOGUE — parcourir et installer les applications du catalogue TrueNAS
+// La lecture du catalogue et le formulaire d'installation restent ceux du module « catalog-fix » ;
+// ici, la navigation : catégories dans la colonne, fiches à droite.
+// ===========================
+var _cat = { nav: 'all', cat: null, q: '', sel: null, limit: 120, installed: {}, loaded: false };
+var _catLabels = null;
+function catLabel(c) {
+  var L = _catLabels || (_catLabels = { media: T('Multimédia'), networking: T('Réseau'), productivity: T('Productivité'), security: T('Sécurité'), storage: T('Stockage'), monitoring: T('Supervision'), games: T('Jeux'),
+    'home-automation': T('Domotique'), ai: T('Intelligence artificielle'), database: T('Bases de données'), financial: T('Finances'), 'file-sharing': T('Partage de fichiers'), backup: T('Sauvegarde'),
+    development: T('Développement'), authentication: T('Authentification'), notifications: T('Notifications'), automation: T('Automatisation'),
+    operations: T('Exploitation'), utilities: T('Utilitaires'), utility: T('Utilitaires'), tools: T('Outils'), communication: T('Communication'), 'smart-home': T('Domotique'),
+    education: T('Éducation'), download: T('Téléchargement'), photos: T('Photos'), video: T('Vidéo'), music: T('Musique'), books: T('Livres'), documents: T('Documents'), 'new-and-updated': T('Nouveautés') });
+  var k = String(c || '').toLowerCase();
+  return L[k] || (k.length <= 3 ? k.toUpperCase() : k.charAt(0).toUpperCase() + k.slice(1).replace(/[-_]/g, ' '));
+}
+function catKit() { return window._catalogKit || null; }
+function catCats(app) { return ensureArray(app && app.categories).map(function(c) { return String(c || '').toLowerCase(); }).filter(Boolean); }
+// Une fiche par application (le train « stable » d'abord), triée par titre.
+function catApps() {
+  var k = catKit();
+  if (!k) return [];
+  return k.grouped('').sort(function(a, b) { return k.title(a, k.id(a)).localeCompare(k.title(b, k.id(b)), undefined, { sensitivity: 'base' }); });
+}
+function catFiltered() {
+  var k = catKit(), q = _cat.q.trim().toLowerCase();
+  return catApps().filter(function(app) {
+    var id = k.id(app);
+    if (_cat.nav === 'installed' && !_cat.installed[id]) return false;
+    if (_cat.nav === 'cat' && catCats(app).indexOf(_cat.cat) < 0) return false;
+    if (!q) return true;
+    return id.toLowerCase().indexOf(q) >= 0 || k.title(app, id).toLowerCase().indexOf(q) >= 0 || String(app.description || '').toLowerCase().indexOf(q) >= 0;
+  });
+}
+// Applications déjà installées, repérées par leur nom au catalogue.
+async function catInstalledLoad() {
+  try {
+    var apps = await appsFetch(), map = {};
+    apps.forEach(function(a) { if (!a.custom_app) { var n = String((a.metadata || {}).name || appKey(a)); if (!map[n]) map[n] = appKey(a); } });
+    _cat.installed = map;
+    if (wmVisible('catalog') && _cat.loaded) { catSide(); if (_cat.nav !== 'one') catRender(_cat.q); }
+  } catch (e) {}
+}
+function catBegin() {
+  if (!_cat.loaded) { _cat.nav = 'all'; _cat.cat = null; _cat.sel = null; catHead(); catSide(); wmLoading('cat', T('Lecture du catalogue...')); }
+  catInstalledLoad();
+}
+function catFail(e) {
+  _cat.loaded = false;
+  catHead(); catSide();
+  wmFail('cat', T('Le catalogue ne répond pas'), e || new Error(T('aucune application retournée')), 'loadCatalog()');
+}
+function catGo(nav, cat) {
+  _cat.nav = nav === 'cat' && cat ? 'cat' : (nav === 'installed' ? 'installed' : 'all');
+  _cat.cat = _cat.nav === 'cat' ? cat : null;
+  _cat.sel = null; _cat.limit = 120;
+  catHead(); catSide(); catRender(_cat.q);
+}
+function catSide() {
+  var all = _cat.loaded ? catApps() : [], counts = {}, k = catKit();
+  all.forEach(function(app) { catCats(app).forEach(function(c) { counts[c] = (counts[c] || 0) + 1; }); });
+  var cats = Object.keys(counts).sort(function(a, b) { return catLabel(a).localeCompare(catLabel(b), undefined, { sensitivity: 'base' }); });
+  var nInst = all.filter(function(app) { return _cat.installed[k.id(app)]; }).length;
+  var cur = _cat.nav === 'one' ? _cat.back : _cat;
+  var h = wmNav({ active: cur && cur.nav === 'all', call: 'catGo(\'all\')', icon: 'grid', name: T('Tout le catalogue'), count: all.length || null })
+    + wmNav({ active: cur && cur.nav === 'installed', call: 'catGo(\'installed\')', icon: 'check', name: T('Déjà installées'), count: nInst || null });
+  if (cats.length) {
+    h += wmSep() + wmSideTitle(T('Catégories'));
+    cats.forEach(function(c) { h += wmNav({ active: cur && cur.nav === 'cat' && cur.cat === c, call: 'catGo(\'cat\',decodeURIComponent(' + wmQ(c) + '))', name: catLabel(c), count: counts[c] }); });
+  }
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'catalogCustomYaml()', icon: 'code', name: T('Application personnalisée'), title: T('Installer depuis un fichier docker-compose') })
+    + wmNav({ call: 'openApp(\'apps\')', icon: 'box', name: T('Applications installées') });
+  wmSide('cat', h);
+}
+function catHead() {
+  var title = _cat.nav === 'cat' ? catLabel(_cat.cat) : (_cat.nav === 'installed' ? T('Déjà installées') : T('Catalogue d\'applications'));
+  wmHead('cat', title, { sub: '<span id="cat-count"></span>',
+    actions: '<input id="catalog-search" class="snap-find" type="search" placeholder="' + webEsc(T('Rechercher une application')) + '" aria-label="' + webEsc(T('Rechercher une application')) + '" value="' + webEsc(_cat.q) + '" oninput="catalogFilter(this.value)">' });
+}
+// Grille des fiches. Appelée à chaque frappe dans la recherche : seul le corps est redessiné.
+function catRender(q) {
+  var el = wmBody('cat'), k = catKit();
+  if (!el || !k) return;
+  var first = !_cat.loaded;
+  _cat.loaded = true;
+  if (first) { catHead(); catSide(); }
+  if (_cat.nav === 'one') { _cat.nav = (_cat.back && _cat.back.nav) || 'all'; _cat.cat = (_cat.back && _cat.back.cat) || null; catHead(); catSide(); }
+  if (!document.getElementById('cat-count')) { catHead(); catSide(); }
+  if (String(q || '') !== _cat.q) { _cat.q = String(q || ''); _cat.limit = 120; }
+  var list = catFiltered(), n = list.length, cnt = document.getElementById('cat-count');
+  if (cnt) cnt.textContent = n > 1 ? Tf('{0} applications', n) : (n ? T('1 application') : '');
+  if (!n) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('box') + '<div class="fs-empty-title">' + (_cat.q.trim() ? T('Aucune application ne correspond') : T('Rien ici pour l\'instant')) + '</div><div>'
+      + (_cat.q.trim() ? webEsc(Tf('Aucun titre ni description ne contient « {0} ».', _cat.q.trim())) : T('Les applications installées depuis le catalogue apparaîtront ici.')) + '</div></div>';
+    return;
+  }
+  var h = '<div class="cat-grid">';
+  list.slice(0, _cat.limit).forEach(function(app) {
+    var id = k.id(app), ver = app.latest_app_version || k.versions(app)[0] || '', inst = _cat.installed[id];
+    h += '<button class="cat-card" data-cat="' + webEsc(id) + '">' + appIcon(k.title(app, id), app.icon_url, 'md')
+      + '<span class="cat-card-text"><span class="cat-card-name">' + webEsc(k.title(app, id)) + '</span><span class="cat-card-desc">' + webEsc(String(app.description || '')) + '</span>'
+      + '<span class="cat-card-foot">' + (ver ? '<span>' + webEsc(ver) + '</span>' : '') + (inst ? '<span class="cat-inst">' + T('Installée') + '</span>' : '') + '</span></span></button>';
+  });
+  h += '</div>';
+  if (n > _cat.limit) h += '<div class="web-foot" style="justify-content:center;margin-top:16px;"><button class="fs-btn" onclick="_cat.limit+=120;catRender(_cat.q)">' + webEsc(Tf('Afficher la suite ({0} restantes)', n - _cat.limit)) + '</button></div>';
+  var sc = el.scrollTop;
+  el.innerHTML = h;
+  el.scrollTop = sc;
+  el.querySelectorAll('[data-cat]').forEach(function(b) { b.onclick = function() { catShow(list.find(function(app) { return k.id(app) === b.dataset.cat; })); }; });
+}
+function catText(html) {
+  try { var d = new DOMParser().parseFromString(String(html || '').replace(/<\/(p|h[1-6]|li|div|tr|pre)>|<br\s*\/?>/gi, '$&\n'), 'text/html'); return (d.body.textContent || '').replace(/\s+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(); }
+  catch (e) { return ''; }
+}
+// Fiche d'une application du catalogue.
+function catShow(app) {
+  var k = catKit();
+  if (!app || !k) return;
+  var id = k.id(app), title = k.title(app, id), trains = k.trains(id), ver = app.latest_app_version || '', pack = app.latest_version || k.versions(app)[0] || '', inst = _cat.installed[id];
+  if (_cat.nav !== 'one') _cat.back = { nav: _cat.nav, cat: _cat.cat, scroll: (wmBody('cat') || {}).scrollTop || 0 };
+  _cat.nav = 'one'; _cat.sel = id; _cat.item = app;
+  var backLabel = _cat.back.nav === 'cat' ? catLabel(_cat.back.cat) : (_cat.back.nav === 'installed' ? T('Déjà installées') : T('Catalogue'));
+  wmHead('cat', title, { back: [backLabel, 'catBack()'], lead: appIcon(title, app.icon_url, 'lg'),
+    sub: webEsc([ver || pack, inst ? T('déjà installée') : ''].filter(Boolean).join(', ')),
+    actions: (inst ? '<button class="fs-btn" onclick="appsOpen(' + wmQ(inst) + ')">' + T('Voir l\'application installée') + '</button>' : '')
+      + '<button class="web-open" onclick="catInstall()">' + (inst ? T('Installer une autre instance') : T('Installer')) + '</button>' });
+  catSide();
+  var link = function(u) { u = String(u || ''); return /^https?:\/\//i.test(u) ? '<a href="' + webEsc(u) + '" target="_blank" rel="noopener noreferrer">' + webEsc(u.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</a>' : ''; };
+  var when = app.last_update ? new Date(typeof app.last_update === 'object' && app.last_update.$date ? app.last_update.$date : app.last_update) : null;
+  var readme = catText(app.app_readme), desc = String(app.description || '').trim();
+  var h = '<p class="cat-lede">' + webEsc(desc || T('Aucune description disponible.')) + '</p>';
+  var shots = ensureArray(app.screenshots).filter(function(u) { return /^https:\/\//i.test(String(u)); }).slice(0, 4);
+  if (shots.length) h += '<div class="cat-shots">' + shots.map(function(u) { return '<a href="' + webEsc(u) + '" target="_blank" rel="noopener noreferrer"><img src="' + webEsc(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>'; }).join('') + '</div>';
+  h += netFacts([
+    ['Version', webEsc(ver || '—') + (pack && pack !== ver ? '<span class="dim">' + webEsc(Tf('fiche du catalogue {0}', pack)) + '</span>' : '')],
+    [T('Catégories'), webEsc(catCats(app).map(catLabel).join(', '))],
+    ['Train', webEsc(trains.join(', '))],
+    [T('Dernière mise à jour'), when && !isNaN(when.getTime()) ? webEsc(when.toLocaleDateString(DK_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' })) : ''],
+    [T('Site du projet'), link(app.home)],
+    ['Sources', ensureArray(app.sources).slice(0, 4).map(link).filter(Boolean).join('<br>')],
+    [T('Nom technique'), '<span class="mono">' + webEsc(id) + '</span>']
+  ]);
+  if (readme && readme !== desc) h += '<div class="web-group-title">' + T('Présentation') + '</div><div class="cat-readme">' + webEsc(readme.slice(0, 2400)) + (readme.length > 2400 ? '…' : '') + '</div>';
+  if (app.healthy === false) h += '<div class="snap-warn" style="margin-top:16px;">' + T('TrueNAS signale un problème sur cette fiche du catalogue : l\'installation peut échouer.') + (app.healthy_error ? '<span class="dim mono">' + webEsc(app.healthy_error) + '</span>' : '') + '</div>';
+  var el = wmBody('cat');
+  el.classList.add('narrow');
+  el.innerHTML = h;
+}
+function catBack() {
+  var b = _cat.back || { nav: 'all', cat: null, scroll: 0 };
+  _cat.nav = b.nav; _cat.cat = b.cat; _cat.sel = null;
+  catHead(); catSide(); catRender(_cat.q);
+  var el = wmBody('cat');
+  if (el) el.scrollTop = b.scroll || 0;
+}
+function catInstall() { if (_cat.item && typeof window.openCatalogInstall === 'function') window.openCatalogInstall(_cat.item); }
+
 
 
 function toggleUserMenu() {
@@ -19059,7 +19848,6 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn cls" onclick="closeWin('sysconfig')"></button>
     </div></div>
   <div class="window-body"><div id="sysconfig-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div></div>
-  </div>
   <div class="resize-handle" data-win="sysconfig"></div>
 </div>
 
@@ -19076,7 +19864,6 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn cls" onclick="closeWin('dataprotect')"></button>
     </div></div>
   <div class="window-body"><div id="dataprotect-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div></div>
-  </div>
   <div class="resize-handle" data-win="dataprotect"></div>
 </div>
 
@@ -19201,7 +19988,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      WIN : DÉCOUVRIR APPS (CATALOGUE)
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-catalog" style="top:65px;left:170px;width:860px;height:580px;">
+<div class="window" id="win-catalog" style="top:65px;left:170px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="catalog">
     <span class="window-icon">🔍</span>
     <span class="window-title">Catalogue d’applications</span>
@@ -19209,14 +19996,18 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn min" onclick="minimizeWin('catalog')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('catalog')"></button>
       <button class="win-btn cls" onclick="closeWin('catalog')"></button>
-    </div></div>
-  <div class="window-body" style="display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;">
-    <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;display:flex;gap:10px;align-items:center;">
-      <input id="catalog-search" class="app-input" type="text" placeholder="🔍 Rechercher dans le catalogue..." oninput="catalogFilter(this.value)" style="flex:1;min-width:0;box-sizing:border-box;">
-      <button class="fs-btn" onclick="catalogCustomYaml()" style="white-space:nowrap;" title="Installer une app personnalisée via docker-compose">＋ App perso (YAML)</button>
     </div>
-    <div id="catalog-content" style="flex:1;overflow-y:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;align-content:start;">
-      <div class="fs-loading" style="height:200px;grid-column:1/-1;"><div class="spinner"></div></div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="cat-side" aria-label="Catalogue d’applications"></nav>
+      <section class="web-main">
+        <header class="web-head" id="cat-head"></header>
+        <div class="web-body" id="cat-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Lecture du catalogue...</div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="catalog"></div>
@@ -19257,6 +20048,61 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      MODAL : CRÉER UNE VM LIBVIRT
 ═══════════════════════════════════════════════════ -->
+<!-- MDM-ACCESS-CENTER-HTML-BEGIN -->
+<div class="window" id="win-access" style="top:50px;left:115px;width:1080px;height:680px;">
+  <div class="window-titlebar" data-win="access">
+    <span class="window-icon">🛡️</span>
+    <span class="window-title">Droits d’accès</span>
+    <div class="window-controls">
+      <button class="win-btn min" onclick="minimizeWin('access')"></button>
+      <button class="win-btn max" onclick="toggleMaxWin('access')"></button>
+      <button class="win-btn cls" onclick="closeWin('access')"></button>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell" id="ac-content">
+      <nav class="web-side" id="ac-side" aria-label="Droits d’accès">
+        <div class="ac-seg">
+          <button class="ac-mode-btn active" id="ac-mode-users" onclick="accessPrincipalMode('users')">Utilisateurs</button>
+          <button class="ac-mode-btn" id="ac-mode-groups" onclick="accessPrincipalMode('groups')">Groupes</button>
+        </div>
+        <input class="snap-find" type="search" id="ac-search" placeholder="Rechercher…" autocomplete="off" spellcheck="false" oninput="accessRenderPrincipals()">
+        <div class="web-side-title"><span id="ac-list-title">Utilisateurs</span><span class="web-count" id="ac-count"></span></div>
+        <div class="web-side-list" id="ac-principals">
+          <div class="fs-loading" style="height:140px;"><div class="spinner"></div></div>
+        </div>
+        <div class="web-side-sep"></div>
+        <button class="web-nav" onclick="openTrueNASPage('/ui/credentials/users')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4"/></svg><span class="web-nav-name">Utilisateurs TrueNAS</span></button>
+      </nav>
+      <section class="web-main">
+        <header class="web-head">
+          <div class="web-head-text">
+            <h4 class="web-title" id="ac-head-title">Sélectionnez un utilisateur</h4>
+            <div class="web-sub" id="ac-head-sub">Les comptes système sont masqués.</div>
+          </div>
+          <div class="web-head-actions">
+            <button class="fs-btn" onclick="loadAccessManager(true)">Actualiser</button>
+            <button class="web-open" id="ac-save" onclick="accessSave()" disabled>Enregistrer</button>
+          </div>
+        </header>
+        <div class="web-tabs">
+          <button class="web-tab active" id="ac-tab-shares" onclick="accessTab('shares')">Dossiers partagés</button>
+          <button class="web-tab" id="ac-tab-apps" onclick="accessTab('apps')">Applications</button>
+          <button class="web-tab" id="ac-tab-account" onclick="accessTab('account')">Compte</button>
+          <button class="web-tab" id="ac-tab-history" onclick="accessTab('history')">Historique</button>
+          <span class="ac-status" id="ac-status" role="status">Prêt</span>
+        </div>
+        <div class="web-body" id="ac-panel">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement…</div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="resize-handle" data-win="access"></div>
+</div>
+<!-- MDM-ACCESS-CENTER-HTML-END -->
+</div><!-- fin de #desktop : les boîtes modales restent au niveau de la page -->
 <div id="modal-lv-create" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:var(--surface-2,#16243f);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;">
     <div style="font-size:16px;font-weight:700;margin-bottom:20px;">⚡ Créer une VM QEMU/KVM</div>
@@ -19989,10 +20835,8 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   }
 
   async function loadCatalogV3() {
-    var el = document.getElementById('catalog-content');
-    if (!el) return;
-    el.innerHTML = '<div class="fs-loading" style="height:200px;grid-column:1/-1;"><div class="spinner"></div></div>';
-
+    if (!wmBody('cat')) return;
+    catBegin();
     var lastError = null;
     try {
       var raw = await wsCall('catalog.apps', [{
@@ -20004,20 +20848,13 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 
       _catalogAll = normalizeCatalogV3(raw);
       if (_catalogAll.length) {
-        window.catalogFilter(document.getElementById('catalog-search') ?
-          document.getElementById('catalog-search').value : '');
+        window.catalogFilter(_cat.q);
         return;
       }
     } catch (error) {
       lastError = error;
     }
-
-
-    el.innerHTML =
-      '<div class="empty-state" style="height:200px;grid-column:1/-1;">' +
-      T('<div class="es-icon">&#128230;</div><span>Catalogue indisponible : ') +
-      htmlEscape(lastError ? lastError.message : T('aucune application retournée')) +
-      '</span></div>';
+    catFail(lastError);
   }
 
   function groupedCatalogApps(query) {
@@ -20481,8 +21318,9 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   }
 
   window.loadCatalog = loadCatalogV3;
-  window.catalogFilter = renderCatalogV3;
-  window.catalogShowDetail = showCatalogDetailV3;
+  window._catalogKit = { id: catalogAppId, title: catalogTitle, trains: catalogTrains, versions: catalogVersions, grouped: groupedCatalogApps };
+  window.catalogFilter = function (query) { catRender(query); };
+  window.catalogShowDetail = function (app) { catShow(app); };
   window.openCatalogInstall = openCatalogInstallV3;
   window.refreshCatalogVersionV3 = refreshCatalogVersionV3;
   window.saveCatalogInstallV3 = saveCatalogInstallV3;
@@ -20627,253 +21465,6 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     button.title = title || '';
     button.style.cssText = 'font-size:11px;padding:5px 10px;' + (extraStyle || '');
     return button;
-  }
-
-  var appActionBusy = Object.create(null);
-
-  function appJobId(result) {
-    result = unwrap(result);
-    if (typeof result === 'number') return result;
-    if (typeof result === 'string' && /^\d+$/.test(result)) return Number(result);
-    if (result && (typeof result.job_id === 'number' ||
-        (typeof result.job_id === 'string' && /^\d+$/.test(result.job_id)))) {
-      return Number(result.job_id);
-    }
-    return null;
-  }
-
-  async function waitAppActionJob(jobId, timeoutMs) {
-    var started = Date.now();
-    var numericId = Number(jobId);
-
-    while (Date.now() - started < timeoutMs) {
-      var jobs = await wsCall('core.get_jobs', [[['id', '=', numericId]]], 30000);
-      jobs = unwrap(jobs);
-      var job = Array.isArray(jobs) ? jobs[0] : null;
-
-      if (job) {
-        var state = String(job.state || '').toUpperCase();
-        if (state === 'SUCCESS') return job.result;
-        if (state === 'FAILED' || state === 'ABORTED') {
-          throw new Error(job.error || job.exception || (T('Opération ') + state.toLowerCase()));
-        }
-      }
-
-      await sleep(1200);
-    }
-
-    throw new Error(T('Délai dépassé pour le job ') + numericId);
-  }
-
-  async function callAppAction(appName, method) {
-    var result = await wsCall(method, [appName], 300000);
-    var jobId = appJobId(result);
-    if (jobId != null) await waitAppActionJob(jobId, 10 * 60 * 1000);
-  }
-
-  async function runInstalledAppAction(appName, action) {
-    if (!appName || appActionBusy[appName]) return;
-
-    var labels = {
-      start: T('Démarrage'),
-      stop: T('Arrêt'),
-      restart: T('Redémarrage')
-    };
-
-    if (action === 'stop' || action === 'restart') {
-      var question = action === 'restart'
-        ? T('Redémarrer l’application <strong>') + appName + '</strong> ?'
-        : T('Arrêter l’application <strong>') + appName + '</strong> ?';
-      var confirmed = await showConfirm(question, {
-        icon: action === 'restart' ? '↻' : '⏹',
-        ok: action === 'restart' ? T('Redémarrer') : T('Arrêter')
-      });
-      if (!confirmed) return;
-    }
-
-    appActionBusy[appName] = labels[action] || T('Opération');
-    await loadAppsIntegrated();
-    toast('⏳ ' + appActionBusy[appName] + ' de ' + appName + '…');
-
-    try {
-      if (action === 'restart') {
-        await callAppAction(appName, 'app.stop');
-        await callAppAction(appName, 'app.start');
-      } else {
-        await callAppAction(appName, action === 'start' ? 'app.start' : 'app.stop');
-      }
-      toast('✅ ' + appName + ' — ' + (labels[action] || T('Opération')) + T(' terminé'));
-    } catch (error) {
-      toast('❌ ' + appName + ' — ' + error.message);
-    } finally {
-      delete appActionBusy[appName];
-      await loadAppsIntegrated();
-      if (typeof window.loadContainers === 'function') window.loadContainers();
-    }
-  }
-
-  async function loadAppsIntegrated() {
-    var el = document.getElementById('apps-grid');
-    if (!el) return;
-
-    el.innerHTML =
-      '<div class="fs-loading" style="height:200px;grid-column:1/-1;">' +
-      T('<div class="spinner"></div> Chargement...</div>');
-
-    try {
-      var apps = await queryInstalledApps();
-
-      if (!apps.length) {
-        el.innerHTML =
-          '<div class="empty-state" style="height:200px;grid-column:1/-1;">' +
-          T('<div class="es-icon">📦</div><span>Aucune application installée</span></div>');
-        return;
-      }
-
-      el.innerHTML = '';
-
-      apps.forEach(function (app) {
-        var name = appNameOf(app);
-        if (!name) return;
-
-        var state = String(app.state || 'UNKNOWN').toUpperCase();
-        var stateClass =
-          state === 'ACTIVE' || state === 'RUNNING' ? 'active' :
-          state === 'DEPLOYING' || state === 'STOPPING' ? 'deploying' :
-          'inactive';
-
-        var stateLabel = {
-          ACTIVE: T('Actif'),
-          RUNNING: T('En cours'),
-          DEPLOYING: T('Déploiement'),
-          STOPPING: T('Arrêt en cours'),
-          STOPPED: T('Arrêté'),
-          CRASHED: T('Erreur')
-        }[state] || state;
-
-        var version =
-          app.human_version ||
-          app.version ||
-          (app.chart_metadata && app.chart_metadata.version) ||
-          '?';
-
-        var portal = portalUrl(app);
-        var card = document.createElement('div');
-        card.className = 'app-card';
-        card.title = T('Double-cliquez pour modifier la configuration');
-
-        var header = document.createElement('div');
-        header.className = 'app-card-header';
-
-        var icon = document.createElement('div');
-        icon.className = 'app-icon-box';
-        icon.textContent = typeof getAppIcon === 'function' ? getAppIcon(name) : '📦';
-
-        var identity = document.createElement('div');
-        identity.style.minWidth = '0';
-
-        var nameEl = document.createElement('div');
-        nameEl.className = 'app-card-name';
-        nameEl.textContent = name;
-        nameEl.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-
-        var versionEl = document.createElement('div');
-        versionEl.className = 'app-card-ver';
-        versionEl.textContent = 'v' + version;
-
-        identity.appendChild(nameEl);
-        identity.appendChild(versionEl);
-        header.appendChild(icon);
-        header.appendChild(identity);
-
-        var statusRow = document.createElement('div');
-        statusRow.className = 'app-card-status';
-
-        var statusEl = document.createElement('span');
-        statusEl.className = 'app-running ' + stateClass;
-        statusEl.textContent = stateLabel;
-        statusRow.appendChild(statusEl);
-
-        var typeEl = document.createElement('span');
-        typeEl.style.cssText = 'font-size:10px;color:var(--text-dim);';
-        typeEl.textContent = app.custom_app ? T('Application personnalisée') : T('Catalogue');
-        statusRow.appendChild(typeEl);
-
-        var actions = document.createElement('div');
-        actions.className = 'mdm-app-actions';
-
-        var busyLabel = appActionBusy[name] || '';
-        var isRunning = state === 'ACTIVE' || state === 'RUNNING';
-        var isTransitioning = state === 'DEPLOYING' || state === 'STOPPING';
-
-        if (busyLabel || isTransitioning) {
-          var busy = makeButton(
-            '⏳ ' + (busyLabel || stateLabel) + '…',
-            T('Une opération TrueNAS est en cours'),
-            'color:var(--text-dim);'
-          );
-          busy.disabled = true;
-          actions.appendChild(busy);
-        } else if (isRunning) {
-          var stop = makeButton(
-            T('■ Arrêter'),
-            T('Arrêter ') + name,
-            'background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.30);color:#f87171;'
-          );
-          stop.onclick = function () { runInstalledAppAction(name, 'stop'); };
-          actions.appendChild(stop);
-
-          var restart = makeButton(
-            T('↻ Redémarrer'),
-            T('Arrêter puis redémarrer ') + name,
-            'background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.30);color:#fbbf24;'
-          );
-          restart.onclick = function () { runInstalledAppAction(name, 'restart'); };
-          actions.appendChild(restart);
-        } else {
-          var start = makeButton(
-            T('▶ Démarrer'),
-            T('Démarrer ') + name,
-            'background:rgba(62,207,142,.14);border-color:rgba(62,207,142,.30);color:var(--success);'
-          );
-          start.onclick = function () { runInstalledAppAction(name, 'start'); };
-          actions.appendChild(start);
-        }
-
-        if (portal) {
-          var open = document.createElement('a');
-          open.className = 'fs-btn';
-          open.href = portal;
-          open.target = '_blank';
-          open.rel = 'noopener noreferrer';
-          open.textContent = T('Ouvrir ↗');
-          open.style.cssText =
-            'font-size:11px;padding:5px 10px;text-decoration:none;display:inline-flex;align-items:center;';
-          actions.appendChild(open);
-        }
-
-        var edit = makeButton(
-          T('✏ Modifier'),
-          T('Modifier la configuration de ') + name,
-          'margin-left:auto;background:rgba(var(--accent-rgb),.18);border-color:rgba(var(--accent2-rgb),.32);color:var(--accent2);'
-        );
-        edit.onclick = function () { openEditAppIntegrated(name); };
-        edit.disabled = !!busyLabel || isTransitioning;
-        actions.appendChild(edit);
-
-        card.appendChild(header);
-        card.appendChild(statusRow);
-        card.appendChild(actions);
-        card.ondblclick = function () { openEditAppIntegrated(name); };
-        el.appendChild(card);
-      });
-    } catch (error) {
-      el.innerHTML =
-        (typeof errHtml === 'function'
-          ? errHtml(T('Erreur : ') + error.message)
-          : T('<div class="empty-state" style="grid-column:1/-1;">Erreur : ') +
-            String(error.message || error) + '</div>');
-    }
   }
 
   async function loadAppForEdit(appName) {
@@ -21415,10 +22006,8 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     if (modal) modal.style.display = 'none';
   };
 
-  window.loadApps = loadAppsIntegrated;
   window.openEditApp = openEditAppIntegrated;
   window.openEditAppIntegrated = openEditAppIntegrated;
-  window.runInstalledAppAction = runInstalledAppAction;
   window.saveEditAppIntegrated = saveEditAppIntegrated;
   window.switchEditTab = switchEditTab;
   window.resetEditForm = resetEditForm;
@@ -22324,27 +22913,6 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     return acEffectiveApplication(String(appName), _ac.currentContext) !== 'DENY';
   }
 
-  function acDecorateInstalledApps() {
-    var grid = document.getElementById('apps-grid');
-    if (!grid) return;
-    Array.from(grid.querySelectorAll('.app-card')).forEach(function (card) {
-      var nameEl = card.querySelector('.app-card-name');
-      var appName = nameEl ? nameEl.textContent.trim() : '';
-      if (!appName || accessCanUseInstalledApp(appName)) return;
-      card.style.opacity = '.72';
-      card.style.borderColor = 'rgba(224,82,82,.26)';
-      card.title = T('Accès refusé par la politique Desktroo');
-      Array.from(card.querySelectorAll('a.fs-btn')).forEach(function (link) {
-        var disabled = document.createElement('button');
-        disabled.className = 'fs-btn';
-        disabled.disabled = true;
-        disabled.textContent = T('🔒 Accès refusé');
-        disabled.style.cssText = 'font-size:11px;padding:5px 10px;color:var(--danger);border-color:rgba(224,82,82,.28);';
-        link.replaceWith(disabled);
-      });
-    });
-  }
-
   function acOpenWindow() {
     var win = document.getElementById('win-access');
     if (!win) return;
@@ -22380,9 +22948,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       }
       await acRefreshCurrentContext();
     } catch (_) {}
-    var result = await baseLoadApps.apply(this, arguments);
-    acDecorateInstalledApps();
-    return result;
+    return baseLoadApps.apply(this, arguments);
   };
 
   function acInstallAppEntry() {
@@ -22443,59 +23009,5 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- TRUENAS-CATALOG-FIX-20260712:END -->
 
 
-<!-- MDM-ACCESS-CENTER-HTML-BEGIN -->
-<div class="window" id="win-access" style="top:50px;left:115px;width:1080px;height:680px;">
-  <div class="window-titlebar" data-win="access">
-    <span class="window-icon">🛡️</span>
-    <span class="window-title">Droits d’accès</span>
-    <div class="window-controls">
-      <button class="win-btn min" onclick="minimizeWin('access')"></button>
-      <button class="win-btn max" onclick="toggleMaxWin('access')"></button>
-      <button class="win-btn cls" onclick="closeWin('access')"></button>
-    </div>
-  </div>
-  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
-    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
-    <div class="web-shell" id="ac-content">
-      <nav class="web-side" id="ac-side" aria-label="Droits d’accès">
-        <div class="ac-seg">
-          <button class="ac-mode-btn active" id="ac-mode-users" onclick="accessPrincipalMode('users')">Utilisateurs</button>
-          <button class="ac-mode-btn" id="ac-mode-groups" onclick="accessPrincipalMode('groups')">Groupes</button>
-        </div>
-        <input class="snap-find" type="search" id="ac-search" placeholder="Rechercher…" autocomplete="off" spellcheck="false" oninput="accessRenderPrincipals()">
-        <div class="web-side-title"><span id="ac-list-title">Utilisateurs</span><span class="web-count" id="ac-count"></span></div>
-        <div class="web-side-list" id="ac-principals">
-          <div class="fs-loading" style="height:140px;"><div class="spinner"></div></div>
-        </div>
-        <div class="web-side-sep"></div>
-        <button class="web-nav" onclick="openTrueNASPage('/ui/credentials/users')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4"/></svg><span class="web-nav-name">Utilisateurs TrueNAS</span></button>
-      </nav>
-      <section class="web-main">
-        <header class="web-head">
-          <div class="web-head-text">
-            <h4 class="web-title" id="ac-head-title">Sélectionnez un utilisateur</h4>
-            <div class="web-sub" id="ac-head-sub">Les comptes système sont masqués.</div>
-          </div>
-          <div class="web-head-actions">
-            <button class="fs-btn" onclick="loadAccessManager(true)">Actualiser</button>
-            <button class="web-open" id="ac-save" onclick="accessSave()" disabled>Enregistrer</button>
-          </div>
-        </header>
-        <div class="web-tabs">
-          <button class="web-tab active" id="ac-tab-shares" onclick="accessTab('shares')">Dossiers partagés</button>
-          <button class="web-tab" id="ac-tab-apps" onclick="accessTab('apps')">Applications</button>
-          <button class="web-tab" id="ac-tab-account" onclick="accessTab('account')">Compte</button>
-          <button class="web-tab" id="ac-tab-history" onclick="accessTab('history')">Historique</button>
-          <span class="ac-status" id="ac-status" role="status">Prêt</span>
-        </div>
-        <div class="web-body" id="ac-panel">
-          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement…</div>
-        </div>
-      </section>
-    </div>
-  </div>
-  <div class="resize-handle" data-win="access"></div>
-</div>
-<!-- MDM-ACCESS-CENTER-HTML-END -->
 </body>
 </html>

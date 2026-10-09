@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.13.0'
+APP_VERSION = '2.14.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -3525,6 +3525,113 @@ def _web_proxy_set(enabled):
     return _web_proxy_get()
 
 
+# ── Conteneurs Docker de l'hôte (fenêtre Conteneurs) ──────────────────────────
+# Lecture par SSH, comme pour les sites web. Les variables d'environnement des conteneurs
+# (souvent des mots de passe) ne sortent jamais d'ici.
+_CT_DOCKER = 'D=$(sudo -n docker version >/dev/null 2>&1 && echo "sudo -n docker" || echo docker); '
+
+
+def _ct_id(value):
+    """Identifiant de conteneur validé (hexadécimal), seul élément repris dans une commande."""
+    cid = str(value or '').strip().lower()
+    if not (12 <= len(cid) <= 64) or any(ch not in '0123456789abcdef' for ch in cid):
+        raise ValueError('identifiant de conteneur invalide')
+    return cid
+
+
+def _ct_trim(c):
+    st = c.get('State') or {}
+    cfg = c.get('Config') or {}
+    hc = c.get('HostConfig') or {}
+    ns = c.get('NetworkSettings') or {}
+    labels = cfg.get('Labels') or {}
+    ports, seen = [], set()
+    for key, binds in sorted((ns.get('Ports') or {}).items()):
+        cport, _sep, proto = str(key).partition('/')
+        for b in (binds or []):
+            hp = str((b or {}).get('HostPort') or '')
+            k = (hp, cport, proto)
+            if not hp or k in seen:
+                continue   # même port publié en IPv4 et en IPv6 : une seule ligne
+            seen.add(k)
+            ports.append({'container_port': cport, 'protocol': proto or 'tcp',
+                          'host_ip': (b or {}).get('HostIp') or '', 'host_port': hp})
+    mounts = [{'type': m.get('Type') or '', 'source': m.get('Source') or m.get('Name') or '',
+               'destination': m.get('Destination') or '', 'rw': bool(m.get('RW'))}
+              for m in (c.get('Mounts') or []) if isinstance(m, dict)]
+    nets = [{'name': n, 'ip': (v or {}).get('IPAddress') or ''}
+            for n, v in sorted((ns.get('Networks') or {}).items())]
+    return {
+        'id': c.get('Id') or '', 'name': str(c.get('Name') or '').lstrip('/'),
+        'image': cfg.get('Image') or '', 'state': st.get('Status') or '',
+        'health': ((st.get('Health') or {}).get('Status')) or '',
+        'started_at': st.get('StartedAt') or '', 'finished_at': st.get('FinishedAt') or '',
+        'exit_code': st.get('ExitCode'), 'restart_count': c.get('RestartCount') or 0,
+        'restart_policy': ((hc.get('RestartPolicy') or {}).get('Name')) or '',
+        'created': c.get('Created') or '', 'network_mode': hc.get('NetworkMode') or '',
+        'project': labels.get('com.docker.compose.project') or '',
+        'service': labels.get('com.docker.compose.service') or '',
+        'ports': ports, 'mounts': mounts, 'networks': nets,
+    }
+
+
+def _ct_list():
+    cmd = (_CT_DOCKER + 'ids=$($D ps -aq 2>/dev/null) || { echo "Docker ne répond pas sur le NAS" >&2; exit 3; }; '
+           '[ -z "$ids" ] && echo "[]" || $D inspect $ids')
+    raw = json.loads(ssh_ok(cmd, timeout=45) or '[]')
+    items = [_ct_trim(c) for c in raw if isinstance(c, dict)]
+    items.sort(key=lambda x: (x['project'] or '~', x['name']))
+    return items
+
+
+def _ct_size(text):
+    """« 123.4MiB » → octets."""
+    t = str(text or '').strip()
+    num = ''
+    while t and (t[0].isdigit() or t[0] == '.'):
+        num += t[0]
+        t = t[1:]
+    mult = {'b': 1, 'kb': 1000, 'mb': 1000 ** 2, 'gb': 1000 ** 3, 'tb': 1000 ** 4,
+            'kib': 1024, 'mib': 1024 ** 2, 'gib': 1024 ** 3, 'tib': 1024 ** 4}.get(t.strip().lower(), 1)
+    try:
+        return int(float(num) * mult)
+    except ValueError:
+        return 0
+
+
+def _ct_stats():
+    cmd = _CT_DOCKER + "$D stats --no-stream --format '{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}'"
+    out = ssh_ok(cmd, timeout=45)
+    res = {}
+    for line in out.splitlines():
+        parts = line.strip().split('|')
+        if len(parts) != 4 or not parts[0]:
+            continue
+        used, _sep, limit = parts[2].partition('/')
+        def pct(v):
+            try:
+                return round(float(str(v).strip().rstrip('%')), 2)
+            except ValueError:
+                return 0.0
+        res[parts[0]] = {'cpu': pct(parts[1]), 'mem': _ct_size(used), 'mem_limit': _ct_size(limit), 'mem_pct': pct(parts[3])}
+    return res
+
+
+def _ct_logs(cid, lines=300):
+    cid = _ct_id(cid)
+    n = max(20, min(2000, int(lines)))
+    out, err, code = ssh_exec(_CT_DOCKER + '$D logs --tail %d --timestamps %s 2>&1' % (n, cid), timeout=45)
+    if code != 0 and not out:
+        raise RuntimeError(err or 'journal illisible')
+    return out[-400000:]
+
+
+def _ct_restart(cid):
+    cid = _ct_id(cid)
+    ssh_ok(_CT_DOCKER + '$D restart -t 20 %s' % cid, timeout=90)
+    return True
+
+
 def _npm_status():
     """Détecte un reverse-proxy NPMplus / Nginx Proxy Manager sur l'hôte.
     Matching sur le nom, l'image et le port admin 81. Utilise sudo (socket Docker root)."""
@@ -6961,6 +7068,34 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        # Conteneurs Docker de l'hôte : liste complète, charge instantanée, journal
+        if path == '/containers':
+            try:
+                self._json(200, {'ok': True, 'containers': _ct_list()})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        if path == '/containers/stats':
+            try:
+                self._json(200, {'ok': True, 'stats': _ct_stats()})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        if path == '/containers/logs':
+            try:
+                try:
+                    n = int(qs.get('lines', '300'))
+                except ValueError:
+                    n = 300
+                self._json(200, {'ok': True, 'log': _ct_logs(qs.get('id', ''), n)})
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         if path == '/proxy/npm/status':
             res = _npm_status()
             res['ok'] = True
@@ -7408,6 +7543,17 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return
 
         # MDM-APPS-V1 : bases de données + installation d'applications
+        if path == '/containers/restart':
+            try:
+                b = self._body()
+                _ct_restart(b.get('id'))
+                self._json(200, {'ok': True})
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         if path == '/db/create':
             try:
                 b = self._body()
