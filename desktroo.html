@@ -1097,10 +1097,40 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #about-body .lic-row b, #about-body .lic-sub, #about-body .lic-lbl, #about-body .lic-adv summary { color:var(--text-dim) !important; }
   [data-theme="light"] #about-body .lic-card { background:rgba(255,255,255,0.8); }
   [data-theme="light"] #about-body :is(#lic-key, #lic-token) { background:#ffffff !important; }
-  .about-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:16px; }
-  .about-note { margin-top:14px; padding:10px 12px; border-radius:10px; font-size:13px; line-height:1.5; }
-  .about-note.up { background:rgba(240,180,41,0.12); border:1px solid rgba(240,180,41,0.35); color:#f0b429; }
-  [data-theme="light"] .about-note.up { color:#8a5a00; }
+  /* Fenêtre « À propos » : le logo animé en tête, le nom, puis quelques lignes ; tout tient dans une colonne centrée. */
+  .about-body { flex:1; min-width:0; overflow-y:auto; scrollbar-width:thin; }
+  .about-page { display:flex; flex-direction:column; max-width:432px; margin:0 auto; padding:22px 26px 28px; }
+  .about-hero { display:flex; flex-direction:column; align-items:center; text-align:center; padding:22px 0 28px; }
+  .about-hero .dk-hero { width:116px; height:116px; }
+  .about-hero .dk-hero::before { inset:-58px; }
+  .about-name { position:relative; margin-top:22px; font-family:var(--font-display); font-size:36px; font-weight:800; letter-spacing:-0.035em; line-height:1; color:var(--text); }
+  .about-tag { position:relative; margin-top:9px; font-size:13.5px; color:var(--text-dim); }
+  .about-list { position:relative; border:1px solid var(--glass-border); border-radius:14px; background:rgba(255,255,255,0.035); overflow:hidden; }
+  [data-theme="light"] .about-list { background:rgba(255,255,255,0.8); }
+  .about-row { display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%; min-height:46px; padding:10px 16px; border:0; border-top:1px solid var(--glass-border);
+    background:none; color:var(--text); font:inherit; font-size:13.5px; text-align:left; text-decoration:none; }
+  .about-row:first-child { border-top:0; }
+  .about-row > span:first-child { color:var(--text-dim); }
+  :is(button, a).about-row { cursor:pointer; transition:background .15s; }
+  :is(button, a).about-row:hover { background:rgba(128,140,160,0.10); }
+  :is(button, a).about-row:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
+  .about-val { display:inline-flex; align-items:center; gap:9px; min-width:0; font-weight:600; font-variant-numeric:tabular-nums; }
+  .about-val svg { width:15px; height:15px; flex-shrink:0; fill:none; stroke:var(--text-dim); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .about-chip { padding:2px 9px; border-radius:99px; font-size:11.5px; font-weight:600; white-space:nowrap; background:rgba(128,140,160,0.16); color:var(--text-dim); }
+  .about-chip.ok { background:rgba(var(--accent-rgb),0.16); color:var(--accent2); }
+  .about-chip.warn { background:rgba(240,180,41,0.16); color:#f0b429; }
+  .about-chip.bad { background:rgba(248,113,113,0.16); color:#f87171; }
+  [data-theme="light"] .about-chip.warn { color:#8a5a00; }
+  [data-theme="light"] .about-chip.bad { color:#b3261e; }
+  .about-actions { display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:20px; }
+  .about-actions .web-open { padding:10px 22px; font-size:13.5px; }
+  .about-quiet { padding:4px 8px; border:0; border-radius:6px; background:none; color:var(--text-dim); font:inherit; font-size:12.5px; cursor:pointer; text-decoration:underline; text-decoration-color:rgba(128,140,160,0.5); text-underline-offset:3px; }
+  .about-quiet:hover { color:var(--text); }
+  .about-quiet:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  .about-title { margin:10px 0 16px; font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--text); }
+  .about-page > .web-crumb { align-self:flex-start; }
+  .about-up { padding:16px 18px; }
+  .about-msg { margin-top:14px; font-size:12.5px; line-height:1.55; color:var(--text-dim); text-align:center; }
   .dl-add { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
   .dl-add-row { display:flex; align-items:flex-end; gap:12px; }
   .dl-add-row > div { flex:1; min-width:0; }
@@ -3821,8 +3851,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "À propos": "About",
 "Version installée": "Installed version",
 "Dernière version": "Latest version",
-"⬆ Une mise à jour est disponible.": "⬆ An update is available.",
-"✓ Tu es à jour.": "✓ You are up to date.",
 "Forcer la mise à jour": "Force update",
 "Lancer la mise à jour ? Le service va redémarrer (~30 s).": "Start the update? The service will restart (~30 s).",
 "Mise à jour en cours": "Update in progress",
@@ -6105,7 +6133,14 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Le fournisseur refuse cette clé : révoquée, régénérée ou expirée. Crée une nouvelle clé sur son site et colle-la ici.": "The provider rejects this key: revoked, regenerated or expired. Create a new key on its site and paste it here.",
 "Le fournisseur n'accepte pas les connexions venant de l'adresse de ce NAS (serveur ou VPN).": "The provider does not accept connections from this NAS's address (server or VPN).",
 "vérifiée il y a moins de dix minutes": "checked less than ten minutes ago",
-"Mettre à jour maintenant": "Update now"
+"Essai, {0} jours restants": "Trial, {0} days left",
+"Essai, dernier jour": "Trial, last day",
+"Expirée, période de tolérance": "Expired, grace period",
+"Expirée, lecture seule": "Expired, read-only",
+"À jour": "Up to date",
+"Site web": "Website",
+"Mettre à jour vers la {0}": "Update to {0}",
+"Abonnement actif": "Subscription active"
 }
 </script>
 <script id="dk-i18n">
@@ -12778,9 +12813,16 @@ function dkWaitHtml(state, title, text, extra) {
     + (text ? '<div class="dk-wait-text">' + text + '</div>' : '')
     + (extra || '') + '</div>';
 }
-function dkCardName() { return '<div class="dk-card-name" translate="no">Desktr<span class="dk-oo">oo</span></div>'; }
-// ── Fenêtre « À propos » : la version de Desktroo et sa mise à jour, puis la licence ──
+// ── Fenêtre « À propos » : compacte, centrée sur le logo animé ; la licence est sa seconde page ──
 var _about = { nav: 'desk', busy: false };
+try {   // la fenêtre a d'abord existé en grand format : la taille mémorisée alors n'a plus cours
+  if (!localStorage.getItem('dk-about-compact')) {
+    var _aboutSizes = JSON.parse(localStorage.getItem('win_sizes') || '{}');
+    delete _aboutSizes.about;
+    localStorage.setItem('win_sizes', JSON.stringify(_aboutSizes));
+    localStorage.setItem('dk-about-compact', '1');
+  }
+} catch (e) {}
 function tndAbout() { aboutGo('desk'); }
 function openLicense() { aboutGo('lic'); }
 function aboutGo(k) {
@@ -12791,47 +12833,61 @@ function aboutGo(k) {
   loadAbout();
 }
 function loadAbout() {
-  wmSide('about', wmSideTitle('Desktroo')
-    + wmNav({ active: _about.nav === 'desk', call: "aboutGo('desk')", icon: 'refresh', name: T('Version') })
-    + wmNav({ active: _about.nav === 'lic', call: "aboutGo('lic')", icon: 'key', name: T('Licence') }));
-  if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la page
+  if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la fenêtre
   if (_about.nav === 'lic') aboutLicView(); else aboutDeskView();
 }
+function aboutBody() { return document.getElementById('about-body'); }
+// Le logo (animé tant que « state » vaut 'busy'), le nom, une ligne dessous.
+function aboutHero(state, line, logoId, lineId) {
+  return '<div class="about-hero">' + dkHero(state, logoId) + '<div class="about-name" translate="no">Desktr<span class="dk-oo">oo</span></div>'
+    + '<div class="about-tag"' + (lineId ? ' id="' + lineId + '"' : '') + '>' + line + '</div></div>';
+}
+// État de la licence en quelques mots, et la teinte de sa pastille.
+function aboutLicLabel() {
+  var s = _licInfo;
+  if (!s) return null;
+  if (s.state === 'active') return [T('Abonnement actif'), 'ok'];
+  if (s.state === 'trial') return [s.days_left > 1 ? Tf('Essai, {0} jours restants', s.days_left) : T('Essai, dernier jour'), ''];
+  if (s.state === 'grace') return [T('Expirée, période de tolérance'), 'warn'];
+  return [T('Expirée, lecture seule'), 'bad'];
+}
 function aboutLicView() {
-  wmHead('about', T('Licence'), { narrow: true, sub: T('Abonnement Desktroo') });
-  wmBody('about').innerHTML = '<div id="license-body"></div>';
+  aboutBody().innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
+    + '<h4 class="about-title">' + T('Licence') + '</h4><div id="license-body"></div></div>';
+  aboutBody().scrollTop = 0;
   loadLicense();
 }
 async function aboutDeskView() {
-  wmHead('about', T('À propos'), { narrow: true });
-  var box = wmBody('about');
-  if (!document.getElementById('about-card')) box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
-  var v = { version: '?', latest: '', update_available: false };
-  try { v = await fileops('GET', 'version'); } catch (e) {}
+  var box = aboutBody(), tag = T('Le bureau web pour votre TrueNAS');
+  // Le temps de la vérification, le logo tourne ; les lignes arrivent ensuite.
+  if (!document.getElementById('about-list')) box.innerHTML = '<div class="about-page">' + aboutHero('busy', tag) + '</div>';
+  var got = await Promise.all([fileops('GET', 'version').catch(function() { return null; }), _licInfo ? null : licRefresh()]);
+  var v = got[0] || { version: '?', latest: '', update_available: false };
   if (_about.nav !== 'desk' || _about.busy) return;
-  var up = !!v.update_available;
-  var latestStyle = up ? 'background:rgba(240,180,41,0.15);color:#f0b429;border:1px solid rgba(240,180,41,0.4);' : '';
-  box.innerHTML = '<div class="tnd-panel dk-card" id="about-card"><div class="dk-card-text">'
-    + dkCardName() + '<div class="dk-card-sub">' + T('Le bureau web pour votre TrueNAS') + '</div>'
-    + T('<div class="tnd-row" style="justify-content:space-between;"><span class="tnd-muted">Version installée</span><span class="tnd-badge">') + (v.version || '?') + '</span></div>'
-    + T('<div class="tnd-row" style="justify-content:space-between;"><span class="tnd-muted">Dernière version</span><span class="tnd-badge" style="') + latestStyle + '">' + (v.latest || '—') + '</span></div>'
-    + '</div>' + dkHero('') + '</div>'
-    + (up
-        ? '<div class="about-note up">' + T('⬆ Une mise à jour est disponible.') + '</div>'
-          + '<div class="about-actions"><button class="web-open" onclick="tndDoUpdate()">' + T('Mettre à jour maintenant') + '</button></div>'
-        : '<p class="web-note">' + T('✓ Tu es à jour.') + '</p>'
-          + '<div class="about-actions"><button class="fs-btn" onclick="tndDoUpdate()">' + T('Forcer la mise à jour') + '</button></div>');
+  var up = !!v.update_available, lic = aboutLicLabel();
+  var chev = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>', out = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M11 7H6v11h11v-5"/></svg>';
+  var rows = '<div class="about-row"><span>' + T('Version installée') + '</span><span class="about-val">' + webEsc(v.version || '?')
+      + (up || !v.latest ? '' : '<span class="about-chip ok">' + T('À jour') + '</span>') + '</span></div>'
+    + (up ? '<div class="about-row"><span>' + T('Dernière version') + '</span><span class="about-val">' + webEsc(v.latest) + '<span class="about-chip warn">' + T('Disponible') + '</span></span></div>' : '')
+    + '<button class="about-row" onclick="aboutGo(\'lic\')"><span>' + T('Licence') + '</span><span class="about-val">'
+      + (lic ? '<span class="about-chip' + (lic[1] ? ' ' + lic[1] : '') + '">' + lic[0] + '</span>' : '') + chev + '</span></button>'
+    + '<a class="about-row" href="https://desktroo.fr" target="_blank" rel="noopener"><span>' + T('Site web') + '</span><span class="about-val">desktroo.fr' + out + '</span></a>';
+  box.innerHTML = '<div class="about-page">' + aboutHero('', tag)
+    + '<div class="about-list" id="about-list">' + rows + '</div>'
+    + '<div class="about-actions">' + (up
+        ? '<button class="web-open" onclick="tndDoUpdate()">' + Tf('Mettre à jour vers la {0}', webEsc(v.latest)) + '</button>'
+        : '<button class="about-quiet" onclick="tndDoUpdate()">' + T('Forcer la mise à jour') + '</button>')
+    + '</div></div>';
 }
 async function tndDoUpdate() {
   if (!await showConfirm(T('Lancer la mise à jour ? Le service va redémarrer (~30 s).'))) return;
   // Le suivi s'affiche dans la fenêtre « À propos », qu'on ouvre au besoin.
   _about.busy = true; _about.nav = 'desk';
   var aw = document.getElementById('win-about');
-  if (aw && aw.classList.contains('visible')) { bringToFront(aw); loadAbout(); } else openApp('about');
-  wmHead('about', T('Mise à jour en cours'), { narrow: true });
-  var box = wmBody('about');
+  if (aw && aw.classList.contains('visible')) bringToFront(aw); else openApp('about');
+  var box = aboutBody();
   box.innerHTML = '';
-  // Indicateur de progression : la carte (et son logo animé) est posée une fois, seuls les étapes et le message changent.
+  // Suivi : la page (et son logo animé) est posée une fois, seuls les étapes et le message changent.
   function _ic(st) {
     if (st === 'done')   return '✓';
     if (st === 'error')  return '✕';
@@ -12842,11 +12898,9 @@ async function tndDoUpdate() {
   function render(stepDl, stepRestart, msg, extra) {
     if (!document.getElementById('dk-up')) {
       _steps = '';
-      box.innerHTML = '<div class="tnd-panel dk-card" id="dk-up"><div class="dk-card-text">'
-        + dkCardName() + '<div class="dk-card-sub" id="dk-up-sub">' + T('Mise à jour') + '</div>'
-        + '<div class="dk-steps" id="dk-up-steps"></div>'
-        + '<div class="tnd-muted" id="dk-up-msg" style="font-size:12.5px;line-height:1.5;" aria-live="polite"></div><div id="dk-up-extra"></div>'
-        + '</div>' + dkHero('busy', 'dk-hero') + '</div>';
+      box.innerHTML = '<div class="about-page" id="dk-up">' + aboutHero('busy', T('Mise à jour'), 'dk-hero', 'dk-up-sub')
+        + '<div class="about-list about-up"><div class="dk-steps" id="dk-up-steps"></div></div>'
+        + '<div class="about-msg" id="dk-up-msg" aria-live="polite"></div><div id="dk-up-extra"></div></div>';
     }
     var step = function (st, label) { return '<div class="dk-step ' + st + '"><span class="dk-step-ic">' + _ic(st) + '</span><span>' + label + '</span></div>'; };
     if (_steps !== stepDl + '/' + stepRestart) {
@@ -23218,7 +23272,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   </div>
   <div class="resize-handle" data-win="downloads"></div>
 </div>
-<div class="window" id="win-about" style="top:90px;left:300px;width:820px;height:600px;">
+<div class="window" id="win-about" style="top:76px;left:380px;width:480px;height:600px;">
   <div class="window-titlebar" data-win="about">
     <span class="window-icon">ℹ️</span>
     <span class="window-title">À propos</span>
@@ -23229,16 +23283,8 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     </div>
   </div>
   <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
-    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
-    <div class="web-shell">
-      <nav class="web-side" id="about-side" aria-label="À propos"></nav>
-      <section class="web-main">
-        <header class="web-head" id="about-head"></header>
-        <div class="web-body" id="about-body">
-          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
-        </div>
-      </section>
-    </div>
+    <!-- Pas un gestionnaire : une carte d'identité, centrée sur le logo -->
+    <div class="about-body" id="about-body"></div>
   </div>
   <div class="resize-handle" data-win="about"></div>
 </div>
