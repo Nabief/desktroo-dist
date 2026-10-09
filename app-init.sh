@@ -17,6 +17,32 @@ TRUENAS_HOST="${TRUENAS_HOST:-$TRUENAS_IP}"
 TRUENAS_UI_URL="${TRUENAS_UI_URL:-http://$TRUENAS_IP}"
 D="${DATA_DIR:-/data}"
 
+# ── Licence d'utilisation : pas de première installation sans accord ──
+# L'accord se donne dans le YAML de la Custom App : ACCEPT_LICENCE: "oui". Il est inscrit dans
+# data/licence-acceptee.json, que le bureau lit. TERMS_VERSION suit le numéro de LICENSE.md.
+TERMS_VERSION="1.0"
+TERMS_REC="$D/data/licence-acceptee.json"
+if [ ! -f "$D/fileops.py" ] && [ "${ACCEPT_LICENCE:-}" != "oui" ]; then
+  echo "✗ Licence d'utilisation non acceptée : Desktroo n'est pas installé."
+  echo ""
+  echo "  Desktroo est un logiciel propriétaire. © 2026 Mdm-services.fr. Tous droits réservés."
+  echo "  Sa licence permet de l'installer sur vos propres NAS et de l'utiliser. Sans accord écrit,"
+  echo "  elle interdit de le copier ou le redistribuer, de le modifier ou d'en tirer un autre"
+  echo "  logiciel (y compris avec une IA), de retirer les mentions de droits, de contourner la"
+  echo "  licence, et de réutiliser le nom Desktroo ou son logo."
+  echo "  Texte complet : https://github.com/Nabief/desktroo-dist/blob/main/LICENSE.md"
+  echo ""
+  echo "  Pour accepter : dans le YAML de la Custom App, service app-init, mettez"
+  echo "      ACCEPT_LICENCE: \"oui\""
+  echo "  puis enregistrez. Rien n'a été téléchargé ni installé."
+  exit 1
+fi
+if [ "${ACCEPT_LICENCE:-}" = "oui" ] && [ ! -f "$TERMS_REC" ]; then
+  mkdir -p "$D/data"
+  printf '{\n "version": "%s",\n "accepted_at": "%s",\n "by": "",\n "via": "custom-app",\n "history": []\n}\n' "$TERMS_VERSION" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$TERMS_REC"
+  echo "✓ Licence d'utilisation acceptée (ACCEPT_LICENCE=oui)"
+fi
+
 echo "▸ Préparation de l'arborescence dans $D"
 mkdir -p "$D" \
   "$D/websites/conf.d" \

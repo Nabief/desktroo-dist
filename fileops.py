@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.30.0'
+APP_VERSION = '2.31.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -7287,7 +7287,56 @@ def _lic_is_readonly():
 
 
 # Routes POST dont l'écriture reste autorisée même en lecture seule (on doit pouvoir signaler un problème sans abonnement).
-_LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report'}
+_LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report', '/terms/accept'}
+
+
+# ── Licence d'utilisation (LICENSE.md) : l'accord de l'installation ─────────────────────────────
+# À ne pas confondre avec l'abonnement (« /license/… », ci-dessus). Ici, il s'agit de l'accord donné
+# au texte de LICENSE.md : les installeurs le recueillent avant d'installer et l'inscrivent dans
+# data/licence-acceptee.json ; le bureau le demande à la première connexion s'il manque (installation
+# antérieure, fichiers copiés à la main) ou si le texte a changé de version.
+# TERMS_VERSION suit le numéro de version écrit en tête de LICENSE.md : les deux changent ensemble.
+TERMS_VERSION = '1.0'
+TERMS_FILE = os.path.join(ACCESS_DATA_DIR, 'licence-acceptee.json')
+
+
+def _terms_read():
+    try:
+        with open(TERMS_FILE, 'r', encoding='utf-8') as fh:
+            d = json.load(fh)
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
+def _terms_status():
+    rec = _terms_read()
+    ok = str(rec.get('version') or '') == TERMS_VERSION and bool(rec.get('accepted_at'))
+    return {'version': TERMS_VERSION, 'accepted': ok,
+            'accepted_at': rec.get('accepted_at') if ok else None,
+            'by': rec.get('by') if ok else None, 'via': rec.get('via') if ok else None}
+
+
+def _terms_accept(b):
+    b = b if isinstance(b, dict) else {}
+    if b.get('accept') is not True:
+        raise ValueError("L'accord doit être donné explicitement.")
+    if str(b.get('version') or '') != TERMS_VERSION:
+        raise ValueError("La licence a changé de version : recharge la page pour lire la bonne.")
+    old = _terms_read()
+    hist = old.get('history') if isinstance(old.get('history'), list) else []
+    if old.get('accepted_at'):
+        hist = (hist + [{k: old.get(k) for k in ('version', 'accepted_at', 'by', 'via')}])[-20:]
+    rec = {'version': TERMS_VERSION,
+           'accepted_at': _login_time.strftime('%Y-%m-%dT%H:%M:%SZ', _login_time.gmtime()),
+           'by': re.sub(r'[^\w .@-]', '', str(b.get('by') or ''))[:64],
+           'via': 'bureau', 'app_version': APP_VERSION, 'history': hist}
+    os.makedirs(ACCESS_DATA_DIR, exist_ok=True)
+    tmp = TERMS_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as fh:
+        json.dump(rec, fh, ensure_ascii=False, indent=1)
+    os.replace(tmp, TERMS_FILE)
+    return _terms_status()
 
 
 # ── Signalements : bug, idée ou question, envoyés depuis le bureau ───────────
@@ -7612,6 +7661,11 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         p    = urlparse(self.path)
         path = p.path.rstrip('/')
         qs   = dict(parse_qsl(p.query))
+
+        # Licence d'utilisation : l'accord a-t-il été donné pour la version en cours du texte ?
+        if path == '/terms/status':
+            self._json(200, _terms_status())
+            return
 
         # MDM-LICENSE-V1 : état de la licence / essai
         if path == '/license/status':
@@ -8228,6 +8282,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, {'ok': bool(ok), 'status': st})
             except Exception as e:
                 self._json(500, {'ok': False, 'error': str(e)})
+            return
+        if path == '/terms/accept':
+            try:
+                self._json(200, _terms_accept(self._body()))
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
             return
         if path == '/report':
             try:

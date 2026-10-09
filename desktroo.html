@@ -1209,6 +1209,25 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .about-legal-note { margin:16px 0 0; font-size:11.5px; line-height:1.5; color:var(--text-dim); }
   .about-actions a.web-open { text-decoration:none; }
   .login-copy { margin-top:14px; font-size:10.5px; color:var(--text-dim); }
+  /* Accord à la licence d'utilisation : écran posé devant le bureau tant que l'accord manque */
+  #terms-gate { position:fixed; inset:0; z-index:2147483600; display:none; align-items:center; justify-content:center; padding:16px;
+    background:radial-gradient(60% 60% at 70% 0%, rgba(var(--brand-rgb),0.16), transparent 70%), radial-gradient(50% 50% at 15% 10%, rgba(90,169,255,0.14), transparent 70%), #0a1220; }
+  [data-theme="light"] #terms-gate { background:radial-gradient(60% 60% at 70% 0%, rgba(var(--brand-rgb),0.18), transparent 70%), radial-gradient(50% 50% at 15% 10%, rgba(90,169,255,0.16), transparent 70%), #e6eef9; }
+  .terms-card { display:flex; flex-direction:column; width:min(540px,100%); max-height:calc(100vh - 32px); border:1px solid var(--glass-border); border-radius:20px; background:var(--glass); backdrop-filter:blur(20px); box-shadow:0 20px 60px rgba(0,0,0,0.45); overflow:hidden; }
+  .terms-card .about-hero { padding:22px 0 10px; }
+  .terms-card .about-hero .dk-hero { width:68px; height:68px; }
+  .terms-card .about-hero .dk-hero::before { inset:-34px; }
+  .terms-card .about-name { margin-top:14px; font-size:27px; }
+  .terms-card .about-tag { margin-top:6px; font-size:14.5px; font-weight:600; color:var(--text); }
+  .terms-body { flex:1; min-height:0; overflow-y:auto; scrollbar-width:thin; padding:8px 28px 16px; }
+  .terms-body a { color:var(--accent2); text-underline-offset:2px; }
+  .terms-foot { padding:16px 28px 20px; border-top:1px solid var(--glass-border); }
+  .terms-check { display:flex; align-items:center; gap:11px; font-size:13.5px; line-height:1.4; color:var(--text); cursor:pointer; }
+  .terms-check input { flex-shrink:0; accent-color:var(--accent); }
+  .terms-msg { min-height:18px; margin:8px 0 4px; font-size:12px; line-height:1.4; color:var(--danger); }
+  .terms-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .terms-actions .btn-login { width:auto; margin:0; padding:11px 22px; }
+  .terms-actions .btn-login:disabled { opacity:0.45; cursor:not-allowed; }
   /* Page « Signaler un problème » de la fenêtre À propos */
   .rp-seg { display:flex; gap:6px; padding:4px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.18); }
   [data-theme="light"] .rp-seg { background:rgba(13,27,53,0.05); }
@@ -6338,7 +6357,14 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Contourner la licence ou la période d'essai.": "Bypassing the licence or the trial period.",
 "Réutiliser le nom Desktroo ou son logo.": "Reusing the Desktroo name or its logo.",
 "Les polices Figtree, Schibsted Grotesk et JetBrains Mono sont sous licence SIL Open Font License 1.1.": "The Figtree, Schibsted Grotesk and JetBrains Mono fonts are under the SIL Open Font License 1.1.",
-"Lire la licence complète": "Read the full licence"
+"Lire la licence complète": "Read the full licence",
+"Licence d'utilisation": "Licence agreement",
+"Avant d'utiliser Desktroo, lis et accepte sa licence. Desktroo est un logiciel propriétaire : son code est lisible parce qu'il s'installe sur ton NAS, pas parce qu'il est libre.": "Before using Desktroo, read and accept its licence. Desktroo is proprietary software: its code is readable because it is installed on your NAS, not because it is free software.",
+"J'ai lu et j'accepte la licence d'utilisation de Desktroo.": "I have read and accept the Desktroo licence agreement.",
+"Refuser et se déconnecter": "Decline and sign out",
+"Accepter et continuer": "Accept and continue",
+"Licence acceptée, merci.": "Licence accepted, thank you.",
+"L'accord n'a pas pu être enregistré :": "The acceptance could not be saved:"
 }
 </script>
 <script id="dk-i18n">
@@ -7468,6 +7494,7 @@ function initDesktop(sysInfo) {
   setTimeout(function() { netPendingCheck(true); }, 2500);
   jobsBadgeStart();
   licStart();
+  termsCheck();
   tndLoadConfig();
   tndWatchStart();
   setupContextMenu();
@@ -9124,8 +9151,8 @@ function dkShowPortalExpired() {
 }
 
 async function fileops(method, endpoint, body, _retried) {
-  // En lecture seule, deux envois restent permis : activer une licence, et signaler un problème.
-  if (_licReadonly && method !== 'GET' && ['license/activate', 'report'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
+  // En lecture seule, trois envois restent permis : activer une licence, signaler un problème, accepter la licence d'utilisation.
+  if (_licReadonly && method !== 'GET' && ['license/activate', 'report', 'terms/accept'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
     licBlockToast();
     throw new Error('LICENSE_READONLY');
   }
@@ -13327,17 +13354,80 @@ function aboutLicLabel() {
 // ── Droits et licence : à qui appartient Desktroo, et ce que sa licence permet. Le texte qui fait foi est LICENSE.md. ──
 var DK_COPYRIGHT = '© 2026 Mdm-services.fr';
 var DK_LICENCE_URL = 'https://github.com/Nabief/desktroo-dist/blob/main/LICENSE.md';
-function aboutRightsView() {
+// Ce que la licence permet et ce qu'elle réserve : le résumé affiché partout où on la présente.
+function termsPrinciplesHtml() {
   var li = function(s) { return '<li>' + s + '</li>'; };
+  return '<div class="about-legal-h">' + T('Ce que la licence permet') + '</div><ul class="about-legal-list ok">'
+    + li(T('Installer Desktroo sur tes propres NAS.')) + li(T('L\'utiliser pour tes besoins, pendant l\'essai puis avec un abonnement.')) + li(T('En garder des copies de sauvegarde.')) + '</ul>'
+    + '<div class="about-legal-h">' + T('Ce qui demande un accord écrit') + '</div><ul class="about-legal-list no">'
+    + li(T('Copier, publier ou redistribuer Desktroo, modifié ou non.')) + li(T('Le modifier ou en tirer un autre logiciel, y compris avec une IA.'))
+    + li(T('Retirer ou changer les mentions de droits.')) + li(T('Contourner la licence ou la période d\'essai.')) + li(T('Réutiliser le nom Desktroo ou son logo.')) + '</ul>';
+}
+// ── Accord à la licence d'utilisation ──
+// Les installeurs le recueillent avant d'installer. S'il manque malgré tout (fichiers copiés à la main, texte de la
+// licence passé à une nouvelle version), le bureau reste fermé derrière cet écran jusqu'à ce qu'il soit donné.
+// Seul un « non » explicite du service ferme le bureau : s'il ne sait pas répondre, on ne bloque personne.
+var _terms = null;
+async function termsCheck() {
+  var st = null;
+  try { st = await fileops('GET', 'terms/status'); } catch (e) { return; }
+  if (!st || st.accepted !== false) { termsClose(); return; }
+  _terms = st;
+  termsShow();
+}
+function termsShow() {
+  var g = document.getElementById('terms-gate');
+  if (!g) {
+    g = document.createElement('div');
+    g.id = 'terms-gate';
+    g.setAttribute('role', 'dialog'); g.setAttribute('aria-modal', 'true'); g.setAttribute('aria-label', T('Licence d\'utilisation'));
+    document.body.appendChild(g);
+  }
+  g.innerHTML = '<div class="terms-card">' + aboutHero('', T('Licence d\'utilisation'))
+    + '<div class="terms-body"><p class="about-legal-lead"><b>' + DK_COPYRIGHT + '.</b> ' + T('Tous droits réservés.') + '</p>'
+    + '<p class="about-legal">' + T('Avant d\'utiliser Desktroo, lis et accepte sa licence. Desktroo est un logiciel propriétaire : son code est lisible parce qu\'il s\'installe sur ton NAS, pas parce qu\'il est libre.') + '</p>'
+    + termsPrinciplesHtml()
+    + '<p class="about-legal-note"><a href="' + DK_LICENCE_URL + '" target="_blank" rel="noopener">' + T('Lire la licence complète') + '</a></p></div>'
+    + '<div class="terms-foot"><label class="terms-check"><input type="checkbox" id="terms-ok" onchange="termsToggle()"><span>' + T('J\'ai lu et j\'accepte la licence d\'utilisation de Desktroo.') + '</span></label>'
+    + '<div class="terms-msg" id="terms-msg" role="alert"></div>'
+    + '<div class="terms-actions"><button class="about-quiet" type="button" onclick="logout()">' + T('Refuser et se déconnecter') + '</button>'
+    + '<button class="btn-login" id="terms-go" type="button" disabled onclick="termsAccept()">' + T('Accepter et continuer') + '</button></div></div></div>';
+  g.style.display = 'flex';
+  var desk = document.getElementById('desktop');
+  if (desk) desk.inert = true;   // le bureau, derrière, n'est plus atteignable au clavier
+  var box = document.getElementById('terms-ok');
+  if (box) box.focus();
+}
+function termsClose() {
+  var g = document.getElementById('terms-gate'), desk = document.getElementById('desktop');
+  if (g) g.remove();
+  if (desk) desk.inert = false;
+  _terms = null;
+}
+function termsToggle() {
+  var go = document.getElementById('terms-go'), box = document.getElementById('terms-ok'), msg = document.getElementById('terms-msg');
+  if (go && box) go.disabled = !box.checked;
+  if (msg) msg.textContent = '';
+}
+async function termsAccept() {
+  var go = document.getElementById('terms-go'), box = document.getElementById('terms-ok'), msg = document.getElementById('terms-msg');
+  if (!_terms || !box || !box.checked) return;
+  go.disabled = true;
+  try {
+    await fileops('POST', 'terms/accept', { accept: true, version: _terms.version, by: currentUser });
+    termsClose();
+    toast(T('Licence acceptée, merci.'), 3500);
+  } catch (e) {
+    go.disabled = false;
+    if (msg) msg.textContent = T('L\'accord n\'a pas pu être enregistré :') + ' ' + dkErrText(e);
+  }
+}
+function aboutRightsView() {
   aboutBody().innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
     + '<h4 class="about-title">' + T('Droits et licence') + '</h4>'
     + '<p class="about-legal-lead"><b>' + DK_COPYRIGHT + '.</b> ' + T('Tous droits réservés.') + '</p>'
     + '<p class="about-legal">' + T('Desktroo est un logiciel propriétaire. Son code est lisible parce qu\'il s\'installe sur ton NAS, pas parce qu\'il est libre.') + '</p>'
-    + '<div class="about-legal-h">' + T('Ce que la licence permet') + '</div><ul class="about-legal-list ok">'
-    + li(T('Installer Desktroo sur tes propres NAS.')) + li(T('L\'utiliser pour tes besoins, pendant l\'essai puis avec un abonnement.')) + li(T('En garder des copies de sauvegarde.')) + '</ul>'
-    + '<div class="about-legal-h">' + T('Ce qui demande un accord écrit') + '</div><ul class="about-legal-list no">'
-    + li(T('Copier, publier ou redistribuer Desktroo, modifié ou non.')) + li(T('Le modifier ou en tirer un autre logiciel, y compris avec une IA.'))
-    + li(T('Retirer ou changer les mentions de droits.')) + li(T('Contourner la licence ou la période d\'essai.')) + li(T('Réutiliser le nom Desktroo ou son logo.')) + '</ul>'
+    + termsPrinciplesHtml()
     + '<p class="about-legal-note">' + T('Les polices Figtree, Schibsted Grotesk et JetBrains Mono sont sous licence SIL Open Font License 1.1.') + '</p>'
     + '<div class="about-actions"><a class="web-open" href="' + DK_LICENCE_URL + '" target="_blank" rel="noopener">' + T('Lire la licence complète') + '</a></div></div>';
   aboutBody().scrollTop = 0;
@@ -13462,7 +13552,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.30.0';
+var DK_PAGE_VERSION = '2.31.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

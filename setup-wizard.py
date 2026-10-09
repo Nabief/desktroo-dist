@@ -31,6 +31,10 @@ GITHUB_RAW_DEFAULT = 'https://raw.githubusercontent.com/Nabief/desktroo-dist/mai
 INSTALL_EVENTS = queue.Queue()
 INSTALL_RUNNING = False
 INSTALL_DONE = False
+# Accord à la licence d'utilisation (LICENSE.md). TERMS_VERSION suit le numéro écrit en tête de LICENSE.md,
+# comme dans fileops.py. Tant que l'accord n'a pas été donné sur le premier écran, /install refuse de partir.
+TERMS_VERSION = '1.0'
+LICENCE_ACCEPTED = None
 
 # ── Auto-détection IP ─────────────────────────────────────────
 def get_local_ip():
@@ -400,6 +404,14 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                 except Exception as e:
                     emit(f'✗ Échec récupération {fname} : {e}', 'error')
                     raise RuntimeError(f'Impossible de récupérer {fname} depuis {github_raw}')
+        # L'accord donné sur le premier écran est inscrit là où le bureau le lira (data/licence-acceptee.json).
+        try:
+            os.makedirs(os.path.join(install_dir, 'data'), exist_ok=True)
+            with open(os.path.join(install_dir, 'data', 'licence-acceptee.json'), 'w', encoding='utf-8') as _lf:
+                json.dump(dict(LICENCE_ACCEPTED or {}, history=[]), _lf, ensure_ascii=False, indent=1)
+            emit("✓ Licence d'utilisation acceptée", 'ok')
+        except Exception as _le:
+            emit(f"⚠ Accord à la licence non enregistré ({_le}) : le bureau le redemandera.", 'warn')
         # La licence d'utilisation accompagne les fichiers ; son absence ne bloque pas l'installation.
         try:
             _lic_src = os.path.join(script_dir, 'LICENSE.md'); _lic_dst = os.path.join(install_dir, 'LICENSE.md')
@@ -1077,6 +1089,18 @@ HTML = """<!DOCTYPE html>
   .form-group input:focus { border-color: var(--accent); background: rgba(var(--accent-rgb),.08); }
   .hint { font-size: 11px; color: var(--dim); margin-top: 4px; }
   .hint a { color: var(--accent); text-underline-offset: 2px; }
+  /* Premier écran : la licence d'utilisation */
+  .lic-title { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 10px; }
+  .lic-lead { font-size: 14px; margin: 0 0 6px; }
+  .lic-text { font-size: 13px; line-height: 1.55; color: var(--dim); margin: 0; }
+  .lic-h { font-size: 13px; font-weight: 600; margin: 18px 0 7px; }
+  .lic-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .lic-list li { position: relative; padding: 9px 14px 9px 38px; border-top: 1px solid var(--border); font-size: 13px; line-height: 1.45; }
+  .lic-list li:first-child { border-top: 0; }
+  .lic-list li::before { position: absolute; left: 15px; top: 9px; font-size: 12px; font-weight: 700; }
+  .lic-list.ok li::before { content: '✓'; color: var(--accent); }
+  .lic-list.no li::before { content: '✕'; color: var(--dim); }
+  #lic-error { margin-top: 10px; min-height: 18px; }
 
   /* Configuration écran par écran */
   .cfg-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
@@ -1204,7 +1228,7 @@ HTML = """<!DOCTYPE html>
   </div>
 
   <!-- Indicateur étapes -->
-  <div class="steps">
+  <div class="steps" id="steps" hidden>
     <div class="step active" id="s1"><span class="step-label">Prérequis</span><div class="step-dot" id="d1">1</div></div>
     <div class="step"        id="s2"><span class="step-label">Configuration</span><div class="step-dot" id="d2">2</div></div>
     <div class="step"        id="s3"><span class="step-label">Installation</span><div class="step-dot" id="d3">3</div></div>
@@ -1213,8 +1237,37 @@ HTML = """<!DOCTYPE html>
 
   <div class="body">
 
+    <!-- Avant tout : l'accord à la licence d'utilisation. Rien d'autre n'est proposé tant qu'il n'est pas donné. -->
+    <div id="page0">
+      <h2 class="lic-title">Licence d'utilisation</h2>
+      <p class="lic-lead"><b translate="no">© 2026 Mdm-services.fr.</b> <span>Tous droits réservés.</span></p>
+      <p class="lic-text">Avant d'installer Desktroo, lis et accepte sa licence. Desktroo est un logiciel propriétaire : son code est lisible parce qu'il s'installe sur ton NAS, pas parce qu'il est libre.</p>
+      <div class="lic-h">Ce que la licence permet</div>
+      <ul class="lic-list ok">
+        <li>Installer Desktroo sur tes propres NAS.</li>
+        <li>L'utiliser pour tes besoins, pendant l'essai puis avec un abonnement.</li>
+        <li>En garder des copies de sauvegarde.</li>
+      </ul>
+      <div class="lic-h">Ce qui demande un accord écrit</div>
+      <ul class="lic-list no">
+        <li>Copier, publier ou redistribuer Desktroo, modifié ou non.</li>
+        <li>Le modifier ou en tirer un autre logiciel, y compris avec une IA.</li>
+        <li>Retirer ou changer les mentions de droits.</li>
+        <li>Contourner la licence ou la période d'essai.</li>
+        <li>Réutiliser le nom Desktroo ou son logo.</li>
+      </ul>
+      <div class="hint" style="margin-top:12px;"><a href="https://github.com/Nabief/desktroo-dist/blob/main/LICENSE.md" target="_blank" rel="noopener">Lire la licence complète</a></div>
+      <div class="form-group" style="margin:20px 0 0;">
+        <label class="switch"><input type="checkbox" id="accept_licence" onchange="licToggle()" /><span class="slider"></span><span class="switch-label">J'ai lu et j'accepte la licence d'utilisation de Desktroo.</span></label>
+      </div>
+      <div class="cfg-error" id="lic-error" role="alert"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-accept" disabled onclick="licAccept()">Accepter et continuer →</button>
+      </div>
+    </div>
+
     <!-- Étape 1 : Prérequis -->
-    <div id="page1">
+    <div id="page1" hidden>
       <div id="prereq-list">
         <div style="color:var(--dim);font-size:13px;">Vérification en cours...</div>
       </div>
@@ -1380,10 +1433,6 @@ HTML = """<!DOCTYPE html>
       </section>
       </div><!-- /slides -->
 
-      <div class="form-group" id="licence-row" hidden>
-        <label class="switch"><input type="checkbox" id="accept_licence" /><span class="slider"></span><span class="switch-label">J'accepte la licence d'utilisation de Desktroo</span></label>
-        <div class="hint">Desktroo est un logiciel propriétaire : il s'utilise, il ne se copie pas et ne se redistribue pas. <a href="https://github.com/Nabief/desktroo-dist/blob/main/LICENSE.md" target="_blank" rel="noopener">Lire la licence</a></div>
-      </div>
       <div class="cfg-error" id="cfg-error" role="alert"></div>
       <div class="actions">
         <button class="btn btn-secondary" onclick="cfgBack()">← Retour</button>
@@ -1433,6 +1482,29 @@ HTML = """<!DOCTYPE html>
 <script>
 let currentPage = 1;
 
+// ── Avant tout : l'accord à la licence. Le serveur le retient et refuse d'installer sans lui. ──
+function licToggle() {
+  document.getElementById('btn-accept').disabled = !document.getElementById('accept_licence').checked;
+  document.getElementById('lic-error').textContent = '';
+}
+function licAccept() {
+  if (!document.getElementById('accept_licence').checked) return;
+  var btn = document.getElementById('btn-accept');
+  btn.disabled = true;
+  fetch('/licence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accept: true, version: '1.0' }) })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d || !d.ok) throw new Error('refus');
+      document.getElementById('page0').hidden = true;
+      document.getElementById('steps').hidden = false;
+      document.getElementById('page1').hidden = false;
+    })
+    .catch(function () {
+      btn.disabled = false;
+      document.getElementById('lic-error').textContent = T("L'accord n'a pas pu être enregistré. Recharge la page et réessaie.");
+    });
+}
+
 function goTo(n) {
   document.getElementById('page' + currentPage).hidden = true;
   document.getElementById('s'    + currentPage).classList.remove('active');
@@ -1467,7 +1539,6 @@ function cfgShow(i) {
   var last = i === list.length - 1;
   document.getElementById('cfg-next').hidden = last;
   document.getElementById('btn-install').hidden = !last;
-  document.getElementById('licence-row').hidden = !last;
   cfgError('');
   updateInstallBtn();
 }
@@ -1683,11 +1754,6 @@ function startInstall() {
     alert(T('Teste le SMTP (il doit réussir) avant de lancer, ou laisse le mot de passe SMTP vide pour utiliser le fichier local.'));
     return;
   }
-  if (!document.getElementById('accept_licence').checked) {
-    cfgError(T("Pour installer, accepte la licence d'utilisation de Desktroo."));
-    document.getElementById('accept_licence').focus();
-    return;
-  }
 
   const config = {
     install_dir:  document.getElementById('install_dir').value.trim(),
@@ -1835,10 +1901,25 @@ I18N_EN = r"""{
 "Le test doit réussir avant de pouvoir installer (sinon l'enrôlement 2FA par email serait impossible).": "The test must succeed before you can install (otherwise 2FA enrollment by email would be impossible).",
 "L'assistant configure tout le côté NAS. Il reste ensuite à créer 2 hôtes proxy dans NPM + les redirections DNS vers l'IP de NPM — l'assistant affiche les valeurs exactes à la fin. L'enrôlement TOTP se fait après l'installation.": "The wizard configures everything on the NAS side. You then need to create 2 proxy hosts in NPM and the DNS records pointing to the NPM IP — the wizard shows the exact values at the end. TOTP enrollment happens after installation.",
 "Installer →": "Install →",
-"J'accepte la licence d'utilisation de Desktroo": "I accept the Desktroo licence agreement",
-"Desktroo est un logiciel propriétaire : il s'utilise, il ne se copie pas et ne se redistribue pas.": "Desktroo is proprietary software: it may be used, not copied or redistributed.",
-"Lire la licence": "Read the licence",
-"Pour installer, accepte la licence d'utilisation de Desktroo.": "To install, accept the Desktroo licence agreement.",
+"Licence d'utilisation": "Licence agreement",
+"Tous droits réservés.": "All rights reserved.",
+"Avant d'installer Desktroo, lis et accepte sa licence. Desktroo est un logiciel propriétaire : son code est lisible parce qu'il s'installe sur ton NAS, pas parce qu'il est libre.": "Before installing Desktroo, read and accept its licence. Desktroo is proprietary software: its code is readable because it is installed on your NAS, not because it is free software.",
+"Ce que la licence permet": "What the licence allows",
+"Installer Desktroo sur tes propres NAS.": "Install Desktroo on your own NAS devices.",
+"L'utiliser pour tes besoins, pendant l'essai puis avec un abonnement.": "Use it for your own needs, during the trial and then with a subscription.",
+"En garder des copies de sauvegarde.": "Keep backup copies of it.",
+"Ce qui demande un accord écrit": "What requires written consent",
+"Copier, publier ou redistribuer Desktroo, modifié ou non.": "Copying, publishing or redistributing Desktroo, modified or not.",
+"Le modifier ou en tirer un autre logiciel, y compris avec une IA.": "Modifying it or deriving other software from it, including with an AI.",
+"Retirer ou changer les mentions de droits.": "Removing or changing the copyright notices.",
+"Contourner la licence ou la période d'essai.": "Bypassing the licence or the trial period.",
+"Réutiliser le nom Desktroo ou son logo.": "Reusing the Desktroo name or its logo.",
+"Lire la licence complète": "Read the full licence",
+"J'ai lu et j'accepte la licence d'utilisation de Desktroo.": "I have read and accept the Desktroo licence agreement.",
+"Accepter et continuer →": "Accept and continue →",
+"L'accord n'a pas pu être enregistré. Recharge la page et réessaie.": "The acceptance could not be saved. Reload the page and try again.",
+"✓ Licence d'utilisation acceptée": "✓ Licence agreement accepted",
+"⚠ Accord à la licence non enregistré ({0}) : le bureau le redemandera.": "⚠ Licence acceptance not saved ({0}): the desktop will ask again.",
 "Installation réussie !": "Installation successful!",
 "Desktroo est prêt.": "Desktroo is ready.",
 "Ouvrir le bureau →": "Open the desktop →",
@@ -2318,9 +2399,32 @@ class WizardHandler(http.server.BaseHTTPRequestHandler):
             self._json({'path': path, 'entries': [], 'error': str(e)})
 
     def do_POST(self):
-        if self.path == '/install':
+        global LICENCE_ACCEPTED
+        if self.path == '/licence':
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                b = json.loads(self.rfile.read(length) or b'{}')
+            except Exception:
+                b = {}
+            if b.get('accept') is True and str(b.get('version') or '') == TERMS_VERSION:
+                LICENCE_ACCEPTED = {'version': TERMS_VERSION,
+                                    'accepted_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                                    'by': '', 'via': 'assistant'}
+                self._json({'ok': True, 'version': TERMS_VERSION})
+            else:
+                self._json({'ok': False})
+        elif self.path == '/install':
             length = int(self.headers.get('Content-Length', 0))
             body   = self.rfile.read(length)
+            if not LICENCE_ACCEPTED:
+                # Pas d'accord, pas d'installation : même une requête envoyée à la main est refusée.
+                data = json.dumps({'ok': False, 'error': 'licence'}).encode()
+                self.send_response(403)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(data))
+                self.end_headers()
+                self.wfile.write(data)
+                return
             config = json.loads(body)
             if not INSTALL_RUNNING:
                 t = threading.Thread(target=run_install, args=(config,), daemon=True)
