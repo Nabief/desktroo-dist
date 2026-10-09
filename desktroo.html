@@ -633,6 +633,17 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .snap-warn { padding:12px 14px; border-radius:12px; border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.09); font-size:12.5px; line-height:1.6; }
   .web-body .snap-danger { background:#e05252 !important; border-color:transparent !important; color:#ffffff !important; font-weight:600; }
   .web-body .snap-danger:hover { background:#ea6a6a !important; }
+  #win-bootenv { min-width:820px; min-height:500px; }
+  /* Environnements de démarrage */
+  .web-table.be-list { --wt-cols:minmax(0,1.3fr) minmax(0,1.2fr) 166px 84px 74px; }
+  .web-table.be-list .web-tr:not(.head) { min-height:44px; }
+  .web-dot.next { background:var(--info); box-shadow:0 0 0 3px rgba(var(--info-rgb),0.18); }
+  .be-pending {
+    display:flex; align-items:center; gap:10px; margin:2px 0 16px; padding:10px 14px; border-radius:12px;
+    border:1px solid rgba(var(--info-rgb),0.3); background:rgba(var(--info-rgb),0.09); font-size:12.5px; line-height:1.5;
+  }
+  .be-pending svg { width:16px; height:16px; flex-shrink:0; color:var(--info); }
+  .web-row-name.dim { color:var(--text-dim); }
   .window.maximized {
     top:0 !important; left:0 !important;
     width:100vw !important; height:calc(100vh - var(--taskbar-h)) !important;
@@ -3289,7 +3300,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "🌐 Adresse mise à jour": "🌐 Address updated",
 "Sites Web": "Websites",
 "Statique": "Static",
-"⧉ Cloner": "⧉ Clone",
 "🗑 Suppr": "🗑 Delete",
 "Nouveau site web": "New website",
 "Site statique (HTML/CSS/JS)": "Static site (HTML/CSS/JS)",
@@ -3812,24 +3822,15 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Masquer les erreurs (stderr)": "Hide errors (stderr)",
 "La commande est obligatoire": "The command is required",
 "✅ Tâche enregistrée": "✅ Task saved",
-"💡 \u003cstrong>Astuce\u003c/strong> : clonez l'environnement actuel \u003cem>avant\u003c/em> chaque mise à jour TrueNAS. En cas de souci de démarrage, réactivez l'ancien en un clic — sans passer par le menu GRUB.": "💡 \u003cstrong>Tip\u003c/strong>: clone the current environment \u003cem>before\u003c/em> each TrueNAS update. If a boot problem occurs, reactivate the old one in one click — without going through the GRUB menu.",
-"＋ Cloner l'environnement actuel": "＋ Clone the current environment",
 "Aucun environnement de démarrage": "No boot environments",
 "Statut": "Status",
 "Créé": "Created",
 "Conservé": "Kept",
-"● En cours": "● Running",
-"↻ Au prochain boot": "↻ At next boot",
-"Protéger de la suppression automatique par le programme de mise à jour": "Protect from automatic deletion by the updater",
 "Activer au prochain démarrage": "Activate at next boot",
-"✔ Activer": "✔ Activate",
-"Cloner cet environnement": "Clone this environment",
-"Impossible de supprimer l'environnement actif ou activé au prochain boot": "Cannot delete the environment that is active or activated for the next boot",
 "au prochain démarrage ?": "at next boot?",
 "Le système continue sur l'environnement actuel jusqu'au redémarrage.": "The system keeps running on the current environment until the restart.",
 "✅ Activé au prochain démarrage": "✅ Activated at next boot",
 "Aucun environnement source": "No source environment",
-"Nom du nouvel environnement (clone de": "Name of the new environment (clone of",
 "Nom invalide (lettres, chiffres, . _ -)": "Invalid name (letters, digits, . _ -)",
 "Clonage en cours…": "Cloning…",
 "✅ Environnement cloné :": "✅ Environment cloned:",
@@ -5054,7 +5055,32 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Une tâche périodique prend des snapshots d'un dataset à intervalle régulier et efface d'elle-même les plus anciens.": "A periodic task takes snapshots of a dataset at regular intervals and removes the oldest ones by itself.",
 "Conservation": "Retention",
 "Prend aussi les datasets enfants.": "Also covers child datasets.",
-"Prend le snapshot même si rien n'a changé depuis le précédent.": "Takes the snapshot even if nothing has changed since the previous one."
+"Prend le snapshot même si rien n'a changé depuis le précédent.": "Takes the snapshot even if nothing has changed since the previous one.",
+"En cours, remplacé au prochain démarrage": "Running, replaced at next boot",
+"Au prochain démarrage": "At next boot",
+"Tous les environnements": "All environments",
+"Environnements": "Environments",
+"Les environnements de démarrage ne répondent pas": "Boot environments are not responding",
+"Au prochain redémarrage, le NAS démarrera sur \u003cstrong>{0}\u003c/strong>": "At the next restart, the NAS will boot on \u003cstrong>{0}\u003c/strong>",
+" au lieu de \u003cstrong>{0}\u003c/strong>": " instead of \u003cstrong>{0}\u003c/strong>",
+"{0} environnements": "{0} environments",
+"1 environnement": "1 environment",
+"En cours : {0}.": "Running: {0}.",
+"Cloner l'actuel": "Clone current",
+"Un environnement de démarrage est une copie complète du système TrueNAS sur laquelle le NAS peut redémarrer.": "A boot environment is a complete copy of the TrueNAS system that the NAS can restart on.",
+"Environnement": "Environment",
+"Clonez l'environnement actuel avant chaque mise à jour de TrueNAS : en cas de souci au démarrage, il suffit de réactiver l'ancien ici, sans passer par le menu GRUB.": "Clone the current environment before each TrueNAS update: if the NAS has trouble booting, just reactivate the old one here, without going through the GRUB menu.",
+"Conserver": "Keep",
+"Le protège de la suppression automatique par le programme de mise à jour de TrueNAS.": "Protects it from automatic removal by the TrueNAS updater.",
+"En faire une copie sous un autre nom": "Make a copy of it under another name",
+"Impossible : le NAS tourne sur cet environnement": "Not possible: the NAS is running on this environment",
+"Impossible : c'est l'environnement prévu au prochain démarrage": "Not possible: this is the environment set for the next boot",
+"L'environnement est détruit, on ne pourra plus y revenir": "The environment is destroyed; there is no going back to it",
+"Activer cet environnement ne change rien tout de suite : le NAS y basculera à son prochain redémarrage.": "Activating this environment changes nothing right away: the NAS will switch to it at its next restart.",
+"Cloner un environnement": "Clone an environment",
+"Nom du nouvel environnement": "Name of the new environment",
+"Lettres, chiffres, point, tiret et tiret bas. La copie ne devient pas active : le NAS reste sur l'environnement en cours.": "Letters, digits, dot, hyphen and underscore. The copy does not become active: the NAS stays on the running environment.",
+"Un environnement porte déjà ce nom": "An environment already has this name"
 }
 </script>
 <script id="dk-i18n">
@@ -13396,29 +13422,36 @@ async function cronSave() {
 
 // ============================================================
 // BOOT ENVIRONMENTS — boot.environment.* (fallback bootenv.*)
+// Gabarit des gestionnaires : les environnements dans la colonne, le détail à droite.
 // ============================================================
 var _beList = [];
 var _beNS = null; // 'new' | 'legacy'
+var _beNav = 'all';      // all | one | clone
+var _beSel = null;       // id de l'environnement affiché
+var _beLoaded = false;
+WEB_ICONS.refresh = '<path d="M20 5v5h-5"/><path d="M19.4 14a8 8 0 1 1-1.9-8.3L20 10"/>';
 
 function beEsc(s) {
   return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function beFmtDate(v) {
-  if (v == null || v === '') return '—';
+function beDate(v) {
+  if (v == null || v === '') return null;
   var d;
   if (typeof v === 'number') d = new Date(v < 1e12 ? v * 1000 : v);
   else if (typeof v === 'object' && v.$date) d = new Date(v.$date);
   else d = new Date(v);
-  if (isNaN(d.getTime())) return String(v);
-  return d.toLocaleString(DK_LOCALE);
+  return isNaN(d.getTime()) ? null : d;
+}
+function beFmtDate(v) {
+  if (v == null || v === '') return '—';
+  var d = beDate(v);
+  return d ? d.toLocaleDateString(DK_LOCALE, { day:'numeric', month:'short', year:'numeric' }) + ', ' + d.toLocaleTimeString(DK_LOCALE, { hour:'2-digit', minute:'2-digit' }) : String(v);
 }
 function beFmtSize(b) {
-  if (b.used && typeof b.used === 'string') return b.used;
   var n = b.used_bytes;
-  if (typeof n !== 'number' || !isFinite(n)) return '—';
-  var u = DK_LANG === 'fr' ? ['o','Ko','Mo','Go','To'] : ['B','KB','MB','GB','TB'], i = 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return (Math.round(n * 10) / 10) + ' ' + u[i];
+  if (typeof n === 'number' && isFinite(n)) return mntFmtSize(n);
+  if (b.used && typeof b.used === 'string') return b.used;
+  return '—';
 }
 function beNormalizeLegacy(b) {
   var act = String(b.active || '');
@@ -13468,57 +13501,137 @@ function beKeep(id, value) {
   return wsCall('boot.environment.keep', [{ id: id, value: !!value }], 60000);
 }
 
-async function loadBootenv() {
-  var el = document.getElementById('bootenv-content');
+function beGet(id) { return _beList.find(function(b) { return b.id === id; }) || null; }
+function beCurrent() { return _beList.find(function(b) { return b.active; }) || null; }
+function beNext() { return _beList.find(function(b) { return b.activated; }) || null; }
+// État d'un environnement : en cours, prévu au prochain démarrage, les deux, ou inactif.
+function beState(b) {
+  if (b.active && b.activated) return { key: 'run', label: T('En cours'), color: 'var(--success)', dot: '' };
+  if (b.active) return { key: 'run', label: T('En cours, remplacé au prochain démarrage'), color: 'var(--success)', dot: '' };
+  if (b.activated) return { key: 'next', label: T('Au prochain démarrage'), color: 'var(--info)', dot: ' next' };
+  return { key: 'off', label: T('Inactif'), color: 'var(--text-dim)', dot: ' off' };
+}
+function beBody() { return document.getElementById('bootenv-content'); }
+function beHead(title, o) {
+  o = o || {};
+  document.getElementById('be-head').innerHTML = '<div class="web-head-text">'
+    + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
+    + '<h4 class="web-title">' + webEsc(title) + '</h4>'
+    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
+    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+  var body = beBody();
+  body.classList.toggle('narrow', !!o.narrow);
+  if (!o.keepScroll) body.scrollTop = 0;
+  beSideRender();
+}
+function beSideRender() {
+  var el = document.getElementById('be-side');
   if (!el) return;
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
+  var h = '<button class="web-nav' + (_beNav === 'all' ? ' active' : '') + '" onclick="beGo(\'all\')">' + webIcon('list') + '<span class="web-nav-name">' + T('Tous les environnements') + '</span></button>'
+    + '<button class="web-nav add' + (_beNav === 'clone' ? ' active' : '') + '" onclick="beCloneCurrent()">' + webIcon('plus') + '<span class="web-nav-name">' + T('Cloner l\'actuel') + '</span></button>'
+    + '<div class="web-side-sep"></div><div class="web-side-title"><span>' + T('Environnements') + '</span><span class="web-count">' + (_beList.length || '') + '</span></div>';
+  _beList.forEach(function(b, i) {
+    var st = beState(b), d = beDate(b.created);
+    var meta = st.key === 'off' ? (d ? d.toLocaleDateString(DK_LOCALE, { day:'numeric', month:'short', year:'numeric' }) : '') : (b.active && !b.activated ? T('En cours') : st.label);
+    h += '<button class="web-nav' + (_beNav !== 'all' && _beSel === b.id ? ' active' : '') + '" data-be="' + i + '" title="' + webEsc(b.id) + '">'
+      + '<span class="web-dot' + st.dot + '" title="' + webEsc(st.label) + '"></span>'
+      + '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(b.id) + '</span>' + (meta ? '<span class="web-nav-meta">' + webEsc(meta) + '</span>' : '') + '</span></button>';
+  });
+  if (!_beList.length) h += '<div class="web-side-empty">' + T('Aucun environnement de démarrage') + '</div>';
+  h += '<div class="web-side-sep"></div><button class="web-nav" onclick="openTrueNASPage(\'/ui/system/boot\')">' + webIcon('out') + '<span class="web-nav-name">' + T('Ouvrir dans TrueNAS') + '</span></button>';
+  var sc = el.scrollTop;
+  el.innerHTML = h;
+  el.scrollTop = sc;
+  el.querySelectorAll('[data-be]').forEach(function(b) { b.onclick = function() { beGo('one', _beList[Number(b.dataset.be)].id); }; });
+}
+function beGo(nav, id) {
+  _beNav = nav;
+  if (id !== undefined) _beSel = id;
+  if (nav === 'one' && beGet(_beSel)) beOneView();
+  else { _beNav = 'all'; beAllView(); }
+}
+async function loadBootenv() {
+  var el = beBody();
+  if (!el) return;
+  if (!_beLoaded) { beHead(T('Environnements de démarrage')); el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>'; }
   try {
     _beList = await beQuery();
-    beRenderList();
+    // Les plus récents d'abord
+    _beList.sort(function(a, b) { var x = beDate(a.created), y = beDate(b.created); return (y ? y.getTime() : 0) - (x ? x.getTime() : 0) || String(a.id).localeCompare(String(b.id), undefined, { numeric: true }); });
+    _beLoaded = true;
+    beGo(_beNav === 'clone' ? 'one' : _beNav);
   } catch (e) {
-    el.innerHTML = errHtml(T('Erreur : ') + e.message);
+    _beLoaded = false; _beList = [];
+    beHead(T('Environnements de démarrage'));
+    el.innerHTML = dkWaitHtml('error', T('Les environnements de démarrage ne répondent pas'), webEsc((e && e.message) || String(e)),
+      '<button class="web-open" onclick="loadBootenv()">' + T('Réessayer') + '</button>');
   }
 }
+// Rappel affiché quand le prochain démarrage se fera sur un autre environnement que celui en cours.
+function bePendingHtml() {
+  var cur = beCurrent(), next = beNext();
+  if (!next || (cur && cur.id === next.id)) return '';
+  return '<div class="be-pending">' + webIcon('refresh') + '<span>' + Tf('Au prochain redémarrage, le NAS démarrera sur <strong>{0}</strong>', beEsc(next.id))
+    + (cur ? Tf(' au lieu de <strong>{0}</strong>', beEsc(cur.id)) : '') + '.</span></div>';
+}
 
-function beRenderList() {
-  var el = document.getElementById('bootenv-content');
-  if (!el) return;
-  var h = '<div style="background:rgba(var(--info-rgb),0.10);border:1px solid rgba(var(--info-rgb),0.25);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--text);">'
-    + T('💡 <strong>Astuce</strong> : clonez l\'environnement actuel <em>avant</em> chaque mise à jour TrueNAS. En cas de souci de démarrage, réactivez l\'ancien en un clic — sans passer par le menu GRUB.</div>');
-  h += '<div style="margin-bottom:12px;display:flex;gap:8px;">'
-    + T('<button class="fs-btn" onclick="beCloneCurrent()" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);">＋ Cloner l\'environnement actuel</button>')
-    + T('<button class="fs-btn" onclick="loadBootenv()">↻ Actualiser</button></div>');
+// ── Tous les environnements ──
+function beAllView() {
+  var total = 0, known = true, cur = beCurrent();
+  _beList.forEach(function(b) { if (typeof b.used_bytes === 'number' && isFinite(b.used_bytes)) total += b.used_bytes; else known = false; });
+  var sub = _beList.length ? webEsc((_beList.length > 1 ? Tf('{0} environnements', _beList.length) : T('1 environnement')) + (known && total ? ', ' + mntFmtSize(total) : '') + '.')
+    + (cur ? ' ' + webEsc(Tf('En cours : {0}.', cur.id)) : '') : '';
+  beHead(T('Environnements de démarrage'), { sub: sub, actions: '<button class="fs-btn" onclick="loadBootenv()">' + T('Actualiser') + '</button>'
+    + (_beList.length ? '<button class="web-open" onclick="beCloneCurrent()">' + T('Cloner l\'actuel') + '</button>' : '') });
+  var el = beBody();
   if (!_beList.length) {
-    h += T('<div class="empty-state" style="height:160px;"><div class="es-icon">🛡️</div><span>Aucun environnement de démarrage</span></div>');
-    el.innerHTML = h; return;
+    el.innerHTML = '<div class="fs-empty">' + webIcon('layers') + '<div class="fs-empty-title">' + T('Aucun environnement de démarrage') + '</div><div>'
+      + T('Un environnement de démarrage est une copie complète du système TrueNAS sur laquelle le NAS peut redémarrer.') + '</div></div>';
+    return;
   }
-  h += T('<table class="container-table"><thead><tr><th>Nom</th><th>Statut</th><th>Créé</th><th>Taille</th><th style="text-align:center;">Conservé</th><th>Actions</th></tr></thead><tbody>');
+  var h = bePendingHtml() + '<div class="web-table be-list"><div class="web-tr head"><span>' + T('Environnement') + '</span><span>' + T('État') + '</span><span>' + T('Créé') + '</span><span class="num">' + T('Taille') + '</span><span>' + T('Conservé') + '</span></div>';
   _beList.forEach(function(b, i) {
-    var badges = '';
-    if (b.active) badges += T('<span style="display:inline-block;background:rgba(62,207,142,0.18);color:var(--success);border-radius:10px;padding:1px 8px;font-size:10px;margin-right:4px;">● En cours</span>');
-    if (b.activated) badges += T('<span style="display:inline-block;background:rgba(var(--info-rgb),0.18);color:var(--info);border-radius:10px;padding:1px 8px;font-size:10px;">↻ Au prochain boot</span>');
-    if (!badges) badges = '<span style="color:var(--text-dim);font-size:11px;">—</span>';
-    var locked = b.active || b.activated;
-    h += '<tr>'
-      + '<td><strong>' + beEsc(b.id) + '</strong></td>'
-      + '<td>' + badges + '</td>'
-      + '<td style="font-size:11px;">' + beEsc(beFmtDate(b.created)) + '</td>'
-      + '<td style="font-size:11px;">' + beEsc(beFmtSize(b)) + '</td>'
-      + '<td style="text-align:center;"><input type="checkbox" ' + (b.keep ? 'checked' : '') + ' onchange="beToggleKeep(' + i + T(',this.checked)" style="width:14px;height:14px;cursor:pointer;" title="Protéger de la suppression automatique par le programme de mise à jour"></td>')
-      + '<td style="white-space:nowrap;display:flex;gap:4px;">';
-    if (b.can_activate !== false && !b.activated) {
-      h += '<button class="fs-btn" style="font-size:11px;padding:3px 9px;" onclick="beDoActivate(' + i + T(')" title="Activer au prochain démarrage">✔ Activer</button>');
-    }
-    h += '<button class="fs-btn" style="font-size:11px;padding:3px 9px;" onclick="beDoClone(' + i + T(')" title="Cloner cet environnement">⧉ Cloner</button>');
-    if (locked) {
-      h += T('<button class="fs-btn" style="font-size:11px;padding:3px 9px;opacity:0.4;cursor:not-allowed;" title="Impossible de supprimer l\'environnement actif ou activé au prochain boot" disabled>🗑</button>');
-    } else {
-      h += '<button class="fs-btn" style="font-size:11px;padding:3px 9px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#f87171;" onclick="beDoDelete(' + i + T(')" title="Supprimer">🗑</button>');
-    }
-    h += '</td></tr>';
+    var st = beState(b);
+    h += '<button class="web-tr" data-be="' + i + '">'
+      + '<span class="cron-cell"><span class="web-dot' + st.dot + '"></span><strong title="' + webEsc(b.id) + '" style="min-width:0;overflow:hidden;text-overflow:ellipsis;">' + webEsc(b.id) + '</strong></span>'
+      + '<span' + (st.key === 'off' ? ' class="dim"' : ' style="color:' + st.color + ';"') + ' title="' + webEsc(st.label) + '">' + webEsc(b.active ? T('En cours') : st.label) + '</span>'
+      + '<span>' + webEsc(beFmtDate(b.created)) + '</span>'
+      + '<span class="num">' + webEsc(beFmtSize(b)) + '</span>'
+      + '<span' + (b.keep ? '' : ' class="dim"') + '>' + (b.keep ? T('Oui') : '—') + '</span></button>';
   });
-  h += '</tbody></table>';
+  h += '</div><p class="web-note">' + T('Clonez l\'environnement actuel avant chaque mise à jour de TrueNAS : en cas de souci au démarrage, il suffit de réactiver l\'ancien ici, sans passer par le menu GRUB.') + '</p>';
   el.innerHTML = h;
+  el.querySelectorAll('[data-be]').forEach(function(b) { b.onclick = function() { beGo('one', _beList[Number(b.dataset.be)].id); }; });
+}
+
+// ── Un environnement ──
+function beOneView(soft) {
+  var b = beGet(_beSel);
+  if (!b) { beGo('all'); return; }
+  var i = _beList.indexOf(b), st = beState(b), locked = b.active || b.activated;
+  var canAct = b.can_activate !== false && !b.activated;
+  beHead(b.id, { keepScroll: !!soft, sub: '<span style="color:' + st.color + ';">' + webEsc(st.label) + '</span>',
+    actions: canAct ? '<button class="web-open" onclick="beDoActivate(' + i + ')">' + T('Activer au prochain démarrage') + '</button>' : '' });
+  var row = function(call, name, desc, cls) {
+    return '<button class="web-row line' + (cls ? ' ' + cls : '') + '" onclick="' + call + '"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+  };
+  var h = bePendingHtml() + netFacts([
+    [T('État'), '<span style="color:' + st.color + ';font-weight:600;">' + webEsc(st.label) + '</span>'],
+    [T('Créé'), webEsc(beFmtDate(b.created))],
+    [T('Taille'), webEsc(beFmtSize(b))],
+    ['Dataset', b.dataset ? '<span class="mono">' + webEsc(b.dataset) + '</span>' : '']
+  ]);
+  h += '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + '<label class="web-row" style="cursor:pointer;"><span class="web-row-text"><span class="web-row-name">' + T('Conserver') + '</span><span class="web-row-desc">'
+    + T('Le protège de la suppression automatique par le programme de mise à jour de TrueNAS.') + '</span></span><input type="checkbox" ' + (b.keep ? 'checked' : '') + ' onchange="beToggleKeep(' + i + ',this.checked)"></label>'
+    + row('beDoClone(' + i + ')', T('Cloner'), T('En faire une copie sous un autre nom'))
+    + (locked
+      ? '<div class="web-row line"><span class="web-row-text"><span class="web-row-name dim">' + T('Supprimer') + '</span><span class="web-row-desc">'
+        + (b.active ? T('Impossible : le NAS tourne sur cet environnement') : T('Impossible : c\'est l\'environnement prévu au prochain démarrage')) + '</span></span></div>'
+      : row('beDoDelete(' + i + ')', T('Supprimer'), T('L\'environnement est détruit, on ne pourra plus y revenir'), 'danger'))
+    + '</div>';
+  if (canAct && !b.active) h += '<p class="web-note">' + T('Activer cet environnement ne change rien tout de suite : le NAS y basculera à son prochain redémarrage.') + '</p>';
+  beBody().innerHTML = h;
 }
 
 function _beAt(i) { return _beList[i] || {}; }
@@ -13526,7 +13639,7 @@ function _beAt(i) { return _beList[i] || {}; }
 async function beDoActivate(i) {
   var b = _beAt(i);
   if (!b.id) return;
-  if (!await showConfirm(T('Activer <strong>') + beEsc(b.id) + T('</strong> au prochain démarrage ?<br><span style="font-size:11px;color:var(--text-dim);">Le système continue sur l\'environnement actuel jusqu\'au redémarrage.</span>'), { icon:'✔', ok:T('Activer') })) return;
+  if (!await showConfirm(T('Activer <strong>') + beEsc(b.id) + T('</strong> au prochain démarrage ?<br><span style="font-size:11px;color:var(--text-dim);">Le système continue sur l\'environnement actuel jusqu\'au redémarrage.</span>'), { ok:T('Activer') })) return;
   try { await beActivate(b.id); toast(T('✅ Activé au prochain démarrage')); loadBootenv(); }
   catch(e) { toast('Err: ' + e.message); }
 }
@@ -13535,36 +13648,55 @@ function beSuggestName() {
   function p(n) { return n < 10 ? '0' + n : '' + n; }
   return 'be-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
 }
-async function beClonePrompt(source) {
+// Formulaire de clonage : la source, puis le nom de la copie.
+function beClonePrompt(source) {
   if (!source) { toast(T('Aucun environnement source')); return; }
-  var target = await showPrompt(T('Nom du nouvel environnement (clone de ') + source + ') :', beSuggestName());
-  if (target === null || target === undefined) return;
-  target = String(target).trim();
+  var from = _beNav === 'one' && _beSel === source;
+  var back = from ? [source, 'beGo(\'one\')'] : [T('Tous les environnements'), 'beGo(\'all\')'];
+  _beNav = 'clone'; _beSel = source;
+  beHead(T('Cloner un environnement'), { back: back, narrow: true });
+  beBody().innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:12px;">'
+    + '<input type="hidden" id="be-src" value="' + beEsc(source) + '">'
+    + netFacts([[T('Source'), '<span class="mono">' + webEsc(source) + '</span>']])
+    + formRow(T('Nom du nouvel environnement'), '<input id="be-target" style="' + iStyle() + ';font-family:var(--font-mono);" value="' + beEsc(beSuggestName()) + '" autocomplete="off" spellcheck="false" onkeydown="if(event.key===\'Enter\')beCloneSave()">')
+    + '<p class="web-note" style="margin:-4px 0 0;">' + T('Lettres, chiffres, point, tiret et tiret bas. La copie ne devient pas active : le NAS reste sur l\'environnement en cours.') + '</p>'
+    + '<div class="web-foot"><button class="fs-btn" onclick="' + back[1] + '">' + T('Annuler') + '</button>'
+    + '<button class="fs-btn web-primary" id="be-clone-btn" onclick="beCloneSave()">' + T('Cloner') + '</button></div></div>';
+  var inp = document.getElementById('be-target');
+  if (inp) { try { inp.focus(); inp.select(); } catch (_) {} }
+}
+async function beCloneSave() {
+  var source = document.getElementById('be-src').value;
+  var target = String(document.getElementById('be-target').value || '').trim();
   if (!target) { toast(T('Nom requis')); return; }
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(target)) { toast(T('Nom invalide (lettres, chiffres, . _ -)')); return; }
+  if (beGet(target)) { toast(T('Un environnement porte déjà ce nom')); return; }
+  var btn = document.getElementById('be-clone-btn');
+  if (btn) btn.disabled = true;
   toast(T('Clonage en cours…'));
-  try { await beClone(source, target); toast(T('✅ Environnement cloné : ') + target); loadBootenv(); }
-  catch(e) { toast('Err: ' + e.message); }
+  try { await beClone(source, target); toast(T('✅ Environnement cloné : ') + target); _beNav = 'one'; _beSel = target; loadBootenv(); }
+  catch(e) { toast('Err: ' + e.message); if (btn) btn.disabled = false; }
 }
-async function beDoClone(i) {
+function beDoClone(i) {
   var b = _beAt(i);
-  if (b.id) await beClonePrompt(b.id);
+  if (b.id) beClonePrompt(b.id);
 }
-async function beCloneCurrent() {
-  var cur = _beList.find(function(x){ return x.active; });
-  await beClonePrompt(cur ? cur.id : (_beList[0] && _beList[0].id));
+function beCloneCurrent() {
+  var cur = beCurrent();
+  beClonePrompt(cur ? cur.id : (_beList[0] && _beList[0].id));
 }
 async function beDoDelete(i) {
   var b = _beAt(i);
   if (!b.id) return;
-  if (!await showConfirm(T('Supprimer définitivement l\'environnement <strong>') + beEsc(b.id) + '</strong> ?', { danger:true, ok:T('Supprimer'), icon:'🗑' })) return;
-  try { await beDestroy(b.id); toast(T('Environnement supprimé')); loadBootenv(); }
+  if (!await showConfirm(T('Supprimer définitivement l\'environnement <strong>') + beEsc(b.id) + '</strong> ?', { danger:true, ok:T('Supprimer') })) return;
+  try { await beDestroy(b.id); toast(T('Environnement supprimé')); _beNav = 'all'; _beSel = null; loadBootenv(); }
   catch(e) { toast('Err: ' + e.message); }
 }
 async function beToggleKeep(i, value) {
   var b = _beAt(i);
   if (!b.id) return;
-  try { await beKeep(b.id, value); toast(value ? T('🔒 Conservation activée') : T('Conservation désactivée')); b.keep = value; }
+  try { await beKeep(b.id, value); toast(value ? T('🔒 Conservation activée') : T('Conservation désactivée')); b.keep = !!value; }
   catch(e) { toast('Err: ' + e.message); loadBootenv(); }
 }
 
@@ -18826,7 +18958,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   <div class="resize-handle" data-win="cron"></div>
 </div>
 
-<div class="window panel-win" id="win-bootenv" style="top:65px;left:200px;width:820px;height:540px;">
+<div class="window" id="win-bootenv" style="top:65px;left:200px;width:1020px;height:640px;">
   <div class="window-titlebar" data-win="bootenv">
     <span class="window-icon">🛡️</span>
     <span class="window-title">Environnements de démarrage</span>
@@ -18835,8 +18967,17 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn max" onclick="toggleMaxWin('bootenv')"></button>
       <button class="win-btn cls" onclick="closeWin('bootenv')"></button>
     </div></div>
-  <div class="window-body">
-    <div id="bootenv-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="be-side" aria-label="Environnements de démarrage"></nav>
+      <section class="web-main">
+        <header class="web-head" id="be-head"></header>
+        <div class="web-body" id="bootenv-content">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>
+        </div>
+      </section>
+    </div>
   </div>
   <div class="resize-handle" data-win="bootenv"></div>
 </div>
