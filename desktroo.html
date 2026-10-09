@@ -389,6 +389,36 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .dk-brand .dk-ring { fill:none; stroke:currentColor; stroke-width:6; }
   .dk-brand .dk-dot { fill:var(--accent); }
   .dk-oo { color:var(--accent); }
+  /* ===== Carte de marque (À propos, mise à jour) : texte à gauche, logo à droite.
+     Pendant une mise à jour, la panse du « d » sert d'indicateur : un arc d'accent en fait le tour. ===== */
+  .dk-card { position:relative; display:flex; align-items:center; gap:22px; padding:20px 22px; overflow:hidden; }
+  .dk-card-text { flex:1; min-width:0; display:flex; flex-direction:column; gap:12px; }
+  .dk-card-name { font-family:var(--font-display); font-size:23px; font-weight:800; letter-spacing:-0.02em; line-height:1.1; color:var(--text); }
+  .dk-card-sub { margin-top:-8px; font-size:12.5px; color:var(--text-dim); }
+  .dk-hero { position:relative; width:112px; height:112px; flex-shrink:0; }
+  .dk-hero::before {
+    content:''; position:absolute; inset:-36px; border-radius:50%; pointer-events:none;
+    background:radial-gradient(closest-side, rgba(var(--accent-rgb),0.26), transparent 72%);
+  }
+  .dk-hero svg { position:relative; display:block; width:100%; height:100%; filter:drop-shadow(0 12px 24px rgba(0,0,0,0.42)); }
+  .dk-hero .dk-h-arc { opacity:0; transform-origin:26px 37px; transition:opacity .3s; }
+  .dk-hero .dk-h-dot { transform-box:fill-box; transform-origin:center; transition:fill .3s; }
+  .dk-hero.is-busy .dk-h-arc { opacity:1; animation:dk-orbit 1.15s linear infinite; }
+  .dk-hero.is-busy .dk-h-dot { animation:dk-beat 1.15s ease-in-out infinite; }
+  .dk-hero.is-error .dk-h-dot { fill:#f87171; }
+  @keyframes dk-orbit { to { transform:rotate(360deg); } }
+  @keyframes dk-beat { 50% { transform:scale(0.7); } }
+  @media (prefers-reduced-motion: reduce) {
+    .dk-hero.is-busy .dk-h-arc, .dk-hero.is-busy .dk-h-dot { animation:none; }
+  }
+  .dk-steps { display:flex; flex-direction:column; gap:10px; font-size:13.5px; }
+  .dk-step { display:flex; align-items:center; gap:10px; }
+  .dk-step-ic { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; flex-shrink:0; font-size:14px; line-height:1; color:var(--text-dim); }
+  .dk-step-ic .spinner { width:14px; height:14px; }
+  .dk-step.done .dk-step-ic { color:var(--success); }
+  .dk-step.error .dk-step-ic { color:#f87171; }
+  .dk-step.pending { color:var(--text-dim); }
+  @media (max-width:520px) { .dk-hero { width:76px; height:76px; } }
   /* Centrée dans la barre ; elle s'efface quand les fenêtres ouvertes ont besoin de la place. */
   .taskbar-brand {
     position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
@@ -3129,7 +3159,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Forcer la mise à jour": "Force update",
 "Lancer la mise à jour ? Le service va redémarrer (~30 s).": "Start the update? The service will restart (~30 s).",
 "Mise à jour en cours": "Update in progress",
-"Desktroo — mise à jour": "Desktroo — update",
 "Téléchargement des fichiers": "Downloading files",
 "Redémarrage du service": "Restarting the service",
 "Téléchargement depuis GitHub…": "Downloading from GitHub…",
@@ -4405,7 +4434,13 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Route chaque nom de domaine vers son site, sur le port {0}.": "Routes each domain name to its site, on port {0}.",
 "Ports réservés aux sites : {0} à {1}.": "Ports reserved for sites: {0} to {1}.",
 "Pour un accès en https://domaine, renseigne-le puis configure ton reverse-proxy (rubrique « Domaines et proxy »). Sinon le site reste accessible en IP:port.": "For access via https://domain, enter it then configure your reverse proxy (“Domains and proxy” section). Otherwise the site remains accessible via IP:port.",
-":81\u003c/b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont sur la page de chaque site, sous « Fiche proxy ».": ":81\u003c/b>) and add a “Proxy Host” for each site that has a domain. The exact values are on each site’s page, under “Proxy host details”."
+":81\u003c/b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont sur la page de chaque site, sous « Fiche proxy ».": ":81\u003c/b>) and add a “Proxy Host” for each site that has a domain. The exact values are on each site’s page, under “Proxy host details”.",
+"Desktroo n'a plus accès à l'administration de MariaDB": "Desktroo can no longer manage MariaDB",
+"Le mot de passe d'administration enregistré n'est plus celui de la base, ce qui arrive après une réinstallation. Vos sites et leurs bases ne sont pas touchés.": "The stored administration password no longer matches the database, which happens after a reinstall. Your sites and their databases are not affected.",
+"Réparer l'accès": "Repair access",
+"La réparation redémarre MariaDB : les sites qui utilisent une base sont interrompus quelques secondes. Aucune base ni aucun compte de site n'est modifié.": "The repair restarts MariaDB: sites that use a database are interrupted for a few seconds. No database or site account is changed.",
+"Réparation en cours…": "Repairing…",
+"✅ Accès à MariaDB rétabli": "✅ MariaDB access restored"
 }
 </script>
 <script id="dk-i18n">
@@ -7725,7 +7760,15 @@ let _webPhpDefault = '8.3';
 let _webSiteHost = localStorage.getItem('web_site_host') || '';
 let _webProxy = { enabled: true, port: 8080 };
 let _webSites = [];
-function webSiteHost() { return _webSiteHost || window.location.hostname; }
+// Adresse des liens « IP:port ». Bureau ouvert par un nom de domaine (derrière un reverse-proxy) :
+// les ports des sites ne sont joignables que sur l'adresse du NAS, pas sur ce domaine.
+function webSiteHostDefault() {
+  const h = window.location.hostname;
+  const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(h);
+  if (!isIp && h !== 'localhost' && typeof _truenasIp === 'string' && /^\d{1,3}(\.\d{1,3}){3}$/.test(_truenasIp)) return _truenasIp;
+  return h;
+}
+function webSiteHost() { return _webSiteHost || webSiteHostDefault(); }
 function hb(text) { return '<span title="' + String(text).replace(/"/g,'&quot;') + '" style="cursor:help;color:var(--accent2);font-size:11px;margin-left:4px;">&#9432;</span>'; }
 function webUrl(s) {
   if (s.server_name) return 'https://' + s.server_name;
@@ -7744,7 +7787,7 @@ async function webSetHost() {
   const v = await showPrompt(T('Adresse des liens de sites (IP ou hôte du NAS, ex: 192.168.1.10) :'), webSiteHost());
   if (v === null || v === undefined) return;
   const val = (v || '').trim();
-  if (val && val !== window.location.hostname) { localStorage.setItem('web_site_host', val); _webSiteHost = val; }
+  if (val && val !== webSiteHostDefault()) { localStorage.setItem('web_site_host', val); _webSiteHost = val; }
   else { localStorage.removeItem('web_site_host'); _webSiteHost = ''; }
   toast(T('🌐 Adresse mise à jour'));
   if (_webNav === 'proxy') webProxyPanel();
@@ -8510,7 +8553,32 @@ async function webDbView() {
     }
     h += T('<div style="font-size:11px;color:var(--text-dim);margin-top:8px;">🔒 Les identifiants sont enregistrés localement sur le NAS (data/databases.json, accessible root uniquement).</div>');
     box.innerHTML = h;
-  } catch(e) { box.innerHTML = errHtml(T('Erreur: ') + e.message + T('<br><span style="font-size:11px;color:var(--text-dim);">MariaDB est-il démarré ?</span>')); }
+  } catch(e) {
+    if (/\b1045\b|Access denied/i.test(e.message || '')) { webDbAccessPanel(); return; }
+    box.innerHTML = errHtml(T('Erreur: ') + e.message + T('<br><span style="font-size:11px;color:var(--text-dim);">MariaDB est-il démarré ?</span>'));
+  }
+}
+// MariaDB refuse le mot de passe d'administration enregistré (réinstallation passée) : on propose de le rétablir.
+function webDbAccessPanel(err) {
+  webHead(T('Bases de données'), { nav:'db', wide:true });
+  webBody().innerHTML = '<div class="web-group"><div class="web-row"><span class="web-row-text">'
+    + '<span class="web-row-name">' + T('Desktroo n\'a plus accès à l\'administration de MariaDB') + '</span>'
+    + '<span class="web-row-desc">' + T('Le mot de passe d\'administration enregistré n\'est plus celui de la base, ce qui arrive après une réinstallation. Vos sites et leurs bases ne sont pas touchés.') + '</span></span>'
+    + '<button class="web-open" id="db-repair-btn" onclick="webDbRepair()">' + T('Réparer l\'accès') + '</button></div></div>'
+    + '<p class="web-note">' + T('La réparation redémarre MariaDB : les sites qui utilisent une base sont interrompus quelques secondes. Aucune base ni aucun compte de site n\'est modifié.') + '</p>'
+    + (err ? '<p class="web-note" style="color:#f87171;">' + webEsc(err) + '</p>' : '');
+}
+async function webDbRepair() {
+  const btn = document.getElementById('db-repair-btn');
+  if (btn) { btn.disabled = true; btn.classList.add('off'); btn.textContent = T('Réparation en cours…'); }
+  try {
+    await fileops('POST', 'db/repair', {});
+    toast(T('✅ Accès à MariaDB rétabli'));
+    if (_webNav === 'db') webDbView();
+  } catch(e) {
+    if (_webNav === 'db' && document.getElementById('db-repair-btn')) webDbAccessPanel(e.message);
+    else toast('❌ ' + e.message);
+  }
 }
 function webDbToggleCreds(n) {
   const el = document.getElementById('dbc-' + n);
@@ -9674,6 +9742,16 @@ function openTrueNAS() {
 }
 
 // ── Version & mise à jour ─────────────────────────────────────
+// Logo en pavé, grand format. state : '' | 'busy' (un arc tourne dans la panse du « d ») | 'error'.
+function dkHero(state) {
+  return '<div class="dk-hero' + (state ? ' is-' + state : '') + '" id="dk-hero" aria-hidden="true"><svg viewBox="4 4 56 56" xmlns="http://www.w3.org/2000/svg">'
+    + '<defs><linearGradient id="dk-hero-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2c4b"/><stop offset="1" stop-color="#0b1526"/></linearGradient></defs>'
+    + '<rect x="4" y="4" width="56" height="56" rx="15" fill="url(#dk-hero-g)"/><rect x="4.25" y="4.25" width="55.5" height="55.5" rx="14.75" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width=".5"/>'
+    + '<circle cx="26" cy="37" r="11" fill="none" stroke="#e9eef7" stroke-width="6"/>'
+    + '<circle class="dk-h-arc" cx="26" cy="37" r="11" fill="none" stroke="#3ecf8e" stroke-width="6" stroke-linecap="round" stroke-dasharray="17 52.2"/>'
+    + '<rect x="37" y="12" width="6.5" height="38" rx="3.25" fill="#e9eef7"/><circle class="dk-h-dot" cx="26" cy="37" r="4.6" fill="#3ecf8e"/></svg></div>';
+}
+function dkCardName() { return '<div class="dk-card-name" translate="no">Desktr<span class="dk-oo">oo</span></div>'; }
 async function tndAbout() {
   document.getElementById('create-app-title').textContent = T('À propos');
   var m = document.getElementById('modal-create-app'); m.style.display = 'flex';
@@ -9684,16 +9762,16 @@ async function tndAbout() {
   var up = !!v.update_available;
   var latestStyle = up ? 'background:rgba(240,180,41,0.15);color:#f0b429;border:1px solid rgba(240,180,41,0.4);' : '';
   var h = '<div style="display:flex;flex-direction:column;gap:14px;">'
-    + '<div class="tnd-panel tnd-panel-pad" style="display:flex;flex-direction:column;gap:10px;">'
-    + '<div style="font-weight:700;font-size:15px;">Desktroo</div>'
+    + '<div class="tnd-panel dk-card"><div class="dk-card-text">'
+    + dkCardName() + '<div class="dk-card-sub">' + T('Le bureau web pour votre TrueNAS') + '</div>'
     + T('<div class="tnd-row" style="justify-content:space-between;"><span class="tnd-muted">Version installée</span><span class="tnd-badge">') + (v.version || '?') + '</span></div>'
     + T('<div class="tnd-row" style="justify-content:space-between;"><span class="tnd-muted">Dernière version</span><span class="tnd-badge" style="') + latestStyle + '">' + (v.latest || '—') + '</span></div>'
+    + '</div>' + dkHero('') + '</div>'
     + (up
         ? T('<div style="background:rgba(240,180,41,0.12);border:1px solid rgba(240,180,41,0.35);color:#f0b429;padding:8px 10px;border-radius:8px;font-size:13px;">⬆ Une mise à jour est disponible.</div>')
           + T('<button class="fs-btn" style="width:100%;justify-content:center;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="tndDoUpdate()">⬆ Mettre à jour maintenant</button>')
         : T('<div class="tnd-muted" style="font-size:12px;">✓ Tu es à jour.</div>')
           + T('<button class="fs-btn" style="width:100%;justify-content:center;" onclick="tndDoUpdate()">Forcer la mise à jour</button>'))
-    + '</div>'
     + T('<div style="text-align:right;"><button class="fs-btn" onclick="closeCreateApp()">Fermer</button></div>')
     + '</div>';
   box.innerHTML = h;
@@ -9703,22 +9781,32 @@ async function tndDoUpdate() {
   var box = document.getElementById('create-app-form');
   var titleEl = document.getElementById('create-app-title');
   if (titleEl) titleEl.textContent = T('Mise à jour en cours');
-  // Rendu de l'indicateur de progression (étapes + spinner + message).
+  // Indicateur de progression : la carte (et son logo animé) est posée une fois, seuls les étapes et le message changent.
   function _ic(st) {
-    if (st === 'done')  return '<span style="color:var(--success);font-size:16px;line-height:16px;width:18px;text-align:center;">✓</span>';
-    if (st === 'error') return '<span style="color:#f87171;font-size:16px;line-height:16px;width:18px;text-align:center;">✕</span>';
-    if (st === 'active')return '<div class="spinner" style="width:16px;height:16px;"></div>';
-    return '<span style="color:var(--text-dim);font-size:16px;line-height:16px;width:18px;text-align:center;">○</span>';
+    if (st === 'done')   return '✓';
+    if (st === 'error')  return '✕';
+    if (st === 'active') return '<div class="spinner"></div>';
+    return '○';
   }
+  var _steps = '';
   function render(stepDl, stepRestart, msg, extra) {
-    box.innerHTML = '<div style="display:flex;flex-direction:column;gap:16px;">'
-      + '<div class="tnd-panel tnd-panel-pad" style="display:flex;flex-direction:column;gap:14px;">'
-      + T('<div style="font-weight:700;font-size:15px;">Desktroo — mise à jour</div>')
-      + '<div class="tnd-row" style="gap:10px;align-items:center;">' + _ic(stepDl) + T('<span>Téléchargement des fichiers</span></div>')
-      + '<div class="tnd-row" style="gap:10px;align-items:center;">' + _ic(stepRestart) + T('<span>Redémarrage du service</span></div>')
-      + (msg ? '<div class="tnd-muted" style="font-size:12.5px;line-height:1.5;">' + msg + '</div>' : '')
-      + (extra || '')
-      + '</div></div>';
+    if (!document.getElementById('dk-up')) {
+      _steps = '';
+      box.innerHTML = '<div class="tnd-panel dk-card" id="dk-up"><div class="dk-card-text">'
+        + dkCardName() + '<div class="dk-card-sub" id="dk-up-sub">' + T('Mise à jour') + '</div>'
+        + '<div class="dk-steps" id="dk-up-steps"></div>'
+        + '<div class="tnd-muted" id="dk-up-msg" style="font-size:12.5px;line-height:1.5;" aria-live="polite"></div><div id="dk-up-extra"></div>'
+        + '</div>' + dkHero('busy') + '</div>';
+    }
+    var step = function (st, label) { return '<div class="dk-step ' + st + '"><span class="dk-step-ic">' + _ic(st) + '</span><span>' + label + '</span></div>'; };
+    if (_steps !== stepDl + '/' + stepRestart) {
+      _steps = stepDl + '/' + stepRestart;
+      document.getElementById('dk-up-steps').innerHTML = step(stepDl, T('Téléchargement des fichiers')) + step(stepRestart, T('Redémarrage du service'));
+      var st = (stepDl === 'error' || stepRestart === 'error') ? 'error' : (stepRestart === 'done' ? '' : 'busy');
+      document.getElementById('dk-hero').className = 'dk-hero' + (st ? ' is-' + st : '');
+    }
+    document.getElementById('dk-up-msg').innerHTML = msg || '';
+    document.getElementById('dk-up-extra').innerHTML = extra || '';
   }
 
   render('active', 'pending', T('Téléchargement depuis GitHub…'));
@@ -9726,6 +9814,8 @@ async function tndDoUpdate() {
   // Version cible (pour détecter la fin effective du redémarrage).
   var expectedLatest = '';
   try { var v0 = await fileops('GET', 'version'); expectedLatest = (v0 && v0.latest) || ''; } catch (e) {}
+  var subEl = document.getElementById('dk-up-sub');
+  if (subEl && expectedLatest) subEl.textContent = T('Mise à jour') + ' — ' + ((v0.version && v0.version !== expectedLatest) ? v0.version + ' → ' : 'version ') + expectedLatest;
 
   try {
     await fileops('POST', 'update', {});

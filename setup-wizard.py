@@ -67,6 +67,29 @@ def check_prerequisites():
 def generate_token():
     return secrets.token_urlsafe(24)
 
+def previous_db_password(install_dir):
+    """Mot de passe root MariaDB d'une installation déjà en place.
+    La base garde celui de sa création : en tirer un nouveau à chaque passage de l'assistant
+    couperait l'accès du bureau à l'administration des bases."""
+    for p in ('/etc/desktroo/config.env', '/etc/truenas-desktop/config.env'):
+        try:
+            with open(p, encoding='utf-8') as f:
+                for line in f:
+                    if line.startswith('DB_ROOT_PASSWORD='):
+                        v = line.split('=', 1)[1].strip()
+                        if v:
+                            return v
+        except Exception:
+            pass
+    try:
+        with open(os.path.join(install_dir, 'docker-compose.yml'), encoding='utf-8') as f:
+            m = re.search(r'^\s*DB_ROOT_PASSWORD:\s*"([^"]+)"', f.read(), re.M)
+        if m:
+            return m.group(1)
+    except Exception:
+        pass
+    return ''
+
 # ── Installation ──────────────────────────────────────────────
 INSTALL_LOG = '/tmp/tnd-install.log'
 
@@ -222,7 +245,7 @@ def run_install(config):
         ssh_user     = config['ssh_user']
         ssh_pass     = config['ssh_pass']
         token        = config['token'] or generate_token()
-        db_pass      = config.get('db_pass') or generate_token()
+        db_pass      = config.get('db_pass') or previous_db_password(install_dir) or generate_token()
 
         # ── Sécurité : 2FA optionnelle ; desk_user / desk_pass sont le compte du portail (Authelia) ──
         desk_user   = config.get('desk_user') or 'admin'

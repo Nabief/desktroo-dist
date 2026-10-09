@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.2.0'
+APP_VERSION = '2.2.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -3981,6 +3981,103 @@ def _db_conn():
                             password=DB_ROOT_PASSWORD, connect_timeout=8, autocommit=True)
 
 
+# ── MDM-DB-REPAIR-V1 : rétablir l'accès root quand le mot de passe enregistré ne correspond plus ──
+# La base garde le mot de passe root de sa création (MARIADB_ROOT_PASSWORD n'est lu qu'à
+# l'initialisation du dossier de données). Si la configuration en porte un autre — ancienne
+# réinstallation par l'assistant —, fileops reçoit « 1045 Access denied » et ne peut plus gérer
+# les bases. La réparation arrête MariaDB, le relance un instant sans contrôle d'accès ni réseau
+# (conteneur éphémère sur le même volume), y pose le mot de passe de la configuration, puis
+# redémarre le conteneur normal. Les bases et leurs comptes ne sont pas touchés.
+DB_CONTAINER = os.environ.get('DB_CONTAINER', 'desktroo-mariadb')
+_db_repair_lock = _threading.Lock()
+
+# Exécuté dans le conteneur éphémère. Le SQL arrive en base64 dans DK_SQL.
+_DB_REPAIR_INNER = r"""
+S=/tmp/dk-repair.sock
+mariadbd --user=mysql --skip-grant-tables --skip-networking --socket=$S --pid-file=/tmp/dk-repair.pid >/tmp/dk-repair.log 2>&1 &
+PID=$!
+ok=0; i=0
+while [ $i -lt 120 ]; do
+  if mariadb --socket=$S -e "SELECT 1" >/dev/null 2>&1; then ok=1; break; fi
+  kill -0 $PID 2>/dev/null || break
+  i=$((i+1)); sleep 1
+done
+if [ $ok != 1 ]; then
+  tail -n 15 /tmp/dk-repair.log
+  kill -TERM $PID 2>/dev/null; wait $PID 2>/dev/null
+  echo DK_REPAIR_FAIL; exit 1
+fi
+printf %s "$DK_SQL" | base64 -d | mariadb --socket=$S; rc=$?
+kill -TERM $PID 2>/dev/null; wait $PID 2>/dev/null
+if [ $rc = 0 ]; then echo DK_REPAIR_OK; else echo DK_REPAIR_FAIL; fi
+exit $rc
+"""
+
+
+def _db_is_access_denied(e):
+    a = getattr(e, 'args', None) or ()
+    return bool(a) and a[0] == 1045
+
+
+def _db_repair_sql(password):
+    p = password.replace('\\', '\\\\').replace("'", "\\'")
+    return ("FLUSH PRIVILEGES;\n"
+            "CREATE USER IF NOT EXISTS 'root'@'%%' IDENTIFIED BY '%(p)s';\n"
+            "ALTER USER 'root'@'%%' IDENTIFIED BY '%(p)s';\n"
+            "ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY '%(p)s';\n"
+            "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%%' WITH GRANT OPTION;\n"
+            "FLUSH PRIVILEGES;\n") % {'p': p}
+
+
+def _db_repair_root():
+    import base64 as _b64
+    if not DB_ROOT_PASSWORD or '\n' in DB_ROOT_PASSWORD or '\x00' in DB_ROOT_PASSWORD:
+        raise ValueError('Mot de passe MariaDB absent de la configuration (DB_ROOT_PASSWORD).')
+    if not (SSH_HOST and SSH_USER and SSH_PASS):
+        raise ValueError('Accès SSH au NAS non configuré : réparation impossible depuis le bureau.')
+    try:
+        _db_conn().close()
+        return {'ok': True, 'already': True}
+    except Exception as e:
+        if not _db_is_access_denied(e):
+            raise RuntimeError('MariaDB ne répond pas (%s) : la réparation ne concerne que le mot de passe.' % e)
+    if not _db_repair_lock.acquire(False):
+        raise RuntimeError('Une réparation est déjà en cours.')
+    try:
+        sql = _b64.b64encode(_db_repair_sql(DB_ROOT_PASSWORD).encode('utf-8')).decode('ascii')
+        c = shq(DB_CONTAINER)
+        script = (
+            "IMG=$(docker inspect -f '{{.Config.Image}}' " + c + " 2>/dev/null)\n"
+            '[ -n "$IMG" ] || { echo DK_NO_CONTAINER; exit 0; }\n'
+            'docker stop -t 90 ' + c + ' >/dev/null 2>&1\n'
+            'docker run --rm --network none --volumes-from ' + c + ' -e DK_SQL=' + sql
+            + ' --entrypoint sh "$IMG" -c ' + shq(_DB_REPAIR_INNER) + ' 2>&1\n'
+            'docker start ' + c + ' >/dev/null 2>&1 && echo DK_STARTED\n'
+        )
+        out, err, _code = ssh_exec('sudo -n sh -c ' + shq(script), timeout=300)
+        out = out or ''
+        if 'DK_NO_CONTAINER' in out:
+            raise RuntimeError('Conteneur MariaDB introuvable (%s).' % DB_CONTAINER)
+        if 'DK_REPAIR_OK' not in out:
+            tail = ' | '.join([l for l in (out + '\n' + (err or '')).splitlines() if l.strip() and not l.startswith('DK_')][-4:])
+            raise RuntimeError('Réparation non aboutie' + (' : ' + tail if tail else '') + '.')
+        if 'DK_STARTED' not in out:
+            raise RuntimeError('Mot de passe rétabli, mais MariaDB n\'a pas redémarré (docker start %s).' % DB_CONTAINER)
+        last = None
+        for _i in range(40):
+            try:
+                _db_conn().close()
+                log.info('MariaDB : accès root rétabli.')
+                return {'ok': True, 'repaired': True}
+            except Exception as e:
+                last = e
+                _sh_time.sleep(1.5)
+        raise RuntimeError('MariaDB redémarre encore (%s) — réessayez dans un instant.' % last)
+    finally:
+        _db_repair_lock.release()
+# ── MDM-DB-REPAIR-V1-END ────────────────────────────────────────────────────
+
+
 def _db_list():
     conn = _db_conn()
     try:
@@ -7254,6 +7351,15 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 b = self._body()
                 res = _db_create(b.get('name') or None, b.get('user') or None, b.get('password') or None)
                 self._json(200, {'ok': True, 'db': res})
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        if path == '/db/repair':
+            try:
+                self._json(200, _db_repair_root())
             except ValueError as e:
                 self._json(400, {'error': str(e)})
             except Exception as e:
