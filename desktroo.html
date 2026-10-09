@@ -1063,6 +1063,30 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .disk-status { font-size:11px; padding:2px 8px; border-radius:10px; }
   .disk-status.ONLINE { background:rgba(62,207,142,0.15); color:var(--success); }
 
+  /* ===== UTILISATEURS, PARTAGES, SERVICES ===== */
+  #win-users, #win-sharing, #win-services { min-width:860px; min-height:520px; }
+  /* Formulaires des gestionnaires */
+  .wm-form { display:flex; flex-direction:column; gap:14px; margin-top:4px; }
+  .wm-field { display:flex; flex-direction:column; gap:5px; }
+  .wm-field > label { font-size:12px; color:var(--text-dim); }
+  .wm-input {
+    width:100%; box-sizing:border-box; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.15);
+    background-color:rgba(255,255,255,0.07); color:var(--text); font:inherit; font-size:13px; outline:none; transition:border-color .15s;
+  }
+  .wm-input:focus { border-color:rgba(var(--accent2-rgb),0.55); }
+  .wm-hint { font-size:11.5px; line-height:1.5; color:var(--text-dim); }
+  .wm-inline { display:flex; align-items:center; gap:8px; }
+  .wm-inline .wm-input { flex:1; min-width:0; }
+  .wm-checks { display:flex; flex-wrap:wrap; gap:10px 22px; padding:4px 0; }
+  .wm-checks label { display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; }
+  .web-table.us-list { --wt-cols:minmax(0,1.3fr) minmax(0,1.2fr) 140px 120px; }
+  .web-table.us-list .web-tr:not(.head), .web-table.sh-list .web-tr:not(.head), .web-table.sv-list .web-tr:not(.head) { min-height:50px; }
+  .web-table.us-sys { --wt-cols:minmax(0,1fr) 80px minmax(0,1.6fr); }
+  .web-table.us-groups { --wt-cols:minmax(0,1fr) minmax(0,2fr) 80px; }
+  .web-table.us-groups .web-tr:not(.head) { min-height:44px; }
+  .web-table.sh-list { --wt-cols:minmax(0,1.1fr) minmax(0,1.4fr) 140px; }
+  .web-table.sv-list { --wt-cols:minmax(0,1.6fr) 150px 170px 96px; }
+
   /* ===== RAPPORTS, INFORMATIONS SYSTÈME, PANNEAU DE CONFIGURATION ===== */
   #win-reports, #win-sysinfo, #win-control { min-width:860px; min-height:520px; }
   /* Courbes */
@@ -3597,27 +3621,12 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Aucun utilisateur": "No users",
 "Utilisateur": "User",
 "Nouvel utilisateur": "New user",
-"Modifier utilisateur": "Edit user",
-"Compte verrouille": "Account locked",
-"Utilisateur mis a jour": "User updated",
-"Utilisateur cree": "User created",
-"Supprimer l'utilisateur": "Delete user",
-"Utilisateur supprime": "User deleted",
 "Aucun partage": "No shares",
 "Nouveau partage": "New share",
-"Chemin *": "Path *",
-"ex: Vidéos": "e.g. Videos",
 "Commentaire": "Comment",
 "Chemin requis": "Path required",
-"Partage cree": "Share created",
-"Supprimer ce partage ?": "Delete this share?",
-"Partage supprime": "Share deleted",
 "Aucun service": "No services",
 "Etat": "Status",
-"Arrete": "Stopped",
-"Demarrage": "Starting",
-"Arret": "Stopping",
-"demarre": "started",
 "arrete": "stopped",
 "Dimanche": "Sunday",
 "Lundi": "Monday",
@@ -4250,7 +4259,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "⚙️ Panneau de configuration": "⚙️ Control panel",
 "🔗 Ouvrir TrueNAS": "🔗 Open TrueNAS",
 "🚪 Déconnexion": "🚪 Sign out",
-"+ Ajouter un utilisateur": "+ Add a user",
 "+ Ajouter": "+ Add",
 "Installer une app personnalisée via docker-compose": "Install a custom app via docker-compose",
 "ex: win11-pro": "e.g. win11-pro",
@@ -4449,7 +4457,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Le mot de passe est envoyé directement à TrueNAS et n’est pas enregistré par Desktroo.": "The password is sent directly to TrueNAS and is not stored by Desktroo.",
 "SUPPRIMER": "DELETE",
 "RESTAURER": "RESTORE",
-"Aucun partage {0}": "No {0} shares",
 "Nom": "Name",
 "Oui": "Yes",
 "Non": "No",
@@ -4492,7 +4499,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "+ dossier": "+ folder",
 "+ base": "+ database",
 "fichier(s) →": "file(s) →",
-"Auto-demarrage": "Autostart",
 "heure(s)": "hour(s)",
 "jour(s)": "day(s)",
 "semaine(s)": "week(s)",
@@ -5244,7 +5250,145 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Modèle du NAS": "NAS model",
 "libre": "free",
 "processeur": "CPU",
-"Mémoire disponible": "Memory available"
+"Mémoire disponible": "Memory available",
+"1 dossier partagé sur le réseau": "1 folder shared on the network",
+"{0} dossiers partagés sur le réseau": "{0} folders shared on the network",
+"Accès aux fichiers par le navigateur": "File access from the browser",
+"Adresse de montage": "Mount address",
+"Adresse Windows": "Windows address",
+"Adresse macOS, Linux": "macOS, Linux address",
+"Arrêter le service": "Stop the service",
+"Arrêtés": "Stopped",
+"Au démarrage du NAS": "When the NAS starts",
+"Aucun groupe pour l'instant.": "No group yet.",
+"Aucun groupe": "No group",
+"Aucun service ici": "No service here",
+"Aucun utilisateur à ajouter pour l'instant.": "No user to add yet.",
+"Aucune (recommandé)": "None (recommended)",
+"Autres groupes": "Other groups",
+"C'est le nom que les ordinateurs voient. Vide, le nom du dossier est repris.": "This is the name computers see. If empty, the folder name is used.",
+"Ce nom contient un caractère interdit": "This name contains a forbidden character",
+"Ces partages ne sont pas joignables tant qu'il ne tourne pas.": "These shares cannot be reached until it is running.",
+"Changer le mot de passe": "Change the password",
+"Choisir qui peut lire ou modifier ce partage": "Choose who can read or change this share",
+"Choisissez un dossier du NAS, sous /mnt": "Choose a folder of the NAS, under /mnt",
+"Commentaire (facultatif)": "Comment (optional)",
+"Comptes internes de TrueNAS et de ses services. Ils ne se modifient pas ici.": "Internal accounts of TrueNAS and its services. They cannot be changed here.",
+"Créer le compte": "Create the account",
+"Créer le groupe": "Create the group",
+"Créez un compte pour chaque personne qui se connecte aux partages ou au bureau.": "Create an account for each person who connects to the shares or to the desktop.",
+"Disques réseau NVMe pour serveurs": "NVMe network disks for servers",
+"Disques réseau pour serveurs et machines virtuelles": "Network disks for servers and virtual machines",
+"Dossier personnel": "Home folder",
+"Dossier à partager": "Folder to share",
+"Défini": "Set",
+"Démarrage du service…": "Starting the service…",
+"Démarrer le service": "Start the service",
+"Désactivé, le dossier n'est plus visible sur le réseau ; rien n'est effacé": "When disabled, the folder is no longer visible on the network; nothing is erased",
+"Déverrouiller le compte": "Unlock the account",
+"E-mail (facultatif)": "E-mail (optional)",
+"En minuscules, sans espace ni accent : il sert à se connecter.": "Lowercase, no space or accent: it is used to sign in.",
+"En minuscules, sans espace ni accent.": "Lowercase, no space or accent.",
+"Enregistrer les membres": "Save members",
+"Groupe principal": "Primary group",
+"Identifiant invalide : minuscules, chiffres, tiret, point": "Invalid identifier: lowercase letters, digits, dash, dot",
+"Il ne pourra plus se connecter tant qu'il reste verrouillé.": "It will not be able to sign in while it stays locked.",
+"Lancer au démarrage du NAS": "Start when the NAS starts",
+"Le compte disparaît, ses fichiers restent sur le NAS": "The account goes away, its files stay on the NAS",
+"Le compte peut de nouveau se connecter": "The account can sign in again",
+"Le compte peut ouvrir les dossiers partagés depuis un ordinateur": "The account can open shared folders from a computer",
+"Le compte reste en place mais ne peut plus se connecter": "The account stays in place but can no longer sign in",
+"Le dossier et ses fichiers restent sur le NAS": "The folder and its files stay on the NAS",
+"Le dossier et ses fichiers restent sur le NAS.": "The folder and its files stay on the NAS.",
+"Le groupe pourra recevoir des droits sur les dossiers partagés": "The group can be given rights on shared folders",
+"Le mot de passe est obligatoire": "The password is required",
+"Le nouveau mot de passe sert tout de suite, partages compris": "The new password applies right away, shares included",
+"Le service NFS est arrêté": "The NFS service is stopped",
+"Le service SMB est arrêté": "The SMB service is stopped",
+"Les comptes ne répondent pas": "Accounts are not responding",
+"Les comptes restent, ils perdent seulement ce groupe": "Accounts stay, they only lose this group",
+"Les deux mots de passe ne sont pas identiques": "The two passwords do not match",
+"Les dossiers que ce service met sur le réseau": "The folders this service puts on the network",
+"Les droits donnés à ce groupe sur les partages disparaissent avec lui.": "The rights given to this group on shares go away with it.",
+"Les ordinateurs connectés aux partages seront déconnectés.": "Computers connected to the shares will be disconnected.",
+"Les partages ne répondent pas": "Shares are not responding",
+"Les services ne répondent pas": "Services are not responding",
+"Les sessions SSH ouvertes seront coupées.": "Open SSH sessions will be cut off.",
+"Ligne de commande (SSH)": "Command line (SSH)",
+"Ligne de commande à distance, et transfert de fichiers SFTP": "Remote command line, and SFTP file transfer",
+"Ligne de commande": "Command line",
+"Linux et serveurs (NFS)": "Linux and servers (NFS)",
+"Masqué, il faut connaître son adresse pour l'ouvrir": "When hidden, you need to know its address to open it",
+"Modifier le compte": "Edit the account",
+"Modifier le partage": "Edit the share",
+"Mot de passe, une seconde fois": "Password, once more",
+"Ne plus partager": "Stop sharing",
+"Nom du groupe": "Group name",
+"Nom invalide : minuscules, chiffres, tiret, point": "Invalid name: lowercase letters, digits, dash, dot",
+"Non autorisé": "Not allowed",
+"Non autorisée": "Not allowed",
+"Nouveau groupe": "New group",
+"Nouveau mot de passe": "New password",
+"Ouvrir une ligne de commande sur le NAS": "Open a command line on the NAS",
+"Par exemple « famille » ou « bureau », pour partager un dossier à plusieurs.": "For example “family” or “office”, to share a folder among several people.",
+"Partage actif": "Share enabled",
+"Partager le dossier": "Share the folder",
+"Partages Windows (SMB)": "Windows shares (SMB)",
+"Partages Windows": "Windows shares",
+"Partages et applications ouverts à ce compte": "Shares and applications open to this account",
+"Partages et applications ouverts à ce groupe": "Shares and applications open to this group",
+"Partages pour Linux et les hyperviseurs": "Shares for Linux and hypervisors",
+"Partages pour Windows, macOS et Linux": "Shares for Windows, macOS and Linux",
+"Partagez un dossier du NAS pour l'ouvrir depuis les ordinateurs du réseau.": "Share a folder of the NAS to open it from the computers on the network.",
+"Partagé": "Shared",
+"Personne ne peut modifier ni supprimer les fichiers par ce partage": "Nobody can change or delete files through this share",
+"Peut s'y connecter": "Can connect to them",
+"Ports, chiffrement et options du service, dans TrueNAS": "Ports, encryption and options of the service, in TrueNAS",
+"Pour qui": "For whom",
+"Redémarrer le service": "Restart the service",
+"Réseaux autorisés (facultatif)": "Allowed networks (optional)",
+"Réseaux autorisés": "Allowed networks",
+"Rôle": "Role",
+"Sans cela, le service reste arrêté après un redémarrage": "Otherwise the service stays stopped after a restart",
+"Services arrêtés": "Stopped services",
+"Services en marche": "Running services",
+"Ses fichiers restent sur le NAS. Ses droits sur les partages sont retirés.": "Its files stay on the NAS. Its rights on shares are removed.",
+"Supervision du NAS par un outil externe": "Monitoring of the NAS by an external tool",
+"Supprimer le compte": "Delete the account",
+"Supprimer le groupe": "Delete the group",
+"Supprimer le partage": "Delete the share",
+"Surveillance de la santé des disques": "Disk health monitoring",
+"Surveille l'onduleur et éteint le NAS proprement en cas de coupure": "Watches the UPS and shuts the NAS down cleanly on a power cut",
+"Tous les partages": "All shares",
+"Tous les services": "All services",
+"Tous": "All",
+"Transfert de fichiers à l'ancienne, à réserver au réseau local": "Old-style file transfer, best kept to the local network",
+"Un groupe réunit des comptes pour leur donner les mêmes droits d'un coup.": "A group gathers accounts to give them the same rights at once.",
+"Une seconde fois": "Once more",
+"Utilisable pour les partages Windows (SMB)": "Usable for Windows shares (SMB)",
+"Verrouiller le compte": "Lock the account",
+"Verrouiller": "Lock",
+"Vide, toutes les machines du réseau peuvent monter ce partage.": "If empty, every machine on the network can mount this share.",
+"Visible dans le voisinage réseau": "Visible in the network neighborhood",
+"groupe principal de ce compte": "primary group of this account",
+"✅ Compte créé": "✅ Account created",
+"✅ Compte déverrouillé": "✅ Account unlocked",
+"✅ Compte enregistré": "✅ Account saved",
+"✅ Compte supprimé": "✅ Account deleted",
+"✅ Compte verrouillé": "✅ Account locked",
+"✅ Dossier partagé": "✅ Folder shared",
+"✅ Groupe créé": "✅ Group created",
+"✅ Groupe supprimé": "✅ Group deleted",
+"✅ Membres enregistrés": "✅ Members saved",
+"✅ Mot de passe changé": "✅ Password changed",
+"✅ Partage enregistré": "✅ Share saved",
+"✅ Partage supprimé": "✅ Share deleted",
+"✅ Service démarré": "✅ Service started",
+"{0} comptes": "{0} accounts",
+"1 compte": "1 account",
+"{0} est arrêté": "{0} stopped",
+"{0} est démarré": "{0} started",
+"{0} services, {1} en marche": "{0} services, {1} running"
 }
 </script>
 <script id="dk-i18n">
@@ -13690,211 +13834,586 @@ async function netPendingAnswer(keep) {
   loadNetwork();
 }
 
+// ── Formulaires des gestionnaires : champs, cases et interrupteurs communs ──
+function wmField(label, html, hint) { return '<div class="wm-field"><label>' + label + '</label>' + html + (hint ? '<span class="wm-hint">' + hint + '</span>' : '') + '</div>'; }
+function wmInput(id, value, attrs) { return '<input class="wm-input" id="' + id + '" value="' + webEsc(value == null ? '' : value) + '" autocomplete="off" spellcheck="false" ' + (attrs || '') + '>'; }
+function wmSwitch(id, name, desc, on, attrs) {
+  return '<label class="web-row" style="cursor:pointer;"><span class="web-row-text"><span class="web-row-name">' + name + '</span>' + (desc ? '<span class="web-row-desc">' + desc + '</span>' : '') + '</span><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + ' ' + (attrs || '') + '></label>';
+}
+function wmVal(id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; }
+function wmOn(id) { var e = document.getElementById(id); return !!(e && e.checked); }
+function wmErr(e) { return (e && e.message) || String(e); }
+function wmToastErr(e) { if (e && e.message === 'LICENSE_READONLY') return; toast('❌ ' + wmErr(e), 9000); }
+// Appel TrueNAS qui peut rendre un numéro de tâche.
+async function wmCall(method, params, maxWait) {
+  var r = await wsCall(method, params, 300000);
+  return typeof r === 'number' && /\.(control|delete|create|update|start|stop|restart)$/.test(method) && maxWait ? waitJob(r, maxWait) : r;
+}
+
 // ============================================================
-// USERS
+// USERS — comptes et groupes du NAS
 // ============================================================
 let currentShareTab = 'smb';
+var _us = { users: [], groups: [], shells: null, nav: 'users', sel: null, loaded: false, seq: 0 };
+WEB_ICONS.user = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
+WEB_ICONS.users = '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>';
+WEB_ICONS.share = '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>';
 
-async function loadUsers() {
-  const el = document.getElementById('users-content');
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
+function usGroupName(g) { return String((g && (g.group || g.name)) || ''); }
+function usUser(id) { return _us.users.find(function(u) { return u.id === id; }) || null; }
+function usGroup(id) { return _us.groups.find(function(g) { return g.id === id; }) || null; }
+function usPeople() { return _us.users.filter(function(u) { return u.builtin !== true; }); }
+function usTeams() { return _us.groups.filter(function(g) { return g.builtin !== true; }); }
+function usPrimary(u) { var g = u && u.group; return g ? String(g.bsdgrp_group || g.group || g.name || '') : ''; }
+function usGroupsOf(u) { return ensureArray(u && u.groups).map(usGroup).filter(Boolean); }
+function usMembers(g) { return _us.users.filter(function(u) { return ensureArray(u.groups).indexOf(g.id) >= 0 || (u.group && u.group.id === g.id); }); }
+function usState(u) { return u.locked ? { label: T('Verrouillé'), dot: 'off' } : { label: T('Actif'), dot: '' }; }
+function usGo(nav, id) { _us.nav = nav; _us.sel = id == null ? null : id; usRender(); }
+async function loadUsers(soft) {
+  if (!wmBody('us')) return;
+  var seq = ++_us.seq;
+  if (!_us.loaded) { wmHead('us', T('Utilisateurs')); usSide(); wmLoading('us'); }
   try {
-    const users = ensureArray(await socketCall('/user'));
-    if (!users.length) { el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">&#128100;</div><span>Aucun utilisateur</span></div>'); return; }
-    let html = T('<table class="container-table"><thead><tr><th>Utilisateur</th><th>UID</th><th>Groupe</th><th>Shell</th><th>Actif</th><th>Actions</th></tr></thead><tbody>');
-    users.forEach(function(u) {
-      const uid  = (u.id || u.uid) ? (u.id || u.uid) : 0;
-      const name = (u.username || '').replace(/</g,'&lt;');
-      const grp  = (u.group && (u.group.bsdgrp_group || u.group.name)) || '&mdash;';
-      const shell= (u.shell || '&mdash;').split('/').pop();
-      const active = (u.locked === false || u.locked === undefined)
-        ? '<span style="color:var(--success)">&#9679;</span>'
-        : '<span style="color:var(--danger)">&#9679;</span>';
-      html += '<tr>'
-        + '<td><strong>' + name + '</strong></td>'
-        + '<td style="color:var(--text-dim);font-size:11px;">' + (u.uid||u.id||'&mdash;') + '</td>'
-        + '<td style="color:var(--text-dim);font-size:11px;">' + grp + '</td>'
-        + '<td style="color:var(--text-dim);font-size:11px;">' + shell + '</td>'
-        + '<td style="text-align:center;">' + active + '</td>'
-        + '<td style="white-space:nowrap;display:flex;gap:4px;">'
-        + '<button class="fs-btn" style="font-size:11px;padding:4px 9px;" onclick="userEditModal(' + uid + ')">Edit</button>'
-        + `<button class="fs-btn" style="font-size:11px;padding:4px 9px;color:#f87171;" onclick="userDelete(${uid},'${name}')">Del</button>`
-        + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = errHtml(T('Erreur: ') + e.message); }
+    var r = await Promise.all([wsCall('user.query', [[], {}], 60000), wsCall('group.query', [[], {}], 60000)]);
+    if (seq !== _us.seq) return;
+    var by = function(k) { return function(a, b) { return String(k(a)).localeCompare(String(k(b)), undefined, { sensitivity: 'base' }); }; };
+    _us.users = ensureArray(r[0]).filter(function(u) { return u && u.username; }).sort(by(function(u) { return u.username; }));
+    _us.groups = ensureArray(r[1]).filter(function(g) { return g && usGroupName(g); }).sort(by(usGroupName));
+    _us.loaded = true;
+    if (!_us.shells) wsCall('user.shell_choices', []).then(function(c) { if (c && typeof c === 'object') _us.shells = c; }, function() {});
+    if ((_us.nav === 'user' || _us.nav === 'edituser' || _us.nav === 'pwd') && !usUser(_us.sel)) usGo('users'); else if ((_us.nav === 'group') && !usGroup(_us.sel)) usGo('groups'); else usRender(soft === true);
+  } catch (e) {
+    if (seq !== _us.seq) return;
+    _us.loaded = false;
+    wmHead('us', T('Utilisateurs')); usSide();
+    wmFail('us', T('Les comptes ne répondent pas'), e, 'loadUsers()');
+  }
 }
-function userAddModal() { showUserForm(null, {}); }
-async function userEditModal(uid) {
-  try { const u = await socketCall('/user/id/' + uid); showUserForm(uid, u); }
-  catch(e) { toast('Err: ' + e.message); }
+function usSide() {
+  var people = usPeople(), teams = usTeams(), sys = _us.users.length - people.length;
+  var inUsers = ['users', 'user', 'edituser', 'newuser', 'pwd'].indexOf(_us.nav) >= 0, inGroups = ['groups', 'group', 'newgroup'].indexOf(_us.nav) >= 0;
+  var h = wmNav({ active: inUsers, call: 'usGo(\'users\')', icon: 'user', name: T('Utilisateurs'), count: people.length || null })
+    + wmNav({ active: inGroups, call: 'usGo(\'groups\')', icon: 'users', name: T('Groupes'), count: teams.length || null })
+    + wmNav({ active: _us.nav === 'system', call: 'usGo(\'system\')', icon: 'settings', name: T('Comptes du système'), count: sys || null });
+  if (people.length) {
+    h += wmSep() + wmSideTitle(T('Utilisateurs'));
+    people.forEach(function(u) { h += wmNav({ active: inUsers && _us.sel === u.id, call: 'usGo(\'user\',' + Number(u.id) + ')', dot: usState(u).dot, name: u.username, meta: u.full_name && u.full_name !== u.username ? u.full_name : usState(u).label }); });
+  }
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'access\')', icon: 'key', name: T('Droits d\'accès') })
+    + wmNav({ call: 'openApp(\'sharing\')', icon: 'share', name: T('Partages') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/credentials/users\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('us', h);
 }
+function usRender(soft) {
+  usSide();
+  var n = _us.nav;
+  if (n === 'user' && usUser(_us.sel)) usUserView(soft);
+  else if (n === 'edituser' && usUser(_us.sel)) usUserForm(usUser(_us.sel));
+  else if (n === 'newuser') usUserForm(null);
+  else if (n === 'pwd' && usUser(_us.sel)) usPwdForm();
+  else if (n === 'groups') usGroupsView(soft);
+  else if (n === 'group' && usGroup(_us.sel)) usGroupView(soft);
+  else if (n === 'newgroup') usGroupForm();
+  else if (n === 'system') usSystemView(soft);
+  else { _us.nav = 'users'; usUsersView(soft); }
+}
+function usUsersView(soft) {
+  var people = usPeople();
+  wmHead('us', T('Utilisateurs'), { keepScroll: soft, sub: webEsc(people.length > 1 ? Tf('{0} comptes', people.length) : (people.length ? T('1 compte') : '')),
+    actions: '<button class="fs-btn" onclick="loadUsers()">' + T('Actualiser') + '</button><button class="web-open" onclick="usGo(\'newuser\')">' + T('Nouvel utilisateur') + '</button>' });
+  var el = wmBody('us');
+  if (!people.length) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('user') + '<div class="fs-empty-title">' + T('Aucun utilisateur') + '</div><div>' + T('Créez un compte pour chaque personne qui se connecte aux partages ou au bureau.') + '</div><button class="web-open" onclick="usGo(\'newuser\')">' + T('Nouvel utilisateur') + '</button></div>';
+    return;
+  }
+  var h = '<div class="web-table us-list"><div class="web-tr head"><span>' + T('Utilisateur') + '</span><span>' + T('Groupes') + '</span><span>' + T('Partages Windows') + '</span><span>' + T('État') + '</span></div>';
+  people.forEach(function(u) {
+    var st = usState(u), groups = [usPrimary(u)].concat(usGroupsOf(u).map(usGroupName)).filter(function(x, i, a) { return x && a.indexOf(x) === i; });
+    h += '<button class="web-tr" data-us="' + Number(u.id) + '"><span class="cron-two"><strong>' + webEsc(u.username) + '</strong><span class="dim">' + webEsc(u.full_name && u.full_name !== u.username ? u.full_name : '') + '</span></span>'
+      + '<span class="dim">' + webEsc(groups.join(', ') || '—') + '</span><span>' + (u.smb ? T('Oui') : '<span class="dim">' + T('Non') + '</span>') + '</span>'
+      + '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span></button>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-us]').forEach(function(b) { b.onclick = function() { usGo('user', Number(b.dataset.us)); }; });
+}
+function usSystemView(soft) {
+  var sys = _us.users.filter(function(u) { return u.builtin === true; });
+  wmHead('us', T('Comptes du système'), { keepScroll: soft, sub: T('Comptes internes de TrueNAS et de ses services. Ils ne se modifient pas ici.') });
+  var h = '<div class="web-table us-sys"><div class="web-tr head"><span>' + T('Compte') + '</span><span class="num">UID</span><span>' + T('Rôle') + '</span></div>';
+  sys.forEach(function(u) { h += '<div class="web-tr"><span class="mono">' + webEsc(u.username) + '</span><span class="num dim">' + webEsc(u.uid) + '</span><span class="dim">' + webEsc(u.full_name || '') + '</span></div>'; });
+  wmBody('us').innerHTML = h + '</div>';
+}
+function usUserView(soft) {
+  var u = usUser(_us.sel), st = usState(u), id = Number(u.id), others = usGroupsOf(u).map(usGroupName).filter(function(n) { return n !== usPrimary(u); });
+  wmHead('us', u.username, { keepScroll: soft, back: [T('Utilisateurs'), 'usGo(\'users\')'],
+    sub: '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>',
+    actions: u.builtin ? '' : '<button class="web-open" onclick="usGo(\'edituser\',' + id + ')">' + T('Modifier') + '</button>' });
+  var h = netFacts([
+    [T('Identifiant'), '<span class="mono">' + webEsc(u.username) + '</span>'], [T('Nom complet'), webEsc(u.full_name || '')], ['E-mail', webEsc(u.email || '')],
+    ['UID', '<span class="mono">' + webEsc(u.uid) + '</span>'], [T('Groupe principal'), webEsc(usPrimary(u))], [T('Autres groupes'), webEsc(others.join(', '))],
+    [T('Dossier personnel'), u.home && !/^\/(var\/empty|nonexistent)/.test(u.home) ? '<span class="mono">' + webEsc(u.home) + '</span>' : '<span class="dim">' + T('Aucun') + '</span>'],
+    [T('Ligne de commande'), /nologin|false$/.test(u.shell || '') || !u.shell ? '<span class="dim">' + T('Non autorisée') + '</span>' : '<span class="mono">' + webEsc(u.shell) + '</span>'],
+    [T('Partages Windows'), u.smb ? T('Peut s\'y connecter') : '<span class="dim">' + T('Non autorisé') + '</span>'],
+    [T('Mot de passe'), u.password_disabled ? '<span class="dim">' + T('Désactivé') + '</span>' : T('Défini')]
+  ]);
+  if (!u.builtin) h += '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + wmRow('usGo(\'pwd\',' + id + ')', T('Changer le mot de passe'), T('Le nouveau mot de passe sert tout de suite, partages compris'))
+    + wmRow('usLock(' + id + ',' + (u.locked ? 'false' : 'true') + ')', u.locked ? T('Déverrouiller le compte') : T('Verrouiller le compte'), u.locked ? T('Le compte peut de nouveau se connecter') : T('Le compte reste en place mais ne peut plus se connecter'))
+    + wmRow('openApp(\'access\')', T('Droits d\'accès'), T('Partages et applications ouverts à ce compte'))
+    + wmRow('usDelete(' + id + ')', T('Supprimer'), T('Le compte disparaît, ses fichiers restent sur le NAS'), 'danger')
+    + '</div>';
+  wmBody('us').innerHTML = h;
+}
+function usShellOptions(cur) {
+  var c = _us.shells || { '/usr/sbin/nologin': 'nologin', '/usr/bin/bash': 'bash', '/usr/bin/zsh': 'zsh', '/usr/bin/sh': 'sh' }, keys = Object.keys(c);
+  if (cur && keys.indexOf(cur) < 0) keys.unshift(cur);
+  return keys.map(function(k) { return '<option value="' + webEsc(k) + '"' + (k === cur ? ' selected' : '') + '>' + (/nologin$/.test(k) ? T('Aucune (recommandé)') : webEsc(c[k] || k)) + '</option>'; }).join('');
+}
+function usGroupChecks(u) {
+  var mine = ensureArray(u && u.groups), teams = usTeams().filter(function(g) { return !u || !u.group || u.group.id !== g.id; });
+  if (!teams.length) return '<span class="wm-hint">' + T('Aucun groupe pour l\'instant.') + '</span>';
+  return '<div class="wm-checks">' + teams.map(function(g) { return '<label><input class="acl-check" type="checkbox" data-usg="' + Number(g.id) + '"' + (mine.indexOf(g.id) >= 0 ? ' checked' : '') + '><span>' + webEsc(usGroupName(g)) + '</span></label>'; }).join('') + '</div>';
+}
+function usUserForm(u) {
+  var back = u ? [u.username, 'usGo(\'user\',' + Number(u.id) + ')'] : [T('Utilisateurs'), 'usGo(\'users\')'];
+  wmHead('us', u ? T('Modifier le compte') : T('Nouvel utilisateur'), { back: back, narrow: true });
+  var h = '<div class="wm-form">';
+  if (!u) h += wmField(T('Identifiant'), wmInput('us-username', '', 'maxlength="32"'), T('En minuscules, sans espace ni accent : il sert à se connecter.'));
+  h += wmField(T('Nom complet'), wmInput('us-fullname', u ? u.full_name : ''))
+    + wmField(T('E-mail (facultatif)'), wmInput('us-email', u ? u.email : '', 'type="email"'));
+  if (!u) h += wmField(T('Mot de passe'), '<input class="wm-input" id="us-pw1" type="password" autocomplete="new-password">')
+    + wmField(T('Mot de passe, une seconde fois'), '<input class="wm-input" id="us-pw2" type="password" autocomplete="new-password">');
+  h += wmField(T('Groupes'), usGroupChecks(u));
+  if (u) h += wmField(T('Ligne de commande (SSH)'), '<select class="wm-input" id="us-shell">' + usShellOptions(u.shell || '/usr/sbin/nologin') + '</select>');
+  else h += '<div class="web-group">' + wmSwitch('us-smb', T('Partages Windows (SMB)'), T('Le compte peut ouvrir les dossiers partagés depuis un ordinateur'), true) + '</div>';
+  h += '<div class="web-foot"><button class="fs-btn" onclick="' + back[1] + '">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="us-save" onclick="usUserSave()">' + (u ? T('Enregistrer') : T('Créer le compte')) + '</button></div></div>';
+  wmBody('us').innerHTML = h;
+  var f = document.getElementById(u ? 'us-fullname' : 'us-username'); if (f) { try { f.focus(); } catch (_) {} }
+}
+async function usUserSave() {
+  var u = _us.nav === 'edituser' ? usUser(_us.sel) : null, btn = document.getElementById('us-save');
+  var groups = Array.prototype.map.call(document.querySelectorAll('#us-body [data-usg]:checked'), function(c) { return Number(c.dataset.usg); });
+  var p = { full_name: wmVal('us-fullname'), email: wmVal('us-email') || null, groups: groups };
+  if (u) {
+    // les groupes cachés du formulaire (groupes du système) sont conservés
+    var hidden = ensureArray(u.groups).filter(function(g) { var x = usGroup(g); return x && x.builtin === true; });
+    p.groups = groups.concat(hidden);
+    p.shell = wmVal('us-shell') || u.shell;
+    if (!p.full_name) p.full_name = u.username;
+  } else {
+    p.username = wmVal('us-username');
+    var a = (document.getElementById('us-pw1') || {}).value || '', b = (document.getElementById('us-pw2') || {}).value || '';
+    if (!/^[a-z_][a-z0-9_.-]*\$?$/.test(p.username)) { toast(T('Identifiant invalide : minuscules, chiffres, tiret, point')); return; }
+    if (!a) { toast(T('Le mot de passe est obligatoire')); return; }
+    if (a !== b) { toast(T('Les deux mots de passe ne sont pas identiques')); return; }
+    if (!p.full_name) p.full_name = p.username;
+    p.password = a; p.group_create = true; p.smb = wmOn('us-smb');
+  }
+  if (btn) btn.disabled = true;
+  try {
+    var r = u ? await wsCall('user.update', [u.id, p], 120000) : await wsCall('user.create', [p], 120000);
+    toast(u ? T('✅ Compte enregistré') : T('✅ Compte créé'));
+    _us.nav = 'user'; _us.sel = u ? u.id : (typeof r === 'number' ? r : (r && r.id) || null);
+    if (_us.sel == null) _us.nav = 'users';
+    await loadUsers();
+  } catch (e) { wmToastErr(e); if (btn) btn.disabled = false; }
+}
+function usPwdForm() {
+  var u = usUser(_us.sel), back = 'usGo(\'user\',' + Number(u.id) + ')';
+  wmHead('us', T('Changer le mot de passe'), { back: [u.username, back], narrow: true });
+  wmBody('us').innerHTML = '<div class="wm-form">'
+    + wmField(T('Nouveau mot de passe'), '<input class="wm-input" id="us-pw1" type="password" autocomplete="new-password">')
+    + wmField(T('Une seconde fois'), '<input class="wm-input" id="us-pw2" type="password" autocomplete="new-password" onkeydown="if(event.key===\'Enter\')usPwdSave()">')
+    + '<div class="web-foot"><button class="fs-btn" onclick="' + back + '">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="us-save" onclick="usPwdSave()">' + T('Changer le mot de passe') + '</button></div></div>';
+  try { document.getElementById('us-pw1').focus(); } catch (_) {}
+}
+async function usPwdSave() {
+  var u = usUser(_us.sel), a = (document.getElementById('us-pw1') || {}).value || '', b = (document.getElementById('us-pw2') || {}).value || '', btn = document.getElementById('us-save');
+  if (!u) return;
+  if (!a) { toast(T('Le mot de passe est obligatoire')); return; }
+  if (a !== b) { toast(T('Les deux mots de passe ne sont pas identiques')); return; }
+  if (btn) btn.disabled = true;
+  try { await wsCall('user.update', [u.id, { password: a }], 120000); toast(T('✅ Mot de passe changé')); _us.nav = 'user'; await loadUsers(); }
+  catch (e) { wmToastErr(e); if (btn) btn.disabled = false; }
+}
+async function usLock(id, lock) {
+  var u = usUser(id);
+  if (!u) return;
+  if (lock && !await showConfirm(T('Verrouiller le compte <strong>') + webEsc(u.username) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">' + T('Il ne pourra plus se connecter tant qu\'il reste verrouillé.') + '</span>', { ok: T('Verrouiller') })) return;
+  try { await wsCall('user.update', [u.id, { locked: !!lock }], 120000); toast(lock ? T('✅ Compte verrouillé') : T('✅ Compte déverrouillé')); }
+  catch (e) { wmToastErr(e); }
+  loadUsers(true);
+}
+async function usDelete(id) {
+  var u = usUser(id);
+  if (!u) return;
+  if (!await showConfirm(T('Supprimer le compte <strong>') + webEsc(u.username) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">' + T('Ses fichiers restent sur le NAS. Ses droits sur les partages sont retirés.') + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  try {
+    // le groupe privé créé avec le compte (même nom, sans autre membre) part avec lui
+    var g = u.group && usGroup(u.group.id), own = !!g && usGroupName(g) === u.username && usMembers(g).length <= 1;
+    await wsCall('user.delete', [u.id, { delete_group: own }], 120000);
+    toast(T('✅ Compte supprimé'));
+    _us.nav = 'users'; _us.sel = null;
+  } catch (e) { wmToastErr(e); }
+  loadUsers();
+}
+function usGroupsView(soft) {
+  var teams = usTeams();
+  wmHead('us', T('Groupes'), { keepScroll: soft, sub: T('Un groupe réunit des comptes pour leur donner les mêmes droits d\'un coup.'),
+    actions: '<button class="web-open" onclick="usGo(\'newgroup\')">' + T('Nouveau groupe') + '</button>' });
+  var el = wmBody('us');
+  if (!teams.length) { el.innerHTML = '<div class="fs-empty">' + webIcon('users') + '<div class="fs-empty-title">' + T('Aucun groupe') + '</div><div>' + T('Par exemple « famille » ou « bureau », pour partager un dossier à plusieurs.') + '</div><button class="web-open" onclick="usGo(\'newgroup\')">' + T('Nouveau groupe') + '</button></div>'; return; }
+  var h = '<div class="web-table us-groups"><div class="web-tr head"><span>' + T('Groupe') + '</span><span>' + T('Membres') + '</span><span class="num">GID</span></div>';
+  teams.forEach(function(g) {
+    var m = usMembers(g).map(function(u) { return u.username; });
+    h += '<button class="web-tr" data-usg="' + Number(g.id) + '"><strong>' + webEsc(usGroupName(g)) + '</strong><span class="dim">' + webEsc(m.join(', ') || T('Aucun membre')) + '</span><span class="num dim">' + webEsc(g.gid) + '</span></button>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-usg]').forEach(function(b) { b.onclick = function() { usGo('group', Number(b.dataset.usg)); }; });
+}
+function usGroupView(soft) {
+  var g = usGroup(_us.sel), people = usPeople(), id = Number(g.id);
+  wmHead('us', usGroupName(g), { keepScroll: soft, back: [T('Groupes'), 'usGo(\'groups\')'], narrow: true, sub: 'GID <span class="mono">' + webEsc(g.gid) + '</span>' });
+  var h = '<div class="web-group-title" style="margin-top:6px;">' + T('Membres') + '</div>';
+  if (people.length) {
+    h += '<div class="web-group">' + people.map(function(u) {
+      var primary = u.group && u.group.id === g.id, inG = primary || ensureArray(u.groups).indexOf(g.id) >= 0;
+      return wmSwitch('', webEsc(u.username), primary ? T('groupe principal de ce compte') : webEsc(u.full_name && u.full_name !== u.username ? u.full_name : ''), inG, 'data-usm="' + Number(u.id) + '"' + (primary ? ' disabled' : ''));
+    }).join('') + '</div><div class="web-foot" style="margin-top:14px;"><button class="fs-btn web-primary" id="us-save" onclick="usGroupMembersSave()">' + T('Enregistrer les membres') + '</button></div>';
+  } else h += '<p class="web-note" style="margin-top:0;">' + T('Aucun utilisateur à ajouter pour l\'instant.') + '</p>';
+  h += '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + wmRow('openApp(\'access\')', T('Droits d\'accès'), T('Partages et applications ouverts à ce groupe'))
+    + wmRow('usGroupDelete(' + id + ')', T('Supprimer'), T('Les comptes restent, ils perdent seulement ce groupe'), 'danger') + '</div>';
+  wmBody('us').innerHTML = h;
+}
+async function usGroupMembersSave() {
+  var g = usGroup(_us.sel), btn = document.getElementById('us-save');
+  if (!g) return;
+  var want = Array.prototype.filter.call(document.querySelectorAll('#us-body [data-usm]'), function(c) { return c.checked && !c.disabled; }).map(function(c) { return Number(c.dataset.usm); });
+  // les membres qui ne sont pas affichés (comptes du système) restent membres
+  var hidden = ensureArray(g.users).filter(function(uid) { var u = usUser(uid); return !u || u.builtin === true; });
+  if (btn) btn.disabled = true;
+  try { await wsCall('group.update', [g.id, { users: want.concat(hidden) }], 120000); toast(T('✅ Membres enregistrés')); }
+  catch (e) { wmToastErr(e); }
+  loadUsers(true);
+}
+function usGroupForm() {
+  wmHead('us', T('Nouveau groupe'), { back: [T('Groupes'), 'usGo(\'groups\')'], narrow: true });
+  wmBody('us').innerHTML = '<div class="wm-form">' + wmField(T('Nom du groupe'), wmInput('us-gname', '', 'maxlength="32" onkeydown="if(event.key===\'Enter\')usGroupSave()"'), T('En minuscules, sans espace ni accent.'))
+    + '<div class="web-group">' + wmSwitch('us-gsmb', T('Utilisable pour les partages Windows (SMB)'), T('Le groupe pourra recevoir des droits sur les dossiers partagés'), true) + '</div>'
+    + '<div class="web-foot"><button class="fs-btn" onclick="usGo(\'groups\')">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="us-save" onclick="usGroupSave()">' + T('Créer le groupe') + '</button></div></div>';
+  try { document.getElementById('us-gname').focus(); } catch (_) {}
+}
+async function usGroupSave() {
+  var name = wmVal('us-gname'), btn = document.getElementById('us-save');
+  if (!/^[a-z_][a-z0-9_.-]*$/.test(name)) { toast(T('Nom invalide : minuscules, chiffres, tiret, point')); return; }
+  if (btn) btn.disabled = true;
+  try {
+    var r = await wsCall('group.create', [{ name: name, smb: wmOn('us-gsmb') }], 120000);
+    toast(T('✅ Groupe créé'));
+    _us.nav = 'group'; _us.sel = typeof r === 'number' ? r : (r && r.id) || null;
+    if (_us.sel == null) _us.nav = 'groups';
+    await loadUsers();
+  } catch (e) { wmToastErr(e); if (btn) btn.disabled = false; }
+}
+async function usGroupDelete(id) {
+  var g = usGroup(id);
+  if (!g) return;
+  if (!await showConfirm(T('Supprimer le groupe <strong>') + webEsc(usGroupName(g)) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">' + T('Les droits donnés à ce groupe sur les partages disparaissent avec lui.') + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  try { await wsCall('group.delete', [g.id, { delete_users: false }], 120000); toast(T('✅ Groupe supprimé')); _us.nav = 'groups'; _us.sel = null; }
+  catch (e) { wmToastErr(e); }
+  loadUsers();
+}
+// Anciens noms, gardés pour les appels venus d'ailleurs.
+function userAddModal() { openApp('users'); usGo('newuser'); }
 function iStyle() { return 'width:100%;margin-top:4px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;'; }
 function formRow(label, input) {
   return '<div><label style="font-size:12px;color:var(--text-dim);">' + label + '</label><br>' + input + '</div>';
 }
-function showUserForm(uid, u) {
-  const isNew = !uid;
-  document.getElementById('create-app-title').textContent = isNew ? T('Nouvel utilisateur') : T('Modifier utilisateur');
-  let f = '<div style="display:flex;flex-direction:column;gap:12px;">';
-  f += formRow(T('Nom'), '<input id="uf-username" value="' + (u.username||'') + '" style="' + iStyle() + '" />');
-  if (isNew) f += formRow(T('Mot de passe'), '<input id="uf-password" type="password" style="' + iStyle() + '" />');
-  f += formRow('Home', '<input id="uf-home" value="' + (u.home||'/nonexistent') + '" style="' + iStyle() + '" />');
-  f += formRow('Shell', '<select id="uf-shell" style="' + iStyle() + '">'
-    + ['nologin','bash','sh','zsh','csh'].map(function(s){ return '<option value="/usr/bin/'+s+'"'+(u.shell&&u.shell.endsWith(s)?' selected':'')+'>'+s+'</option>'; }).join('')
-    + '</select>');
-  f += '<div style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="uf-locked" ' + (u.locked?'checked':'') + ' style="width:16px;height:16px;">'
-    + T('<label for="uf-locked" style="font-size:12px;color:var(--text-dim);">Compte verrouille</label></div>');
-  f += '<div style="display:flex;gap:8px;justify-content:flex-end;">'
-    + T('<button class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
-    + Tt`<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="userSave(${uid})">Enregistrer</button>`
-    + '</div></div>';
-  document.getElementById('create-app-form').innerHTML = f;
-  document.getElementById('modal-create-app').style.display = 'flex';
-}
-async function userSave(uid) {
-  const payload = {
-    username: document.getElementById('uf-username').value.trim(),
-    home:     document.getElementById('uf-home').value.trim(),
-    shell:    document.getElementById('uf-shell').value,
-    locked:   document.getElementById('uf-locked').checked
-  };
-  const pwEl = document.getElementById('uf-password');
-  if (pwEl && pwEl.value) payload.password = pwEl.value;
-  try {
-    if (uid) await socketCall('/user/id/' + uid, 'PUT', payload);
-    else     await socketCall('/user', 'POST', payload);
-    toast(uid ? T('Utilisateur mis a jour') : T('Utilisateur cree'));
-    closeCreateApp(); loadUsers();
-  } catch(e) { toast('Err: ' + e.message); }
-}
-async function userDelete(uid, name) {
-  if (!await showConfirm(T('Supprimer l\'utilisateur <strong>') + name + '</strong> ?', {danger:true, ok:T('Supprimer')})) return;
-  try { await socketCall('/user/id/' + uid, 'DELETE', { delete_group: false }); toast(T('Utilisateur supprime')); loadUsers(); }
-  catch(e) { toast('Err: ' + e.message); }
-}
 
 // ============================================================
-// SHARING
+// SHARING — dossiers partagés sur le réseau (SMB et NFS)
 // ============================================================
-function shareTab(tab) {
-  currentShareTab = tab;
-  ['smb','nfs'].forEach(function(t) {
-    var btn = document.getElementById('share-tab-' + t);
-    if (btn) btn.classList.toggle('active', t === tab);
+var _sh = { smb: [], nfs: [], svc: {}, nav: 'all', kind: 'smb', sel: null, loaded: false, seq: 0 };
+function shList(kind) { return kind === 'nfs' ? _sh.nfs : _sh.smb; }
+function shGet(kind, id) { return shList(kind).find(function(s) { return s.id === id; }) || null; }
+function shName(kind, s) { return kind === 'nfs' ? String(s.path || '').split('/').filter(Boolean).pop() || s.path : String(s.name || s.path || ''); }
+function shRo(s) { return s.readonly != null ? !!s.readonly : !!s.ro; }
+function shRoKey(s) { return Object.prototype.hasOwnProperty.call(s, 'readonly') ? 'readonly' : 'ro'; }
+function shSvcName(kind) { return kind === 'nfs' ? 'nfs' : 'cifs'; }
+function shSvcOn(kind) { var s = _sh.svc[shSvcName(kind)]; return !s || s.state === 'RUNNING'; }
+function shGo(nav, kind, id) { _sh.nav = nav; if (kind) _sh.kind = kind; _sh.sel = id == null ? null : id; shRender(); }
+async function loadSharing(soft) {
+  if (!wmBody('sh')) return;
+  var seq = ++_sh.seq;
+  if (!_sh.loaded) { wmHead('sh', T('Partages')); shSide(); wmLoading('sh'); }
+  var r = await Promise.allSettled([wsCall('sharing.smb.query', [[], {}], 60000), wsCall('sharing.nfs.query', [[], {}], 60000), wsCall('service.query', [[], {}], 60000)]);
+  if (seq !== _sh.seq) return;
+  if (r[0].status !== 'fulfilled' && r[1].status !== 'fulfilled') {
+    _sh.loaded = false;
+    wmHead('sh', T('Partages')); shSide();
+    wmFail('sh', T('Les partages ne répondent pas'), r[0].reason, 'loadSharing()');
+    return;
+  }
+  var sort = function(kind, l) { return ensureArray(l).filter(function(s) { return s && s.id != null; }).sort(function(a, b) { return shName(kind, a).localeCompare(shName(kind, b), undefined, { sensitivity: 'base' }); }); };
+  _sh.smb = r[0].status === 'fulfilled' ? sort('smb', r[0].value) : [];
+  _sh.nfs = r[1].status === 'fulfilled' ? sort('nfs', r[1].value) : [];
+  _sh.svc = {};
+  if (r[2].status === 'fulfilled') ensureArray(r[2].value).forEach(function(s) { if (s && s.service) _sh.svc[s.service] = s; });
+  _sh.loaded = true;
+  if ((_sh.nav === 'one' || _sh.nav === 'edit') && !shGet(_sh.kind, _sh.sel)) _sh.nav = 'all';
+  shRender(soft === true);
+}
+function shSide() {
+  var h = wmNav({ active: _sh.nav === 'all', call: 'shGo(\'all\')', icon: 'share', name: T('Tous les partages'), count: (_sh.smb.length + _sh.nfs.length) || null });
+  [['smb', T('Windows, Mac, Linux (SMB)')], ['nfs', T('Linux et serveurs (NFS)')]].forEach(function(k) {
+    var l = shList(k[0]);
+    if (!l.length) return;
+    h += wmSep() + wmSideTitle(k[1], l.length);
+    l.forEach(function(s) { h += wmNav({ active: _sh.nav !== 'all' && _sh.nav !== 'new' && _sh.kind === k[0] && _sh.sel === s.id, call: 'shGo(\'one\',\'' + k[0] + '\',' + Number(s.id) + ')', dot: s.enabled === false ? 'off' : (shSvcOn(k[0]) ? '' : 'warn'), name: shName(k[0], s), meta: s.path || '' }); });
   });
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'access\')', icon: 'key', name: T('Droits d\'accès') })
+    + wmNav({ call: 'openApp(\'services\')', icon: 'sliders', name: T('Services') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/sharing\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('sh', h);
+}
+function shRender(soft) {
+  shSide();
+  if (_sh.nav === 'one' && shGet(_sh.kind, _sh.sel)) shOneView(soft);
+  else if (_sh.nav === 'edit' && shGet(_sh.kind, _sh.sel)) shForm(shGet(_sh.kind, _sh.sel));
+  else if (_sh.nav === 'new') shForm(null);
+  else { _sh.nav = 'all'; shAllView(soft); }
+}
+// Le service qui porte ces partages est arrêté : on le dit, avec le bouton pour le lancer.
+function shSvcNote(kind) {
+  if (shSvcOn(kind)) return '';
+  return '<div class="apps-note up"><span><strong>' + (kind === 'nfs' ? T('Le service NFS est arrêté') : T('Le service SMB est arrêté')) + '</strong><span class="dim">' + T('Ces partages ne sont pas joignables tant qu\'il ne tourne pas.') + '</span></span>'
+    + '<button class="web-open" onclick="shSvcStart(\'' + kind + '\')">' + T('Démarrer le service') + '</button></div>';
+}
+async function shSvcStart(kind) {
+  var name = shSvcName(kind);
+  toast(T('Démarrage du service…'));
+  try {
+    await wmCall('service.control', ['START', name, { silent: false }], 60000);
+    var s = _sh.svc[name];
+    if (s && s.id != null && !s.enable) await wsCall('service.update', [s.id, { enable: true }], 60000);   // et il repartira avec le NAS
+    toast(T('✅ Service démarré'));
+  } catch (e) { wmToastErr(e); }
+  loadSharing(true);
+}
+function shAllView(soft) {
+  var n = _sh.smb.length + _sh.nfs.length;
+  wmHead('sh', T('Partages'), { keepScroll: soft, sub: webEsc(n > 1 ? Tf('{0} dossiers partagés sur le réseau', n) : (n ? T('1 dossier partagé sur le réseau') : '')),
+    actions: '<button class="fs-btn" onclick="loadSharing()">' + T('Actualiser') + '</button><button class="web-open" onclick="shGo(\'new\',_sh.kind)">' + T('Nouveau partage') + '</button>' });
+  var el = wmBody('sh');
+  if (!n) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('share') + '<div class="fs-empty-title">' + T('Aucun partage') + '</div><div>' + T('Partagez un dossier du NAS pour l\'ouvrir depuis les ordinateurs du réseau.') + '</div><button class="web-open" onclick="shGo(\'new\',\'smb\')">' + T('Nouveau partage') + '</button></div>';
+    return;
+  }
+  var h = '';
+  [['smb', T('Windows, Mac, Linux (SMB)')], ['nfs', T('Linux et serveurs (NFS)')]].forEach(function(k) {
+    var l = shList(k[0]);
+    if (!l.length) return;
+    h += '<div class="web-group-title"' + (h ? '' : ' style="margin-top:6px;"') + '>' + k[1] + '</div>' + shSvcNote(k[0])
+      + '<div class="web-table sh-list"><div class="web-tr head"><span>' + T('Partage') + '</span><span>' + T('Dossier') + '</span><span>' + T('État') + '</span></div>';
+    l.forEach(function(s) {
+      var on = s.enabled !== false;
+      h += '<button class="web-tr" data-sh="' + k[0] + ':' + Number(s.id) + '"><span class="cron-two"><strong>' + webEsc(shName(k[0], s)) + '</strong><span class="dim">' + webEsc(s.comment || '') + '</span></span><span class="mono dim">' + webEsc(s.path || '') + '</span>'
+        + '<span class="apps-state"><span class="web-dot' + (on ? '' : ' off') + '"></span>' + (on ? (shRo(s) ? T('Lecture seule') : T('Actif')) : T('Désactivé')) + '</span></button>';
+    });
+    h += '</div>';
+  });
+  el.innerHTML = h;
+  el.querySelectorAll('[data-sh]').forEach(function(b) { b.onclick = function() { var p = b.dataset.sh.split(':'); shGo('one', p[0], Number(p[1])); }; });
+}
+function shOneView(soft) {
+  var kind = _sh.kind, s = shGet(kind, _sh.sel), id = Number(s.id), on = s.enabled !== false, host = webSiteHost(), name = shName(kind, s);
+  wmHead('sh', name, { keepScroll: soft, back: [T('Partages'), 'shGo(\'all\')'],
+    sub: '<span class="apps-state"><span class="web-dot' + (on ? '' : ' off') + '"></span>' + (on ? T('Partagé') : T('Désactivé')) + '</span>',
+    actions: '<button class="fs-btn" onclick="webOpenFolder(' + wmQ(s.path) + ')">' + T('Ouvrir le dossier') + '</button><button class="web-open" onclick="shGo(\'edit\',\'' + kind + '\',' + id + ')">' + T('Modifier') + '</button>' });
+  var copy = function(t) { return '<span class="mono">' + webEsc(t) + '</span><button class="web-mini" onclick="copyText(' + wmQ(t) + ')">' + T('Copier') + '</button>'; };
+  var facts = [[T('Type'), kind === 'nfs' ? 'NFS' : 'SMB'], [T('Dossier'), '<span class="mono">' + webEsc(s.path || '') + '</span>']];
+  if (kind === 'smb') { facts.push([T('Adresse Windows'), copy('\\\\' + host + '\\' + s.name)]); facts.push([T('Adresse macOS, Linux'), copy('smb://' + host + '/' + encodeURIComponent(s.name))]); }
+  else { facts.push([T('Adresse de montage'), copy(host + ':' + s.path)]);
+    facts.push([T('Réseaux autorisés'), webEsc(ensureArray(s.networks).concat(ensureArray(s.hosts)).join(', ')) || '<span class="dim">' + T('Tous') + '</span>']); }
+  facts.push([T('Commentaire'), webEsc(s.comment || '')]);
+  var h = shSvcNote(kind) + netFacts(facts) + '<div class="web-group-title">' + T('Réglages') + '</div><div class="web-group">'
+    + wmSwitch('', T('Partage actif'), T('Désactivé, le dossier n\'est plus visible sur le réseau ; rien n\'est effacé'), on, 'onchange="shSet(\'enabled\',this.checked)"')
+    + wmSwitch('', T('Lecture seule'), T('Personne ne peut modifier ni supprimer les fichiers par ce partage'), shRo(s), 'onchange="shSet(\'' + shRoKey(s) + '\',this.checked)"')
+    + (kind === 'smb' && s.browsable != null ? wmSwitch('', T('Visible dans le voisinage réseau'), T('Masqué, il faut connaître son adresse pour l\'ouvrir'), s.browsable !== false, 'onchange="shSet(\'browsable\',this.checked)"') : '')
+    + '</div><div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + (kind === 'smb' ? wmRow('openApp(\'access\')', T('Droits d\'accès'), T('Choisir qui peut lire ou modifier ce partage')) : '')
+    + wmRow('shDelete(\'' + kind + '\',' + id + ')', T('Supprimer le partage'), T('Le dossier et ses fichiers restent sur le NAS'), 'danger') + '</div>';
+  wmBody('sh').innerHTML = h;
+}
+async function shSet(key, val) {
+  var s = shGet(_sh.kind, _sh.sel), p = {};
+  if (!s) return;
+  p[key] = !!val;
+  try { await wsCall('sharing.' + _sh.kind + '.update', [s.id, p], 120000); }
+  catch (e) { wmToastErr(e); }
+  loadSharing(true);
+}
+function shForm(s) {
+  var kind = _sh.kind, back = s ? [shName(kind, s), 'shGo(\'one\',\'' + kind + '\',' + Number(s.id) + ')'] : [T('Partages'), 'shGo(\'all\')'], d = _sh.draft || {};
+  _sh.draft = null;
+  wmHead('sh', s ? T('Modifier le partage') : T('Nouveau partage'), { back: back, narrow: true });
+  var h = '<div class="wm-form">';
+  if (!s) h += wmField(T('Pour qui'), '<select class="wm-input" id="sh-kind" onchange="shKind(this.value)"><option value="smb"' + (kind === 'smb' ? ' selected' : '') + '>' + T('Windows, Mac, Linux (SMB)') + '</option><option value="nfs"' + (kind === 'nfs' ? ' selected' : '') + '>' + T('Linux et serveurs (NFS)') + '</option></select>');
+  h += wmField(T('Dossier à partager'), '<div class="wm-inline">' + wmInput('sh-path', s ? s.path : (d.path || ''), 'placeholder="/mnt/pool/dossier" style="font-family:var(--font-mono);"') + '<button class="fs-btn" onclick="openFilePicker(\'sh-path\',null,\'/mnt\')">' + T('Parcourir') + '</button></div>');
+  if (kind === 'smb') h += wmField(T('Nom du partage'), wmInput('sh-name', s ? s.name : '', 'maxlength="80"'), T('C\'est le nom que les ordinateurs voient. Vide, le nom du dossier est repris.'));
+  else h += wmField(T('Réseaux autorisés (facultatif)'), wmInput('sh-nets', s ? ensureArray(s.networks).join(', ') : '', 'placeholder="192.168.0.0/24" style="font-family:var(--font-mono);"'), T('Vide, toutes les machines du réseau peuvent monter ce partage.'));
+  h += wmField(T('Commentaire (facultatif)'), wmInput('sh-comment', s ? s.comment : (d.comment || '')))
+    + '<div class="web-foot"><button class="fs-btn" onclick="' + back[1] + '">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="sh-save" onclick="shSave()">' + (s ? T('Enregistrer') : T('Partager le dossier')) + '</button></div></div>';
+  wmBody('sh').innerHTML = h;
+}
+// Changer de type en cours de saisie garde le dossier et le commentaire déjà tapés.
+function shKind(v) { _sh.draft = { path: wmVal('sh-path'), comment: wmVal('sh-comment') }; _sh.kind = v === 'nfs' ? 'nfs' : 'smb'; shForm(null); }
+async function shSave() {
+  var kind = _sh.kind, s = _sh.nav === 'edit' ? shGet(kind, _sh.sel) : null, btn = document.getElementById('sh-save');
+  var p = { path: wmVal('sh-path').replace(/\/+$/, ''), comment: wmVal('sh-comment') };
+  if (!/^\/mnt\/.+/.test(p.path)) { toast(T('Choisissez un dossier du NAS, sous /mnt')); return; }
+  if (kind === 'smb') { p.name = wmVal('sh-name') || p.path.split('/').pop(); if (/[\\\/\[\]:|<>+=;,*?"]/.test(p.name)) { toast(T('Ce nom contient un caractère interdit')); return; } }
+  else p.networks = wmVal('sh-nets').split(/[\s,;]+/).filter(Boolean);
+  if (btn) btn.disabled = true;
+  try {
+    var r = s ? await wsCall('sharing.' + kind + '.update', [s.id, p], 120000) : await wsCall('sharing.' + kind + '.create', [p], 120000);
+    toast(s ? T('✅ Partage enregistré') : T('✅ Dossier partagé'));
+    _sh.nav = 'one'; _sh.sel = s ? s.id : ((r && r.id) != null ? r.id : null);
+    if (_sh.sel == null) _sh.nav = 'all';
+    await loadSharing();
+  } catch (e) { wmToastErr(e); if (btn) btn.disabled = false; }
+}
+async function shDelete(kind, id) {
+  var s = shGet(kind, id);
+  if (!s) return;
+  if (!await showConfirm(T('Ne plus partager <strong>') + webEsc(shName(kind, s)) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">' + T('Le dossier et ses fichiers restent sur le NAS.') + '</span>', { danger: true, ok: T('Supprimer le partage') })) return;
+  try { await wsCall('sharing.' + kind + '.delete', [s.id], 120000); toast(T('✅ Partage supprimé')); _sh.nav = 'all'; _sh.sel = null; }
+  catch (e) { wmToastErr(e); }
   loadSharing();
 }
-async function loadSharing() {
-  const el = document.getElementById('sharing-content');
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
-  try {
-    const ep = currentShareTab === 'smb' ? '/sharing/smb' : '/sharing/nfs';
-    const shares = ensureArray(await socketCall(ep));
-    if (!shares.length) { el.innerHTML = '<div class="empty-state" style="height:200px;"><div class="es-icon">&#128225;</div><span>' + Tf('Aucun partage {0}', currentShareTab.toUpperCase()) + '</span></div>'; return; }
-    let html = T('<table class="container-table"><thead><tr><th>Nom</th><th>Chemin</th><th>Actif</th><th>Actions</th></tr></thead><tbody>');
-    shares.forEach(function(s) {
-      const sid  = JSON.stringify(s.id);
-      const name = (s.name || s.path || '&mdash;').replace(/</g,'&lt;');
-      const enabled = s.enabled !== false;
-      html += '<tr><td><strong>' + name + '</strong></td>'
-        + '<td style="font-size:11px;color:var(--text-dim);">' + (s.path||'&mdash;') + '</td>'
-        + '<td><span style="color:' + (enabled?'var(--success)':'var(--danger)') + '">&#9679;</span></td>'
-        + '<td style="white-space:nowrap;display:flex;gap:4px;">'
-        + '<button class="fs-btn" style="font-size:11px;padding:4px 9px;" onclick="shareToggle(' + sid + ',' + !enabled + ')">' + (enabled?'Pause':'Start') + '</button>'
-        + '<button class="fs-btn" style="font-size:11px;padding:4px 9px;color:#f87171;" onclick="shareDelete(' + sid + ')">Del</button>'
-        + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
-}
-function shareAddModal() {
-  const isSMB = currentShareTab === 'smb';
-  document.getElementById('create-app-title').textContent = T('Nouveau partage ') + (isSMB?'SMB':'NFS');
-  let f = '<div style="display:flex;flex-direction:column;gap:12px;">';
-  f += formRow(T('Chemin *'),
-    '<div style="display:flex;gap:6px;">'
-    + '<input id="sh-path" placeholder="/mnt/pool/…" style="' + iStyle() + ';flex:1;" />'
-    + T('<button class="fs-btn" style="padding:0 10px;flex-shrink:0;" onclick="openFilePicker(\'sh-path\',null,\'/mnt\')" title="Parcourir">📁</button>')
-    + '</div>');
-  if (isSMB) f += formRow(T('Nom du partage'), '<input id="sh-name" style="' + iStyle() + T('" placeholder="ex: Vidéos" />'));
-  f += formRow(T('Commentaire'), '<input id="sh-comment" style="' + iStyle() + '" />');
-  f += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">'
-    + T('<button class="fs-btn" onclick="closeCreateApp()">Annuler</button>')
-    + T('<button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="shareSave()">✓ Créer</button>')
-    + '</div></div>';
-  document.getElementById('create-app-form').innerHTML = f;
-  document.getElementById('modal-create-app').style.display = 'flex';
-}
-async function shareSave() {
-  const isSMB = currentShareTab === 'smb';
-  const ep = isSMB ? '/sharing/smb' : '/sharing/nfs';
-  const payload = { path: document.getElementById('sh-path').value.trim() };
-  if (isSMB) { const n=document.getElementById('sh-name'); if(n) payload.name=n.value.trim(); }
-  if (!payload.path) { toast(T('Chemin requis')); return; }
-  try { await socketCall(ep, 'POST', payload); toast(T('Partage cree')); closeCreateApp(); loadSharing(); }
-  catch(e) { toast('Err: ' + e.message); }
-}
-async function shareToggle(id, enable) {
-  const ep = (currentShareTab==='smb' ? '/sharing/smb/id/' : '/sharing/nfs/id/') + id;
-  try { await socketCall(ep, 'PUT', { enabled: enable }); loadSharing(); }
-  catch(e) { toast('Err: ' + e.message); }
-}
-async function shareDelete(id) {
-  if (!await showConfirm(T('Supprimer ce partage ?'), {danger:true, ok:T('Supprimer')})) return;
-  const ep = (currentShareTab==='smb' ? '/sharing/smb/id/' : '/sharing/nfs/id/') + id;
-  try { await socketCall(ep, 'DELETE', {}); toast(T('Partage supprime')); loadSharing(); }
-  catch(e) { toast('Err: ' + e.message); }
-}
+// Anciens noms, gardés pour les appels venus d'ailleurs.
+function shareTab(tab) { currentShareTab = tab; _sh.kind = tab === 'nfs' ? 'nfs' : 'smb'; }
+function shareAddModal() { openApp('sharing'); shGo('new', _sh.kind); }
 
 // ============================================================
-// SERVICES
+// SERVICES — ce qui tourne en arrière-plan sur le NAS
 // ============================================================
+var _sv = { list: [], nav: 'all', sel: null, filter: 'all', busy: {}, loaded: false, seq: 0 };
 const SERVICE_LABELS = {
-  cifs:'SMB / Samba', nfs:'NFS', ftp:'FTP', ssh:'SSH', s3:'MinIO S3', snmp:'SNMP',
+  cifs:'SMB', nfs:'NFS', ftp:'FTP', ssh:'SSH', s3:'MinIO S3', snmp:'SNMP',
   tftp:'TFTP', ups:'UPS', lldp:'LLDP', mdns:'mDNS / Avahi',
-  iscsitarget:'iSCSI Target', smartd:'SMART', netdata:'Netdata'
+  iscsitarget:'iSCSI', smartd:'S.M.A.R.T.', netdata:'Netdata', nvmet:'NVMe-oF', webshare:'WebShare'
 };
-async function loadServices() {
-  const el = document.getElementById('services-content');
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
-  try {
-    const services = ensureArray(await socketCall('/service'));
-    if (!services.length) { el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">&#9881;</div><span>Aucun service</span></div>'); return; }
-    let html = T('<table class="container-table"><thead><tr><th>Service</th><th>Etat</th><th>Auto-demarrage</th><th>Actions</th></tr></thead><tbody>');
-    services.forEach(function(s) {
-      const running = s.state === 'RUNNING';
-      const sname   = SERVICE_LABELS[s.service] || s.service;
-      const sid = JSON.stringify(s.id);
-      const svc = s.service.replace(/'/g, "\\'");
-      html += '<tr>'
-        + '<td><strong>' + sname + '</strong><div style="font-size:10px;color:var(--text-dim);">' + s.service + '</div></td>'
-        + '<td><span class="container-state ' + (running?'running':'stopped') + '">' + (running?T('Actif'):T('Arrete')) + '</span></td>'
-        + '<td style="text-align:center;"><input type="checkbox" ' + (s.enable?'checked':'') + ' onchange="serviceAutostart(' + sid + ',this.checked)" style="width:14px;height:14px;cursor:pointer;"></td>'
-        + '<td style="white-space:nowrap;display:flex;gap:4px;">'
-        + (running
-          ? '<button class="fs-btn" style="font-size:11px;padding:3px 9px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#f87171;" onclick="serviceToggle(\'' + svc + '\',false)">Stop</button>'
-          : '<button class="fs-btn" style="font-size:11px;padding:3px 9px;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="serviceToggle(\'' + svc + '\',true)">Start</button>')
-        + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
+function svDesc(name) {
+  return ({ cifs: T('Partages pour Windows, macOS et Linux'), nfs: T('Partages pour Linux et les hyperviseurs'), ftp: T('Transfert de fichiers à l\'ancienne, à réserver au réseau local'),
+    ssh: T('Ligne de commande à distance, et transfert de fichiers SFTP'), snmp: T('Supervision du NAS par un outil externe'), ups: T('Surveille l\'onduleur et éteint le NAS proprement en cas de coupure'),
+    iscsitarget: T('Disques réseau pour serveurs et machines virtuelles'), nvmet: T('Disques réseau NVMe pour serveurs'), smartd: T('Surveillance de la santé des disques'),
+    webshare: T('Accès aux fichiers par le navigateur') })[name] || '';
 }
-async function serviceToggle(name, start) {
-  toast((start?T('Demarrage'):T('Arret')) + ' ' + name + '...');
-  try {
-    const jobId = await socketCall('/service/' + (start?'start':'stop'), 'POST', { service: name });
-    if (jobId && typeof jobId === 'number') await waitJob(jobId, 30000).catch(function(){});
-    toast('OK: ' + name + ' ' + (start?T('demarre'):T('arrete')));
-    loadServices();
-  } catch(e) { toast('Err: ' + e.message); }
+function svLabel(s) { return SERVICE_LABELS[s.service] || s.service; }
+function svGet(name) { return _sv.list.find(function(s) { return s.service === name; }) || null; }
+function svState(s) {
+  if (_sv.busy[s.service]) return { key: 'busy', label: _sv.busy[s.service], dot: 'warn' };
+  return s.state === 'RUNNING' ? { key: 'run', label: T('En marche'), dot: '' } : { key: 'stop', label: T('Arrêté'), dot: 'off' };
 }
-async function serviceAutostart(id, enable) {
-  try { await socketCall('/service/id/' + id, 'PUT', { enable: enable }); }
-  catch(e) { toast('Err: ' + e.message); }
+function svGo(nav, name) { _sv.nav = nav === 'one' && svGet(name) ? 'one' : 'all'; _sv.sel = _sv.nav === 'one' ? name : null; if (nav === 'run' || nav === 'stop' || nav === 'all') _sv.filter = nav; svRender(); }
+async function loadServices(soft) {
+  if (!wmBody('sv')) return;
+  var seq = ++_sv.seq;
+  if (!_sv.loaded) { wmHead('sv', 'Services'); svSide(); wmLoading('sv'); }
+  try {
+    var l = ensureArray(await wsCall('service.query', [[], {}], 60000));
+    if (seq !== _sv.seq) return;
+    _sv.list = l.filter(function(s) { return s && s.service; }).sort(function(a, b) { return svLabel(a).localeCompare(svLabel(b), undefined, { sensitivity: 'base' }); });
+    _sv.loaded = true;
+    if (_sv.nav === 'one' && !svGet(_sv.sel)) _sv.nav = 'all';
+    svRender(soft === true);
+  } catch (e) {
+    if (seq !== _sv.seq) return;
+    _sv.loaded = false;
+    wmHead('sv', 'Services'); svSide();
+    wmFail('sv', T('Les services ne répondent pas'), e, 'loadServices()');
+  }
+}
+function svSide() {
+  var run = _sv.list.filter(function(s) { return s.state === 'RUNNING'; }).length;
+  var h = wmNav({ active: _sv.nav === 'all' && _sv.filter === 'all', call: 'svGo(\'all\')', icon: 'sliders', name: T('Tous les services'), count: _sv.list.length || null })
+    + wmNav({ active: _sv.nav === 'all' && _sv.filter === 'run', call: 'svGo(\'run\')', dot: '', name: T('En marche'), count: run || null })
+    + wmNav({ active: _sv.nav === 'all' && _sv.filter === 'stop', call: 'svGo(\'stop\')', dot: 'off', name: T('Arrêtés'), count: (_sv.list.length - run) || null });
+  if (_sv.list.length) {
+    h += wmSep() + wmSideTitle('Services');
+    _sv.list.forEach(function(s) { var st = svState(s); h += wmNav({ active: _sv.nav === 'one' && _sv.sel === s.service, call: 'svGo(\'one\',decodeURIComponent(' + wmQ(s.service) + '))', dot: st.dot, name: svLabel(s), meta: st.label }); });
+  }
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'sharing\')', icon: 'share', name: T('Partages') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/system/services\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('sv', h);
+}
+function svRender(soft) { svSide(); if (_sv.nav === 'one' && svGet(_sv.sel)) svOneView(soft); else svAllView(soft); }
+function svAllView(soft) {
+  var list = _sv.list.filter(function(s) { return _sv.filter === 'all' || (_sv.filter === 'run') === (s.state === 'RUNNING'); });
+  var run = _sv.list.filter(function(s) { return s.state === 'RUNNING'; }).length;
+  wmHead('sv', _sv.filter === 'run' ? T('Services en marche') : (_sv.filter === 'stop' ? T('Services arrêtés') : 'Services'), { keepScroll: soft,
+    sub: webEsc(Tf('{0} services, {1} en marche', _sv.list.length, run)), actions: '<button class="fs-btn" onclick="loadServices()">' + T('Actualiser') + '</button>' });
+  var el = wmBody('sv');
+  if (!list.length) { el.innerHTML = '<div class="fs-empty">' + webIcon('sliders') + '<div class="fs-empty-title">' + T('Aucun service ici') + '</div></div>'; return; }
+  var h = '<div class="web-table sv-list"><div class="web-tr head"><span>Service</span><span>' + T('État') + '</span><span>' + T('Au démarrage du NAS') + '</span><span></span></div>';
+  list.forEach(function(s) {
+    var st = svState(s), q = wmQ(s.service), busy = st.key === 'busy';
+    h += '<div class="web-tr click" role="button" tabindex="0" data-sv="' + webEsc(s.service) + '"><span class="cron-two"><strong>' + webEsc(svLabel(s)) + '</strong><span class="dim">' + webEsc(svDesc(s.service) || s.service) + '</span></span>'
+      + '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>'
+      + '<span onclick="event.stopPropagation()"><input type="checkbox" aria-label="' + webEsc(T('Lancer au démarrage du NAS')) + '"' + (s.enable ? ' checked' : '') + ' onchange="svAuto(' + q + ',this.checked)"></span>'
+      + '<span class="apps-open" onclick="event.stopPropagation()">' + (busy ? '' : '<button class="web-mini" onclick="svAct(' + q + ',\'' + (st.key === 'run' ? 'STOP' : 'START') + '\')">' + (st.key === 'run' ? T('Arrêter') : T('Démarrer')) + '</button>') + '</span></div>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-sv]').forEach(function(r) {
+    var go = function() { svGo('one', r.dataset.sv); };
+    r.onclick = go;
+    r.onkeydown = function(ev) { if (ev.target === r && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); go(); } };
+  });
+}
+function svOneView(soft) {
+  var s = svGet(_sv.sel), st = svState(s), q = wmQ(s.service), run = st.key === 'run', busy = st.key === 'busy';
+  wmHead('sv', svLabel(s), { keepScroll: soft, back: ['Services', 'svGo(\'' + _sv.filter + '\')'], narrow: true,
+    sub: '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>',
+    actions: busy ? '' : (run ? '<button class="fs-btn" onclick="svAct(' + q + ',\'RESTART\')">' + T('Redémarrer') + '</button><button class="fs-btn" onclick="svAct(' + q + ',\'STOP\')">' + T('Arrêter') + '</button>'
+                              : '<button class="web-open" onclick="svAct(' + q + ',\'START\')">' + T('Démarrer') + '</button>') });
+  var h = (svDesc(s.service) ? '<p class="cat-lede">' + webEsc(svDesc(s.service)) + '.</p>' : '')
+    + netFacts([[T('État'), webEsc(st.label)], [T('Nom technique'), '<span class="mono">' + webEsc(s.service) + '</span>'], [T('Processus'), ensureArray(s.pids).length ? '<span class="mono">' + webEsc(ensureArray(s.pids).slice(0, 6).join(', ')) + '</span>' : '']])
+    + '<div class="web-group-title">' + T('Réglages') + '</div><div class="web-group">'
+    + wmSwitch('', T('Lancer au démarrage du NAS'), T('Sans cela, le service reste arrêté après un redémarrage'), !!s.enable, 'onchange="svAuto(' + q + ',this.checked)"') + '</div>'
+    + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + (s.service === 'cifs' || s.service === 'nfs' ? wmRow('openApp(\'sharing\')', T('Partages'), T('Les dossiers que ce service met sur le réseau')) : '')
+    + (s.service === 'ssh' ? wmRow('openApp(\'terminal\')', 'Terminal', T('Ouvrir une ligne de commande sur le NAS')) : '')
+    + wmRow('openTrueNASPage(\'/ui/system/services\')', T('Réglages avancés'), T('Ports, chiffrement et options du service, dans TrueNAS')) + '</div>';
+  wmBody('sv').innerHTML = h;
+}
+async function svAct(enc, verb) {
+  var name = decodeURIComponent(enc), s = svGet(name);
+  if (!s || _sv.busy[name]) return;
+  var label = svLabel(s);
+  if (verb !== 'START') {
+    var warn = name === 'ssh' ? T('Les sessions SSH ouvertes seront coupées.') : (name === 'cifs' || name === 'nfs' ? T('Les ordinateurs connectés aux partages seront déconnectés.') : '');
+    if (!await showConfirm((verb === 'STOP' ? T('Arrêter le service <strong>') : T('Redémarrer le service <strong>')) + webEsc(label) + '</strong> ?' + (warn ? '<br><span style="font-size:12px;color:var(--text-dim);">' + warn + '</span>' : ''), { ok: verb === 'STOP' ? T('Arrêter') : T('Redémarrer') })) return;
+  }
+  _sv.busy[name] = verb === 'START' ? T('Démarrage en cours') : (verb === 'STOP' ? T('Arrêt en cours') : T('Redémarrage en cours'));
+  svRender(true);
+  try {
+    await wmCall('service.control', [verb, name, { silent: false }], 90000);
+    toast('✅ ' + (verb === 'START' ? Tf('{0} est démarré', label) : (verb === 'STOP' ? Tf('{0} est arrêté', label) : Tf('{0} a redémarré', label))));
+  } catch (e) { wmToastErr(e); }
+  delete _sv.busy[name];
+  loadServices(true);
+}
+async function svAuto(enc, on) {
+  var s = svGet(decodeURIComponent(enc));
+  if (!s) return;
+  try { await wsCall('service.update', [s.id, { enable: !!on }], 60000); s.enable = !!on; }
+  catch (e) { wmToastErr(e); }
+  loadServices(true);
 }
 
 // ============================================================
@@ -20159,7 +20678,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      USERS WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-users" style="top:55px;left:180px;width:680px;height:520px;">
+<div class="window" id="win-users" style="top:55px;left:180px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="users">
     <span class="window-icon">👤</span>
     <span class="window-title">Utilisateurs</span>
@@ -20167,13 +20686,19 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn min" onclick="minimizeWin('users')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('users')"></button>
       <button class="win-btn cls" onclick="closeWin('users')"></button>
-    </div></div>
-  <div class="window-body">
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="fs-btn" onclick="loadUsers()">↻ Actualiser</button>
-      <button class="fs-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="userAddModal()">+ Ajouter un utilisateur</button>
     </div>
-    <div id="users-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="us-side" aria-label="Utilisateurs"></nav>
+      <section class="web-main">
+        <header class="web-head" id="us-head"></header>
+        <div class="web-body" id="us-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
   </div>
   <div class="resize-handle" data-win="users"></div>
 </div>
@@ -20181,7 +20706,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      SHARING WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-sharing" style="top:60px;left:200px;width:700px;height:500px;">
+<div class="window" id="win-sharing" style="top:60px;left:200px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="sharing">
     <span class="window-icon">📡</span>
     <span class="window-title">Partages</span>
@@ -20189,14 +20714,19 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn min" onclick="minimizeWin('sharing')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('sharing')"></button>
       <button class="win-btn cls" onclick="closeWin('sharing')"></button>
-    </div></div>
-  <div class="window-body">
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button class="fs-btn active" id="share-tab-smb" onclick="shareTab('smb')">SMB (Windows)</button>
-      <button class="fs-btn" id="share-tab-nfs" onclick="shareTab('nfs')">NFS (Linux)</button>
-      <button class="fs-btn" style="margin-left:auto;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="shareAddModal()">+ Ajouter</button>
     </div>
-    <div id="sharing-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="sh-side" aria-label="Partages"></nav>
+      <section class="web-main">
+        <header class="web-head" id="sh-head"></header>
+        <div class="web-body" id="sh-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
   </div>
   <div class="resize-handle" data-win="sharing"></div>
 </div>
@@ -20204,7 +20734,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      SERVICES WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-services" style="top:65px;left:210px;width:660px;height:480px;">
+<div class="window" id="win-services" style="top:65px;left:210px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="services">
     <span class="window-icon">⚙️</span>
     <span class="window-title">Services</span>
@@ -20212,12 +20742,19 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn min" onclick="minimizeWin('services')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('services')"></button>
       <button class="win-btn cls" onclick="closeWin('services')"></button>
-    </div></div>
-  <div class="window-body">
-    <div style="margin-bottom:12px;display:flex;gap:8px;">
-      <button class="fs-btn" onclick="loadServices()">↻ Actualiser</button>
     </div>
-    <div id="services-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="sv-side" aria-label="Services"></nav>
+      <section class="web-main">
+        <header class="web-head" id="sv-head"></header>
+        <div class="web-body" id="sv-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
   </div>
   <div class="resize-handle" data-win="services"></div>
 </div>
