@@ -634,14 +634,15 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   /* ===== Sites Web — fenêtre à deux volets : colonne de navigation à gauche (comme Fichiers), contenu à droite.
      La fenêtre s'élargit d'elle-même tant qu'elle contient « .web-shell » ; les autres écrans de la modale ne changent pas. ===== */
   #modal-create-app:has(.web-shell) > div {
-    width:min(1040px,95vw) !important; max-width:95vw !important;
-    height:min(740px,90vh) !important; max-height:90vh !important;
-    padding:0 !important; overflow:hidden;
+    width:var(--dk-mw, min(1040px,95vw)) !important; max-width:none !important;
+    height:var(--dk-mh, min(740px,90vh)) !important; max-height:none !important;
+    position:relative; left:var(--dk-mx, 0px); top:var(--dk-my, 0px);
+    padding:0 !important; overflow:visible;
   }
   #modal-create-app:has(.web-shell) > div > div:first-child {
     margin:0 !important; padding:14px 18px 14px 22px; border-bottom:1px solid var(--glass-border);
   }
-  #modal-create-app:has(.web-shell) #create-app-form { flex:1 1 auto; min-height:0; display:flex; }
+  #modal-create-app:has(.web-shell) #create-app-form { flex:1 1 auto; min-height:0; display:flex; overflow:hidden; border-radius:0 0 15px 15px; }
   .web-shell { display:flex; flex:1 1 auto; min-width:0; min-height:0; }
   .web-side {
     width:236px; flex-shrink:0; display:flex; flex-direction:column; gap:2px;
@@ -945,6 +946,26 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     cursor:se-resize; border-right:2px solid var(--glass-border); border-bottom:2px solid var(--glass-border);
     border-radius:0 0 var(--radius) 0;
   }
+
+  /* Redimensionnement par les bords : huit poignées invisibles (quatre côtés, quatre coins) à cheval sur la bordure.
+     La poignée visible « .resize-handle » du coin bas-droit reste, comme repère. */
+  .win-edge { position:absolute; z-index:6; touch-action:none; }
+  .win-edge-n { top:-4px; left:12px; right:12px; height:8px; cursor:ns-resize; }
+  .win-edge-s { bottom:-4px; left:12px; right:12px; height:8px; cursor:ns-resize; }
+  .win-edge-w { left:-4px; top:12px; bottom:12px; width:8px; cursor:ew-resize; }
+  .win-edge-e { right:-4px; top:12px; bottom:12px; width:8px; cursor:ew-resize; }
+  .win-edge-nw, .win-edge-ne, .win-edge-sw, .win-edge-se { width:16px; height:16px; }
+  .win-edge-nw { top:-4px; left:-4px; cursor:nwse-resize; }
+  .win-edge-se { bottom:-4px; right:-4px; cursor:nwse-resize; }
+  .win-edge-ne { top:-4px; right:-4px; cursor:nesw-resize; }
+  .win-edge-sw { bottom:-4px; left:-4px; cursor:nesw-resize; }
+  .window.maximized > .win-edge { display:none; }
+  body.dk-resizing, body.dk-resizing * { user-select:none !important; -webkit-user-select:none !important; }
+  body.dk-resizing iframe { pointer-events:none; }
+  /* Boîtes de gestionnaire (Sites Web, Téléchargements) : mêmes poignées, visibles seulement en mode « fenêtre large ». */
+  #modal-create-app > div > .win-edge { display:none; }
+  #modal-create-app:has(.web-shell) > div > .win-edge,
+  #modal-create-app.dl-wide:not(.dl-max) > div > .win-edge { display:block; }
 
   /* ===== CONTEXT MENU ===== */
   #ctx-menu {
@@ -1653,16 +1674,18 @@ select option{ background:#101b2e; color:#e9eef7; }
 
 /* MDM-INSTALLED-APP-EDIT-CSS-BEGIN */
 #modal-create-app.dl-wide > div {
-  width: min(900px, 95vw) !important;
-  max-width: 95vw !important;
-  height: min(680px, 88vh) !important;
-  max-height: 92vh !important;
+  width: var(--dk-mw, min(900px, 95vw)) !important;
+  max-width: none !important;
+  height: var(--dk-mh, min(680px, 88vh)) !important;
+  max-height: none !important;
   min-width: 420px;
   min-height: 320px;
-  resize: both !important;
-  overflow: hidden !important;
+  position: relative; left: var(--dk-mx, 0px); top: var(--dk-my, 0px);
+  resize: none !important;
+  overflow: visible !important;
 }
 #modal-create-app.dl-wide.dl-max > div {
+  left: 0; top: 0;
   width: 96vw !important;
   max-width: 96vw !important;
   height: 93vh !important;
@@ -9560,6 +9583,7 @@ function closeApp(id) {
 function bringToFront(win) {
   topZ++;
   win.style.zIndex = topZ;
+  setupWinEdges(win);  // fenêtres créées à la volée comprises
 }
 
 function addTaskbarBtn(id, win, customTitle) {
@@ -9590,6 +9614,82 @@ function removeTaskbarBtn(id) {
   if (!tb) return;
   const btn = tb.querySelector('[data-win="' + id + '"]');
   if (btn) btn.remove();
+}
+
+// ===========================
+// REDIMENSIONNEMENT PAR LES BORDS
+// ===========================
+// Huit poignées par fenêtre : n, s, e, w et les quatre coins. « start(dir) » rend la fonction
+// appelée à chaque déplacement avec l'écart (dx, dy) depuis le point de départ, ou null pour refuser.
+var DK_EDGES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+function dkAddEdges(box, start) {
+  if (!box || box._dkEdges) return;
+  box._dkEdges = true;
+  DK_EDGES.forEach(function(d) {
+    var h = document.createElement('div');
+    h.className = 'win-edge win-edge-' + d;
+    h.addEventListener('pointerdown', function(e) {
+      if (e.button !== 0) return;
+      var move = start(d);
+      if (!move) return;
+      e.preventDefault(); e.stopPropagation();
+      try { h.setPointerCapture(e.pointerId); } catch (_) {}
+      document.body.classList.add('dk-resizing');
+      var onMove = function(mv) { move(mv.clientX - e.clientX, mv.clientY - e.clientY); };
+      var onUp = function() {
+        h.removeEventListener('pointermove', onMove);
+        h.removeEventListener('pointerup', onUp);
+        h.removeEventListener('pointercancel', onUp);
+        document.body.classList.remove('dk-resizing');
+      };
+      h.addEventListener('pointermove', onMove);
+      h.addEventListener('pointerup', onUp);
+      h.addEventListener('pointercancel', onUp);
+    });
+    box.appendChild(h);
+  });
+}
+// Fenêtre du bureau : le bord opposé à celui qu'on tire ne bouge pas.
+function setupWinEdges(win) {
+  dkAddEdges(win, function(dir) {
+    if (win.classList.contains('maximized')) return null;
+    bringToFront(win);
+    var r = win.getBoundingClientRect(), cs = getComputedStyle(win);
+    var minW = Math.max(320, parseFloat(cs.minWidth) || 0), minH = Math.max(200, parseFloat(cs.minHeight) || 0);
+    return function(dx, dy) {
+      var w = r.width, h = r.height, l = r.left, t = r.top;
+      if (dir.indexOf('e') >= 0) w = Math.max(minW, r.width + dx);
+      if (dir.indexOf('s') >= 0) h = Math.max(minH, r.height + dy);
+      if (dir.indexOf('w') >= 0) { w = Math.max(minW, Math.min(r.right, r.width - dx)); l = r.right - w; }
+      if (dir.indexOf('n') >= 0) { h = Math.max(minH, Math.min(r.bottom, r.height - dy)); t = r.bottom - h; }
+      win.style.width = w + 'px'; win.style.height = h + 'px';
+      win.style.left = l + 'px'; win.style.top = t + 'px';
+    };
+  });
+}
+// Boîte de gestionnaire : elle est centrée, donc on décale de la moitié de ce qu'on ajoute
+// pour que seul le bord tiré se déplace. Taille et décalage passent par des variables CSS,
+// que seules les boîtes larges lisent : les petites boîtes de dialogue ne sont pas touchées.
+function dkModalEdges() {
+  var m = document.getElementById('modal-create-app'), box = m && m.querySelector(':scope > div');
+  dkAddEdges(box, function(dir) {
+    var r = box.getBoundingClientRect();
+    var mx0 = parseFloat(box.style.getPropertyValue('--dk-mx')) || 0, my0 = parseFloat(box.style.getPropertyValue('--dk-my')) || 0;
+    var maxW = window.innerWidth - 16, maxH = window.innerHeight - 16;
+    var minW = box.querySelector('.web-shell') ? 720 : 560, minH = 360;
+    var sx = dir.indexOf('e') >= 0 ? 1 : dir.indexOf('w') >= 0 ? -1 : 0, sy = dir.indexOf('s') >= 0 ? 1 : dir.indexOf('n') >= 0 ? -1 : 0;
+    return function(dx, dy) {
+      var w = Math.max(minW, Math.min(maxW, r.width + sx * dx)), h = Math.max(minH, Math.min(maxH, r.height + sy * dy));
+      box.style.setProperty('--dk-mw', w + 'px');
+      box.style.setProperty('--dk-mh', h + 'px');
+      box.style.setProperty('--dk-mx', (mx0 + sx * (w - r.width) / 2) + 'px');
+      box.style.setProperty('--dk-my', (my0 + sy * (h - r.height) / 2) + 'px');
+    };
+  });
+}
+function dkModalResetSize() {
+  var m = document.getElementById('modal-create-app'), box = m && m.querySelector(':scope > div');
+  if (box) ['--dk-mw', '--dk-mh', '--dk-mx', '--dk-my'].forEach(function(p) { box.style.removeProperty(p); });
 }
 
 // ===========================
@@ -9688,6 +9788,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Drag + resize : utiliser les fonctions réutilisables
   document.querySelectorAll('.window-titlebar').forEach(setupDragWin);
   document.querySelectorAll('.resize-handle').forEach(setupResizeHandle);
+  document.querySelectorAll('.window').forEach(setupWinEdges);
+  dkModalEdges();
 
   // Click on desktop to bring windows to front
   document.addEventListener('mousedown', function(e) {
@@ -12972,7 +13074,7 @@ function openCreateApp(appName, train) {
   document.getElementById('modal-create-app').style.display = 'flex';
 }
 function openEditApp(appName) { _editingApp = appName; openCreateApp(appName, null); }
-function closeCreateApp() { document.getElementById('modal-create-app').style.display = 'none'; }
+function closeCreateApp() { document.getElementById('modal-create-app').style.display = 'none'; dkModalResetSize(); }
 
 async function buildEditForm(appName) {
   const formEl = document.getElementById('create-app-form');
