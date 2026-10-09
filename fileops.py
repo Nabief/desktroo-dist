@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.4.0'
+APP_VERSION = '2.4.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -2890,6 +2890,19 @@ def _lv2_all_mac_addresses():
     return macs
 
 
+def _lv2_mac_usable(mac, own=None):
+    """Adresse MAC choisie à la main : bien formée, adresse de carte (pas de groupe), et libre.
+    « own » est l'adresse actuelle de la carte qu'on modifie : elle a le droit de rester la même."""
+    mac = _lv2_mac_norm(mac)
+    if int(mac[:2], 16) & 1:
+        raise RuntimeError('Adresse MAC refusée : le premier octet doit être pair (adresse d’une seule carte).')
+    if mac == '00:00:00:00:00:00':
+        raise RuntimeError('Adresse MAC invalide')
+    if mac != own and mac in _lv2_all_mac_addresses():
+        raise RuntimeError('Adresse MAC déjà utilisée par une carte d’une machine virtuelle.')
+    return mac
+
+
 def _lv2_generate_mac():
     import random
 
@@ -2974,7 +2987,7 @@ def _lv2_insert_interface_node(devices, iface):
     devices.append(iface)
 
 
-def _lv2_add_nic(name, source='default', model='virtio', net_type='nat'):
+def _lv2_add_nic(name, source='default', model='virtio', net_type='nat', mac=''):
     import re
     import xml.etree.ElementTree as ET
 
@@ -2992,7 +3005,8 @@ def _lv2_add_nic(name, source='default', model='virtio', net_type='nat'):
     if model not in allowed_models:
         raise RuntimeError('Modèle carte réseau invalide')
 
-    mac = _lv2_generate_mac()
+    # adresse choisie par l'utilisateur, sinon tirée au hasard parmi les adresses libres
+    mac = _lv2_mac_usable(mac) if str(mac or '').strip() else _lv2_generate_mac()
 
     def patch(xml):
         root = ET.fromstring(xml)
@@ -3033,6 +3047,47 @@ def _lv2_add_nic(name, source='default', model='virtio', net_type='nat'):
             'VM active : carte réseau ajoutée à la configuration persistante. '
             'Redémarrer la VM pour qu’elle apparaisse dans le système invité.'
             if running else ''
+        )
+    }
+
+
+def _lv2_set_nic_mac(name, mac, new_mac):
+    """Remplace l'adresse MAC d'une carte dans la configuration persistante de la machine."""
+    import xml.etree.ElementTree as ET
+
+    mac = _lv2_mac_norm(mac)
+    new_mac = _lv2_mac_usable(new_mac, own=mac)
+
+    state = _lv2_state(name)
+    running = 'running' in state or 'paused' in state
+
+    if new_mac != mac:
+        def patch(xml):
+            root = ET.fromstring(xml)
+            devices = root.find('devices')
+            if devices is None:
+                raise RuntimeError('Bloc <devices> introuvable dans le XML libvirt')
+            for iface in devices.findall('interface'):
+                mac_el = iface.find('mac')
+                if mac_el is not None and (mac_el.get('address') or '').lower() == mac:
+                    mac_el.set('address', new_mac)
+                    return _lv2_xml_to_text(root)
+            raise RuntimeError('Carte réseau introuvable dans la configuration libvirt')
+
+        _lv2_xml_patch(name, patch)
+
+    return {
+        'api': 'libvirt2',
+        'ok': True,
+        'name': name,
+        'action': 'set_nic_mac',
+        'nic': {'mac': new_mac, 'previous': mac},
+        'changed': new_mac != mac,
+        'persistent': True,
+        'warning': (
+            'VM active : la nouvelle adresse MAC est enregistrée. '
+            'Arrêter puis démarrer la VM pour qu’elle soit prise en compte.'
+            if running and new_mac != mac else ''
         )
     }
 
@@ -8440,7 +8495,24 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     name,
                     body.get('source', 'default'),
                     body.get('model', 'virtio'),
-                    body.get('net_type', 'nat')
+                    body.get('net_type', 'nat'),
+                    body.get('mac', '')
+                ))
+            except Exception as e:
+                self._json(500, {'api': 'libvirt2', 'error': str(e)})
+            return
+
+        # PUT /libvirt2/vms/{name}/nics/mac
+        m = re.match(r'^/libvirt2/vms/([^/]+)/nics/mac$', path)
+        if m:
+            try:
+                from urllib.parse import unquote
+                name = unquote(m.group(1))
+                body = self._body()
+                self._json(200, _lv2_set_nic_mac(
+                    name,
+                    body.get('mac', ''),
+                    body.get('new_mac', '')
                 ))
             except Exception as e:
                 self._json(500, {'api': 'libvirt2', 'error': str(e)})

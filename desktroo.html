@@ -3870,7 +3870,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Détacher ce disque de la configuration de la VM ?\\n\\n": "Detach this disk from the VM configuration?\\n\\n",
 "Détachement du disque...": "Detaching disk...",
 "Aucune carte supprimable": "No removable adapter",
-"NAT ou bridge · MAC auto ·": "NAT or bridge · auto MAC ·",
 "Mode réseau": "Network mode",
 "NAT privé": "Private NAT",
 "Bridge LAN": "LAN bridge",
@@ -4524,7 +4523,21 @@ select option{ background:#101b2e; color:#e9eef7; }
 "L'entrée quitte la liste ; le fichier reste dans son dossier.": "The entry leaves the list; the file stays in its folder.",
 "Machines virtuelles": "Virtual machines",
 "Nouvelle VM": "New VM",
-"Tester la connexion SSH": "Test the SSH connection"
+"Tester la connexion SSH": "Test the SSH connection",
+"Carte": "Card",
+"Cartes réseau": "Network cards",
+"Adresse MAC": "MAC address",
+"automatique": "automatic",
+"Ajouter ou retirer une carte": "Add or remove a card",
+"NAT ou bridge": "NAT or bridge",
+"L'adresse MAC d'une carte est enregistrée dans la configuration de la machine : elle reste la même à chaque démarrage.": "A card's MAC address is stored in the machine's configuration: it stays the same at every start.",
+"Adresse MAC : laisse le champ vide pour une adresse tirée automatiquement, ou saisis celle que tu veux donner à la carte.": "MAC address: leave the field empty for an automatically drawn address, or enter the one you want the card to have.",
+"Adresse MAC invalide (forme attendue : 52:54:00:12:34:56).": "Invalid MAC address (expected form: 52:54:00:12:34:56).",
+"Adresse MAC de cette carte :": "MAC address of this card:",
+"✅ Adresse MAC enregistrée": "✅ MAC address saved",
+"Adresse MAC refusée : le premier octet doit être pair (adresse d’une seule carte).": "MAC address refused: the first byte must be even (address of a single card).",
+"Adresse MAC déjà utilisée par une carte d’une machine virtuelle.": "MAC address already used by a card of a virtual machine.",
+"VM active : la nouvelle adresse MAC est enregistrée. Arrêter puis démarrer la VM pour qu’elle soit prise en compte.": "VM running: the new MAC address is saved. Stop then start the VM for it to take effect."
 }
 </script>
 <script id="dk-i18n">
@@ -15134,15 +15147,22 @@ function renderLibvirt2Detail(vm) {
     storageRows = T('<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">Aucun disque détecté.</div>');
   }
 
-  var nicRows = '';
+  var nicGrid = 'display:grid;grid-template-columns:64px minmax(0,1fr) 84px minmax(0,auto);gap:12px;align-items:center;';
+  var nicRows = nics.length ? '<div style="' + nicGrid + 'padding:0 0 6px;font-size:11px;color:var(--text-dim);">'
+    + '<div>' + T('Carte') + '</div><div>' + T('Réseau') + '</div><div>Type</div><div style="text-align:right;">' + T('Adresse MAC') + '</div></div>' : '';
   nics.forEach(function(n, idx) {
-    nicRows += '<div style="display:grid;grid-template-columns:80px 1fr 100px 150px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.045);font-size:12px;">'
+    nicRows += '<div style="' + nicGrid + 'padding:9px 0;border-top:1px solid rgba(255,255,255,0.045);font-size:12px;">'
       + '<div style="font-weight:700;">NIC ' + (idx + 1) + '</div>'
-      + '<div>' + lv2Esc((n.type || '—') + ' / ' + (n.source || '—')) + '</div>'
+      + '<div style="word-break:break-all;">' + lv2Esc((n.type || '—') + ' / ' + (n.source || '—')) + '</div>'
       + '<div style="color:var(--text-dim);">' + lv2Esc(n.model || '—') + '</div>'
-      + '<div style="color:var(--text-dim);word-break:break-all;">' + lv2Esc(n.mac || '—') + '</div>'
-      + '</div>';
+      + '<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;">'
+      + '<span style="font-family:var(--font-mono);font-size:12px;">' + lv2Esc(n.mac || '—') + '</span>'
+      + (n.mac ? '<button class="web-mini" onclick="copyText(\'' + encodeURIComponent(n.mac) + '\')">' + T('Copier') + '</button>'
+               + '<button class="web-mini" onclick="libvirt2EditMacAction(\'' + lv2Esc(vm.name) + '\',\'' + lv2Esc(n.mac) + '\')">' + T('Modifier') + '</button>' : '')
+      + '</div></div>';
   });
+  if (nics.length) nicRows += '<div style="padding-top:10px;border-top:1px solid rgba(255,255,255,0.045);font-size:11px;color:var(--text-dim);line-height:1.5;">'
+    + T('L\'adresse MAC d\'une carte est enregistrée dans la configuration de la machine : elle reste la même à chaque démarrage.') + '</div>';
   if (!nicRows) {
     nicRows = T('<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">Aucune interface réseau détectée.</div>');
   }
@@ -15191,7 +15211,7 @@ function renderLibvirt2Detail(vm) {
     + '</div>'
 
     + lv2Section(T('Stockage'), storageRows)
-    + lv2Section(T('Réseau'), nicRows)
+    + lv2Section(T('Cartes réseau'), nicRows)
     + lv2Section('Snapshots', snapHtml)
     + lv2Section(T('Détails techniques'), tech)
 
@@ -16144,11 +16164,11 @@ function lv2NetworkPanelHtml(vm) {
     + '<div id="lv2-network-panel" class="tnd-panel" style="border-radius:14px;overflow:hidden;">'
 
     + '<div style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px;font-weight:700;display:flex;justify-content:space-between;gap:10px;">'
-    + T('<span>Réseau</span>')
-    + T('<span style="color:var(--text-dim);font-weight:600;">NAT ou bridge · MAC auto ·</span>')
+    + T('<span>Ajouter ou retirer une carte</span>')
+    + T('<span style="color:var(--text-dim);font-weight:600;">NAT ou bridge</span>')
     + '</div>'
 
-    + '<div style="padding:12px;display:grid;grid-template-columns:140px 1fr 130px auto;gap:10px;align-items:end;">'
+    + '<div style="padding:12px;display:grid;grid-template-columns:128px minmax(0,1fr) 108px 168px auto;gap:10px;align-items:end;">'
 
     + '<label style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text-dim);">'
     + T('Mode réseau')
@@ -16175,11 +16195,17 @@ function lv2NetworkPanelHtml(vm) {
     + '</select>'
     + '</label>'
 
+    + '<label style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text-dim);">'
+    + T('Adresse MAC')
+    + '<input id="lv2-net-mac" class="tnd-input" placeholder="' + T('automatique') + '" spellcheck="false" autocomplete="off" style="font-family:var(--font-mono);font-size:12px;">'
+    + '</label>'
+
     + '<button class="fs-btn" onclick="libvirt2AddNicAction(\'' + lv2Esc(vm.name) + T('\')" style="background:rgba(var(--info-rgb),0.14);border-color:rgba(var(--info-rgb),0.35);color:var(--info);">Ajouter NIC</button>')
     + '</div>'
 
     + '<div style="padding:0 12px 10px;font-size:11px;color:var(--text-dim);line-height:1.45;">'
     + (running ? T('VM active : ajout en configuration persistante, visible après redémarrage.') : T('VM arrêtée : ajout en configuration persistante.'))
+    + ' ' + T('Adresse MAC : laisse le champ vide pour une adresse tirée automatiquement, ou saisis celle que tu veux donner à la carte.')
     + '</div>'
 
     + '<div style="padding:12px;border-top:1px solid rgba(255,255,255,0.06);display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">'
@@ -16222,6 +16248,9 @@ async function libvirt2AddNicAction(name) {
     return;
   }
 
+  var mac = lv2MacInput((document.getElementById('lv2-net-mac') || {}).value);
+  if (mac === null) { lv2NetworkStatus(T('Adresse MAC invalide (forme attendue : 52:54:00:12:34:56).'), true); return; }
+
   if (!confirm(T('Ajouter une carte ') + model + T(' en mode ') + netType.toUpperCase() + ' sur ' + source + ' ?')) return;
 
   lv2NetworkStatus(T('Ajout carte réseau...'), false);
@@ -16230,7 +16259,8 @@ async function libvirt2AddNicAction(name) {
     var res = await libvirt2Call('/vms/' + encodeURIComponent(name) + '/nics/add', 'PUT', {
       source: source,
       model: model,
-      net_type: netType
+      net_type: netType,
+      mac: mac
     });
 
     if (res.warning) alert(res.warning);
@@ -16239,6 +16269,27 @@ async function libvirt2AddNicAction(name) {
   } catch(e) {
     lv2NetworkStatus(e.message, true);
   }
+}
+
+// Adresse MAC saisie : rend '' (champ vide), l'adresse mise en forme, ou null si elle est mal formée.
+function lv2MacInput(v) {
+  v = String(v || '').trim().toLowerCase().replace(/-/g, ':');
+  if (!v) return '';
+  return /^[0-9a-f]{2}(:[0-9a-f]{2}){5}$/.test(v) ? v : null;
+}
+// Donne à une carte l'adresse MAC choisie (configuration persistante de la machine).
+async function libvirt2EditMacAction(name, mac) {
+  var v = await showPrompt(T('Adresse MAC de cette carte :'), mac);
+  if (v === null || v === undefined) return;
+  v = lv2MacInput(v);
+  if (v === null) { toast('❌ ' + T('Adresse MAC invalide (forme attendue : 52:54:00:12:34:56).')); return; }
+  if (!v || v === String(mac).toLowerCase()) return;
+  try {
+    var res = await libvirt2Call('/vms/' + encodeURIComponent(name) + '/nics/mac', 'PUT', { mac: mac, new_mac: v });
+    toast(T('✅ Adresse MAC enregistrée'));
+    if (res.warning) toast(Tdyn(res.warning), 9000);
+    await libvirt2Select(name);
+  } catch(e) { toast('❌ ' + e.message); }
 }
 
 async function libvirt2RemoveNicAction(name) {
@@ -16940,7 +16991,7 @@ function lv2DetailInstallTabs(vm) {
       || title === T('Stockage').toLowerCase()
     ) {
       groups.hardware.push(node);
-    } else if (id === 'lv2-network-panel' || title === T('Réseau').toLowerCase()) {
+    } else if (id === 'lv2-network-panel' || title === T('Cartes réseau').toLowerCase()) {
       groups.network.push(node);
     } else if (id === 'lv2-snapshots-panel') {
       groups.snapshots.push(node);
@@ -16953,6 +17004,7 @@ function lv2DetailInstallTabs(vm) {
     }
   });
   groups.overview = cards.concat(notes, groups.overview);
+  groups.network.sort(function(a, b) { return (a.id === 'lv2-network-panel' ? 1 : 0) - (b.id === 'lv2-network-panel' ? 1 : 0); });
 
   tabs.innerHTML = ''
     + T('<button class="web-tab" data-lv2-tab-button="overview" onclick="lv2DetailShowTab(\'overview\')">Vue générale</button>')
