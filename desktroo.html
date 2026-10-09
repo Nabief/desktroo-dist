@@ -2627,365 +2627,81 @@ select option{ background:#101b2e; color:#e9eef7; }
 /* MDM-INSTALLED-APP-EDIT-CSS-END */
 
 /* MDM-ACCESS-CENTER-CSS-BEGIN */
-#ac-content {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  color: var(--text);
-}
-.ac-toolbar {
-  flex: 0 0 auto;
-  min-height: 50px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  background: rgba(255,255,255,.025);
-}
-.ac-toolbar .fs-btn { min-height: 32px; }
-.ac-toolbar-spacer { flex: 1; }
-.ac-status {
-  min-width: 0;
-  max-width: 42%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  color: var(--text-dim);
-}
-.ac-status.error { color: var(--danger); }
-.ac-save-btn {
-  min-width: 112px;
-  color: #c7f9df !important;
-  border-color: rgba(62,207,142,.38) !important;
-  background: linear-gradient(180deg,rgba(62,207,142,.24),rgba(62,207,142,.13)) !important;
-}
-.ac-save-btn:disabled { opacity: .42; cursor: default; }
-.ac-layout {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 250px minmax(0,1fr);
-}
-.ac-sidebar {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid rgba(255,255,255,.07);
-  background: rgba(0,0,0,.13);
-}
-.ac-mode-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 10px;
+#win-access { min-width:900px; min-height:540px; }
+/* Droits d'accès : gabarit des gestionnaires */
+.ac-seg {
+  display:flex; gap:2px; flex-shrink:0; margin:0 0 8px; padding:3px; border-radius:11px;
+  background:rgba(0,0,0,.2); border:1px solid rgba(255,255,255,.07);
 }
 .ac-mode-btn {
-  border: 1px solid rgba(255,255,255,.09);
-  border-radius: 8px;
-  padding: 8px 7px;
-  background: rgba(255,255,255,.04);
-  color: var(--text-dim);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 650;
-  cursor: pointer;
+  flex:1; min-height:28px; border:0; border-radius:8px; background:none; color:var(--text-dim);
+  font:inherit; font-size:12.5px; font-weight:500; cursor:pointer; transition:background .15s, color .15s;
 }
-.ac-mode-btn:hover { background: rgba(255,255,255,.07); color: var(--text); }
-.ac-mode-btn.active {
-  color: #d8f3ff;
-  border-color: rgba(var(--accent2-rgb),.36);
-  background: rgba(var(--accent-rgb),.23);
-}
-.ac-search-wrap { padding: 0 10px 10px; }
-.ac-search {
-  width: 100%;
-  min-height: 36px;
-  padding: 8px 10px;
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 8px;
-  outline: none;
-  color: var(--text);
-  background: rgba(0,0,0,.24);
-  font: inherit;
-  font-size: 12px;
-}
-.ac-search:focus { border-color: rgba(var(--accent2-rgb),.55); box-shadow: 0 0 0 3px rgba(var(--accent2-rgb),.09); }
-.ac-principals { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0 8px 10px; }
-.ac-principal {
-  display: grid;
-  grid-template-columns: 34px minmax(0,1fr) auto;
-  gap: 9px;
-  align-items: center;
-  width: 100%;
-  padding: 9px;
-  margin-bottom: 4px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.ac-principal:hover { background: rgba(255,255,255,.05); }
-.ac-principal.active { border-color: rgba(var(--accent2-rgb),.30); background: rgba(var(--accent-rgb),.17); }
+.ac-mode-btn:hover { color:var(--text); }
+.ac-mode-btn.active { background:rgba(var(--accent-rgb),.2); color:var(--accent2); font-weight:600; }
+.ac-mode-btn:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
+[data-theme="light"] .ac-seg { background:rgba(13,27,53,.06); border-color:rgba(0,0,0,.08); }
+[data-theme="light"] .ac-mode-btn.active { background:#ffffff; color:#0b7a4c; box-shadow:0 1px 2px rgba(0,0,0,.1); }
+.web-side .snap-find { max-width:none; flex-shrink:0; margin-bottom:4px; }
 .ac-avatar {
-  width: 34px; height: 34px; border-radius: 10px;
-  display: grid; place-items: center;
-  color: #d8f3ff; font-weight: 800; font-size: 13px;
-  background: linear-gradient(135deg,rgba(var(--accent-rgb),.55),rgba(124,58,237,.50));
-  border: 1px solid rgba(255,255,255,.10);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0; width:28px; height:28px; border-radius:50%;
+  background:rgba(var(--accent-rgb),.16); color:var(--accent2); font-size:12.5px; font-weight:700;
 }
-.ac-principal-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 680; }
-.ac-principal-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; font-size: 10px; color: var(--text-dim); }
-.ac-principal-state { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(62,207,142,.10); }
-.ac-principal-state.locked { background: var(--danger); box-shadow: 0 0 0 3px rgba(224,82,82,.10); }
-.ac-principal-state.warning { background: var(--warning); box-shadow: 0 0 0 3px rgba(245,158,11,.11); }
-.ac-main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.ac-head {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0,1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 13px 16px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-}
-.ac-head-title { font-size: 15px; font-weight: 760; }
-.ac-head-sub { margin-top: 3px; font-size: 10px; color: var(--text-dim); }
-.ac-tabs { display: flex; gap: 6px; padding: 4px; border: 1px solid rgba(255,255,255,.07); border-radius: 10px; background: rgba(0,0,0,.17); }
-.ac-tab {
-  min-height: 32px; padding: 6px 12px;
-  border: 1px solid transparent; border-radius: 7px;
-  background: transparent; color: var(--text-dim);
-  font: inherit; font-size: 11px; font-weight: 650; cursor: pointer;
-}
-.ac-tab:hover { color: var(--text); background: rgba(255,255,255,.05); }
-.ac-tab.active { color: #d8f3ff; border-color: rgba(var(--accent2-rgb),.30); background: rgba(var(--accent-rgb),.22); }
-.ac-panel { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 14px 16px 18px; }
+.web-nav.active .ac-avatar { background:rgba(var(--accent-rgb),.3); }
+.ac-status { margin-left:auto; align-self:center; max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11.5px; color:var(--text-dim); }
+.ac-status.error { color:var(--danger); }
+.web-open:disabled { background:rgba(255,255,255,.08); color:var(--text-dim); cursor:default; }
+[data-theme="light"] .web-open:disabled { background:rgba(13,27,53,.08); }
+.ac-dirty-dot { display:inline-block; width:8px; height:8px; margin-left:9px; border-radius:50%; background:var(--warning); vertical-align:middle; }
 .ac-info {
-  display: flex; gap: 9px; align-items: flex-start;
-  margin-bottom: 12px; padding: 10px 12px;
-  border: 1px solid rgba(var(--accent2-rgb),.16); border-radius: 9px;
-  background: rgba(var(--accent-rgb),.07); color: var(--text-dim);
-  font-size: 11px; line-height: 1.45;
+  display:flex; align-items:center; gap:12px; margin:2px 0 16px; padding:10px 14px; border-radius:12px;
+  border:1px solid var(--glass-border); background:rgba(255,255,255,.03); font-size:12.5px; line-height:1.55;
 }
-.ac-info.warning { border-color: rgba(245,158,11,.20); background: rgba(245,158,11,.07); }
-.ac-matrix-wrap { overflow: auto; border: 1px solid rgba(255,255,255,.08); border-radius: 11px; }
-.ac-matrix { width: 100%; min-width: 720px; border-collapse: separate; border-spacing: 0; font-size: 11px; }
+.ac-info.warning { border-color:rgba(245,158,11,.32); background:rgba(245,158,11,.08); }
+.ac-smb-warning-actions { margin-left:auto; flex:0 0 auto; }
+.ac-smb-warning-actions .fs-btn { white-space:nowrap; }
+.ac-matrix-wrap { overflow:auto; margin-top:4px; }
+.ac-matrix { width:100%; min-width:640px; border-collapse:separate; border-spacing:0; font-size:12.5px; }
 .ac-matrix th {
-  position: sticky; top: 0; z-index: 2;
-  padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,.08);
-  background: rgba(20,31,51,.98); color: var(--text-dim);
-  font-weight: 680; text-align: center; white-space: nowrap;
+  padding:6px 8px 9px; border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:11.5px; font-weight:600; color:var(--text-dim); text-align:center; white-space:nowrap;
 }
-.ac-matrix th:first-child { text-align: left; min-width: 220px; }
-.ac-matrix td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,.055); text-align: center; }
-.ac-matrix tr:last-child td { border-bottom: 0; }
-.ac-matrix tbody tr:hover td { background: rgba(255,255,255,.025); }
-.ac-resource { text-align: left !important; }
-.ac-resource-name { font-size: 12px; font-weight: 680; }
-.ac-resource-meta { margin-top: 2px; font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 390px; }
+.ac-matrix th:first-child { padding-left:12px; text-align:left; }
+.ac-matrix td { padding:8px; text-align:center; }
+.ac-matrix td:first-child { padding-left:12px; border-radius:8px 0 0 8px; }
+.ac-matrix td:last-child { border-radius:0 8px 8px 0; }
+.ac-matrix tbody tr:first-child td { padding-top:12px; }
+.ac-matrix tbody tr:nth-child(even) td { background:rgba(255,255,255,.028); }
+.ac-matrix tbody tr:hover td { background:rgba(255,255,255,.065); }
+[data-theme="light"] .ac-matrix th { border-bottom-color:rgba(0,0,0,.09); }
+[data-theme="light"] .ac-matrix tbody tr:nth-child(even) td { background:rgba(13,27,53,.035); }
+[data-theme="light"] .ac-matrix tbody tr:hover td { background:rgba(13,27,53,.07); }
+.ac-resource { text-align:left !important; }
+.ac-resource-name { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+.ac-resource-name svg { width:15px; height:15px; flex-shrink:0; color:var(--accent); }
+.ac-resource-meta { max-width:360px; margin:2px 0 0 23px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11.5px; color:var(--text-dim); }
+.ac-effective { display:inline-flex; margin:5px 0 0 23px; padding:2px 8px; border-radius:99px; font-size:11px; color:var(--text-dim); background:rgba(255,255,255,.06); }
+[data-theme="light"] .ac-effective { background:rgba(13,27,53,.06); }
+/* Choix d'un niveau : un rond par colonne, rouge pour « Refusé » */
 .ac-choice {
-  appearance: none; -webkit-appearance: none;
-  width: 21px; height: 21px; margin: 0;
-  border: 1px solid rgba(255,255,255,.16); border-radius: 6px;
-  background: rgba(255,255,255,.055);
-  cursor: pointer; position: relative; outline: none;
-  transition: background .16s,border-color .16s,box-shadow .16s,transform .12s;
+  appearance:none; -webkit-appearance:none; position:relative; width:20px; height:20px; margin:0; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.22); background:rgba(255,255,255,.04); cursor:pointer; outline:none;
+  transition:background .15s, border-color .15s, box-shadow .15s;
 }
-.ac-choice:hover { border-color: rgba(var(--accent2-rgb),.46); transform: translateY(-1px); }
-.ac-choice:focus-visible { box-shadow: 0 0 0 3px rgba(var(--accent2-rgb),.12); }
-.ac-choice:checked { border-color: rgba(var(--accent2-rgb),.62); background: var(--accent); }
-.ac-choice:checked::after {
-  content: "✓"; position: absolute; inset: 0; display: grid; place-items: center;
-  color: var(--accent-ink); font-size: 13px; font-weight: 900;
-}
-.ac-choice.deny:checked::after { color: #fff; }
-.ac-choice.deny:checked { border-color: rgba(224,82,82,.68); background: linear-gradient(135deg,#c43d3d,#e05252); }
-.ac-choice:disabled {
-  opacity: .32;
-  cursor: not-allowed;
-  transform: none;
-  filter: grayscale(.35);
-}
-.ac-choice:disabled:hover { border-color: rgba(255,255,255,.16); transform: none; }
-.ac-smb-warning-actions { margin-left: auto; flex: 0 0 auto; }
-.ac-smb-warning-actions .fs-btn { min-height: 30px; white-space: nowrap; }
-.ac-effective { display: inline-flex; margin-top: 4px; padding: 2px 6px; border-radius: 99px; font-size: 9px; color: var(--text-dim); background: rgba(255,255,255,.05); }
-.ac-dirty-dot { display:inline-block; width:7px; height:7px; margin-left:7px; border-radius:50%; background:var(--warning); vertical-align:middle; }
-.ac-empty { height: 190px; display: grid; place-items: center; color: var(--text-dim); font-size: 12px; text-align: center; }
-.ac-history { display: flex; flex-direction: column; gap: 8px; }
-.ac-history-item { padding: 10px 12px; border: 1px solid rgba(255,255,255,.075); border-radius: 9px; background: rgba(255,255,255,.025); }
-.ac-history-top { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
-.ac-history-action { font-size: 12px; font-weight: 680; }
-.ac-history-time { font-size: 10px; color: var(--text-dim); }
-.ac-history-meta { margin-top: 4px; font-size: 10px; line-height: 1.4; color: var(--text-dim); }
-[data-theme="light"] .ac-sidebar { background: rgba(0,0,0,.025); }
-[data-theme="light"] .ac-matrix th { background: rgba(236,243,252,.98); }
-[data-theme="light"] .ac-search,
-[data-theme="light"] .ac-choice { background-color: rgba(0,0,0,.035); }
-@media (max-width: 780px) {
-  .ac-layout { grid-template-columns: 190px minmax(0,1fr); }
-  .ac-head { grid-template-columns: 1fr; }
-  .ac-tabs { width: 100%; overflow: auto; }
-  .ac-status { display: none; }
-}
-
-/* Services d’accès intégrés */
-.ac-service-card {
-  margin: 0 0 14px;
-  overflow: hidden;
-  border-radius: 12px;
-  background:
-    linear-gradient(135deg, rgba(var(--accent-rgb), .10), rgba(255, 255, 255, .025));
-  border: 1px solid rgba(var(--accent2-rgb), .20);
-}
-
-.ac-service-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, .065);
-}
-
-.ac-service-heading {
-  font-size: 12px;
-  font-weight: 750;
-  color: var(--text);
-}
-
-.ac-service-note {
-  margin-top: 3px;
-  font-size: 10px;
-  line-height: 1.4;
-  color: var(--text-dim);
-}
-
-.ac-service-kind {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(var(--accent-rgb), .16);
-  border: 1px solid rgba(var(--accent2-rgb), .24);
-  color: var(--accent2);
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.ac-service-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.ac-service-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-height: 68px;
-  padding: 12px 72px 12px 14px;
-  cursor: pointer;
-  border-right: 1px solid rgba(255, 255, 255, .055);
-  transition: background .18s ease;
-}
-
-.ac-service-item:last-child {
-  border-right: 0;
-}
-
-.ac-service-item:hover {
-  background: rgba(255, 255, 255, .035);
-}
-
-.ac-service-item.disabled {
-  opacity: .50;
-  cursor: not-allowed;
-}
-
-.ac-service-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ac-service-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.ac-service-description {
-  font-size: 10px;
-  line-height: 1.4;
-  color: var(--text-dim);
-}
-
-.ac-service-switch {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.ac-service-slider {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  width: 42px;
-  height: 24px;
-  transform: translateY(-50%);
-  border: 1px solid rgba(255, 255, 255, .17);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, .09);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .25);
-  transition:
-    background .18s ease,
-    border-color .18s ease,
-    box-shadow .18s ease;
-}
-
-.ac-service-slider::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .90);
-  box-shadow: 0 2px 7px rgba(0, 0, 0, .35);
-  transition: left .18s ease, transform .18s ease;
-}
-
-.ac-service-switch:checked + .ac-service-slider {
-  border-color: rgba(62, 207, 142, .58);
-  background: linear-gradient(90deg, #168f68, #3ecf8e);
-  box-shadow:
-    inset 0 1px 3px rgba(0, 0, 0, .18),
-    0 0 0 3px rgba(62, 207, 142, .08);
-}
-
-.ac-service-switch:checked + .ac-service-slider::after {
-  left: 21px;
-  background: #fff;
-}
-
-.ac-service-switch:focus-visible + .ac-service-slider {
-  box-shadow: 0 0 0 3px rgba(var(--accent2-rgb), .18);
-}
-
-.ac-service-switch:disabled + .ac-service-slider {
-  cursor: not-allowed;
-  filter: grayscale(.55);
-}
+[data-theme="light"] .ac-choice:not(:checked) { border-color:rgba(13,27,53,.28); background:#ffffff; }
+.ac-choice:hover { border-color:rgba(var(--accent2-rgb),.6); }
+.ac-choice:focus-visible { box-shadow:0 0 0 3px rgba(var(--accent2-rgb),.22); }
+.ac-choice:checked { border-color:var(--accent); background:var(--accent); }
+.ac-choice:checked::after { content:""; position:absolute; inset:5px; border-radius:50%; background:var(--accent-ink); }
+.ac-choice.deny:checked { border-color:#e05252; background:#e05252; }
+.ac-choice.deny:checked::after { background:#ffffff; }
+/* Le thème clair blanchit les champs des gestionnaires : le rond coché garde sa couleur. */
+[data-theme="light"] .web-body .ac-choice:checked { background:var(--accent) !important; border-color:var(--accent) !important; }
+[data-theme="light"] .web-body .ac-choice.deny:checked { background:#e05252 !important; border-color:#e05252 !important; }
+.ac-choice:disabled { opacity:.35; cursor:not-allowed; }
+.ac-choice:disabled:hover { border-color:rgba(255,255,255,.22); }
+.ac-empty { padding:44px 20px; color:var(--text-dim); font-size:12.5px; text-align:center; }
+.ac-history-time { flex-shrink:0; font-size:11.5px; color:var(--text-dim); white-space:nowrap; }
 
 .ac-primary-action {
   color: #c8f9e2 !important;
@@ -4388,11 +4104,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Les comptes système sont masqués.": "System accounts are hidden.",
 "Sélectionnez un utilisateur ou un groupe.": "Select a user or a group.",
 "Modifications non enregistrées": "Unsaved changes",
-"· SMB activé": "· SMB enabled",
-"· SMB non activé": "· SMB not enabled",
 "Chemin non indiqué": "Path not specified",
 "Effectif :": "Effective:",
-"n’est pas activé pour SMB. Activez l’interrupteur \u003cstrong>Accès SMB\u003c/strong> ci-dessus pour déverrouiller immédiatement la matrice.": "is not enabled for SMB. Turn on the \u003cstrong>SMB access\u003c/strong> switch above to unlock the matrix immediately.",
 "Cette matrice règle l’ACL du \u003cstrong>partage SMB\u003c/strong>. Elle propose les niveaux Synology « Lecture seule », « Lecture/écriture » et « Contrôle total ». L’ACL interne du dataset reste indépendante et n’est jamais écrasée par cette vue.": "This matrix sets the ACL of the \u003cstrong>SMB share\u003c/strong>. It offers the Synology levels “Read-only”, “Read/write” and “Full control”. The dataset’s internal ACL remains independent and is never overwritten by this view.",
 "Dossier partagé": "Shared folder",
 "Aucun partage SMB actif.": "No active SMB share.",
@@ -4404,8 +4117,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Modification": "Change",
 "Compte :": "Account:",
 "inconnu": "unknown",
-"· Sujet :": "· Subject:",
-"· Ressource :": "· Resource:",
 "Aucune modification enregistrée.": "No change recorded.",
 "Ce compte n’est pas activé pour SMB. Les droits de partage ne peuvent pas être modifiés.": "This account is not enabled for SMB. Share permissions cannot be edited.",
 "Ce compte n’est pas activé pour SMB. Activez son accès SMB avant de modifier les dossiers partagés.": "This account is not enabled for SMB. Enable its SMB access before editing shared folders.",
@@ -4688,7 +4399,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "📌 Épingler au bureau": "&#x1F4CC; Pin to desktop",
 "📌 Retirer du bureau": "&#x1F4CC; Unpin from desktop",
 "▶ Ouvrir": "&#x25B6; Open",
-"Utilisateurs TrueNAS ↗": "TrueNAS users ↗",
 "Prêt": "Ready",
 "Groupes": "Groups",
 "Sélectionnez un utilisateur": "Select a user",
@@ -5137,7 +4847,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Parcourir le contenu de ce dataset": "Browse this dataset's contents",
 "Voir, créer, restaurer et planifier les snapshots de ce dataset": "View, create, restore and schedule this dataset's snapshots",
 "Droits d'accès": "Permissions",
-"Qui peut lire et écrire dans ce dataset (ACL)": "Who can read and write in this dataset (ACL)",
+"Propriétaire, groupe et ACL du dataset : dans l'interface TrueNAS": "Owner, group and ACL of the dataset: in the TrueNAS interface",
 "Créer un sous-dataset": "Create a child dataset",
 "Un dataset rangé dans celui-ci": "A dataset stored inside this one",
 "Le dataset et tous ses fichiers sont détruits": "The dataset and all its files are destroyed",
@@ -5156,7 +4866,22 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Remplacer le disque": "Replace the disk",
 "Choisis le nouveau disque": "Choose the new disk",
 "Remplacer \u003cstrong>{0}\u003c/strong> par \u003cstrong>{1}\u003c/strong> dans le pool \u003cstrong>{2}\u003c/strong> ?": "Replace \u003cstrong>{0}\u003c/strong> with \u003cstrong>{1}\u003c/strong> in pool \u003cstrong>{2}\u003c/strong>?",
-"Tout ce que contient le nouveau disque sera effacé.": "Everything on the new disk will be erased."
+"Tout ce que contient le nouveau disque sera effacé.": "Everything on the new disk will be erased.",
+"Aucun groupe local": "No local group",
+"Membres": "Members",
+"Aucun membre": "No members",
+"Verrouillé": "Locked",
+"Mot de passe, groupes, dossier personnel": "Password, groups, home folder",
+"Nom du groupe et membres": "Group name and members",
+"Compte verrouillé": "Account locked",
+"SMB activé": "SMB enabled",
+"SMB non activé": "SMB not enabled",
+"n’est pas activé pour SMB : ses droits sur les dossiers partagés ne peuvent pas être réglés.": "is not enabled for SMB: its rights on shared folders cannot be set.",
+"sujet :": "subject:",
+"ressource :": "resource:",
+"Les droits d’accès ne répondent pas": "Access rights are not responding",
+"Compte": "Account",
+"Utilisateurs TrueNAS": "TrueNAS users"
 }
 </script>
 <script id="dk-i18n">
@@ -10288,7 +10013,7 @@ function stoDsView() {
   ]) + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
     + row('webOpenFolder(' + qm + ')', T('Ouvrir dans Fichiers'), T('Parcourir le contenu de ce dataset'))
     + row('stoOpenSnaps(' + q + ')', 'Snapshots', T('Voir, créer, restaurer et planifier les snapshots de ce dataset'))
-    + row('openAcl(decodeURIComponent(' + q + '),decodeURIComponent(' + qm + '))', T('Droits d\'accès'), T('Qui peut lire et écrire dans ce dataset (ACL)'))
+    + row('openTrueNASPage(\'/ui/datasets/\' + ' + q + ')', T('Droits d\'accès'), T('Propriétaire, groupe et ACL du dataset : dans l\'interface TrueNAS'))
     + row('stoNewDs(' + q + ')', T('Créer un sous-dataset'), T('Un dataset rangé dans celui-ci'))
     + row('storageDeleteDataset(decodeURIComponent(' + q + '))', T('Supprimer'), T('Le dataset et tous ses fichiers sont détruits'), 'danger')
     + '</div>';
@@ -21749,17 +21474,17 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   }
 
   function acServiceSwitch(service, title, description, checked, disabled) {
-    return '<label class="ac-service-item' + (disabled ? ' disabled' : '') + '">' +
-      '<span class="ac-service-copy"><span class="ac-service-title">' + acEsc(title) + '</span>' +
-      '<span class="ac-service-description">' + acEsc(description) + '</span></span>' +
-      '<input class="ac-service-switch" type="checkbox" ' +
+    return '<label class="web-row"' + (disabled ? '' : ' style="cursor:pointer;"') + '>' +
+      '<span class="web-row-text"><span class="web-row-name">' + acEsc(title) + '</span>' +
+      '<span class="web-row-desc">' + acEsc(description) + '</span></span>' +
+      '<input type="checkbox" ' +
         (checked ? 'checked ' : '') +
         (disabled ? 'disabled ' : '') +
         'onchange="accessSetService(\'' + acEsc(service) + '\',this.checked)">' +
-      '<span class="ac-service-slider" aria-hidden="true"></span>' +
     '</label>';
   }
 
+  // Onglet « Compte » : ce qu'est le compte, puis ses services d'accès (SMB, WebShare).
   function acRenderAccountServices() {
     if (!_ac.selected) return '';
     var principal = _ac.selected;
@@ -21790,12 +21515,28 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       ? T('Les changements de cette zone sont appliqués immédiatement au compte TrueNAS.')
       : T('Ce compte est fourni par le système ou un annuaire et ne peut pas être modifié ici.');
 
-    return '<section class="ac-service-card">' +
-      T('<div class="ac-service-head"><div><div class="ac-service-heading">Services d’accès</div>') +
-      '<div class="ac-service-note">' + acEsc(note) + '</div></div>' +
-      '<span class="ac-service-kind">' + acEsc(principal.kind === 'USER' ? T('Utilisateur') : T('Groupe')) + '</span></div>' +
-      '<div class="ac-service-grid">' + items.join('') + '</div>' +
-    '</section>';
+    var isUser = principal.kind === 'USER';
+    var groups = isUser ? _ac.groups.filter(function (group) { return (principal.groupIds || []).indexOf(group.id) >= 0; })
+      .map(function (group) { return String(group.name || group.group || ''); }).filter(Boolean) : [];
+    var members = !isUser ? _ac.users.filter(function (user) { return Array.isArray(user.groups) && user.groups.indexOf(principal.apiId) >= 0; })
+      .map(function (user) { return String(user.username || ''); }).filter(Boolean) : [];
+    var facts = [
+      [T('Type'), acEsc(isUser ? T('Utilisateur') : T('Groupe'))],
+      [T('Identifiant'), '<span class="mono">' + acEsc(principal.name) + '</span>'],
+      [isUser ? 'UID' : 'GID', '<span class="mono">' + acEsc(principal.xid) + '</span>'],
+      isUser ? [T('Groupes'), groups.length ? acEsc(groups.join(', ')) : '<span class="dim">' + T('Aucun groupe local') + '</span>']
+             : [T('Membres'), members.length ? acEsc(members.join(', ')) : '<span class="dim">' + T('Aucun membre') + '</span>'],
+      isUser ? [T('État'), principal.locked ? '<span style="color:var(--danger);font-weight:600;">' + T('Verrouillé') + '</span>' : '<span style="color:var(--success);">' + T('Actif') + '</span>'] : null
+    ];
+
+    return netFacts(facts) +
+      '<div class="web-group-title">' + T('Services d’accès') + '</div>' +
+      '<div class="web-group">' + items.join('') + '</div>' +
+      '<p class="web-note">' + acEsc(note) + '</p>' +
+      '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">' +
+      '<button class="web-row line" onclick="openTrueNASPage(\'' + (isUser ? '/ui/credentials/users' : '/ui/credentials/groups') + '\')"><span class="web-row-text"><span class="web-row-name">' +
+      T('Modifier dans TrueNAS') + '</span><span class="web-row-desc">' + (isUser ? T('Mot de passe, groupes, dossier personnel') : T('Nom du groupe et membres')) +
+      '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button></div>';
   }
 
   async function accessSetService(service, enabled) {
@@ -21969,7 +21710,11 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       acStatus(T('Données actualisées'), false);
       await acRefreshCurrentContext();
     } catch (error) {
-      if (panel) panel.innerHTML = T('<div class="ac-empty" style="color:var(--danger);">Erreur : ') + acEsc(error.message) + '</div>';
+      if (panel) {
+        panel.classList.remove('narrow');
+        panel.innerHTML = dkWaitHtml('error', T('Les droits d’accès ne répondent pas'), acEsc((error && error.message) || String(error)),
+          '<button class="web-open" onclick="loadAccessManager(true)">' + T('Réessayer') + '</button>');
+      }
       acStatus(T('Erreur : ') + error.message, true);
     } finally {
       _ac.loading = false;
@@ -21997,11 +21742,15 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     var el = document.getElementById('ac-principals');
     if (!el) return;
     var q = String((document.getElementById('ac-search') || {}).value || '').toLowerCase().trim();
-    var list = _ac.mode === 'groups' ? _ac.groups.map(acPrincipalFromGroup) : _ac.users.map(acPrincipalFromUser);
+    var all = _ac.mode === 'groups' ? _ac.groups.map(acPrincipalFromGroup) : _ac.users.map(acPrincipalFromUser);
+    var list = all;
     if (q) list = list.filter(function (p) { return (p.name + ' ' + p.label).toLowerCase().indexOf(q) >= 0; });
+    var title = document.getElementById('ac-list-title'), count = document.getElementById('ac-count');
+    if (title) title.textContent = _ac.mode === 'groups' ? T('Groupes') : T('Utilisateurs');
+    if (count) count.textContent = all.length || '';
 
     if (!list.length) {
-      el.innerHTML = T('<div class="ac-empty" style="height:120px;">Aucun résultat</div>');
+      el.innerHTML = '<div class="web-side-empty">' + (q ? T('Aucun résultat') : T('Aucun compte local disponible.')) + '</div>';
       return;
     }
 
@@ -22009,17 +21758,16 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     el.innerHTML = list.map(function (principal) {
       var key = acSubjectKey(principal);
       var smbReady = acPrincipalCanUseSmb(principal);
-      var meta = principal.kind === 'USER'
-        ? 'UID ' + principal.xid + (smbReady ? ' · SMB' : ' · Non-SMB')
-        : 'GID ' + principal.xid + (smbReady ? ' · SMB' : ' · Non-SMB');
-      var principalTitle = smbReady
-        ? T('Compte utilisable dans les ACL de partage SMB')
-        : T('Compte non activé pour SMB : les droits de dossiers sont en lecture seule dans ce module');
-      return '<button class="ac-principal' + (key === selectedKey ? ' active' : '') + '" title="' + acEsc(principalTitle) + '" onclick="accessSelectPrincipal(\'' + acEsc(key) + '\')">' +
-        '<span class="ac-avatar">' + acEsc((principal.name || '?').charAt(0).toUpperCase()) + '</span>' +
-        '<span><div class="ac-principal-name">' + acEsc(principal.label || principal.name) + '</div>' +
-        '<div class="ac-principal-meta">' + acEsc(principal.name) + ' · ' + acEsc(meta) + '</div></span>' +
-        '<span class="ac-principal-state' + (principal.locked ? ' locked' : (!smbReady ? ' warning' : '')) + '"></span>' +
+      var meta = (principal.label && principal.label !== principal.name ? principal.name + ', ' : '') +
+        (principal.kind === 'USER' ? 'UID ' : 'GID ') + principal.xid + (smbReady ? ', SMB' : '');
+      var state = principal.locked ? T('Compte verrouillé')
+        : (smbReady ? T('Compte utilisable dans les ACL de partage SMB')
+                    : T('Compte non activé pour SMB : les droits de dossiers sont en lecture seule dans ce module'));
+      return '<button class="web-nav' + (key === selectedKey ? ' active' : '') + '" title="' + acEsc(state) + '" onclick="accessSelectPrincipal(\'' + acEsc(key) + '\')">' +
+        '<span class="ac-avatar" aria-hidden="true">' + acEsc((principal.name || '?').charAt(0).toUpperCase()) + '</span>' +
+        '<span class="web-nav-text"><span class="web-nav-name">' + acEsc(principal.label || principal.name) + '</span>' +
+        '<span class="web-nav-meta">' + acEsc(meta) + '</span></span>' +
+        '<span class="web-dot' + (principal.locked ? ' bad' : (smbReady ? '' : ' off')) + '"></span>' +
         '</button>';
     }).join('');
   }
@@ -22036,6 +21784,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     _ac.dirty = false;
     accessRenderPrincipals();
     await acLoadSelected();
+    acStatus('', false);
   }
 
   function acEntryId(entry) {
@@ -22146,13 +21895,18 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     accessRenderPanel();
   }
 
+  var AC_TABS = ['shares', 'apps', 'account', 'history'];
+  WEB_ICONS.box = '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>';
+
   function accessTab(tab) {
-    if (['shares', 'apps', 'history'].indexOf(tab) < 0) return;
+    if (AC_TABS.indexOf(tab) < 0) return;
     _ac.tab = tab;
-    ['shares', 'apps', 'history'].forEach(function (name) {
+    AC_TABS.forEach(function (name) {
       var button = document.getElementById('ac-tab-' + name);
       if (button) button.classList.toggle('active', name === tab);
     });
+    var panel = document.getElementById('ac-panel');
+    if (panel) panel.scrollTop = 0;
     accessRenderPanel();
   }
 
@@ -22174,6 +21928,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     var title = document.getElementById('ac-head-title');
     var sub = document.getElementById('ac-head-sub');
     if (!panel || !title || !sub) return;
+    panel.classList.toggle('narrow', _ac.tab === 'account' && !!_ac.selected);
 
     if (!_ac.selected) {
       title.textContent = T('Sélectionnez un compte');
@@ -22184,8 +21939,13 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 
     title.innerHTML = acEsc(_ac.selected.label || _ac.selected.name) + (_ac.dirty ? T('<span class="ac-dirty-dot" title="Modifications non enregistrées"></span>') : '');
     var selectedSmbReady = acPrincipalCanUseSmb(_ac.selected);
-    sub.textContent = (_ac.selected.kind === 'USER' ? T('Utilisateur') : T('Groupe')) + ' · ' + _ac.selected.name + ' · ' + (_ac.selected.kind === 'USER' ? 'UID ' : 'GID ') + _ac.selected.xid + (selectedSmbReady ? T(' · SMB activé') : T(' · SMB non activé'));
-    var accountServices = acRenderAccountServices();
+    sub.innerHTML = acEsc((_ac.selected.kind === 'USER' ? T('Utilisateur') : T('Groupe')) + ', ' + _ac.selected.name + ', ' + (_ac.selected.kind === 'USER' ? 'UID ' : 'GID ') + _ac.selected.xid + ', ') +
+      '<span style="color:' + (selectedSmbReady ? 'var(--success)' : 'var(--text-dim)') + ';">' + (selectedSmbReady ? T('SMB activé') : T('SMB non activé')) + '</span>';
+
+    if (_ac.tab === 'account') {
+      panel.innerHTML = acRenderAccountServices();
+      return;
+    }
 
     if (_ac.tab === 'shares') {
       var shareDisabled = !selectedSmbReady;
@@ -22196,18 +21956,19 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
         var current = _ac.shareModes[name] || 'INHERIT';
         var path = share.path || T('Chemin non indiqué');
         return '<tr>' +
-          '<td class="ac-resource"><div class="ac-resource-name">📁 ' + acEsc(name) + '</div>' +
-          '<div class="ac-resource-meta">' + acEsc(path) + '</div>' +
-          (current === 'INHERIT' ? T('<span class="ac-effective">Effectif : ') + acEsc(acModeLabel(effective.mode)) + ' · ' + acEsc(effective.source) + '</span>' : '') + '</td>' +
+          '<td class="ac-resource"><div class="ac-resource-name">' + webIcon('folder') + '<span>' + acEsc(name) + '</span></div>' +
+          '<div class="ac-resource-meta mono" title="' + acEsc(path) + '">' + acEsc(path) + '</div>' +
+          (current === 'INHERIT' ? T('<span class="ac-effective">Effectif : ') + acEsc(acModeLabel(effective.mode)) + ', ' + acEsc(effective.source) + '</span>' : '') + '</td>' +
           AC_MODES.map(function (mode) { return '<td>' + acRadio(name, mode, current, 'share', shareDisabled) + '</td>'; }).join('') +
           '</tr>';
       }).join('');
       var smbWarning = shareDisabled
-        ? '<div class="ac-info warning"><span>⚠️</span><span><strong>' + acEsc(_ac.selected.name) + T('</strong> n’est pas activé pour SMB. Activez l’interrupteur <strong>Accès SMB</strong> ci-dessus pour déverrouiller immédiatement la matrice.</span><span class="ac-smb-warning-actions"><button class="fs-btn" onclick="accessSetService(\'smb\',true)">Activer SMB</button></span></div>')
+        ? '<div class="ac-info warning"><span><strong>' + acEsc(_ac.selected.name) + T('</strong> n’est pas activé pour SMB : ses droits sur les dossiers partagés ne peuvent pas être réglés.</span><span class="ac-smb-warning-actions"><button class="fs-btn" onclick="accessSetService(\'smb\',true)">Activer SMB</button></span></div>')
         : '';
-      panel.innerHTML = accountServices + smbWarning + T('<div class="ac-info"><span>ℹ️</span><span>Cette matrice règle l’ACL du <strong>partage SMB</strong>. Elle propose les niveaux Synology « Lecture seule », « Lecture/écriture » et « Contrôle total ». L’ACL interne du dataset reste indépendante et n’est jamais écrasée par cette vue.</span></div>') +
+      panel.innerHTML = smbWarning +
         T('<div class="ac-matrix-wrap"><table class="ac-matrix"><thead><tr><th>Dossier partagé</th><th>Hérité</th><th>Refusé</th><th>Lecture seule</th><th>Lecture / écriture</th><th>Contrôle total</th></tr></thead><tbody>') +
-        (rows || T('<tr><td colspan="6"><div class="ac-empty">Aucun partage SMB actif.</div></td></tr>')) + '</tbody></table></div>';
+        (rows || T('<tr><td colspan="6"><div class="ac-empty">Aucun partage SMB actif.</div></td></tr>')) + '</tbody></table></div>' +
+        T('<p class="web-note">Cette matrice règle l’ACL du <strong>partage SMB</strong>. Elle propose les niveaux Synology « Lecture seule », « Lecture/écriture » et « Contrôle total ». L’ACL interne du dataset reste indépendante et n’est jamais écrasée par cette vue.</p>');
       return;
     }
 
@@ -22217,27 +21978,30 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
         var current = _ac.appModes[name] || 'INHERIT';
         var effective = acEffectiveApplication(name, _ac.selected);
         var version = app.human_version || app.version || '—';
-        return '<tr><td class="ac-resource"><div class="ac-resource-name">📦 ' + acEsc(name) + '</div>' +
-          '<div class="ac-resource-meta">Version ' + acEsc(version) + ' · ' + acEsc(app.state || T('état inconnu')) + '</div>' +
+        return '<tr><td class="ac-resource"><div class="ac-resource-name">' + webIcon('box') + '<span>' + acEsc(name) + '</span></div>' +
+          '<div class="ac-resource-meta">Version ' + acEsc(version) + ', ' + acEsc(app.state || T('état inconnu')) + '</div>' +
           (current === 'INHERIT' ? T('<span class="ac-effective">Effectif : ') + acEsc(effective === 'DENY' ? T('Refusé') : T('Autorisé')) + '</span>' : '') + '</td>' +
           '<td>' + acRadio(name, 'INHERIT', current, 'app') + '</td>' +
           '<td>' + acRadio(name, 'DENY', current, 'app') + '</td>' +
           '<td>' + acRadio(name, 'ALLOW', current, 'app') + '</td>' +
           '</tr>';
       }).join('');
-      panel.innerHTML = accountServices + T('<div class="ac-info warning"><span>⚠️</span><span>Le droit Application est appliqué dans <strong>Desktroo</strong> : un accès refusé désactive le bouton d’ouverture. Il ne remplace pas l’authentification propre de l’application et ne bloque pas encore une URL directe connue.</span></div>') +
+      panel.innerHTML =
         T('<div class="ac-matrix-wrap"><table class="ac-matrix"><thead><tr><th>Application installée</th><th>Hérité</th><th>Refusé</th><th>Autorisé</th></tr></thead><tbody>') +
-        (appRows || T('<tr><td colspan="4"><div class="ac-empty">Aucune application installée.</div></td></tr>')) + '</tbody></table></div>';
+        (appRows || T('<tr><td colspan="4"><div class="ac-empty">Aucune application installée.</div></td></tr>')) + '</tbody></table></div>' +
+        T('<p class="web-note">Le droit Application est appliqué dans <strong>Desktroo</strong> : un accès refusé désactive le bouton d’ouverture. Il ne remplace pas l’authentification propre de l’application et ne bloque pas encore une URL directe connue.</p>');
       return;
     }
 
     var history = _ac.history || [];
-    panel.innerHTML = accountServices + T('<div class="ac-info"><span>🕘</span><span>Historique local des changements effectués depuis le Centre des droits d’accès.</span></div>') +
-      '<div class="ac-history">' + (history.length ? history.map(function (item) {
-        var time = item.time ? new Date(item.time).toLocaleString(DK_LOCALE) : '—';
-        return '<div class="ac-history-item"><div class="ac-history-top"><div class="ac-history-action">' + acEsc(item.action || T('Modification')) + '</div><div class="ac-history-time">' + acEsc(time) + '</div></div>' +
-          T('<div class="ac-history-meta">Compte : ') + acEsc(item.actor || T('inconnu')) + T(' · Sujet : ') + acEsc(item.subject || '—') + T(' · Ressource : ') + acEsc(item.resource || '—') + '</div></div>';
-      }).join('') : T('<div class="ac-empty">Aucune modification enregistrée.</div>')) + '</div>';
+    panel.innerHTML = T('<p class="web-note" style="margin:2px 0 14px;">Historique local des changements effectués depuis le Centre des droits d’accès.</p>') +
+      (history.length ? '<div class="web-group">' + history.map(function (item) {
+        var time = item.time ? new Date(item.time).toLocaleString(DK_LOCALE, { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+        return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + acEsc(item.action || T('Modification')) +
+          (item.after ? ' <span class="dim" style="font-weight:400;">' + acEsc(acModeLabel(String(item.before || 'INHERIT'))) + ' → ' + acEsc(acModeLabel(String(item.after))) + '</span>' : '') + '</span>' +
+          '<span class="web-row-desc">' + T('Compte : ') + acEsc(item.actor || T('inconnu')) + ', ' + T('sujet : ') + acEsc(item.subject || '—') + ', ' + T('ressource : ') + acEsc(item.resource || '—') + '</span></span>' +
+          '<span class="ac-history-time">' + acEsc(time) + '</span></div>';
+      }).join('') + '</div>' : T('<div class="ac-empty">Aucune modification enregistrée.</div>'));
   }
 
   function accessSetShareMode(name, mode) {
@@ -22543,7 +22307,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 
 
 <!-- MDM-ACCESS-CENTER-HTML-BEGIN -->
-<div class="window panel-win" id="win-access" style="top:50px;left:115px;width:980px;height:650px;">
+<div class="window" id="win-access" style="top:50px;left:115px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="access">
     <span class="window-icon">🛡️</span>
     <span class="window-title">Droits d’accès</span>
@@ -22553,45 +22317,44 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn cls" onclick="closeWin('access')"></button>
     </div>
   </div>
-  <div class="window-body" style="padding:0;overflow:hidden;">
-    <div id="ac-content">
-      <div class="ac-toolbar">
-        <button class="fs-btn" onclick="loadAccessManager(true)">↻ Actualiser</button>
-        <button class="fs-btn" onclick="openTrueNASPage('/ui/credentials/users')">Utilisateurs TrueNAS ↗</button>
-        <div class="ac-toolbar-spacer"></div>
-        <div class="ac-status" id="ac-status">Prêt</div>
-        <button class="fs-btn ac-save-btn" id="ac-save" onclick="accessSave()" disabled>Enregistrer</button>
-      </div>
-      <div class="ac-layout">
-        <aside class="ac-sidebar">
-          <div class="ac-mode-switch">
-            <button class="ac-mode-btn active" id="ac-mode-users" onclick="accessPrincipalMode('users')">Utilisateurs</button>
-            <button class="ac-mode-btn" id="ac-mode-groups" onclick="accessPrincipalMode('groups')">Groupes</button>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell" id="ac-content">
+      <nav class="web-side" id="ac-side" aria-label="Droits d’accès">
+        <div class="ac-seg">
+          <button class="ac-mode-btn active" id="ac-mode-users" onclick="accessPrincipalMode('users')">Utilisateurs</button>
+          <button class="ac-mode-btn" id="ac-mode-groups" onclick="accessPrincipalMode('groups')">Groupes</button>
+        </div>
+        <input class="snap-find" type="search" id="ac-search" placeholder="Rechercher…" autocomplete="off" spellcheck="false" oninput="accessRenderPrincipals()">
+        <div class="web-side-title"><span id="ac-list-title">Utilisateurs</span><span class="web-count" id="ac-count"></span></div>
+        <div class="web-side-list" id="ac-principals">
+          <div class="fs-loading" style="height:140px;"><div class="spinner"></div></div>
+        </div>
+        <div class="web-side-sep"></div>
+        <button class="web-nav" onclick="openTrueNASPage('/ui/credentials/users')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4"/></svg><span class="web-nav-name">Utilisateurs TrueNAS</span></button>
+      </nav>
+      <section class="web-main">
+        <header class="web-head">
+          <div class="web-head-text">
+            <h4 class="web-title" id="ac-head-title">Sélectionnez un utilisateur</h4>
+            <div class="web-sub" id="ac-head-sub">Les comptes système sont masqués.</div>
           </div>
-          <div class="ac-search-wrap">
-            <input class="ac-search" id="ac-search" placeholder="Rechercher…" oninput="accessRenderPrincipals()">
+          <div class="web-head-actions">
+            <button class="fs-btn" onclick="loadAccessManager(true)">Actualiser</button>
+            <button class="web-open" id="ac-save" onclick="accessSave()" disabled>Enregistrer</button>
           </div>
-          <div class="ac-principals" id="ac-principals">
-            <div class="fs-loading" style="height:140px;"><div class="spinner"></div></div>
-          </div>
-        </aside>
-        <main class="ac-main">
-          <div class="ac-head">
-            <div>
-              <div class="ac-head-title" id="ac-head-title">Sélectionnez un utilisateur</div>
-              <div class="ac-head-sub" id="ac-head-sub">Les comptes système sont masqués.</div>
-            </div>
-            <div class="ac-tabs">
-              <button class="ac-tab active" id="ac-tab-shares" onclick="accessTab('shares')">Dossiers partagés</button>
-              <button class="ac-tab" id="ac-tab-apps" onclick="accessTab('apps')">Applications</button>
-              <button class="ac-tab" id="ac-tab-history" onclick="accessTab('history')">Historique</button>
-            </div>
-          </div>
-          <div class="ac-panel" id="ac-panel">
-            <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement…</div>
-          </div>
-        </main>
-      </div>
+        </header>
+        <div class="web-tabs">
+          <button class="web-tab active" id="ac-tab-shares" onclick="accessTab('shares')">Dossiers partagés</button>
+          <button class="web-tab" id="ac-tab-apps" onclick="accessTab('apps')">Applications</button>
+          <button class="web-tab" id="ac-tab-account" onclick="accessTab('account')">Compte</button>
+          <button class="web-tab" id="ac-tab-history" onclick="accessTab('history')">Historique</button>
+          <span class="ac-status" id="ac-status" role="status">Prêt</span>
+        </div>
+        <div class="web-body" id="ac-panel">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement…</div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="access"></div>
