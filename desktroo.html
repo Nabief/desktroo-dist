@@ -126,6 +126,9 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     --radius-sm: 11px;
     --shadow: 0 24px 60px rgba(0,0,0,0.45);
     --taskbar-h: 52px;
+    --taskbar-w: 60px;                /* barre système posée à gauche ou à droite */
+    --wa-t: var(--taskbar-h); --wa-r: 0px; --wa-b: 0px; --wa-l: 0px;   /* place prise par la barre sur chaque bord */
+    --bar-rgb: 8,16,30; --bar-alpha: 0.92; --bar-line: var(--glass-border);
     --window-bg: rgba(15,26,46,0.96);
     --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-display: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
@@ -401,14 +404,14 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
 
   /* ===== DESKTOP ===== */
   #desktop {
-    position:fixed; inset:var(--taskbar-h) 0 0 0; z-index:1;
+    position:fixed; inset:var(--wa-t) var(--wa-r) var(--wa-b) var(--wa-l); z-index:1;
     display:none; padding:16px;
   }
   #desktop.visible { display:block; }
 
   /* ===== DESKTOP ICONS ===== */
   /* Placement libre : chaque icône est posée sur une case d'une grille invisible (voir deskLayout). */
-  .desktop-icons { position:relative; height:calc(100vh - var(--taskbar-h) - 32px); }
+  .desktop-icons { position:relative; height:100%; }
   .desk-icon {
     position:absolute; left:0; top:4px;
     width:88px; display:flex; flex-direction:column; align-items:center; gap:6px;
@@ -464,7 +467,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
 
   /* ===== WIDGETS AREA (top right) ===== */
   #widgets {
-    position:fixed; top:calc(var(--taskbar-h) + 16px); right:16px; z-index:10;
+    position:fixed; top:calc(var(--wa-t) + 16px); right:calc(var(--wa-r) + 16px); z-index:10;
     display:flex; flex-direction:column; gap:12px; width:260px;
   }
   .widget {
@@ -522,7 +525,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   /* ===== TASKBAR ===== */
   #taskbar {
     position:fixed; top:0; left:0; right:0; height:var(--taskbar-h);
-    background:rgba(8,16,30,0.92); border-bottom:1px solid var(--glass-border);
+    background:rgba(var(--bar-rgb), var(--bar-alpha)); border:0 solid var(--bar-line); border-bottom-width:1px;
     backdrop-filter:blur(24px); z-index:100;
     display:flex; align-items:center; padding:0 12px; gap:8px;
   }
@@ -832,8 +835,8 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-body > .sto-vdev-title:first-child { margin-top:6px; }
   .web-row-name.mono { font-family:var(--font-mono); font-size:12.5px; }
   .window.maximized {
-    top:0 !important; left:0 !important;
-    width:100vw !important; height:calc(100vh - var(--taskbar-h)) !important;
+    top:var(--wa-t) !important; left:var(--wa-l) !important;
+    width:calc(100vw - var(--wa-l) - var(--wa-r)) !important; height:calc(100vh - var(--wa-t) - var(--wa-b)) !important;
     border-radius:0; animation:none;
   }
   @keyframes win-open {
@@ -1665,10 +1668,6 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] .wp-live { --wp-k:1.55; }
   [data-theme="light"] .wp-ring { border-color:rgba(255,255,255, calc(var(--a) * 2.2)); box-shadow:0 0 0.45cqw rgba(255,255,255, calc(var(--a) * 1.6)), inset 0 0 0.45cqw rgba(255,255,255, calc(var(--a) * 1.6)); }
   [data-theme="light"] .wp-comet { background:linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 35%, #fff); }
-  [data-theme="light"] #taskbar {
-    background:rgba(220,235,252,0.95);
-    border-bottom:1px solid rgba(0,0,0,0.10);
-  }
   [data-theme="light"] .taskbar-apps:not(:empty) { border-left-color:rgba(0,0,0,0.12); }
   [data-theme="light"] .taskbar-app-btn:hover,
   [data-theme="light"] .taskbar-app-btn.front,
@@ -1847,6 +1846,119 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] select option { background: #e8f0fb; color: #1a2440; }
 
 
+
+  /* ===== BARRE SYSTÈME RÉGLABLE : bord de l'écran, masquage automatique, fond et transparence =====
+     « html[data-bar] » dit le bord (absent : en haut), « html[data-bar-hide] » le masquage automatique.
+     --wa-* : place que la barre prend sur chaque bord ; le bureau, les widgets et les fenêtres
+     agrandies s'en servent pour rester dans la zone libre. */
+  [data-theme="light"] { --bar-rgb:220,235,252; --bar-alpha:0.95; --bar-line:rgba(0,0,0,0.10); }
+  html[data-bar="bottom"] { --wa-t:0px; --wa-b:var(--taskbar-h); }
+  html[data-bar="left"]   { --wa-t:0px; --wa-l:var(--taskbar-w); }
+  html[data-bar="right"]  { --wa-t:0px; --wa-r:var(--taskbar-w); }
+  html[data-bar-hide]     { --wa-t:0px; --wa-r:0px; --wa-b:0px; --wa-l:0px; }
+
+  html[data-bar="bottom"] #taskbar { top:auto; bottom:0; border-width:1px 0 0; }
+  html[data-bar="left"] #taskbar, html[data-bar="right"] #taskbar {
+    bottom:0; height:auto; width:var(--taskbar-w); flex-direction:column; padding:10px 0; gap:8px;
+  }
+  html[data-bar="left"] #taskbar  { right:auto; border-width:0 1px 0 0; }
+  html[data-bar="right"] #taskbar { left:auto;  border-width:0 0 0 1px; }
+
+  /* Boutons de fenêtres : le libellé en barre horizontale, l'icône de la fenêtre en barre verticale. */
+  .tb-ic { display:none; }
+  .tb-lb { display:block; overflow:hidden; text-overflow:ellipsis; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-apps {
+    flex-direction:column; gap:4px; width:100%; min-height:0; overflow:hidden auto; scrollbar-width:none;
+  }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-apps::-webkit-scrollbar { display:none; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-apps:not(:empty) {
+    margin:0; padding:10px 0 0; border-left:0; background:linear-gradient(rgba(128,140,160,0.28), rgba(128,140,160,0.28)) center top / 30px 1px no-repeat;
+  }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-app-btn {
+    display:grid; place-items:center; flex-shrink:0; width:42px; height:42px; max-width:none; padding:0 0 5px; line-height:1;
+  }
+  :is(html[data-bar="left"], html[data-bar="right"]) .tb-ic { display:grid; place-items:center; width:24px; height:24px; font-size:18px; font-weight:700; color:var(--text); }
+  :is(html[data-bar="left"], html[data-bar="right"]) .tb-ic svg { width:20px; height:20px; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .tb-lb { display:none; }
+  /* Marque : en barre verticale, le « d » seul. */
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-brand { font-size:28px; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-brand > span { display:none; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-right { flex-direction:column; gap:6px; width:100%; margin:auto 0 0; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-status { display:grid; grid-template-columns:auto auto; gap:4px 5px; align-items:center; justify-content:center; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .user-menu-btn { gap:0; padding:5px; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .user-name,
+  :is(html[data-bar="left"], html[data-bar="right"]) .user-menu-btn > svg { display:none; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-clock { width:100%; padding:0 4px; text-align:center; font-size:10.5px; line-height:1.3; }
+  :is(html[data-bar="left"], html[data-bar="right"]) .taskbar-clock .t { font-size:12.5px; }
+  :is(html[data-bar="left"], html[data-bar="right"]) :is(#dl-taskbar, #jobs-taskbar) { flex-direction:column; align-items:center; gap:1px !important; }
+
+  /* Menus de la barre : ils s'ouvrent vers l'intérieur de l'écran. */
+  #jobs-popover { position:absolute; top:calc(100% + 8px); right:12px; }
+  html[data-bar="bottom"] #jobs-popover { top:auto; bottom:calc(100% + 8px); }
+  html[data-bar="left"] #jobs-popover   { top:auto; bottom:12px; right:auto; left:calc(100% + 8px); }
+  html[data-bar="right"] #jobs-popover  { top:auto; bottom:12px; right:calc(100% + 8px); }
+  html[data-bar="bottom"] .user-dropdown { top:auto; bottom:calc(100% + 12px); }
+  html[data-bar="left"] .user-dropdown   { top:auto; bottom:0; right:auto; left:calc(100% + 17px); }
+  html[data-bar="right"] .user-dropdown  { top:auto; bottom:0; right:calc(100% + 17px); }
+
+  /* Masquage automatique : la barre se retire au bord et laisse un liseré de 3 px, qui la rappelle. */
+  html[data-bar-hide] #taskbar { transition:transform .24s cubic-bezier(.3,.7,.3,1); }
+  html[data-bar-hide] #taskbar > * { transition:opacity .16s; }
+  html[data-bar-hide] #taskbar:not(.bar-shown) { transform:translateY(calc(-100% + 3px)); }
+  html[data-bar-hide][data-bar="bottom"] #taskbar:not(.bar-shown) { transform:translateY(calc(100% - 3px)); }
+  html[data-bar-hide][data-bar="left"] #taskbar:not(.bar-shown)   { transform:translateX(calc(-100% + 3px)); }
+  html[data-bar-hide][data-bar="right"] #taskbar:not(.bar-shown)  { transform:translateX(calc(100% - 3px)); }
+  html[data-bar-hide] #taskbar:not(.bar-shown) > * { opacity:0; pointer-events:none; }
+  /* La barre masquée revient par le bas : le bandeau d'abonnement lui laisse la place. */
+  html[data-bar="bottom"][data-bar-hide] .lic-banner { bottom:calc(var(--taskbar-h) + 16px); }
+  /* Au doigt, la zone qui rappelle la barre est plus large que le liseré. */
+  @media (pointer:coarse) {
+    html[data-bar-hide] #taskbar:not(.bar-shown)::after { content:''; position:absolute; inset:-14px; }
+  }
+  @media (prefers-reduced-motion: reduce) { html[data-bar-hide] #taskbar, html[data-bar-hide] #taskbar > * { transition:none; } }
+
+  /* Fond choisi : l'encre de la barre suit sa clarté (posé seulement quand elle diffère de celle du thème). */
+  #taskbar[data-ink="light"] { --text:#e9eef7; --text-dim:#a9b9d4; color:var(--text); }
+  #taskbar[data-ink="dark"]  { --text:#12203c; --text-dim:#44567a; color:var(--text); }
+  html #taskbar[data-ink] .taskbar-clock, html #taskbar[data-ink] #tb-date { color:var(--text-dim) !important; }
+  html #taskbar[data-ink] .taskbar-clock .t, html #taskbar[data-ink] #tb-time { color:var(--text) !important; }
+  html #taskbar[data-ink="dark"] :is(.taskbar-app-btn:hover, .taskbar-app-btn.front, .drawer-btn:hover, .taskbar-notif-badge:hover, .user-menu-btn:hover) { background:rgba(0,0,0,0.08); }
+  html #taskbar[data-ink="light"] :is(.taskbar-app-btn:hover, .taskbar-app-btn.front, .drawer-btn:hover, .taskbar-notif-badge:hover, .user-menu-btn:hover) { background:rgba(255,255,255,0.10); }
+
+  /* Page « Barre système » du Panneau de configuration */
+  .bar-pos { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; margin-top:6px; }
+  .bar-pos-btn {
+    display:flex; flex-direction:column; align-items:center; gap:9px; padding:14px 8px 11px; border:1px solid var(--glass-border); border-radius:13px;
+    background:rgba(255,255,255,0.03); color:var(--text); font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .bar-pos-btn:hover { background:rgba(255,255,255,0.06); }
+  .bar-pos-btn.active { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+  .bar-pos-btn:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  [data-theme="light"] .bar-pos-btn { background:rgba(255,255,255,0.7); }
+  /* Écran miniature : le trait dit où la barre se pose. */
+  .bar-screen { position:relative; width:74px; height:48px; border-radius:7px; border:1.5px solid rgba(128,140,160,0.55); background:rgba(128,140,160,0.10); }
+  .bar-screen::after { content:''; position:absolute; border-radius:2px; background:rgba(128,140,160,0.75); transition:background .15s; }
+  .bar-pos-btn.active .bar-screen::after { background:var(--accent); }
+  .bar-screen[data-p="top"]::after    { left:3px; right:3px; top:3px; height:7px; }
+  .bar-screen[data-p="bottom"]::after { left:3px; right:3px; bottom:3px; height:7px; }
+  .bar-screen[data-p="left"]::after   { top:3px; bottom:3px; left:3px; width:8px; }
+  .bar-screen[data-p="right"]::after  { top:3px; bottom:3px; right:3px; width:8px; }
+  /* Pastilles de fond : beaucoup sont sombres, le cadre du choix prend donc la couleur d'accent. */
+  .look-swatch.bar-sw.active { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+  .bar-pick { position:relative; overflow:hidden; }
+  .bar-pick input[type="color"] { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
+  .bar-range { display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--glass-border); border-radius:13px; background:rgba(255,255,255,0.03); }
+  [data-theme="light"] .bar-range { background:rgba(255,255,255,0.7); }
+  .bar-range input[type="range"] { flex:1; min-width:0; accent-color:var(--accent); }
+  .bar-range output { flex:0 0 46px; text-align:right; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .bar-range-ends { flex:0 0 auto; font-size:11.5px; color:var(--text-dim); }
+  @media (max-width:640px) { .bar-pos { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+  /* Sur un fond sombre en thème clair, la marque et les repères reprennent la teinte vive. */
+  html #taskbar[data-ink="light"] .dk-oo { color:var(--brand); }
+  html #taskbar[data-ink="light"] .dk-brand .dk-dot { fill:var(--brand); }
+  html #taskbar[data-ink="light"] .taskbar-app-btn::after { background:var(--brand); }
+  .look-disc.on-dark svg { color:#fff; }
+
   #wallpaper.custom-bg { background-color:#0a1220; }
   #wallpaper.custom-bg::before,
   #wallpaper.custom-bg::after { display:none !important; }
@@ -1937,7 +2049,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     display:none; position:fixed; inset:0; z-index:2500;
     background:rgba(8,15,30,0.85); backdrop-filter:blur(24px);
     flex-direction:column; align-items:center;
-    padding:calc(var(--taskbar-h) + 20px) 40px 40px;
+    padding:calc(var(--wa-t) + 20px) calc(var(--wa-r) + 40px) calc(var(--wa-b) + 40px) calc(var(--wa-l) + 40px);
     overflow-y:auto;
   }
   #app-drawer.open { display:flex; }
@@ -5777,7 +5889,31 @@ select option{ background:#101b2e; color:#e9eef7; }
 "▦ Ranger les icônes": "▦ Tidy up icons",
 "Desktroo animé": "Animated Desktroo",
 "Aurore animée": "Animated Aurora",
-"Ce poste demande de réduire les animations : les fonds animés y restent fixes.": "This device asks for reduced motion: animated wallpapers stay still here."
+"Ce poste demande de réduire les animations : les fonds animés y restent fixes.": "This device asks for reduced motion: animated wallpapers stay still here.",
+"Barre système": "System bar",
+"Barre système rétablie": "System bar restored",
+"{0} %": "{0}%",
+"La barre qui porte le lanceur, les fenêtres ouvertes, l'état du NAS et l'horloge.": "The bar that holds the launcher, the open windows, the NAS status and the clock.",
+"En haut": "Top",
+"En bas": "Bottom",
+"À gauche": "Left",
+"À droite": "Right",
+"Masquer automatiquement": "Hide automatically",
+"La barre se retire au bord de l'écran et revient quand le pointeur touche ce bord. Les fenêtres profitent de toute la place.": "The bar slides off the edge of the screen and comes back when the pointer touches that edge. Windows get the whole screen.",
+"Fond": "Background",
+"Celui du thème": "The theme's own",
+"clair": "light",
+"sombre": "dark",
+"Noir": "Black",
+"Blanc": "White",
+"en version profonde": "in a deep shade",
+"Autre couleur": "Another color",
+"à choisir": "pick one",
+"Transparence": "Transparency",
+"Le fond d'écran reste flouté derrière la barre, même très transparente. La couleur du texte s'adapte seule au fond choisi.": "The wallpaper stays blurred behind the bar, even when very transparent. The text color adapts to the chosen background on its own.",
+"Rétablir la barre d'origine": "Restore the original bar",
+"Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre ouvre cette page.": "These settings are kept in this browser. Right-clicking the bar opens this page.",
+"Position, masquage, fond et transparence": "Position, auto-hide, background and transparency"
 }
 </script>
 <script id="dk-i18n">
@@ -6217,7 +6353,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="taskbar-notif-badge" id="jobs-taskbar" onclick="jobsTogglePopover(event)" title="Tâches en cours" style="display:none;gap:5px;">
       <span class="jobs-spin">⚙️</span><span id="jobs-taskbar-count" style="font-size:11px;font-weight:600;">0</span>
     </div>
-    <div id="jobs-popover" style="display:none;position:fixed;bottom:calc(var(--taskbar-h) + 8px);right:12px;width:360px;max-height:60vh;overflow:auto;z-index:5000;background:linear-gradient(180deg,rgba(18,34,60,0.99),rgba(12,22,40,0.99));border:1px solid rgba(255,255,255,0.13);border-radius:12px;box-shadow:0 24px 64px rgba(0,0,0,0.7);padding:12px;">
+    <div id="jobs-popover" style="display:none;width:360px;max-height:60vh;overflow:auto;z-index:5000;background:linear-gradient(180deg,rgba(18,34,60,0.99),rgba(12,22,40,0.99));border:1px solid rgba(255,255,255,0.13);border-radius:12px;box-shadow:0 24px 64px rgba(0,0,0,0.7);padding:12px;">
       <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text);">Tâches en cours</div>
       <div id="jobs-popover-list"></div>
     </div>
@@ -6548,9 +6684,10 @@ function toggleMaxWin(id) {
   if (win._saved) {
     win.style.cssText = win._saved;
     win._saved = null;
+    dkWinPlace(win);   // la barre a pu changer de bord entre-temps
   } else {
     win._saved = win.getAttribute('style');
-    win.style.cssText = 'position:fixed;top:var(--taskbar-h);left:0;width:100vw;height:calc(100vh - var(--taskbar-h));border-radius:0;z-index:' + (++topZ);
+    win.style.cssText = 'position:fixed;top:var(--wa-t);left:var(--wa-l);width:calc(100vw - var(--wa-l) - var(--wa-r));height:calc(100vh - var(--wa-t) - var(--wa-b));border-radius:0;z-index:' + (++topZ);
   }
 }
 
@@ -6840,6 +6977,7 @@ function enterDesktop(sysInfo) {
     document.getElementById('desktop').classList.add('visible');
     document.getElementById('widgets').style.display = 'flex';
     document.getElementById('taskbar').style.display = 'flex';
+    dkBarApply(); dkBarReveal(2200);   // masquage automatique : la barre se montre un instant à l'arrivée
     initDesktop(sysInfo);
   }, 600);
 }
@@ -7438,7 +7576,7 @@ function openNewFsWindow() {
   var div = document.createElement('div');
   div.innerHTML = buildFsWindowHtml(wid, 80 + (_fsWinCtr-1)*28, 80 + (_fsWinCtr-1)*28);
   var win = div.firstElementChild;
-  document.body.appendChild(win);
+  (document.getElementById('desktop') || document.body).appendChild(win);
   // Le menu contextuel sort de la fenêtre : dedans, le flou d'arrière-plan fausserait sa position.
   (function(){ var c = document.getElementById(wid + '-fs-ctx'); if (c) document.body.appendChild(c); })();
   // Enregistrer le resize handle
@@ -8658,7 +8796,7 @@ async function licActivate(){
 }
 (function licInjectCss(){
   var css = ''
-    + '.lic-banner{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9995;display:flex;align-items:center;gap:14px;padding:8px 16px;border-radius:999px;backdrop-filter:blur(12px);box-shadow:0 8px 28px rgba(0,0,0,.45);cursor:pointer;font-size:13px;}'
+    + '.lic-banner{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--wa-b) + 16px);z-index:9995;display:flex;align-items:center;gap:14px;padding:8px 16px;border-radius:999px;backdrop-filter:blur(12px);box-shadow:0 8px 28px rgba(0,0,0,.45);cursor:pointer;font-size:13px;}'
     + '.lic-trial{background:rgba(var(--info-rgb),.16);border:1px solid rgba(var(--info-rgb),.45);color:var(--text);}'
     + '.lic-expired{background:rgba(248,113,113,.2);border:1px solid rgba(248,113,113,.55);color:#fee2e2;}'
     + '.lic-grace{background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.5);color:#fde68a;}'
@@ -11945,6 +12083,7 @@ function toggleTheme() {
   const btn = document.getElementById('theme-toggle-btn');
   if (btn) { btn.textContent = darkMode ? '☀️' : '🌙'; btn.title = darkMode ? T('Passer en clair') : T('Passer en sombre'); }
   localStorage.setItem('tn-theme', darkMode ? 'dark' : 'light');
+  dkBarApply();   // fond et encre de la barre suivent le thème
 }
 
 // ===========================
@@ -12020,8 +12159,19 @@ function bringToFront(win) {
   win.style.zIndex = topZ;
   tbSync();
   setupWinEdges(win);  // fenêtres créées à la volée comprises
+  dkWinPlace(win);
 }
 
+// Contenu d'un bouton de fenêtre : le libellé (barre horizontale) et l'icône (barre verticale, libellé en infobulle).
+function dkBarBtnFill(btn, label, iconHtml) {
+  btn.textContent = '';
+  var ic = document.createElement('span'), lb = document.createElement('span');
+  ic.className = 'tb-ic'; ic.setAttribute('aria-hidden', 'true');
+  if (iconHtml) ic.innerHTML = iconHtml; else ic.textContent = (String(label).replace(/^[^0-9A-Za-zÀ-ÿ]+/, '').charAt(0) || '•').toUpperCase();
+  lb.className = 'tb-lb'; lb.textContent = label;
+  btn.appendChild(ic); btn.appendChild(lb);
+  btn.title = label;
+}
 function addTaskbarBtn(id, win, customTitle) {
   const tb = document.getElementById('taskbar-apps');
   if (!tb || tb.querySelector('[data-win="' + id + '"]')) return;
@@ -12030,7 +12180,9 @@ function addTaskbarBtn(id, win, customTitle) {
   const btn = document.createElement('button');
   btn.className = 'taskbar-app-btn active';
   btn.dataset.win = id;
-  btn.textContent = customTitle || (titleEl && titleEl.textContent.trim()) || id;
+  const label = customTitle || (titleEl && titleEl.textContent.trim()) || id;
+  const iconEl = (win && win.querySelector) ? win.querySelector('.window-icon') : null;
+  dkBarBtnFill(btn, label, iconEl ? iconEl.innerHTML.trim() : '');
   btn.onclick = () => {
     const w = document.getElementById('win-' + id);
     if (!w) return;
@@ -12206,9 +12358,10 @@ function setupDragWin(bar) {
     bringToFront(win);
     var ox = e.clientX - win.offsetLeft;
     var oy = e.clientY - win.offsetTop;
+    var wa = dkWorkArea();   // la barre de titre reste hors de la barre système
     var onMove = function(mv) {
-      var nx = Math.max(0, Math.min(window.innerWidth - 100, mv.clientX - ox));
-      var ny = Math.max(0, Math.min(window.innerHeight - 40, mv.clientY - oy));
+      var nx = Math.max(wa.l, Math.min(wa.r - 100, mv.clientX - ox));
+      var ny = Math.max(wa.t, Math.min(wa.b - 40, mv.clientY - oy));
       win.style.left = nx + 'px'; win.style.top = ny + 'px';
     };
     var onUp = function() {
@@ -12703,7 +12856,7 @@ function dlTaskbarBtn() {
     b = document.createElement('button');
     b.className = 'taskbar-app-btn active';
     b.dataset.win = 'downloads';
-    b.textContent = T('Téléchargements');
+    dkBarBtnFill(b, T('Téléchargements'), '⬇️');
     b.onclick = function() {
       var m = document.getElementById('modal-create-app');
       if (!m || m.style.display === 'none' || !m.classList.contains('dl-wide')) openDownloads();
@@ -13595,8 +13748,8 @@ var _deskDrag = null;
 function deskPosGet() { try { var p = JSON.parse(localStorage.getItem('desktop_icon_pos') || 'null'); return p && typeof p === 'object' && !Array.isArray(p) ? p : null; } catch (_) { return null; } }
 function deskPosSave(p) { try { if (p) localStorage.setItem('desktop_icon_pos', JSON.stringify(p)); else localStorage.removeItem('desktop_icon_pos'); } catch (_) {} }
 function deskGrid() {
-  var bar = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h'), 10) || 52;
-  return { cols: Math.max(1, Math.floor((window.innerWidth - 32) / DESK_CW)), rows: Math.max(1, Math.floor((window.innerHeight - bar - 32) / DESK_CH)) };
+  var wa = dkWorkArea();   // le bureau moins la barre système, moins ses marges
+  return { cols: Math.max(1, Math.floor((wa.r - wa.l - 32) / DESK_CW)), rows: Math.max(1, Math.floor((wa.b - wa.t - 32) / DESK_CH)) };
 }
 // Place chaque icône : sa case gardée si elle est libre et visible, sinon la première case libre.
 function deskLayout() {
@@ -13973,9 +14126,10 @@ function dkBrandFit() {
   var b = brand.getBoundingClientRect();
   if (!b.width) return;
   var last = apps.lastElementChild, right = bar.querySelector('.taskbar-right');
-  var leftEdge = last ? last.getBoundingClientRect().right : apps.getBoundingClientRect().left;
-  var rightEdge = right ? right.getBoundingClientRect().left : Infinity;
-  bar.classList.toggle('brand-hidden', leftEdge + 16 > b.left || rightEdge - 16 < b.right);
+  var v = /^(left|right)$/.test(document.documentElement.getAttribute('data-bar') || '');   // barre verticale : on mesure de haut en bas
+  var a = last ? last.getBoundingClientRect() : null, ar = apps.getBoundingClientRect(), rr = right ? right.getBoundingClientRect() : null;
+  var before = v ? (a ? a.bottom : ar.top) : (a ? a.right : ar.left), after = rr ? (v ? rr.top : rr.left) : Infinity;
+  bar.classList.toggle('brand-hidden', before + 16 > (v ? b.top : b.left) || after - 16 < (v ? b.bottom : b.right));
 }
 document.addEventListener('DOMContentLoaded', function () {
   var bar = document.getElementById('taskbar'), apps = document.getElementById('taskbar-apps');
@@ -17347,7 +17501,8 @@ function dkAccentApply() {
   var a = dkAccentGet();
   if (a === 'green') document.documentElement.removeAttribute('data-accent'); else document.documentElement.setAttribute('data-accent', a);
   dkAccentFavicon();
-  if (wmVisible('control') && _cp.nav === 'look') loadControl();
+  dkBarApply();   // la barre peut porter la couleur du thème
+  if (wmVisible('control') && (_cp.nav === 'look' || _cp.nav === 'bar')) loadControl();
 }
 // Choix du poste. Vide : on suit l'installation.
 function dkAccentSet(a) {
@@ -17404,6 +17559,202 @@ dkAccentFavicon();
 dkAccentDefaultLoad();
 
 // ===========================
+// BARRE SYSTÈME — bord de l'écran, masquage automatique, fond et transparence
+// Réglages gardés dans ce navigateur (localStorage « dk-bar »). Le bord et le masquage sont posés sur <html>
+// (data-bar, data-bar-hide) : la feuille de style en déduit la zone libre du bureau (--wa-*).
+// ===========================
+function dkBarGet() {
+  var c = {};
+  try { c = JSON.parse(localStorage.getItem('dk-bar') || '{}') || {}; } catch (e) {}
+  return {
+    pos: /^(top|bottom|left|right)$/.test(c.pos) ? c.pos : 'top',
+    hide: c.hide === true,
+    bg: /^(theme|black|white|accent|custom)$/.test(c.bg) ? c.bg : 'theme',
+    color: /^#[0-9a-f]{6}$/i.test(c.color || '') ? c.color.toLowerCase() : '#27406b',
+    t: (typeof c.t === 'number' && c.t >= 0 && c.t <= 100) ? Math.round(c.t) : null   // transparence en % ; null : celle du thème
+  };
+}
+function dkBarLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function dkHexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+function dkRgbHex(c) { return '#' + c.map(function(v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); }
+function dkMix(a, b, k) { return a.map(function(v, i) { return Math.round(v * k + b[i] * (1 - k)); }); }   // k : part de a
+function dkLum(c) { return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
+// Fond de la barre selon le thème, et transparence d'origine.
+function dkBarBase() { return dkBarLight() ? { rgb: [220, 235, 252], t: 5, under: [195, 212, 232] } : { rgb: [8, 16, 30], t: 8, under: [10, 18, 32] }; }
+// Couleur du fond choisi ; null : celle du thème.
+function dkBarRgb(c) {
+  if (c.bg === 'black') return [5, 8, 13];
+  if (c.bg === 'white') return [248, 250, 253];
+  if (c.bg === 'custom') return dkHexRgb(c.color);
+  if (c.bg === 'accent') {
+    var b = getComputedStyle(document.documentElement).getPropertyValue('--brand-rgb').split(',').map(Number);
+    if (b.length === 3 && b.every(function(v) { return v >= 0 && v <= 255; })) return dkMix(b, [6, 12, 22], 0.36);
+  }
+  return null;
+}
+function dkBarApply() {
+  var c = dkBarGet(), root = document.documentElement, bar = document.getElementById('taskbar'), base = dkBarBase();
+  if (c.pos === 'top') root.removeAttribute('data-bar'); else root.setAttribute('data-bar', c.pos);
+  if (c.hide) root.setAttribute('data-bar-hide', ''); else root.removeAttribute('data-bar-hide');
+  var rgb = dkBarRgb(c);
+  if (rgb) root.style.setProperty('--bar-rgb', rgb.join(',')); else root.style.removeProperty('--bar-rgb');
+  if (c.t != null) root.style.setProperty('--bar-alpha', (1 - c.t / 100).toFixed(2)); else root.style.removeProperty('--bar-alpha');
+  if (bar) {
+    // Encre : d'après la clarté du fond tel qu'il se voit, posé sur le fond d'écran. Rien à poser si c'est celle du thème.
+    var seen = dkMix(rgb || base.rgb, base.under, 1 - (c.t != null ? c.t : base.t) / 100);
+    var ink = dkLum(seen) > 0.55 ? 'dark' : 'light';
+    if (ink === (dkBarLight() ? 'dark' : 'light')) bar.removeAttribute('data-ink'); else bar.setAttribute('data-ink', ink);
+    // les menus de la barre gardent les couleurs du thème
+    var cs = getComputedStyle(root), own = bar.hasAttribute('data-ink');
+    ['user-dropdown', 'jobs-popover'].forEach(function(id) {
+      var e = document.getElementById(id);
+      if (!e) return;
+      ['--text', '--text-dim'].forEach(function(p) { if (own) e.style.setProperty(p, cs.getPropertyValue(p)); else e.style.removeProperty(p); });
+      e.style.color = own ? cs.getPropertyValue('--text') : '';
+    });
+  }
+  // la zone libre a pu changer : icônes, fenêtres et marque se replacent
+  if (typeof deskLayout === 'function') deskLayout();
+  Array.prototype.forEach.call(document.querySelectorAll('.window.visible'), dkWinPlace);
+  if (typeof dkBrandFit === 'function') dkBrandFit();
+}
+function dkBarSet(patch, quiet) {
+  var c = dkBarGet();
+  Object.keys(patch).forEach(function(k) { c[k] = patch[k]; });
+  try { localStorage.setItem('dk-bar', JSON.stringify(c)); } catch (e) {}
+  dkBarApply();
+  if (c.hide && !quiet) dkBarReveal(1700);   // qu'on voie l'effet avant qu'elle se retire
+  if (!quiet && wmVisible('control') && _cp.nav === 'bar') loadControl();
+}
+function dkBarReset() {
+  try { localStorage.removeItem('dk-bar'); } catch (e) {}
+  dkBarApply();
+  if (wmVisible('control') && _cp.nav === 'bar') loadControl();
+  toast(T('Barre système rétablie'));
+}
+// Curseur de transparence : la barre suit pendant le geste, sans redessiner la page.
+function dkBarSlide(v) {
+  dkBarSet({ t: Math.max(0, Math.min(100, +v || 0)) }, true);
+  var o = document.getElementById('bar-t-out');
+  if (o) o.textContent = Tf('{0} %', Math.round(+v || 0));
+}
+
+// ── Zone libre : l'écran moins la place que la barre occupe ──
+function dkWorkArea() {
+  var c = dkBarGet(), cs = getComputedStyle(document.documentElement);
+  var h = parseInt(cs.getPropertyValue('--taskbar-h'), 10) || 52, w = parseInt(cs.getPropertyValue('--taskbar-w'), 10) || 60;
+  var a = { l: 0, t: 0, r: window.innerWidth, b: window.innerHeight };
+  if (!c.hide) { if (c.pos === 'top') a.t = h; else if (c.pos === 'bottom') a.b -= h; else if (c.pos === 'left') a.l = w; else a.r -= w; }
+  return a;
+}
+// Garde une fenêtre dans la zone libre. Les places d'origine sont pensées pour une barre en haut : quand la
+// zone change (barre déplacée, écran redimensionné), la fenêtre suit son coin puis rentre entière si elle peut.
+function dkWinPlace(win) {
+  if (!win || win._saved || !win.offsetWidth) return;   // agrandie : sa place suit déjà la zone libre
+  var wa = dkWorkArea(), bar = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h'), 10) || 52;
+  var o = win._dkWa || { l: 0, t: bar };
+  if (o.l === wa.l && o.t === wa.t && o.r === wa.r && o.b === wa.b) return;
+  win._dkWa = wa;
+  var w = win.offsetWidth, h = win.offsetHeight, left0 = win.offsetLeft, top0 = win.offsetTop;
+  var left = left0 + wa.l - o.l, top = top0 + wa.t - o.t;
+  if (left + w > wa.r) left = wa.r - w;
+  if (left < wa.l) left = wa.l;
+  if (top + h > wa.b) top = wa.b - h;
+  if (top < wa.t) top = wa.t;
+  if (left !== left0) win.style.left = left + 'px';
+  if (top !== top0) win.style.top = top + 'px';
+}
+
+// ── Masquage automatique ──
+var _dkBarTimer = null;
+function dkBarHiding() { return document.documentElement.hasAttribute('data-bar-hide'); }
+// La barre reste là tant qu'on s'en sert : pointeur dessus, menu ouvert, ou navigation au clavier.
+function dkBarBusy() {
+  var bar = document.getElementById('taskbar');
+  if (!bar) return false;
+  var open = function(id) { var e = document.getElementById(id); return !!e && e.style.display === 'block'; };
+  return open('user-dropdown') || open('jobs-popover') || bar.matches(':hover') || !!bar.querySelector(':focus-visible');
+}
+function dkBarReveal(ms) {
+  var bar = document.getElementById('taskbar');
+  if (!bar || !dkBarHiding()) return;
+  bar.classList.add('bar-shown');
+  clearTimeout(_dkBarTimer);
+  _dkBarTimer = setTimeout(dkBarMaybeHide, ms || 600);
+}
+function dkBarMaybeHide() {
+  clearTimeout(_dkBarTimer);
+  var bar = document.getElementById('taskbar');
+  if (!bar) return;
+  if (dkBarHiding() && dkBarBusy()) { _dkBarTimer = setTimeout(dkBarMaybeHide, 600); return; }
+  bar.classList.remove('bar-shown');
+}
+(function() {
+  var bar = document.getElementById('taskbar');
+  if (!bar || bar._dkBar) return;
+  bar._dkBar = true;
+  // La barre était rangée dans le bureau, au même niveau que les fenêtres : celles-ci passaient devant elle et
+  // devant ses menus. Posée à côté du bureau, elle reste au-dessus des fenêtres et sous les boîtes de dialogue.
+  var desk = document.getElementById('desktop');
+  if (desk && desk.contains(bar)) desk.parentNode.insertBefore(bar, desk.nextSibling);
+  bar.addEventListener('pointerenter', function() { dkBarReveal(900); });
+  bar.addEventListener('pointerdown', function() { dkBarReveal(900); }, true);
+  bar.addEventListener('pointerleave', function() { if (dkBarHiding()) { clearTimeout(_dkBarTimer); _dkBarTimer = setTimeout(dkBarMaybeHide, 450); } });
+  bar.addEventListener('focusin', function() { dkBarReveal(900); });
+  // clic droit sur la barre : ses réglages
+  bar.addEventListener('contextmenu', function(e) {
+    if (e.target.closest('.user-dropdown, #jobs-popover')) return;
+    e.preventDefault();
+    openApp('control'); cpGo('bar');
+  });
+})();
+
+// ── Page « Barre système » du Panneau de configuration ──
+function cpBarView() {
+  var c = dkBarGet(), base = dkBarBase(), stored = null;
+  try { stored = localStorage.getItem('dk-bar'); } catch (e) {}
+  wmHead('cp', T('Barre système'), { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true,
+    sub: T('La barre qui porte le lanceur, les fenêtres ouvertes, l\'état du NAS et l\'horloge.') });
+  var pos = [['top', T('En haut')], ['bottom', T('En bas')], ['left', T('À gauche')], ['right', T('À droite')]];
+  var same = { pos: 'Position', opaque: 'Opaque', none: 'Invisible' };   // mêmes mots en français et en anglais
+  var h = '<div class="web-group-title" style="margin-top:6px;">' + same.pos + '</div><div class="bar-pos" role="radiogroup" aria-label="' + same.pos + '">';
+  pos.forEach(function(p) {
+    var on = c.pos === p[0];
+    h += '<button class="bar-pos-btn' + (on ? ' active' : '') + '" role="radio" aria-checked="' + on + '" onclick="dkBarSet({pos:\'' + p[0] + '\'})"><span class="bar-screen" data-p="' + p[0] + '"></span>' + webEsc(p[1]) + '</button>';
+  });
+  h += '</div><div class="web-group" style="margin-top:14px;">'
+    + wmSwitch('bar-hide', T('Masquer automatiquement'), T('La barre se retire au bord de l\'écran et revient quand le pointeur touche ce bord. Les fenêtres profitent de toute la place.'), c.hide, 'onchange="dkBarSet({hide:this.checked})"')
+    + '</div>';
+  // Fond
+  var disc = function(rgb, on) { return '<span class="look-disc' + (dkLum(rgb) < 0.5 ? ' on-dark' : '') + '">' + (on ? webIcon('check') : '') + '</span>'; };
+  var sw = function(key, rgb, label, note) {
+    var on = c.bg === key;
+    return '<button class="look-swatch bar-sw' + (on ? ' active' : '') + '" role="radio" aria-checked="' + on + '" onclick="dkBarSet({bg:\'' + key + '\'})" style="--sw:' + dkRgbHex(rgb) + '">' + disc(rgb, on)
+      + '<span class="look-text"><span class="look-name">' + webEsc(label) + '</span>' + (note ? '<span class="look-note">' + webEsc(note) + '</span>' : '') + '</span></button>';
+  };
+  var custom = dkHexRgb(c.color), cOn = c.bg === 'custom';
+  h += '<div class="web-group-title">' + T('Fond') + '</div><div class="look-grid" role="radiogroup" aria-label="' + webEsc(T('Fond')) + '">'
+    + sw('theme', base.rgb, T('Celui du thème'), dkBarLight() ? T('clair') : T('sombre'))
+    + sw('black', [5, 8, 13], T('Noir'), '')
+    + sw('white', [248, 250, 253], T('Blanc'), '')
+    + sw('accent', dkBarRgb({ bg: 'accent' }) || base.rgb, T('Couleur du thème'), T('en version profonde'))
+    + '<label class="look-swatch bar-sw bar-pick' + (cOn ? ' active' : '') + '" style="--sw:' + c.color + '">' + disc(custom, cOn)
+    + '<span class="look-text"><span class="look-name">' + T('Autre couleur') + '</span><span class="look-note">' + T('à choisir') + '</span></span>'
+    + '<input type="color" value="' + c.color + '" aria-label="' + webEsc(T('Autre couleur')) + '" oninput="this.parentNode.style.setProperty(\'--sw\', this.value);dkBarSet({bg:\'custom\',color:this.value}, true)" onchange="dkBarSet({bg:\'custom\',color:this.value})"></label>'
+    + '</div>';
+  // Transparence
+  var t = c.t != null ? c.t : base.t;
+  h += '<div class="web-group-title">' + T('Transparence') + '</div><div class="bar-range"><span class="bar-range-ends">' + same.opaque + '</span>'
+    + '<input type="range" id="bar-t" min="0" max="100" step="1" value="' + t + '" aria-label="' + webEsc(T('Transparence')) + '" oninput="dkBarSlide(this.value)">'
+    + '<span class="bar-range-ends">' + same.none + '</span><output id="bar-t-out" for="bar-t">' + Tf('{0} %', t) + '</output></div>'
+    + '<p class="web-note">' + T('Le fond d\'écran reste flouté derrière la barre, même très transparente. La couleur du texte s\'adapte seule au fond choisi.') + '</p>';
+  if (stored) h += '<p style="margin:14px 0 0;"><button class="fs-btn" onclick="dkBarReset()">' + T('Rétablir la barre d\'origine') + '</button></p>';
+  h += '<p class="web-note">' + T('Ces réglages sont gardés dans ce navigateur. Un clic droit sur la barre ouvre cette page.') + '</p>';
+  wmBody('cp').innerHTML = h;
+}
+dkBarApply();
+
+// ===========================
 // PANNEAU DE CONFIGURATION — tous les réglages, rangés par domaine
 // ===========================
 var _cp = { nav: 'all', q: '' };
@@ -17412,6 +17763,7 @@ var CP_SVG = 'viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" st
 function cpExtra() {
   return {
     look: { label: T('Couleur du thème'), action: function() { cpGo('look'); }, imgStyle: 'background:conic-gradient(#3ecf8e,#4d9fff,#f25f66,#f5a524,#f0d43a,#aab5c8,#3ecf8e);', svg: '<svg ' + CP_SVG + '><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>' },
+    bar: { label: T('Barre système'), action: function() { cpGo('bar'); }, imgStyle: 'background:linear-gradient(135deg,#0f766e,#38bdf8);', svg: '<svg ' + CP_SVG + '><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18"/><path d="M6.5 6.5h.01M9.5 6.5h.01"/></svg>' },
     sysconfig: { label: T('Configuration système'), action: function() { openApp('sysconfig'); }, imgStyle: 'background:linear-gradient(135deg,#475569,#94a3b8);', svg: '<svg ' + CP_SVG + '><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' },
     alertconfig: { label: T('Configuration des alertes'), action: function() { openApp('alertconfig'); }, imgStyle: 'background:linear-gradient(135deg,#f59e0b,#f97316);', svg: '<svg ' + CP_SVG + '><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/><path d="M19 3l2 2M5 3 3 5"/></svg>' },
     failover: { label: T('Haute disponibilité'), action: function() { openApp('failover'); }, imgStyle: 'background:linear-gradient(135deg,#0891b2,#22d3ee);', svg: '<svg ' + CP_SVG + '><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>' },
@@ -17429,19 +17781,20 @@ function cpGroups() {
     { key: 'system', label: T('Système'), items: [['sysinfo', T('Matériel, version et charge du NAS')], ['reports', T('Courbes de charge dans le temps')], ['sysconfig', T('Nom du NAS, fuseau horaire, serveurs de temps')],
         ['services', T('SSH, SMB, NFS et autres services')], ['cron', T('Commandes lancées à heure fixe')], ['update', T('Nouvelles versions de TrueNAS')], ['bootenv', T('Versions du système gardées sur le NAS')],
         ['notifs', T('Alertes en cours')], ['alertconfig', T('Où et quand être prévenu')], ['failover', T('Bascule entre deux contrôleurs')], ['terminal', T('Ligne de commande du NAS')], ['truenas-ui', T('L\'interface d\'origine de TrueNAS')]] },
-    { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
+    { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['bar', T('Position, masquage, fond et transparence')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
   ];
 }
 function cpEntry(id) { return cpExtra()[id] || ALL_APPS.find(function(a) { return a.id === id; }) || null; }
 function cpGo(nav) { _cp.nav = nav; _cp.q = ''; loadControl(); }
 function loadControl() {
   if (!wmBody('cp')) return;
-  var groups = cpGroups(), look = _cp.nav === 'look', cur = groups.find(function(g) { return g.key === (look ? 'desk' : _cp.nav); });
+  var page = { look: cpLookView, bar: cpBarView }[_cp.nav], look = !!page;   // pages de réglage du domaine « Bureau Desktroo »
+  var groups = cpGroups(), cur = groups.find(function(g) { return g.key === (look ? 'desk' : _cp.nav); });
   if (!cur) _cp.nav = 'all';
   var h = wmNav({ active: _cp.nav === 'all', call: 'cpGo(\'all\')', icon: 'grid', name: T('Tous les réglages') }) + wmSep() + wmSideTitle(T('Domaines'));
   groups.forEach(function(g) { h += wmNav({ active: (look ? 'desk' : _cp.nav) === g.key, call: 'cpGo(\'' + g.key + '\')', name: g.label, count: g.items.filter(function(it) { return cpEntry(it[0]); }).length }); });
   wmSide('cp', h);
-  if (look) { cpLookView(); return; }
+  if (page) { page(); return; }
   wmHead('cp', cur ? cur.label : T('Panneau de configuration'), { sub: cur ? '' : T('Tous les réglages du NAS et du bureau, rangés par domaine.'),
     actions: '<input id="cp-search" class="snap-find" type="search" placeholder="' + webEsc(T('Rechercher un réglage')) + '" aria-label="' + webEsc(T('Rechercher un réglage')) + '" value="' + webEsc(_cp.q) + '" oninput="cpFilter(this.value)">' });
   cpRender();
@@ -18980,7 +19333,7 @@ function fsOp(label) {
   if (!el) {
     el = document.createElement('div');
     el.id = 'fs-op';
-    el.style.cssText = 'position:fixed;bottom:72px;right:20px;z-index:6000;min-width:290px;max-width:380px;'
+    el.style.cssText = 'position:fixed;bottom:calc(var(--wa-b) + 72px);right:calc(var(--wa-r) + 20px);z-index:6000;min-width:290px;max-width:380px;'
       + 'background:var(--glass,#131f34);border:1px solid var(--glass-border,rgba(255,255,255,.12));'
       + 'border-radius:12px;box-shadow:0 14px 44px rgba(0,0,0,.5);padding:14px 16px;color:var(--text,#e9eef7);font-size:13px;';
     document.body.appendChild(el);
