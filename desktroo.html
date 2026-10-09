@@ -966,6 +966,10 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #modal-create-app > div > .win-edge { display:none; }
   #modal-create-app:has(.web-shell) > div > .win-edge,
   #modal-create-app.dl-wide:not(.dl-max) > div > .win-edge { display:block; }
+  /* … et elles se déplacent par leur barre de titre, comme les fenêtres du bureau. */
+  #modal-create-app:has(.web-shell) > div > div:first-child,
+  #modal-create-app.dl-wide:not(.dl-max) > div > div:first-child { cursor:move; user-select:none; -webkit-user-select:none; }
+  #modal-create-app > div > div:first-child button { cursor:pointer; }
 
   /* ===== CONTEXT MENU ===== */
   #ctx-menu {
@@ -9687,6 +9691,38 @@ function dkModalEdges() {
     };
   });
 }
+// Déplacement d'une boîte large par sa barre de titre : même décalage (--dk-mx / --dk-my) que le
+// redimensionnement. La barre reste toujours saisissable : elle ne sort pas de l'écran.
+function dkModalDrag() {
+  var m = document.getElementById('modal-create-app'), box = m && m.querySelector(':scope > div');
+  var bar = box && box.querySelector(':scope > div');
+  if (!bar || bar._dkDrag) return;
+  bar._dkDrag = true;
+  bar.addEventListener('pointerdown', function(e) {
+    if (e.button !== 0 || e.target.closest('button, a, input, select, textarea')) return;
+    if (!(box.querySelector('.web-shell') || (m.classList.contains('dl-wide') && !m.classList.contains('dl-max')))) return;
+    e.preventDefault();
+    var r = box.getBoundingClientRect();
+    var mx0 = parseFloat(box.style.getPropertyValue('--dk-mx')) || 0, my0 = parseFloat(box.style.getPropertyValue('--dk-my')) || 0;
+    var minDx = 120 - r.right, maxDx = window.innerWidth - 120 - r.left, minDy = -r.top, maxDy = window.innerHeight - 48 - r.top;
+    try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+    document.body.classList.add('dk-resizing');
+    var onMove = function(mv) {
+      var dx = Math.max(minDx, Math.min(maxDx, mv.clientX - e.clientX)), dy = Math.max(minDy, Math.min(maxDy, mv.clientY - e.clientY));
+      box.style.setProperty('--dk-mx', (mx0 + dx) + 'px');
+      box.style.setProperty('--dk-my', (my0 + dy) + 'px');
+    };
+    var onUp = function() {
+      bar.removeEventListener('pointermove', onMove);
+      bar.removeEventListener('pointerup', onUp);
+      bar.removeEventListener('pointercancel', onUp);
+      document.body.classList.remove('dk-resizing');
+    };
+    bar.addEventListener('pointermove', onMove);
+    bar.addEventListener('pointerup', onUp);
+    bar.addEventListener('pointercancel', onUp);
+  });
+}
 function dkModalResetSize() {
   var m = document.getElementById('modal-create-app'), box = m && m.querySelector(':scope > div');
   if (box) ['--dk-mw', '--dk-mh', '--dk-mx', '--dk-my'].forEach(function(p) { box.style.removeProperty(p); });
@@ -9790,6 +9826,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.resize-handle').forEach(setupResizeHandle);
   document.querySelectorAll('.window').forEach(setupWinEdges);
   dkModalEdges();
+  dkModalDrag();
 
   // Click on desktop to bring windows to front
   document.addEventListener('mousedown', function(e) {
