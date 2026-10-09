@@ -1521,7 +1521,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] .ctx-separator { border-top-color:rgba(0,0,0,0.10); }
 
   /* ===== TOAST ===== */
-  #toasts { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:2147483647; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  #toasts { position:fixed; top:16px; left:calc(var(--wa-l) + (100vw - var(--wa-l) - var(--wa-r)) / 2); transform:translateX(-50%); z-index:2147483647; align-items:center; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
   .toast {
     background:rgba(15,26,46,0.96); border:1px solid var(--glass-border);
     border-radius:var(--radius-sm); padding:10px 16px; font-size:13px;
@@ -17697,6 +17697,8 @@ function dkBarMaybeHide() {
   // devant ses menus. Posée à côté du bureau, elle reste au-dessus des fenêtres et sous les boîtes de dialogue.
   var desk = document.getElementById('desktop');
   if (desk && desk.contains(bar)) desk.parentNode.insertBefore(bar, desk.nextSibling);
+  // Même chose pour ce qui doit passer devant elle : les toasts et le menu du bureau.
+  ['toasts', 'ctx-menu'].forEach(function(id) { var e = document.getElementById(id); if (e && desk && desk.contains(e)) document.body.appendChild(e); });
   bar.addEventListener('pointerenter', function() { dkBarReveal(900); });
   bar.addEventListener('pointerdown', function() { dkBarReveal(900); }, true);
   bar.addEventListener('pointerleave', function() { if (dkBarHiding()) { clearTimeout(_dkBarTimer); _dkBarTimer = setTimeout(dkBarMaybeHide, 450); } });
