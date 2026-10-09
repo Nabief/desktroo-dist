@@ -6167,7 +6167,11 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Un instant…": "One moment…",
 "Le service ne répond pas encore : il redémarre sans doute, après une mise à jour par exemple. La page s'affichera d'elle-même.": "The service is not responding yet: it is probably restarting, after an update for example. The page will appear by itself.",
 "Les sites ne répondent pas": "The websites are not responding",
-"Les téléchargements ne répondent pas": "The downloads are not responding"
+"Les téléchargements ne répondent pas": "The downloads are not responding",
+"Compte d'administration de MariaDB": "MariaDB administration account",
+"Il voit toutes les bases : c'est celui à saisir dans phpMyAdmin pour tout gérer.": "It sees every database: the one to enter in phpMyAdmin to manage everything.",
+"Le mot de passe d'administration n'est pas dans la configuration de Desktroo.": "The administration password is not in Desktroo's configuration.",
+"Le service ne répond pas encore. Réessaie dans un instant.": "The service is not responding yet. Try again in a moment."
 }
 </script>
 <script id="dk-i18n">
@@ -10609,11 +10613,37 @@ async function webDbView() {
       h += '</div>';
     }
     h += T('<div style="font-size:11px;color:var(--text-dim);margin-top:8px;">🔒 Les identifiants sont enregistrés localement sur le NAS (data/databases.json, accessible root uniquement).</div>');
+    // Le compte d'administration : demandé au service seulement quand on clique.
+    h += '<div class="web-group-title">' + T('Administration') + '</div><div class="web-group"><div class="web-dbrow">'
+      + '<div style="display:flex;align-items:center;gap:12px;"><span style="flex:1;min-width:0;"><span class="web-row-name">' + T('Compte d\'administration de MariaDB') + '</span>'
+      + '<span class="web-row-desc">' + T('Il voit toutes les bases : c\'est celui à saisir dans phpMyAdmin pour tout gérer.') + '</span></span>'
+      + '<button class="fs-btn" style="font-size:11px;padding:4px 9px;flex-shrink:0;" onclick="webDbRootCreds()">👁 ' + T('Identifiants') + '</button></div>'
+      + '<div id="dbc-root" style="display:none;margin-top:8px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.25);border-radius:8px;padding:8px;"></div>'
+      + '</div></div>';
     box.innerHTML = h;
   } catch(e) {
     if (/\b1045\b|Access denied/i.test(e.message || '')) { webDbAccessPanel(); return; }
     box.innerHTML = errHtml(T('Erreur: ') + e.message + T('<br><span style="font-size:11px;color:var(--text-dim);">MariaDB est-il démarré ?</span>'));
   }
+}
+// Affiche ou replie les identifiants du compte root. Ils ne sont demandés qu'au premier clic, et oubliés en quittant la page.
+async function webDbRootCreds() {
+  var el = document.getElementById('dbc-root');
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  if (!el.dataset.ok) {
+    try {
+      var r = await fileops('GET', 'db/root-credentials'), c = (r && r.credentials) || {};
+      var blob = T('hôte: ') + c.host + '\nport: ' + c.port + T('\nutilisateur: ') + c.user + T('\nmot de passe: ') + c.password;
+      el.innerHTML = credLine(T('hôte'), c.host + ':' + c.port) + credLine(T('utilisateur'), c.user) + credLine(T('mot de passe'), c.password)
+        + '<div style="margin-top:5px;"><button class="fs-btn" style="font-size:10px;" onclick="copyText(\'' + encodeURIComponent(blob) + T('\')">📋 Tout copier</button></div>');
+      el.dataset.ok = '1';
+    } catch (e) {
+      el.textContent = /absent de la configuration/.test(e.message) ? T('Le mot de passe d\'administration n\'est pas dans la configuration de Desktroo.')
+        : dkTransient(e) ? T('Le service ne répond pas encore. Réessaie dans un instant.') : e.message;
+    }
+  }
+  el.style.display = 'block';
 }
 // MariaDB refuse le mot de passe d'administration enregistré (réinstallation passée) : on propose de le rétablir.
 function webDbAccessPanel(err) {

@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.28.5'
+APP_VERSION = '2.28.6'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -7678,6 +7678,16 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, {'ok': True, 'credentials': _db_creds_read()})
             except Exception as e:
                 self._json(500, {'error': str(e)})
+            return
+
+        # Compte d'administration de MariaDB (root), révélé à la demande : c'est lui qu'on saisit dans phpMyAdmin
+        # pour voir toutes les bases. Comme le reste, la route n'est ouverte qu'au porteur du jeton.
+        if path == '/db/root-credentials':
+            if not DB_ROOT_PASSWORD:
+                self._json(404, {'error': 'Mot de passe MariaDB absent de la configuration (DB_ROOT_PASSWORD).'})
+            else:
+                self._json(200, {'ok': True, 'credentials': {'host': DB_HOST, 'port': DB_PORT, 'user': 'root',
+                                                             'password': DB_ROOT_PASSWORD}})
             return
 
         # Noms d'affichage des applications
