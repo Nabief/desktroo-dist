@@ -644,6 +644,45 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
   .be-pending svg { width:16px; height:16px; flex-shrink:0; color:var(--info); }
   .web-row-name.dim { color:var(--text-dim); }
+  #win-storage { min-width:860px; min-height:520px; }
+  /* Stockage */
+  .sto-bar { display:block; height:6px; border-radius:3px; background:rgba(255,255,255,0.1); overflow:hidden; }
+  [data-theme="light"] .sto-bar { background:rgba(13,27,53,0.12); }
+  .sto-bar i { display:block; height:100%; border-radius:3px; background:var(--accent); transition:width .4s; }
+  .sto-bar i.warn { background:var(--warning); }
+  .sto-bar i.crit { background:var(--danger); }
+  .sto-bar.big { height:10px; border-radius:5px; }
+  .sto-bar.big i { border-radius:5px; }
+  .sto-pools { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; margin-top:6px; }
+  .sto-pool {
+    display:flex; flex-direction:column; gap:11px; padding:16px 18px 15px; border:1px solid var(--glass-border); border-radius:14px;
+    background:rgba(255,255,255,0.03); color:var(--text); font:inherit; text-align:left; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .sto-pool:hover { background:rgba(255,255,255,0.06); border-color:rgba(var(--accent2-rgb),0.4); }
+  .sto-pool:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  [data-theme="light"] .sto-pool { background:rgba(255,255,255,0.7); }
+  [data-theme="light"] .sto-pool:hover { background:#ffffff; }
+  .sto-pool-top { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .sto-pool-name { font-family:var(--font-display); font-size:16px; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .sto-pool-state { flex-shrink:0; font-size:12px; font-weight:600; }
+  .sto-pool-nums { display:flex; justify-content:space-between; gap:10px; font-size:12.5px; color:var(--text-dim); }
+  .sto-pool-nums strong { color:var(--text); }
+  .sto-pool-meta { font-size:12px; color:var(--text-dim); }
+  .sto-cap { margin:4px 0 18px; }
+  .sto-cap-top { display:flex; align-items:baseline; gap:12px; margin-bottom:9px; }
+  .sto-cap-pct { font-family:var(--font-display); font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .sto-cap-txt { flex:1; min-width:0; font-size:13px; color:var(--text-dim); }
+  .sto-cap-free { font-size:13px; font-weight:600; color:var(--accent2); }
+  .web-table.sto-ds { --wt-cols:minmax(0,1fr) 92px 150px 92px; }
+  .sto-ds-name { display:flex; align-items:center; gap:8px; }
+  .sto-ds-name svg { width:15px; height:15px; flex-shrink:0; color:var(--accent); }
+  .sto-ds-name strong { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .sto-share { display:flex; align-items:center; gap:8px; }
+  .sto-share .sto-bar { flex:1; height:4px; }
+  .sto-share .dim { flex-shrink:0; width:40px; text-align:right; font-size:11.5px; font-variant-numeric:tabular-nums; }
+  .sto-vdev-title { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .web-body > .sto-vdev-title:first-child { margin-top:6px; }
+  .web-row-name.mono { font-family:var(--font-mono); font-size:12.5px; }
   .window.maximized {
     top:0 !important; left:0 !important;
     width:100vw !important; height:calc(100vh - var(--taskbar-h)) !important;
@@ -3495,31 +3534,20 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Remplacer": "Replace",
 "Utilisé": "Used",
 "Libre": "Free",
-"+ Créer Dataset": "+ Create dataset",
 "Lancer un scrub sur": "Start a scrub on",
 "Lancer": "Start",
-"🔄 Scrub lancé sur": "🔄 Scrub started on",
 "dans": "in",
-"ex: sdc": "e.g. sdc",
 "🔄 Remplacement": "🔄 Replacement",
 "lancé": "started",
 "✅ Remplacement terminé": "✅ Replacement complete",
 "Aucun dataset": "No datasets",
 "Aucune info VDev disponible.": "No VDev information available.",
-"Nom du nouveau dataset sous": "Name of the new dataset under",
 "\" créé": "\" created",
 "Supprimer définitivement le dataset": "Permanently delete dataset",
 "et tous ses fichiers ?": "and all its files?",
 "\" supprimé": "\" deleted",
-"+ Créer": "+ Create",
 "Aucun snapshot": "No snapshots",
-"Nom du snapshot pour": "Snapshot name for",
-"📸 Snapshot créé : @": "📸 Snapshot created: @",
 "Supprimer le snapshot": "Delete snapshot",
-"🗑 Snapshot supprimé": "🗑 Snapshot deleted",
-"Rollback vers \u003cstrong>@": "Roll back to \u003cstrong>@",
-"Les données après ce snapshot seront perdues.": "Data after this snapshot will be lost.",
-"✅ Rollback effectué": "✅ Rollback complete",
 "Erreur chargement ACL:": "Error loading ACL:",
 "Aucune entrée ACL": "No ACL entries",
 "TYPE QUI PERMISSIONS": "TYPE&nbsp;&nbsp;&nbsp;WHO&nbsp;&nbsp;&nbsp;PERMISSIONS&nbsp;&nbsp;&nbsp;",
@@ -4680,7 +4708,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "+ dossier": "+ folder",
 "+ base": "+ database",
 "fichier(s) →": "file(s) →",
-"Sous-dataset": "Child dataset",
 "Auto-demarrage": "Autostart",
 "heure(s)": "hour(s)",
 "jour(s)": "day(s)",
@@ -5080,7 +5107,56 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Cloner un environnement": "Clone an environment",
 "Nom du nouvel environnement": "Name of the new environment",
 "Lettres, chiffres, point, tiret et tiret bas. La copie ne devient pas active : le NAS reste sur l'environnement en cours.": "Letters, digits, dot, hyphen and underscore. The copy does not become active: the NAS stays on the running environment.",
-"Un environnement porte déjà ce nom": "An environment already has this name"
+"Un environnement porte déjà ce nom": "An environment already has this name",
+"Miroir": "Mirror",
+"Disque seul": "Single disk",
+"{0} disques": "{0} disks",
+"1 disque": "1 disk",
+"Retiré": "Removed",
+"Résumé": "Summary",
+"Vue d'ensemble": "Overview",
+"{0} % utilisé, {1} libres": "{0}% used, {1} free",
+"Le stockage ne répond pas": "Storage is not responding",
+"{0} au total, {1} libres.": "{0} in total, {1} free.",
+"Un pool réunit des disques en un espace de stockage. Il se crée dans l'interface TrueNAS.": "A pool combines disks into one storage space. It is created in the TrueNAS interface.",
+"utilisés sur {0}": "used of {0}",
+"Créer un dataset": "Create a dataset",
+"Disposition": "Layout",
+"Parcourir, créer ou supprimer les datasets du pool": "Browse, create or delete the pool's datasets",
+"Les vdevs, l'état de chaque disque, remplacer un disque": "Vdevs, the status of each disk, replacing a disk",
+"Lancer une vérification, la planifier, suivre son avancement": "Start a check, schedule it, follow its progress",
+"Parcourir le contenu du pool": "Browse the pool's contents",
+"Les datasets ne répondent pas": "Datasets are not responding",
+"Un dataset est un dossier du pool qui a ses propres réglages : snapshots, droits, quota.": "A dataset is a folder of the pool with its own settings: snapshots, permissions, quota.",
+"Part du pool": "Share of pool",
+"Disponible": "Available",
+"{0} utilisés, {1} disponibles": "{0} used, {1} available",
+"avec ses {0} sous-datasets": "including its {0} child datasets",
+"avec son sous-dataset": "including its child dataset",
+"Aucun": "None",
+"Parcourir le contenu de ce dataset": "Browse this dataset's contents",
+"Voir, créer, restaurer et planifier les snapshots de ce dataset": "View, create, restore and schedule this dataset's snapshots",
+"Droits d'accès": "Permissions",
+"Qui peut lire et écrire dans ce dataset (ACL)": "Who can read and write in this dataset (ACL)",
+"Créer un sous-dataset": "Create a child dataset",
+"Un dataset rangé dans celui-ci": "A dataset stored inside this one",
+"Le dataset et tous ses fichiers sont détruits": "The dataset and all its files are destroyed",
+"Dans": "In",
+"Lettres, chiffres, point, tiret et tiret bas. Le dataset hérite des réglages de son parent.": "Letters, digits, dot, hyphen and underscore. The dataset inherits its parent's settings.",
+"Données": "Data",
+"Métadonnées": "Metadata",
+"Déduplication": "Deduplication",
+"Journal": "Log",
+"Réserve": "Spare",
+"Remplacer {0}": "Replace {0}",
+"Nouveau disque": "New disk",
+"Aucun disque libre n'est branché sur le NAS. Branche le disque de remplacement, puis clique sur Actualiser.": "No free disk is connected to the NAS. Connect the replacement disk, then click Refresh.",
+"Disque à remplacer": "Disk to replace",
+"Le nouveau disque est effacé, puis le pool y recopie les données (reconstruction). Cela peut durer plusieurs heures ; le pool reste utilisable pendant ce temps.": "The new disk is wiped, then the pool copies the data onto it (resilver). This can take several hours; the pool stays usable meanwhile.",
+"Remplacer le disque": "Replace the disk",
+"Choisis le nouveau disque": "Choose the new disk",
+"Remplacer \u003cstrong>{0}\u003c/strong> par \u003cstrong>{1}\u003c/strong> dans le pool \u003cstrong>{2}\u003c/strong> ?": "Replace \u003cstrong>{0}\u003c/strong> with \u003cstrong>{1}\u003c/strong> in pool \u003cstrong>{2}\u003c/strong>?",
+"Tout ce que contient le nouveau disque sera effacé.": "Everything on the new disk will be erased."
 }
 </script>
 <script id="dk-i18n">
@@ -5578,7 +5654,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <div id="fs-win-mount"></div>
 
 <!-- STORAGE WINDOW -->
-<div class="window" id="win-storage" style="top:60px;left:100px;width:700px;height:580px;">
+<div class="window" id="win-storage" style="top:60px;left:100px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="storage">
     <span class="window-icon">💾</span>
     <span class="window-title">Stockage</span>
@@ -5588,9 +5664,17 @@ document.addEventListener('DOMContentLoaded', function () {
       <button class="win-btn cls" onclick="closeWin('storage')"></button>
     </div>
   </div>
-  <div class="window-body">
-    <div class="storage-manager" id="storage-content">
-      <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement des pools...</div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="sto-side" aria-label="Stockage"></nav>
+      <section class="web-main">
+        <header class="web-head" id="sto-head"></header>
+        <div class="web-tabs" id="sto-tabs"></div>
+        <div class="web-body" id="storage-content">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement des pools...</div>
+        </div>
+      </section>
     </div>
   </div>
   <div class="resize-handle" data-win="storage"></div>
@@ -9934,344 +10018,414 @@ async function fsDoUpload(files) {
 
 // ===========================
 // STORAGE MANAGER
+// Gabarit des gestionnaires : les pools dans la colonne, leurs datasets et leurs disques à droite.
 // ===========================
+var _stoNav = 'all';       // all | pool | ds | newds | replace
+var _stoPool = null;       // nom du pool affiché
+var _stoTab = 'sum';       // sum | ds | disks
+var _stoDs = null;         // dataset affiché
+var _stoLoaded = false;
+var _stoPools = [];
+var _stoDisks = [];
+var _stoUse = {};          // pool → { used, total }
+var _stoDsCache = {};      // pool → datasets (hors racine), triés en arbre
+var _stoSeq = 0;
+WEB_ICONS.folder = '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>';
+
+function stoPoolGet(name) { return _stoPools.find(function(p) { return p.name === name; }) || null; }
+function stoDiskGet(name) { return _stoDisks.find(function(d) { return d.name === name || d.devname === name; }) || null; }
+function stoProp(d, k) { var p = d ? d[k] : null; if (p == null) return null; if (typeof p === 'object') return p.parsed != null ? p.parsed : (p.value != null ? p.value : p.rawvalue); return p; }
+function stoNum(d, k) { var p = d ? d[k] : null; if (p == null) return 0; if (typeof p === 'object') { if (typeof p.parsed === 'number') return p.parsed; var n = parseInt(p.rawvalue || 0, 10); return isFinite(n) ? n : 0; } return Number(p) || 0; }
+function stoPct(u) { return u && u.total ? Math.max(0, Math.min(100, Math.round(u.used / u.total * 100))) : 0; }
+function stoBar(pct, cls) { return '<div class="sto-bar' + (cls ? ' ' + cls : '') + '"><i class="' + (pct > 85 ? 'crit' : pct > 65 ? 'warn' : '') + '" style="width:' + pct + '%"></i></div>'; }
+// Disques d'un pool, relevés dans sa topologie.
+function stoVdevDisks(v) {
+  var kids = ensureArray(v.children || v.disks || []);
+  return kids.length ? kids : [v];
+}
+function stoPoolDiskCount(p) {
+  var n = 0, t = p.topology || {};
+  Object.keys(t).forEach(function(k) { ensureArray(t[k]).forEach(function(v) { n += stoVdevDisks(v).length; }); });
+  return n;
+}
+function stoVdevName(v) {
+  var t = String(v.type || 'DISK').toUpperCase();
+  if (t === 'MIRROR') return T('Miroir');
+  if (t === 'DISK' || t === 'STRIPE') return T('Disque seul');
+  return t;
+}
+function stoLayout(p) {
+  var data = ensureArray((p.topology || {}).data);
+  if (!data.length) return '';
+  var kinds = {};
+  data.forEach(function(v) { var n = stoVdevName(v); kinds[n] = (kinds[n] || 0) + 1; });
+  var nd = stoPoolDiskCount(p);
+  return Object.keys(kinds).map(function(k) { return kinds[k] > 1 ? kinds[k] + ' × ' + k : k; }).join(', ') + ', ' + (nd > 1 ? Tf('{0} disques', nd) : T('1 disque'));
+}
+function stoStatusLabel(s) {
+  s = String(s || '').toUpperCase();
+  var n = { ONLINE: T('En ligne'), DEGRADED: T('Dégradé'), FAULTED: T('En défaut'), OFFLINE: T('Hors ligne'), UNAVAIL: T('Indisponible'), REMOVED: T('Retiré') };
+  return { label: n[s] || s || '—', color: s === 'ONLINE' ? 'var(--success)' : (s === 'DEGRADED' ? 'var(--warning)' : 'var(--danger)') };
+}
+
+function stoBody() { return document.getElementById('storage-content'); }
+function stoHead(title, o) {
+  o = o || {};
+  document.getElementById('sto-head').innerHTML = '<div class="web-head-text">'
+    + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
+    + '<h4 class="web-title' + (o.mono ? ' snap-path' : '') + '">' + webEsc(title) + '</h4>'
+    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
+    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+  var tabs = document.getElementById('sto-tabs');
+  tabs.innerHTML = o.tabs ? [['sum', T('Résumé')], ['ds', 'Datasets'], ['disks', T('Disques')]].map(function(t) {
+    return '<button class="web-tab' + (_stoTab === t[0] ? ' active' : '') + '" onclick="stoTab(\'' + t[0] + '\')">' + t[1] + '</button>';
+  }).join('') : '';
+  var body = stoBody();
+  body.classList.toggle('narrow', !!o.narrow);
+  if (!o.keepScroll) body.scrollTop = 0;
+  stoSideRender();
+}
+function stoSideRender() {
+  var el = document.getElementById('sto-side');
+  if (!el) return;
+  var h = '<button class="web-nav' + (_stoNav === 'all' ? ' active' : '') + '" onclick="stoGo(\'all\')">' + webIcon('storage') + '<span class="web-nav-name">' + T('Vue d\'ensemble') + '</span></button>'
+    + '<div class="web-side-sep"></div><div class="web-side-title"><span>Pools</span><span class="web-count">' + (_stoPools.length || '') + '</span></div>';
+  _stoPools.forEach(function(p) {
+    var st = mntPoolState(p), u = _stoUse[p.name];
+    var meta = u && u.total ? Tf('{0} % utilisé, {1} libres', stoPct(u), mntFmtSize(Math.max(0, u.total - u.used))) : st.label;
+    h += '<button class="web-nav' + (_stoNav !== 'all' && _stoPool === p.name ? ' active' : '') + '" data-pool="' + webEsc(p.name) + '">'
+      + '<span class="web-dot' + (st.lvl === 'ok' ? '' : ' ' + st.lvl) + '" title="' + webEsc(st.label) + '"></span>'
+      + '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(p.name) + '</span><span class="web-nav-meta">' + webEsc(meta) + '</span></span></button>';
+  });
+  if (!_stoPools.length) h += '<div class="web-side-empty">' + T('Aucun pool') + '</div>';
+  h += '<div class="web-side-sep"></div><div class="web-side-title"><span>' + T('Voir aussi') + '</span></div>'
+    + '<button class="web-nav" onclick="openApp(\'maintenance\')">' + webIcon('sliders') + '<span class="web-nav-name">' + T('Disques & Scrub') + '</span></button>'
+    + '<button class="web-nav" onclick="openApp(\'snapshots\')">' + webIcon('layers') + '<span class="web-nav-name">' + T('Snapshots ZFS') + '</span></button>'
+    + '<button class="web-nav" onclick="openTrueNASPage(\'/ui/storage\')">' + webIcon('out') + '<span class="web-nav-name">' + T('Ouvrir dans TrueNAS') + '</span></button>';
+  var sc = el.scrollTop;
+  el.innerHTML = h;
+  el.scrollTop = sc;
+  el.querySelectorAll('[data-pool]').forEach(function(b) { b.onclick = function() { stoGo('pool', b.dataset.pool); }; });
+}
+function stoGo(nav, pool) {
+  _stoNav = nav;
+  if (pool !== undefined && pool !== _stoPool) { _stoPool = pool; _stoDs = null; }
+  if (nav === 'pool' && stoPoolGet(_stoPool)) stoPoolView();
+  else if (nav === 'ds' && stoPoolGet(_stoPool) && _stoDs) {
+    if (_stoDsCache[_stoPool]) { stoDsView(); return; }
+    // Après un rechargement, les datasets du pool sont relus avant d'afficher la fiche.
+    var seq = ++_stoSeq;
+    stoDsLoad(_stoPool).then(function() { if (seq === _stoSeq && _stoNav === 'ds') stoDsView(); }, function() { _stoTab = 'ds'; stoGo('pool'); });
+  }
+  else { _stoNav = 'all'; stoAllView(); }
+}
+function stoTab(t) { _stoTab = t; _stoNav = 'pool'; stoPoolView(); }
 async function loadStorage() {
-  const el = document.getElementById('storage-content');
-  el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement des pools...</div>');
+  var el = stoBody();
+  if (!el) return;
+  if (!_stoLoaded) { stoHead(T('Stockage')); el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement des pools...</div>'); }
   try {
-    const [rawPools, rawDisks] = await Promise.all([socketCall('/pool'), socketCall('/disk')]);
-    const pools = ensureArray(rawPools);
-    const disks = ensureArray(rawDisks);
-    el.innerHTML = '';
-    if (!pools.length) {
-      el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">💾</div><span>Aucun pool trouvé</span></div>');
-      return;
-    }
-    for (const pool of pools) {
-      // Capacité réelle via dataset racine (comme le widget)
-      let total = 0, used = 0;
-      try {
-        const ds = await socketCall('/pool/dataset/id/' + encodeURIComponent(pool.name));
-        const avail = (ds && ds.available) ? (ds.available.parsed || 0) : 0;
-        const usedV = (ds && ds.used)      ? (ds.used.parsed      || 0) : 0;
-        if (avail || usedV) { total = avail + usedV; used = usedV; }
-      } catch(_) {}
-      if (!total) {
-        total = pool.size      || 0;
-        used  = pool.allocated || (total - (pool.free || 0));
-      }
-      const free = total - used;
-      const pct  = total ? Math.round((used/total)*100) : 0;
-      const fillCls   = pct > 85 ? 'fill-crit' : pct > 65 ? 'fill-warn' : 'fill-ok';
-      const statusCls = (pool.status || 'ONLINE').replace(/\s/g,'_');
-      const poolDisks = disks.filter(d => d.pool === pool.name);
-      const pid = `pool-${(pool.id || pool.name).toString().replace(/\W/g,'_')}`;
-      // Echapper le nom pour les onclick (single quotes safe)
-      const pnAttr = pool.name.replace(/'/g, "\\'");
-      el.innerHTML += Tt`
-        <div class="pool-card" id="${pid}" data-pool="${pool.name.replace(/"/g,'&quot;')}">
-          <div class="pool-card-header">
-            <div class="pool-name">💿 ${pool.name}</div>
-            <div class="pool-status ${statusCls}">${pool.status || 'ONLINE'}</div>
-          </div>
-          <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${pct}%"></div></div>
-          <div class="pool-grid">
-            <div class="pool-stat"><div class="pool-stat-val">${fmtBytes(total)}</div><div class="pool-stat-lbl">Total</div></div>
-            <div class="pool-stat"><div class="pool-stat-val">${fmtBytes(used)}</div><div class="pool-stat-lbl">Utilisé</div></div>
-            <div class="pool-stat"><div class="pool-stat-val">${fmtBytes(free)}</div><div class="pool-stat-lbl">Libre</div></div>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
-            <button class="fs-btn" style="font-size:11px;" onclick="storageScrub('${pnAttr}')">🔄 Scrub</button>
-            <button class="fs-btn" style="font-size:11px;" onclick="storageDatasets('${pnAttr}','${pid}')">📂 Datasets</button>
-            <button class="fs-btn" style="font-size:11px;" onclick="storageVdevs('${pnAttr}','${pid}')">🔲 VDevs</button>
-            <button class="fs-btn" style="font-size:11px;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);" onclick="storageCreateDataset('${pnAttr}')">+ Créer Dataset</button>
-          </div>
-          ${poolDisks.length ? `
-          <div class="disk-list" style="margin-top:10px;">
-            ${poolDisks.map(d=>{
-              const dName = (d.name||d.devname||'').replace(/'/g,"\\'");
-              return Tt`<div class="disk-item">
-                <span class="disk-icon">💽</span>
-                <div class="disk-info">
-                  <div class="disk-name">${d.name||d.devname||'?'}</div>
-                  <div class="disk-size">${d.model||''} — ${fmtBytes(d.size)}</div>
-                </div>
-                <div style="display:flex;gap:4px;margin-left:auto;align-items:center;">
-                  <div class="disk-status ONLINE">OK</div>
-                  <button class="fs-btn" style="font-size:10px;padding:2px 6px;" onclick="diskScrub('${dName}')">Scrub</button>
-                  <button class="fs-btn" style="font-size:10px;padding:2px 6px;" onclick="diskReplace('${pnAttr}','${dName}')">Remplacer</button>
-                </div>
-              </div>`;
-            }).join('')}
-          </div>` : ''}
-          <div id="${pid}-detail"></div>
-        </div>`;
-    }
-  } catch(e) {
-    el.innerHTML = errHtml(T('Erreur: ') + e.message);
+    var r = await Promise.allSettled([socketCall('/pool'), wsCall('disk.query', [[], { extra: { pools: true } }], 60000)]);
+    if (r[0].status !== 'fulfilled') throw r[0].reason;
+    _stoPools = ensureArray(r[0].value);
+    _stoPools.sort(function(a, b) { return String(a.name).localeCompare(String(b.name), undefined, { numeric: true }); });
+    _stoDisks = r[1].status === 'fulfilled' ? ensureArray(r[1].value) : [];
+    // Capacité utile : celle du dataset racine (comme le widget), à défaut celle du pool
+    var roots = await Promise.allSettled(_stoPools.map(function(p) { return socketCall('/pool/dataset/id/' + encodeURIComponent(p.name)); }));
+    _stoUse = {};
+    _stoPools.forEach(function(p, i) {
+      var total = 0, used = 0, ds = roots[i].status === 'fulfilled' ? roots[i].value : null;
+      if (ds && typeof ds === 'object') { var a = stoNum(ds, 'available'), u = stoNum(ds, 'used'); if (a || u) { total = a + u; used = u; } }
+      if (!total) { total = p.size || 0; used = p.allocated || (total - (p.free || 0)); }
+      _stoUse[p.name] = { used: used, total: total };
+    });
+    _stoDsCache = {};
+    _stoLoaded = true;
+    if (!stoPoolGet(_stoPool)) { _stoPool = null; _stoDs = null; }
+    var nav = _stoNav;
+    if (nav === 'newds' || nav === 'replace') nav = 'pool';
+    stoGo(nav);
+  } catch (e) {
+    _stoLoaded = false; _stoPools = []; _stoDisks = []; _stoUse = {};
+    stoHead(T('Stockage'));
+    el.innerHTML = dkWaitHtml('error', T('Le stockage ne répond pas'), webEsc((e && e.message) || String(e)),
+      '<button class="web-open" onclick="loadStorage()">' + T('Réessayer') + '</button>');
   }
 }
 
-async function storageScrub(poolName) {
-  if (!await showConfirm(T('Lancer un scrub sur <strong>') + poolName + '</strong> ?', {icon:'🔄', ok:T('Lancer')})) return;
-  try {
-    await socketCall('/pool/scrub', 'POST', { name: poolName, threshold: 0 });
-    toast(T('🔄 Scrub lancé sur ') + poolName);
-  } catch(e) { toast('❌ ' + e.message); }
-}
-function diskScrub(devName) { storageScrub(devName); }
-
-async function diskReplace(poolName, oldDisk) {
-  const newDisk = await showPrompt(T('Remplacer <strong>') + oldDisk + T('</strong> dans <strong>') + poolName + T('</strong><br><small style="color:var(--text-dim)">ex: sdc</small>'));
-  if (!newDisk) return;
-  try {
-    const jobId = await socketCall('/pool/replace', 'POST', { id: poolName, label: oldDisk, disk: newDisk });
-    toast(T('🔄 Remplacement ') + oldDisk + ' → ' + newDisk + T(' lancé'));
-    if (jobId) { await waitJob(jobId, 120000); toast(T('✅ Remplacement terminé')); }
-  } catch(e) { toast('❌ ' + e.message); }
-}
-
-async function storageDatasets(poolName, pid) {
-  const detEl = document.getElementById(pid + '-detail');
-  if (detEl.dataset.showing === 'datasets') { detEl.innerHTML = ''; detEl.dataset.showing = ''; return; }
-  detEl.dataset.showing = 'datasets';
-  detEl.innerHTML = T('<div class="fs-loading" style="padding:10px;"><div class="spinner"></div> Chargement...</div>');
-  try {
-    const raw = ensureArray(await socketCall('/pool/dataset?pool=' + encodeURIComponent(poolName) + '&type=FILESYSTEM'));
-    const ds  = raw.filter(function(d) { return d.name !== poolName; });
-    if (!ds.length) { detEl.innerHTML = T('<div style="padding:8px;font-size:12px;color:var(--text-dim);">Aucun dataset</div>'); return; }
-
-    // Construire arbre parent→enfants
-    var map = {};
-    ds.forEach(function(d) { map[d.name] = { data:d, children:[] }; });
-    var roots = [];
-    ds.forEach(function(d) {
-      var parts  = d.name.split('/');
-      var pKey   = parts.slice(0, -1).join('/');
-      if (map[pKey]) map[pKey].children.push(map[d.name]);
-      else           roots.push(map[d.name]);
-    });
-    // Tri alphabétique récursif
-    function sortNodes(nodes) {
-      nodes.sort(function(a,b){ return a.data.name.localeCompare(b.data.name); });
-      nodes.forEach(function(n){ if(n.children.length) sortNodes(n.children); });
-    }
-    sortNodes(roots);
-
-    function safeAttr(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
-
-    function renderNode(node) {
-      var d       = node.data;
-      var dUsed   = (d.used  && d.used.parsed)       ? d.used.parsed       : parseInt((d.used  && d.used.rawvalue)  ||0)||0;
-      var dAvail  = (d.available && d.available.parsed) ? d.available.parsed : parseInt((d.available && d.available.rawvalue)||0)||0;
-      var dTotal  = dUsed + dAvail;
-      var dPct    = dTotal ? Math.round(dUsed / dTotal * 100) : 0;
-      var dn      = safeAttr(d.name);
-      var mount   = (d.mountpoint && d.mountpoint.value) ? safeAttr(d.mountpoint.value) : ('/mnt/' + dn);
-      var uid     = 'ds-' + d.name.replace(/[^a-zA-Z0-9]/g, '_');
-      var hasCh   = node.children.length > 0;
-      var h = '<div>'
-        + '<div class="ds-row" onclick="dstoggle(\'' + uid + '\',event)">'
-        +   '<span class="ds-toggle" id="' + uid + '-arrow">' + (hasCh ? '▶' : '') + '</span>'
-        +   '<span class="ds-icon">📁</span>'
-        +   '<div class="ds-info">'
-        +     '<div class="ds-name">' + d.name.split('/').pop() + '</div>'
-        +     '<div class="ds-size">' + fmtBytes(dUsed) + ' / ' + fmtBytes(dTotal) + ' — ' + dPct + '%</div>'
-        +   '</div>'
-        +   '<div class="ds-actions">'
-        +     '<button class="fs-btn" style="font-size:11px;padding:4px 9px;" title="Snapshots" onclick="event.stopPropagation();dsSnapshots(\'' + dn + '\',\'' + uid + '\')">📸</button>'
-        +     '<button class="fs-btn" style="font-size:11px;padding:4px 9px;" title="ACL" onclick="event.stopPropagation();openAcl(\'' + dn + '\',\'' + mount + '\')">🔐</button>'
-        +     T('<button class="fs-btn" style="font-size:11px;padding:4px 9px;" title="Sous-dataset" onclick="event.stopPropagation();storageCreateDataset(\'') + dn + '\')">+</button>'
-        +     T('<button class="fs-btn" style="font-size:11px;padding:4px 9px;color:#f87171;" title="Supprimer" onclick="event.stopPropagation();storageDeleteDataset(\'') + dn + '\')">🗑</button>'
-        +   '</div>'
-        + '</div>';
-      if (hasCh) {
-        h += '<div class="ds-children" id="' + uid + '-children">';
-        node.children.forEach(function(c) { h += renderNode(c); });
-        h += '</div>';
-      }
-      h += '</div>';
-      return h;
-    }
-
-    var out = '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">'
-      + '<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:600;letter-spacing:.5px;">DATASETS</div>';
-    roots.forEach(function(n) { out += renderNode(n); });
-    out += '</div>';
-    detEl.innerHTML = out;
-  } catch(e) { detEl.innerHTML = T('<div style="padding:8px;font-size:12px;color:var(--danger);">Erreur: ') + e.message + '</div>'; }
+// ── Vue d'ensemble : un bloc par pool ──
+function stoAllView() {
+  var total = 0, used = 0;
+  _stoPools.forEach(function(p) { var u = _stoUse[p.name]; if (u) { total += u.total; used += u.used; } });
+  stoHead(T('Stockage'), {
+    sub: _stoPools.length ? webEsc((_stoPools.length > 1 ? Tf('{0} pools', _stoPools.length) : T('1 pool')) + (total ? ', ' + Tf('{0} au total, {1} libres.', mntFmtSize(total), mntFmtSize(Math.max(0, total - used))) : '.')) : '',
+    actions: '<button class="fs-btn" onclick="loadStorage()">' + T('Actualiser') + '</button>' });
+  var el = stoBody();
+  if (!_stoPools.length) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('storage') + '<div class="fs-empty-title">' + T('Aucun pool trouvé') + '</div><div>'
+      + T('Un pool réunit des disques en un espace de stockage. Il se crée dans l\'interface TrueNAS.') + '</div>'
+      + '<button class="web-open" onclick="openTrueNASPage(\'/ui/storage\')">' + T('Ouvrir dans TrueNAS') + '</button></div>';
+    return;
+  }
+  var h = '<div class="sto-pools">';
+  _stoPools.forEach(function(p) {
+    var st = mntPoolState(p), u = _stoUse[p.name] || { used: 0, total: 0 }, pct = stoPct(u);
+    h += '<button class="sto-pool" data-pool="' + webEsc(p.name) + '">'
+      + '<span class="sto-pool-top"><span class="sto-pool-name">' + webEsc(p.name) + '</span><span class="sto-pool-state" style="color:' + st.color + ';">' + webEsc(st.label) + '</span></span>'
+      + stoBar(pct)
+      + '<span class="sto-pool-nums"><span><strong>' + webEsc(mntFmtSize(u.used)) + '</strong> ' + webEsc(Tf('utilisés sur {0}', mntFmtSize(u.total))) + '</span><span>' + webEsc(Tf('{0} libres', mntFmtSize(Math.max(0, u.total - u.used)))) + '</span></span>'
+      + '<span class="sto-pool-meta">' + webEsc(stoLayout(p)) + '</span></button>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-pool]').forEach(function(b) { b.onclick = function() { stoGo('pool', b.dataset.pool); }; });
 }
 
-function dstoggle(uid, e) {
-  if (e && e.target && e.target.closest && e.target.closest('button')) return;
-  var children = document.getElementById(uid + '-children');
-  var arrow    = document.getElementById(uid + '-arrow');
-  if (!children) return;
-  var open = children.classList.toggle('open');
-  if (arrow) arrow.textContent = open ? '▼' : '▶';
+// ── Un pool : résumé, datasets, disques ──
+function stoPoolView() {
+  var p = stoPoolGet(_stoPool);
+  if (!p) { stoGo('all'); return; }
+  var st = mntPoolState(p), u = _stoUse[p.name] || { used: 0, total: 0 };
+  stoHead(p.name, { tabs: true,
+    sub: '<span style="color:' + st.color + ';">' + webEsc(st.label) + '</span>' + (u.total ? ', ' + webEsc(Tf('{0} utilisés sur {1}', mntFmtSize(u.used), mntFmtSize(u.total))) : ''),
+    actions: '<button class="fs-btn" onclick="loadStorage()">' + T('Actualiser') + '</button>'
+      + (_stoTab === 'ds' ? '<button class="web-open" onclick="stoNewDs()">' + T('Créer un dataset') + '</button>' : '') });
+  if (_stoTab === 'ds') stoDsTab(p); else if (_stoTab === 'disks') stoDisksTab(p); else stoSumTab(p);
+}
+function stoSumTab(p) {
+  var st = mntPoolState(p), u = _stoUse[p.name] || { used: 0, total: 0 }, pct = stoPct(u);
+  var row = function(call, name, desc) {
+    return '<button class="web-row line" onclick="' + call + '"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+  };
+  var q = "'" + encodeURIComponent(p.name) + "'";
+  var h = '<div class="sto-cap"><div class="sto-cap-top"><span class="sto-cap-pct">' + pct + ' %</span><span class="sto-cap-txt">' + webEsc(Tf('{0} utilisés sur {1}', mntFmtSize(u.used), mntFmtSize(u.total))) + '</span>'
+    + '<span class="sto-cap-free">' + webEsc(Tf('{0} libres', mntFmtSize(Math.max(0, u.total - u.used)))) + '</span></div>' + stoBar(pct, 'big') + '</div>'
+    + netFacts([
+      [T('État'), '<span style="color:' + st.color + ';font-weight:600;">' + webEsc(st.label) + '</span>'],
+      [T('Disposition'), webEsc(stoLayout(p))],
+      [T('Dernier scrub'), webEsc(mntScanShort(p))],
+      [T('Chemin'), p.path ? '<span class="mono">' + webEsc(p.path) + '</span>' : '<span class="mono">/mnt/' + webEsc(p.name) + '</span>']
+    ])
+    + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + row('stoTab(\'ds\')', 'Datasets', T('Parcourir, créer ou supprimer les datasets du pool'))
+    + row('stoTab(\'disks\')', T('Disques'), T('Les vdevs, l\'état de chaque disque, remplacer un disque'))
+    + row('stoOpenScrub(' + q + ')', T('Scrub'), T('Lancer une vérification, la planifier, suivre son avancement'))
+    + row('webOpenFolder(\'' + encodeURIComponent(p.path || ('/mnt/' + p.name)) + '\')', T('Ouvrir dans Fichiers'), T('Parcourir le contenu du pool'))
+    + '</div>';
+  stoBody().innerHTML = h;
+}
+// Ouvre Disques & Scrub sur ce pool, ou Snapshots ZFS sur ce dataset.
+function stoOpenScrub(enc) {
+  _mntNav = 'pool'; _mntSel = decodeURIComponent(enc);
+  var w = document.getElementById('win-maintenance');
+  if (w && w.classList.contains('visible') && _mntLoaded) { bringToFront(w); mntGo('pool', _mntSel); } else openApp('maintenance');
+}
+function stoOpenSnaps(enc) {
+  _snapNav = 'ds'; _snapDs = decodeURIComponent(enc);
+  var w = document.getElementById('win-snapshots');
+  if (w && w.classList.contains('visible') && _snapLoaded) { bringToFront(w); snapGo('ds', _snapDs); } else openApp('snapshots');
 }
 
-async function storageVdevs(poolName, pid) {
-  const detEl = document.getElementById(pid + '-detail');
-  if (detEl.dataset.showing === 'vdevs') { detEl.innerHTML = ''; detEl.dataset.showing = ''; return; }
-  detEl.dataset.showing = 'vdevs';
-  detEl.innerHTML = '<div class="fs-loading" style="padding:10px;"><div class="spinner"></div></div>';
-  try {
-    const pools = ensureArray(await socketCall('/pool'));
-    const pool = pools.find(p => p.name === poolName);
-    const topology = pool?.topology || {};
-    const vdevTypes = ['data','cache','log','spare','special','dedup'];
-    let html = '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;"><div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;font-weight:600;">VDEVS — ' + poolName + '</div>';
-    let hasContent = false;
-    vdevTypes.forEach(type => {
-      const vdevs = ensureArray(topology[type]);
-      if (!vdevs.length) return;
-      hasContent = true;
-      html += '<div style="font-size:11px;color:var(--accent);margin:6px 0 3px;font-weight:600;">' + type.toUpperCase() + '</div>';
-      vdevs.forEach(vdev => {
-        const vType  = vdev.type || 'DISK';
-        const status = vdev.status || 'ONLINE';
-        const sCls   = status === 'ONLINE' ? 'var(--success)' : status === 'DEGRADED' ? 'var(--warning)' : 'var(--danger)';
-        const children = ensureArray(vdev.children || vdev.disks || []);
-        html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:8px 10px;margin-bottom:4px;">'
-          + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
-          + '<span style="font-size:12px;font-weight:600;">' + vType + '</span>'
-          + '<span style="font-size:11px;color:' + sCls + ';">● ' + status + '</span>'
-          + '</div>'
-          + children.map(c => '<div style="font-size:11px;color:var(--text-dim);padding:2px 0 2px 10px;">💽 ' + (c.disk||c.name||'?') + ' <span style="color:' + (c.status==='ONLINE'?'var(--success)':'var(--danger)') + '">' + (c.status||'?') + '</span></div>').join('')
-          + '</div>';
-      });
-    });
-    if (!hasContent) html += T('<div style="font-size:12px;color:var(--text-dim);padding:8px;">Aucune info VDev disponible.</div>');
-    html += '</div>';
-    detEl.innerHTML = html;
-  } catch(e) { detEl.innerHTML = errHtml(e.message); }
+// ── Datasets d'un pool ──
+async function stoDsLoad(pool) {
+  if (_stoDsCache[pool]) return _stoDsCache[pool];
+  var raw = ensureArray(await socketCall('/pool/dataset?pool=' + encodeURIComponent(pool) + '&type=FILESYSTEM'));
+  var seen = {}, list = [];
+  (function walk(arr) { arr.forEach(function(d) { if (d && d.name && !seen[d.name]) { seen[d.name] = 1; if (d.name !== pool) list.push(d); } if (d && d.children && d.children.length) walk(d.children); }); })(raw);
+  // Ordre d'arbre : chaque dataset suivi de ses enfants
+  list.sort(function(a, b) {
+    var x = a.name.split('/'), y = b.name.split('/');
+    for (var i = 0; i < Math.min(x.length, y.length); i++) { var c = x[i].localeCompare(y[i], undefined, { numeric: true, sensitivity: 'base' }); if (c) return c; }
+    return x.length - y.length;
+  });
+  _stoDsCache[pool] = list;
+  return list;
 }
-
-async function storageCreateDataset(parentPath) {
-  const name = await showPrompt(T('Nom du nouveau dataset sous <strong>') + parentPath + '</strong> :');
-  if (!name || !name.trim()) return;
-  const fullPath = parentPath + '/' + name.trim();
+function stoDsGet(name) { return (_stoDsCache[_stoPool] || []).find(function(d) { return d.name === name; }) || null; }
+async function stoDsTab(p) {
+  var el = stoBody(), seq = ++_stoSeq;
+  if (!_stoDsCache[p.name]) el.innerHTML = T('<div class="fs-loading" style="height:160px;"><div class="spinner"></div> Chargement...</div>');
+  var list;
+  try { list = await stoDsLoad(p.name); }
+  catch (e) { if (seq !== _stoSeq) return; el.innerHTML = dkWaitHtml('error', T('Les datasets ne répondent pas'), webEsc((e && e.message) || String(e)), '<button class="web-open" onclick="stoTab(\'ds\')">' + T('Réessayer') + '</button>'); return; }
+  if (seq !== _stoSeq || _stoNav !== 'pool' || _stoTab !== 'ds' || _stoPool !== p.name) return;
+  if (!list.length) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('folder') + '<div class="fs-empty-title">' + T('Aucun dataset') + '</div><div>'
+      + T('Un dataset est un dossier du pool qui a ses propres réglages : snapshots, droits, quota.') + '</div>'
+      + '<button class="web-open" onclick="stoNewDs()">' + T('Créer un dataset') + '</button></div>';
+    return;
+  }
+  var total = (_stoUse[p.name] || {}).total || 0;
+  var h = '<div class="web-table sto-ds"><div class="web-tr head"><span>Dataset</span><span class="num">' + T('Utilisé') + '</span><span>' + T('Part du pool') + '</span><span class="num">' + T('Disponible') + '</span></div>';
+  list.forEach(function(d, i) {
+    var depth = d.name.split('/').length - 2, used = stoNum(d, 'used'), share = total ? Math.min(100, used / total * 100) : 0;
+    h += '<button class="web-tr" data-ds="' + i + '" title="' + webEsc(d.name) + '">'
+      + '<span class="sto-ds-name" style="padding-left:' + (Math.min(depth, 8) * 18) + 'px;">' + webIcon('folder') + '<strong>' + webEsc(d.name.split('/').pop()) + '</strong></span>'
+      + '<span class="num">' + webEsc(mntFmtSize(used)) + '</span>'
+      + '<span class="sto-share"><span class="sto-bar"><i style="width:' + share.toFixed(1) + '%"></i></span><span class="dim">' + (share >= 0.95 ? Math.round(share) + ' %' : (used ? '< 1 %' : '0 %')) + '</span></span>'
+      + '<span class="num dim">' + webEsc(mntFmtSize(stoNum(d, 'available'))) + '</span></button>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-ds]').forEach(function(b) { b.onclick = function() { _stoDs = list[Number(b.dataset.ds)].name; stoGo('ds'); }; });
+}
+function stoDsView() {
+  var d = stoDsGet(_stoDs), p = stoPoolGet(_stoPool);
+  if (!d || !p) { _stoTab = 'ds'; stoGo('pool'); return; }
+  var mount = stoProp(d, 'mountpoint') || ('/mnt/' + d.name), used = stoNum(d, 'used'), avail = stoNum(d, 'available');
+  var kids = (_stoDsCache[_stoPool] || []).filter(function(x) { return x.name.indexOf(d.name + '/') === 0; }).length;
+  var quota = stoNum(d, 'quota'), comp = stoProp(d, 'compression'), ratio = stoProp(d, 'compressratio');
+  stoHead(d.name, { mono: true, back: [p.name, '_stoTab=\'ds\';stoGo(\'pool\')'],
+    sub: webEsc(Tf('{0} utilisés, {1} disponibles', mntFmtSize(used), mntFmtSize(avail))) });
+  var row = function(call, name, desc, cls) {
+    return '<button class="web-row line' + (cls ? ' ' + cls : '') + '" onclick="' + call + '"><span class="web-row-text"><span class="web-row-name">' + name + '</span><span class="web-row-desc">' + desc + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+  };
+  var q = "'" + encodeURIComponent(d.name) + "'", qm = "'" + encodeURIComponent(mount) + "'";
+  stoBody().innerHTML = netFacts([
+    [T('Chemin'), '<span class="mono">' + webEsc(mount) + '</span><button class="web-mini" onclick="copyText(' + qm + ')">' + T('Copier') + '</button>'],
+    [T('Utilisé'), webEsc(mntFmtSize(used)) + (kids ? '<span class="dim">' + webEsc(kids > 1 ? Tf('avec ses {0} sous-datasets', kids) : T('avec son sous-dataset')) + '</span>' : '')],
+    [T('Disponible'), webEsc(mntFmtSize(avail))],
+    [T('Quota'), quota ? webEsc(mntFmtSize(quota)) : '<span class="dim">' + T('Aucun') + '</span>'],
+    [T('Compression'), comp ? webEsc(String(comp).toUpperCase()) + (ratio ? '<span class="dim">' + webEsc(Tf('ratio {0}', String(ratio).replace(/x$/i, '') + ' ×')) + '</span>' : '') : '']
+  ]) + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + row('webOpenFolder(' + qm + ')', T('Ouvrir dans Fichiers'), T('Parcourir le contenu de ce dataset'))
+    + row('stoOpenSnaps(' + q + ')', 'Snapshots', T('Voir, créer, restaurer et planifier les snapshots de ce dataset'))
+    + row('openAcl(decodeURIComponent(' + q + '),decodeURIComponent(' + qm + '))', T('Droits d\'accès'), T('Qui peut lire et écrire dans ce dataset (ACL)'))
+    + row('stoNewDs(' + q + ')', T('Créer un sous-dataset'), T('Un dataset rangé dans celui-ci'))
+    + row('storageDeleteDataset(decodeURIComponent(' + q + '))', T('Supprimer'), T('Le dataset et tous ses fichiers sont détruits'), 'danger')
+    + '</div>';
+}
+// Formulaire de création : le parent, puis le nom.
+async function stoNewDs(encParent) {
+  var p = stoPoolGet(_stoPool);
+  if (!p) return;
+  var parent = encParent ? decodeURIComponent(encParent) : p.name;
+  var fromDs = _stoNav === 'ds' && _stoDs;
+  var back = fromDs ? [_stoDs, 'stoGo(\'ds\')'] : [p.name, '_stoTab=\'ds\';stoGo(\'pool\')'];
+  var list = [];
+  try { list = await stoDsLoad(p.name); } catch (_) {}
+  var opts = [p.name].concat(list.map(function(d) { return d.name; })).map(function(n) { return '<option value="' + webEsc(n) + '"' + (n === parent ? ' selected' : '') + '>' + webEsc(n) + '</option>'; }).join('');
+  _stoNav = 'newds';
+  stoHead(T('Créer un dataset'), { back: back, narrow: true });
+  stoBody().innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;">'
+    + formRow(T('Dans'), '<select id="sto-parent" style="' + iStyle() + ';font-family:var(--font-mono);">' + opts + '</select>')
+    + formRow(T('Nom'), '<input id="sto-name" style="' + iStyle() + ';font-family:var(--font-mono);" autocomplete="off" spellcheck="false" onkeydown="if(event.key===\'Enter\')storageCreateDataset()">')
+    + '<p class="web-note" style="margin:-4px 0 0;">' + T('Lettres, chiffres, point, tiret et tiret bas. Le dataset hérite des réglages de son parent.') + '</p>'
+    + '<div class="web-foot"><button class="fs-btn" onclick="' + back[1] + '">' + T('Annuler') + '</button>'
+    + '<button class="fs-btn web-primary" id="sto-create-btn" onclick="storageCreateDataset()">' + T('Créer') + '</button></div></div>';
+  var inp = document.getElementById('sto-name'); if (inp) { try { inp.focus(); } catch (_) {} }
+}
+async function storageCreateDataset() {
+  var parent = document.getElementById('sto-parent').value, name = String(document.getElementById('sto-name').value || '').trim();
+  if (!name) { toast(T('Le nom est obligatoire')); return; }
+  if (!/^[A-Za-z0-9][A-Za-z0-9._\- ]*$/.test(name)) { toast(T('Nom invalide (lettres, chiffres, . _ -)')); return; }
+  var fullPath = parent + '/' + name, btn = document.getElementById('sto-create-btn');
+  if (btn) btn.disabled = true;
   try {
     await socketCall('/pool/dataset', 'POST', { name: fullPath, type: 'FILESYSTEM' });
     toast('✅ Dataset "' + fullPath + T('" créé'));
-    loadStorage();
-  } catch(e) { toast('❌ ' + e.message); }
+    _stoNav = 'ds'; _stoDs = fullPath; _stoTab = 'ds';
+    await loadStorage();
+  } catch(e) { toast('❌ ' + e.message); if (btn) btn.disabled = false; }
 }
-
 async function storageDeleteDataset(dsName) {
-  if (!await showConfirm(T('Supprimer définitivement le dataset <strong>') + dsName + T('</strong> et tous ses fichiers ?'), {danger:true, ok:T('Supprimer')})) return;
+  if (!await showConfirm(T('Supprimer définitivement le dataset <strong>') + webEsc(dsName) + T('</strong> et tous ses fichiers ?'), {danger:true, ok:T('Supprimer')})) return;
   try {
     await socketCall('/pool/dataset/id/' + encodeURIComponent(dsName), 'DELETE', {});
     toast('🗑 Dataset "' + dsName + T('" supprimé'));
+    _stoNav = 'pool'; _stoTab = 'ds'; _stoDs = null;
     loadStorage();
   } catch(e) { toast('❌ ' + e.message); }
 }
 
-
-
-// ===========================
-// DATASET SNAPSHOTS
-// ===========================
-async function dsSnapshots(dsName, uid) {
-  const panelId = uid + '-snaps';
-  const existing = document.getElementById(panelId);
-  if (existing) { existing.remove(); return; }
-  const row = document.getElementById(uid + '-arrow');
-  if (!row) return;
-  const container = row.closest('div');
-  const panel = document.createElement('div');
-  panel.id = panelId;
-  panel.className = 'snap-panel';
-  panel.innerHTML = '<div class="fs-loading" style="height:40px;"><div class="spinner"></div></div>';
-  container.parentNode.insertBefore(panel, container.nextSibling);
-  try {
-    const raw   = ensureArray(await socketCall('/zfs/snapshot?dataset=' + encodeURIComponent(dsName)));
-    const snaps = raw.filter(function(s){ return s.name && s.name.startsWith(dsName + '@'); });
-    snaps.sort(function(a,b){ return b.name.localeCompare(a.name); });
-    // Build DOM instead of innerHTML to avoid quoting issues
-    panel.innerHTML = '';
-    const header = document.createElement('div');
-    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
-    const title = document.createElement('span');
-    title.style.cssText = 'font-size:11px;font-weight:600;color:var(--text-dim);letter-spacing:.5px;';
-    title.textContent = 'SNAPSHOTS — ' + dsName.split('/').pop().toUpperCase();
-    const createBtn = document.createElement('button');
-    createBtn.className = 'fs-btn';
-    createBtn.style.cssText = 'font-size:10px;padding:2px 8px;background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);';
-    createBtn.textContent = T('+ Créer');
-    createBtn.onclick = function() { dsSnapshotCreate(dsName, panelId); };
-    header.appendChild(title); header.appendChild(createBtn);
-    panel.appendChild(header);
-    if (!snaps.length) {
-      const empty = document.createElement('div');
-      empty.style.cssText = 'font-size:11px;color:var(--text-dim);';
-      empty.textContent = T('Aucun snapshot');
-      panel.appendChild(empty);
-    } else {
-      snaps.forEach(function(s) {
-        var sn   = s.name.split('@')[1] || s.name;
-        var date = s.properties && s.properties.creation && s.properties.creation.value ? s.properties.creation.value : '';
-        var row  = document.createElement('div');
-        row.className = 'snap-row';
-        var nameEl = document.createElement('span');
-        nameEl.className = 'snap-name'; nameEl.textContent = '@' + sn;
-        var dateEl = document.createElement('span');
-        dateEl.className = 'snap-date'; dateEl.textContent = date;
-        var rollBtn = document.createElement('button');
-        rollBtn.className = 'fs-btn';
-        rollBtn.style.cssText = 'font-size:9px;padding:1px 6px;';
-        rollBtn.title = 'Rollback'; rollBtn.textContent = '↩';
-        rollBtn.onclick = (function(sid){ return function(){ dsSnapshotRollback(sid); }; })(s.name);
-        var delBtn = document.createElement('button');
-        delBtn.className = 'fs-btn';
-        delBtn.style.cssText = 'font-size:9px;padding:1px 6px;color:#f87171;';
-        delBtn.title = T('Supprimer'); delBtn.textContent = '✕';
-        delBtn.onclick = (function(sid, pid){ return function(){ dsSnapshotDelete(sid, pid); }; })(s.name, panelId);
-        row.appendChild(nameEl); row.appendChild(dateEl);
-        row.appendChild(rollBtn); row.appendChild(delBtn);
-        panel.appendChild(row);
+// ── Disques d'un pool : sa topologie ──
+function stoDisksTab(p) {
+  var topo = p.topology || {}, h = '', any = false;
+  var groups = [['data', T('Données')], ['special', T('Métadonnées')], ['dedup', T('Déduplication')], ['log', T('Journal')], ['cache', 'Cache'], ['spare', T('Réserve')]];
+  groups.forEach(function(g) {
+    var vdevs = ensureArray(topo[g[0]]);
+    if (!vdevs.length) return;
+    any = true;
+    vdevs.forEach(function(v, vi) {
+      var vs = stoStatusLabel(v.status || 'ONLINE'), kids = stoVdevDisks(v);
+      h += '<div class="web-group-title sto-vdev-title"><span>' + webEsc(g[1] + (vdevs.length > 1 ? ' ' + (vi + 1) : '')) + ' <span class="dim">' + webEsc(stoVdevName(v)) + '</span></span><span style="color:' + vs.color + ';">' + webEsc(vs.label) + '</span></div><div class="web-group">';
+      kids.forEach(function(c) {
+        var name = c.disk || c.name || c.device || '?', cs = stoStatusLabel(c.status || 'ONLINE'), d = stoDiskGet(name);
+        var st = c.stats || {}, errs = (st.read_errors || 0) + (st.write_errors || 0) + (st.checksum_errors || 0);
+        var desc = [d && d.model, d && d.size ? mntFmtSize(d.size) : '', d && d.serial].filter(Boolean).join(', ');
+        h += '<div class="web-row"><span class="web-dot' + (String(c.status || 'ONLINE').toUpperCase() === 'ONLINE' ? '' : (String(c.status).toUpperCase() === 'DEGRADED' ? ' warn' : ' bad')) + '"></span>'
+          + '<span class="web-row-text"><span class="web-row-name mono">' + webEsc(name) + '</span><span class="web-row-desc">' + webEsc(desc || '—')
+          + (errs ? ' <span style="color:#f87171;font-weight:600;">' + webEsc(Tf('{0} erreurs', errs)) + '</span>' : '') + '</span></span>'
+          + '<span style="color:' + cs.color + ';font-size:12px;">' + webEsc(cs.label) + '</span>'
+          + (d ? '<button class="web-mini" onclick="stoOpenDisk(\'' + encodeURIComponent(d.name) + '\')">' + T('Détails') + '</button>' : '')
+          + (g[0] !== 'cache' && g[0] !== 'spare' ? '<button class="web-mini" onclick="stoReplaceForm(\'' + encodeURIComponent(name) + '\',\'' + encodeURIComponent(c.guid || '') + '\')">' + T('Remplacer') + '</button>' : '')
+          + '</div>';
       });
-    }
-  } catch(e) {
-    panel.innerHTML = T('<div style="font-size:11px;color:var(--danger);">Erreur: ') + e.message + '</div>';
+      h += '</div>';
+    });
+  });
+  if (!any) h = '<p class="web-note" style="margin:6px 0 0;">' + T('Aucune info VDev disponible.') + '</p>';
+  stoBody().innerHTML = h;
+}
+function stoOpenDisk(enc) {
+  _mntNav = 'disk'; _mntSel = decodeURIComponent(enc);
+  var w = document.getElementById('win-maintenance');
+  if (w && w.classList.contains('visible') && _mntLoaded) { bringToFront(w); mntGo('disk', _mntSel); } else openApp('maintenance');
+}
+// Remplacement d'un disque : on choisit parmi les disques libres, puis on confirme.
+function stoReplaceForm(encOld, encGuid) {
+  var p = stoPoolGet(_stoPool);
+  if (!p) return;
+  var old = decodeURIComponent(encOld), guid = decodeURIComponent(encGuid || '');
+  var known = _stoDisks.some(function(d) { return 'pool' in d; });
+  var free = known ? _stoDisks.filter(function(d) { return !d.pool; }) : [];
+  var od = stoDiskGet(old);
+  _stoNav = 'replace';
+  stoHead(Tf('Remplacer {0}', old), { back: [p.name, '_stoTab=\'disks\';stoGo(\'pool\')'], narrow: true });
+  var field;
+  if (known && free.length) {
+    field = formRow(T('Nouveau disque'), '<select id="sto-newdisk" style="' + iStyle() + '">' + free.map(function(d) {
+      return '<option value="' + webEsc(d.name) + '">' + webEsc(d.name + ', ' + [d.model, mntFmtSize(d.size)].filter(Boolean).join(', ')) + '</option>';
+    }).join('') + '</select>');
+  } else if (known) {
+    field = '<div class="snap-warn" style="border-color:var(--glass-border);background:rgba(255,255,255,0.03);">' + T('Aucun disque libre n\'est branché sur le NAS. Branche le disque de remplacement, puis clique sur Actualiser.') + '</div>';
+  } else {
+    field = formRow(T('Nouveau disque'), '<input id="sto-newdisk" style="' + iStyle() + ';font-family:var(--font-mono);" placeholder="sdc" autocomplete="off" spellcheck="false">');
   }
+  stoBody().innerHTML = '<div style="display:flex;flex-direction:column;gap:14px;">'
+    + '<input type="hidden" id="sto-old" value="' + webEsc(old) + '"><input type="hidden" id="sto-oldguid" value="' + webEsc(guid) + '">'
+    + netFacts([['Pool', webEsc(p.name)], [T('Disque à remplacer'), '<span class="mono">' + webEsc(old) + '</span>' + (od ? '<span class="dim">' + webEsc([od.model, mntFmtSize(od.size)].filter(Boolean).join(', ')) + '</span>' : '')]])
+    + field
+    + '<p class="web-note" style="margin:-2px 0 0;">' + T('Le nouveau disque est effacé, puis le pool y recopie les données (reconstruction). Cela peut durer plusieurs heures ; le pool reste utilisable pendant ce temps.') + '</p>'
+    + '<div class="web-foot"><button class="fs-btn" onclick="_stoTab=\'disks\';stoGo(\'pool\')">' + T('Annuler') + '</button>'
+    + (known && !free.length ? '<button class="fs-btn" onclick="_stoNav=\'pool\';_stoTab=\'disks\';loadStorage()">' + T('Actualiser') + '</button>'
+      : '<button class="fs-btn snap-danger" id="sto-replace-btn" onclick="diskReplace()">' + T('Remplacer le disque') + '</button>') + '</div></div>';
 }
-
-async function dsSnapshotCreate(dsName, panelId) {
-  var now = new Date();
-  var def = 'snap-' + now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + '-' + String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
-  var name = await showPrompt(T('Nom du snapshot pour <strong>') + dsName.split('/').pop() + '</strong> :', def);
-  if (!name) return;
-  try {
-    await socketCall('/zfs/snapshot', 'POST', { dataset: dsName, name: name });
-    toast(T('📸 Snapshot créé : @') + name);
-    // Rafraîchir le panel
-    var panel = document.getElementById(panelId);
-    if (panel) { panel.remove(); dsSnapshots(dsName, panelId.replace('-snaps','')); }
-  } catch(e) { toast('❌ ' + e.message); }
-}
-
-async function dsSnapshotDelete(snapId, panelId) {
-  if (!await showConfirm(T('Supprimer le snapshot <strong>') + snapId.split('@').pop() + '</strong> ?', {danger:true, ok:T('Supprimer')})) return;
-  try {
-    await socketCall('/zfs/snapshot/id/' + encodeURIComponent(snapId), 'DELETE', {});
-    toast(T('🗑 Snapshot supprimé'));
-    var dsName = snapId.split('@')[0];
-    var uid    = panelId.replace('-snaps','');
-    var panel  = document.getElementById(panelId);
-    if (panel) { panel.remove(); dsSnapshots(dsName, uid); }
-  } catch(e) { toast('❌ ' + e.message); }
-}
-
-async function dsSnapshotRollback(snapId) {
-  if (!await showConfirm(T('Rollback vers <strong>@') + snapId.split('@').pop() + T('</strong> ?<br><span style="font-size:12px;color:var(--danger);">Les données après ce snapshot seront perdues.</span>'), {danger:true, ok:'Rollback', icon:'↩'})) return;
-  try {
-    const job = await socketCall('/zfs/snapshot/rollback', 'POST', { id: snapId, options: { recursive: false, force: false } });
-    if (job) await waitJob(job, 60000);
-    toast(T('✅ Rollback effectué'));
-    loadStorage();
-  } catch(e) { toast('❌ ' + e.message); }
+async function diskReplace() {
+  var p = stoPoolGet(_stoPool), el = document.getElementById('sto-newdisk');
+  if (!p || !el) return;
+  var old = document.getElementById('sto-old').value, guid = document.getElementById('sto-oldguid').value;
+  var newName = String(el.value || '').trim();
+  if (!newName) { toast(T('Choisis le nouveau disque')); return; }
+  var nd = stoDiskGet(newName);
+  if (!await showConfirm(Tf('Remplacer <strong>{0}</strong> par <strong>{1}</strong> dans le pool <strong>{2}</strong> ?', webEsc(old), webEsc(newName), webEsc(p.name))
+    + '<br><span style="font-size:12px;color:var(--danger);">' + T('Tout ce que contient le nouveau disque sera effacé.') + '</span>', { danger: true, ok: T('Remplacer') })) return;
+  var btn = document.getElementById('sto-replace-btn');
+  if (btn) btn.disabled = true;
+  // TrueNAS attend l'identifiant du nouveau disque ; certaines versions acceptent son nom. On essaie l'un, puis l'autre.
+  var tries = [];
+  if (nd && nd.identifier) tries.push(nd.identifier);
+  tries.push(newName);
+  var label = guid || old, lastErr = null, done = false;
+  for (var i = 0; i < tries.length && !done; i++) {
+    try {
+      var jobId = await socketCall('/pool/replace', 'POST', { id: p.id != null ? p.id : p.name, label: label, disk: tries[i] });
+      done = true;
+      toast(T('🔄 Remplacement ') + old + ' → ' + newName + T(' lancé'));
+      if (jobId && jobId !== true) { try { await waitJob(jobId, 120000); toast(T('✅ Remplacement terminé')); } catch (_) {} }
+    } catch (e) { lastErr = e; if (!/not found|introuvable|ENOENT/i.test((e && e.message) || '')) break; }
+  }
+  if (!done) { toast('❌ ' + ((lastErr && lastErr.message) || '')); if (btn) btn.disabled = false; return; }
+  _stoNav = 'pool'; _stoTab = 'disks';
+  loadStorage();
 }
 
 // ===========================
