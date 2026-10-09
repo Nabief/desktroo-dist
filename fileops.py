@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.28.4'
+APP_VERSION = '2.28.5'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -5854,11 +5854,27 @@ def _onefichier_call(endpoint, payload, key, timeout=45):
                     raise e
 
 
+def _onefichier_url(url):
+    """Lien 1fichier réduit à « https://1fichier.com/?<identifiant> ». Les liens copiés sur les sites de partage portent
+    souvent un paramètre d'affiliation (« &af=5010551 ») : le navigateur l'accepte, l'API répond « Resource not found »."""
+    from urllib.parse import urlparse
+    try:
+        p = urlparse(str(url or '').strip())
+        host = (p.hostname or '').lower()
+        if host in ('1fichier.com', 'www.1fichier.com'):
+            fid = (p.query or '').split('&')[0]
+            if re.match(r'^[A-Za-z0-9]{5,}$', fid):
+                return 'https://1fichier.com/?' + fid
+    except Exception:
+        pass
+    return url
+
+
 def _resolve_onefichier(url, cfg):
     key = cfg.get('apikey')
     if not key:
         raise ValueError('1fichier non configuré.')
-    j = _onefichier_call('download/get_token.cgi', {'url': url}, key)
+    j = _onefichier_call('download/get_token.cgi', {'url': _onefichier_url(url)}, key)
     if j.get('status') == 'OK' and j.get('url'):
         return {'link': j['url'], 'filename': None, 'size': 0}
     raise RuntimeError('1fichier: ' + str(j.get('message') or j))
