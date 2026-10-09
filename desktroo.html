@@ -618,6 +618,38 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .ci-fail { display:flex; flex-direction:column; align-items:flex-start; gap:7px; padding:11px 13px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:11.5px; line-height:1.5; }
   .ci-fail b { color:var(--text); font-size:12.5px; font-weight:600; }
   .ci-fail summary { cursor:pointer; }
+  /* Dossiers du NAS donnés à une application (installation et modification) */
+  .dkf { display:flex; flex-direction:column; gap:8px; }
+  .dkf-row { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto auto; gap:8px 10px; align-items:end; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(255,255,255,0.03); }
+  .dkf.narrow .dkf-row { grid-template-columns:minmax(0,1fr) auto auto; }
+  .dkf.narrow .dkf-path { grid-column:1 / -1; }
+  .dkf-cell { min-width:0; }
+  .dkf-cell label { display:block; margin-bottom:5px; font-size:11px; color:var(--text-dim); }
+  .dkf-line { display:flex; gap:6px; }
+  .dkf input[type=text] { width:100%; min-width:0; box-sizing:border-box; padding:8px 10px; border-radius:8px; background:rgba(0,0,0,0.24); border:1px solid rgba(255,255,255,0.12); color:var(--text); font-family:var(--font-mono); font-size:11.5px; outline:none; }
+  .dkf input[type=text]:focus { border-color:var(--accent); background:rgba(var(--accent-rgb),0.07); }
+  .dkf-ro { display:flex; align-items:center; gap:10px; height:34px; font-size:12px; color:var(--text); white-space:nowrap; cursor:pointer; }
+  .dkf-ro input { flex-shrink:0; accent-color:var(--accent); }
+  .dkf-x { width:30px; height:34px; border:none; border-radius:8px; background:none; color:var(--text-dim); font-size:13px; cursor:pointer; }
+  .dkf-x:hover { background:rgba(248,81,73,0.14); color:var(--danger); }
+  .dkf-other { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; color:var(--text); }
+  .dkf-dim { font-size:11px; color:var(--text-dim); }
+  .dkf-empty { padding:14px 12px; border:1px dashed var(--glass-border); border-radius:10px; font-size:12px; color:var(--text-dim); }
+  .dkf-foot { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .ci-folders { margin-top:14px; }
+  .ci-folders-title { margin-bottom:8px; font-size:12px; font-weight:500; color:var(--text-dim); }
+  [data-theme="light"] .ci-folders .dkf-row { background:rgba(0,0,0,0.025); }
+  [data-theme="light"] .ci-folders .dkf input[type=text] { background:#fff; border-color:rgba(0,0,0,0.16); }
+  /* La fenêtre « Modifier » d'une application garde son fond sombre dans les deux thèmes : en thème clair, son
+     texte reprend donc les teintes du thème sombre (il était écrit en foncé sur foncé). */
+  [data-theme="light"] #modal-create-app.mdm-app-edit-open > div { --text:#e9eef7; --text-dim:#9db0d0; --glass-border:rgba(255,255,255,0.12); color:#e9eef7; }
+  [data-theme="light"] #modal-create-app.mdm-app-edit-open #create-app-title { color:#e9eef7 !important; }
+  [data-theme="light"] #modal-create-app.mdm-app-edit-open .fs-btn { color:#e9eef7; background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.16); }
+  [data-theme="light"] #modal-create-app.mdm-app-edit-open #mdm-app-edit-save { color:#e9eef7 !important; }
+  /* Zone JSON colorée : ses couleurs sont faites pour un fond sombre, elle le garde donc en thème clair. */
+  [data-theme="light"] .jh-wrap { background:#101d34; border-radius:8px; }
+  [data-theme="light"] .jh-wrap .jh-pre { color:#e9eef7; }
+  [data-theme="light"] .jh-wrap textarea { caret-color:#e9eef7; }
   .ci-fail pre { margin:6px 0 0; padding:8px 10px; border-radius:8px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:10.5px; white-space:pre-wrap; word-break:break-word; }
   .dk-wait pre { margin:8px 0 0; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:11px; text-align:left; white-space:pre-wrap; word-break:break-word; }
   .dk-steps { display:flex; flex-direction:column; gap:10px; font-size:13.5px; }
@@ -6255,7 +6287,23 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Cette valeur a un format imposé, à saisir toi-même :": "This value has a required format, to type yourself:",
 "Installation de {0} (catalogue : {1}, train {2}, version {3})": "Installing {0} (catalog: {1}, train {2}, version {3})",
 "Causes habituelles : une image impossible à télécharger, un dossier que l'application ne peut pas écrire, ou un réglage qu'elle refuse. La raison exacte est notée par TrueNAS dans /var/log/app_lifecycle.log.": "Usual causes: an image that cannot be downloaded, a folder the application cannot write to, or a setting it rejects. TrueNAS records the exact reason in /var/log/app_lifecycle.log.",
-"Le service redémarre": "The service is restarting"
+"Le service redémarre": "The service is restarting",
+"Volume géré par TrueNAS": "Volume managed by TrueNAS",
+"Partage SMB": "SMB share",
+"Partage NFS": "NFS share",
+"Dossier temporaire": "Temporary folder",
+"Autre stockage": "Other storage",
+"Dossier n° {0} : choisis le dossier du NAS.": "Folder no. {0}: choose the NAS folder.",
+"Dossier n° {0} : indique où l'application le verra, par un chemin qui commence par « / ».": "Folder no. {0}: say where the application will see it, with a path starting with “/”.",
+"Deux dossiers arrivent au même endroit dans l'application : {0}.": "Two folders end up at the same place in the application: {0}.",
+"Dossier du NAS": "NAS folder",
+"Vu par l'application dans": "Seen by the application in",
+"Retirer ce dossier": "Remove this folder",
+"se règle dans le JSON": "set in the JSON",
+"Aucun dossier pour l'instant. Ajoute ceux que l'application doit voir : films, musique, photos…": "No folder yet. Add the ones the application must see: films, music, photos…",
+"+ Ajouter un dossier": "+ Add a folder",
+"Retirer un dossier de la liste ne supprime rien sur le NAS.": "Removing a folder from the list deletes nothing on the NAS.",
+"Dossiers du NAS donnés à l'application": "NAS folders given to the application"
 }
 </script>
 <script id="dk-i18n">
@@ -7480,6 +7528,15 @@ function fmtUptime(secs) {
   return `${m}m`;
 }
 
+// Mémoire utilisée, en octets, d'après la dernière mesure connue ; null si la mesure ne permet pas de le dire.
+function memUsedFrom(rawData, physmem) {
+  var p = rpParse(rawData), by = {};
+  p.series.forEach(function(s) { by[s.key] = rpLast(s.values); });
+  if (by.used != null) return by.used;
+  if (by.available != null && physmem) return Math.max(0, physmem - by.available);
+  if (by.free != null && physmem) return Math.max(0, physmem - by.free - (by.cached || 0) - (by.buffers || 0));
+  return null;
+}
 async function loadSysStats() {
   try {
     const info = await socketCall('/system/info');
@@ -7503,11 +7560,10 @@ async function loadSysStats() {
         graphs: [{ name: 'memory' }],
         query: { unit: 'HOUR' }
       });
-      const memData = Array.isArray(memRpt) ? memRpt[0] : memRpt;
-      const lastRow = memData?.data?.slice(-1)[0];
-      if (lastRow) {
-        // Format: [ts, used, buffers, cached, free, ...] en octets
-        const used  = lastRow[1] || 0;
+      // TrueNAS ne donne plus la mémoire utilisée mais la mémoire disponible (une seule courbe, « available ») :
+      // la colonne se lit d'après la légende, comme dans la fenêtre « Informations système », pas d'après sa position.
+      const used = memUsedFrom(memRpt, info.physmem);
+      if (used != null) {
         const total = info.physmem || 0;
         const pct   = total ? Math.round((used / total) * 100) : 0;
         setGauge('mem-fill', 'mem-pct', pct);
@@ -13351,7 +13407,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.29.2';
+var DK_PAGE_VERSION = '2.29.3';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -20564,6 +20620,107 @@ var _fpFilter   = null;
 var _fpCurPath  = '/mnt';
 var _fpSelected = null;
 
+// ── Dossiers du NAS donnés à une application ──
+// Dans le catalogue TrueNAS, c'est la liste « storage.additional_storage » : chaque entrée relie un dossier du NAS
+// (host_path) à un chemin vu par l'application. Cette liste remplace la zone JSON : on choisit les dossiers avec
+// l'explorateur, autant qu'on veut. Les autres types d'entrée (volume TrueNAS, partage SMB ou NFS, temporaire) sont
+// montrés tels quels et gardés intacts ; ils se règlent toujours dans le JSON.
+function dkFoldersKind(e) {
+  var t = e && e.type;
+  if (t === 'ix_volume') return T('Volume géré par TrueNAS');
+  if (t === 'cifs') return T('Partage SMB');
+  if (t === 'nfs') return T('Partage NFS');
+  if (t === 'tmpfs' || t === 'temporary') return T('Dossier temporaire');
+  return String(t || T('Autre stockage'));
+}
+// Chemin proposé dans l'application : /media/<nom du dossier>, sans doublon.
+function dkFoldersMount(path, list) {
+  var base = String(path || '').replace(/\/+$/, '').split('/').pop().replace(/\s+/g, '-') || 'nas';
+  var used = ensureArray(list).map(function(e) { return e && e.mount_path; }), m = '/media/' + base, n = 2;
+  while (used.indexOf(m) >= 0) m = '/media/' + base + '-' + (n++);
+  return m;
+}
+// Ce qui empêche d'enregistrer, en clair ; chaîne vide si tout va bien.
+function dkFoldersCheck(list) {
+  var seen = {}, err = '';
+  ensureArray(list).forEach(function(e, i) {
+    if (err || !e || typeof e !== 'object') return;
+    var mount = String(e.mount_path || '').trim();
+    if (e.type === 'host_path') {
+      var path = String((e.host_path_config && e.host_path_config.path) || '').trim();
+      if (path.charAt(0) !== '/') { err = Tf('Dossier n° {0} : choisis le dossier du NAS.', i + 1); return; }
+      if (mount.charAt(0) !== '/') { err = Tf('Dossier n° {0} : indique où l\'application le verra, par un chemin qui commence par « / ».', i + 1); return; }
+    }
+    if (mount) {
+      if (seen[mount]) err = Tf('Deux dossiers arrivent au même endroit dans l\'application : {0}.', mount);
+      seen[mount] = 1;
+    }
+  });
+  return err;
+}
+// host : élément où dessiner. api.get() rend la liste, api.set(liste) la reçoit à chaque changement.
+function dkFolders(host, api, o) {
+  o = o || {};
+  function list() { var l = api.get(); return Array.isArray(l) ? l : []; }
+  function draw() {
+    var l = list(), rows = '';
+    l.forEach(function(e, i) {
+      if (e && e.type === 'host_path') {
+        var cfg = e.host_path_config || {};
+        rows += '<div class="dkf-row" data-i="' + i + '">'
+          + '<div class="dkf-cell dkf-path"><label>' + T('Dossier du NAS') + '</label><div class="dkf-line">'
+          + '<input type="text" data-k="path" value="' + webEsc(cfg.path || '') + '" placeholder="/mnt/…" autocomplete="off" spellcheck="false">'
+          + '<button class="fs-btn" type="button" data-act="pick">' + T('Choisir…') + '</button></div></div>'
+          + '<div class="dkf-cell"><label>' + T('Vu par l\'application dans') + '</label>'
+          + '<input type="text" data-k="mount" value="' + webEsc(e.mount_path || '') + '" placeholder="/media/…" autocomplete="off" spellcheck="false"></div>'
+          + '<label class="dkf-ro"><input type="checkbox" data-k="ro"' + (e.read_only ? ' checked' : '') + '>' + T('Lecture seule') + '</label>'
+          + '<button class="dkf-x" type="button" data-act="del" title="' + T('Retirer ce dossier') + '" aria-label="' + T('Retirer ce dossier') + '">✕</button>'
+          + '</div>';
+      } else {
+        rows += '<div class="dkf-row dkf-other"><span>' + webEsc(dkFoldersKind(e)) + (e && e.mount_path ? ' → <span class="mono">' + webEsc(e.mount_path) + '</span>' : '') + '</span>'
+          + '<span class="dkf-dim">' + T('se règle dans le JSON') + '</span></div>';
+      }
+    });
+    host.innerHTML = '<div class="dkf' + (o.narrow ? ' narrow' : '') + '">'
+      + (rows || '<div class="dkf-empty">' + T('Aucun dossier pour l\'instant. Ajoute ceux que l\'application doit voir : films, musique, photos…') + '</div>')
+      + '<div class="dkf-foot"><button class="fs-btn" type="button" data-act="add">' + T('+ Ajouter un dossier') + '</button>'
+      + '<span class="dkf-dim">' + T('Retirer un dossier de la liste ne supprime rien sur le NAS.') + '</span></div></div>';
+  }
+  function rowIndex(el) { var r = el.closest('.dkf-row'); return r ? Number(r.getAttribute('data-i')) : -1; }
+  host.onclick = function(ev) {
+    var b = ev.target.closest('[data-act]');
+    if (!b) return;
+    var act = b.getAttribute('data-act'), l = list(), i = rowIndex(b);
+    if (act === 'add') {
+      fsPickFolder('/mnt', function(path) {
+        var cur = list();
+        cur.push({ type: 'host_path', read_only: false, mount_path: dkFoldersMount(path, cur), host_path_config: { acl_enable: false, path: path } });
+        api.set(cur); draw();
+      });
+    } else if (act === 'pick' && l[i]) {
+      fsPickFolder(((l[i].host_path_config || {}).path) || '/mnt', function(path) {
+        var cur = list();
+        if (!cur[i]) return;
+        cur[i].host_path_config = Object.assign({ acl_enable: false }, cur[i].host_path_config || {}, { path: path });
+        if (!cur[i].mount_path) cur[i].mount_path = dkFoldersMount(path, cur);
+        api.set(cur); draw();
+      });
+    } else if (act === 'del' && l[i]) {
+      l.splice(i, 1); api.set(l); draw();
+    }
+  };
+  host.oninput = host.onchange = function(ev) {
+    var k = ev.target.getAttribute && ev.target.getAttribute('data-k'), l = list(), i = rowIndex(ev.target);
+    if (!k || !l[i]) return;
+    if (k === 'path') l[i].host_path_config = Object.assign({ acl_enable: false }, l[i].host_path_config || {}, { path: ev.target.value.trim() });
+    else if (k === 'mount') l[i].mount_path = ev.target.value.trim();
+    else if (k === 'ro') l[i].read_only = !!ev.target.checked;
+    api.set(l);
+  };
+  draw();
+  return { draw: draw };
+}
+
 var _fpCallback = null;
 function fsPickFolder(startPath, cb) {
   _fpTargetId = null; _fpFilter = null; _fpCallback = cb;
@@ -24772,6 +24929,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
         '</div>' +
       '</div>' +
       '<div id="ci-required"></div>' +
+      '<div id="ci-folders"></div>' +
       '<div class="form-group" style="margin-top:14px;margin-bottom:0;">' +
         T('<label>Valeurs de configuration JSON</label>') +
         '<textarea id="ci-values" spellcheck="false" style="width:100%;height:150px;box-sizing:border-box;background:rgba(0,0,0,.3);' +
@@ -24791,7 +24949,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     // Le JSON retouché à la main peut faire apparaître d'autres champs obligatoires (un dossier, par exemple).
     document.getElementById('ci-values').addEventListener('input', function () {
       clearTimeout(currentCatalogInstall && currentCatalogInstall.reqTimer);
-      if (currentCatalogInstall) currentCatalogInstall.reqTimer = setTimeout(ciRenderRequired, 350);
+      if (currentCatalogInstall) currentCatalogInstall.reqTimer = setTimeout(function () { ciRenderRequired(); ciRenderFolders(); }, 350);
     });
     document.getElementById('ci-train').addEventListener('change', refreshCatalogVersionV3);
     refreshCatalogVersionV3();
@@ -25025,6 +25183,34 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     if (!el || typeof fsPickFolder !== 'function') return;
     fsPickFolder(el.value.trim() || '/mnt', function (path) { el.value = path; ciReqWrite(i, path); });
   };
+  // Le catalogue prévoit-il des dossiers du NAS pour cette application (storage.additional_storage) ?
+  function ciHasFolders(questions) {
+    var st = (questions || []).filter(function (q) { return q && q.variable === 'storage'; })[0];
+    var attrs = (st && st.schema && st.schema.attrs) || [];
+    return attrs.some(function (q) { return q && q.variable === 'additional_storage' && (q.schema || {}).type === 'list'; });
+  }
+  // La liste des dossiers écrit dans le JSON, qui reste la référence envoyée à TrueNAS.
+  function ciRenderFolders() {
+    var box = document.getElementById('ci-folders');
+    if (!box || !currentCatalogInstall) return;
+    var values = ciValues();
+    if (!values) return;
+    if (!ciHasFolders(currentCatalogInstall.questions)) { box.innerHTML = ''; return; }
+    if (!document.getElementById('ci-folders-list')) {
+      box.innerHTML = '<div class="ci-folders"><div class="ci-folders-title">' + T('Dossiers du NAS donnés à l\'application') + '</div><div id="ci-folders-list"></div></div>';
+    }
+    dkFolders(document.getElementById('ci-folders-list'), {
+      get: function () { var v = ciValues(); return (v && ciGet(v, ['storage', 'additional_storage'])) || []; },
+      set: function (l) {
+        var v = ciValues(), ta = document.getElementById('ci-values');
+        if (!v || !ta) { catalogStatus(T('Le JSON n\'est plus lisible : corrige-le avant de remplir ce champ.'), true); return; }
+        ciSet(v, ['storage', 'additional_storage'], l);
+        ta.value = JSON.stringify(v, null, 2);
+        if (ta._jhUpdate) ta._jhUpdate();
+        catalogStatus('', false);
+      }
+    }, { narrow: true });
+  }
   // Échec : « Failed 'up' action » veut dire que les conteneurs n'ont pas démarré. TrueNAS n'en dit pas plus ici,
   // la raison est dans son journal ; on le dit simplement, le message brut reste sous « Détail technique ».
   function ciFail(error, appName, catalogApp, train, version) {
@@ -25100,6 +25286,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       currentCatalogInstall.questions = _q || [];
       currentCatalogInstall.asked = {};
       ciRenderRequired();
+      ciRenderFolders();
     } catch (e) {}
 
     listEl.innerHTML = versions.map(function (version) {
@@ -25202,6 +25389,8 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       if (firstEl) firstEl.focus();
       return;
     }
+    var foldersErr = dkFoldersCheck(ciGet(values, ['storage', 'additional_storage']));
+    if (foldersErr) { catalogStatus(foldersErr, true); return; }
 
     var payload = {
       app_name: appName,
@@ -25468,6 +25657,23 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       });
       checkWrap.appendChild(checkText);
       field.appendChild(checkWrap);
+    } else if (Array.isArray(value) && key === 'additional_storage') {
+      // Les dossiers du NAS se choisissent avec l'explorateur ; la zone JSON reste, cachée, la valeur enregistrée.
+      field.classList.add('wide');
+      label.textContent = T('Dossiers du NAS donnés à l\'application');
+      control = document.createElement('textarea');
+      control.style.display = 'none';
+      control.value = JSON.stringify(value, null, 2);
+      control.dataset.valueType = 'folders';
+      field.appendChild(control);
+      var foldersHost = document.createElement('div');
+      field.appendChild(foldersHost);
+      (function (ta) {
+        dkFolders(foldersHost, {
+          get: function () { try { return JSON.parse(ta.value || '[]'); } catch (e) { return []; } },
+          set: function (l) { ta.value = JSON.stringify(l, null, 2); status('', false); }
+        });
+      })(control);
     } else if (Array.isArray(value) || isPlainObject(value)) {
       field.classList.add('wide');
       control = document.createElement('textarea');
@@ -25587,6 +25793,10 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
         if (control.value !== '' && !Number.isFinite(value)) {
           throw new Error(T('Nombre invalide pour « ') + path.join('.') + ' ».');
         }
+      } else if (valueType === 'folders') {
+        value = JSON.parse(control.value || '[]');
+        var foldersErr = dkFoldersCheck(value);
+        if (foldersErr) throw new Error(foldersErr);
       } else if (valueType === 'json') {
         try {
           value = JSON.parse(control.value || 'null');
