@@ -39,7 +39,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.27.1'
+APP_VERSION = '2.27.2'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -5698,6 +5698,8 @@ def _prem_set(provider, fields):
     d = _prem_read()
     cur = d.get(provider) or {}
     for k, v in (fields or {}).items():
+        if isinstance(v, str):
+            v = v.strip()
         if v in ('', None):
             continue
         cur[str(k)] = v
@@ -5804,17 +5806,59 @@ def _resolve_debridlink(url, cfg):
     raise RuntimeError('Debrid-Link: ' + str(j.get('error') or j))
 
 
+# 1fichier limite fortement la fréquence des appels à son API et répond « 429 Too Many Requests » quand ils se
+# suivent de trop près (plusieurs liens envoyés d'un coup, tests de clé répétés). Les appels passent donc un par un,
+# espacés ; sur un 429 on attend puis on réessaie ; s'il persiste, on cesse d'appeler pendant une minute.
+_ONEF_GAP = 1.5            # secondes entre deux appels
+_ONEF_WAITS = (4, 10)      # attentes avant les nouveaux essais après un 429
+_ONEF_REST = 60            # repos après un 429 qui persiste
+_onef_lock = _threading.Lock()
+_onef_state = {'next': 0.0, 'rest_until': 0.0, 'test': None}
+_ONEF_BUSY = "1fichier : trop d'appels rapprochés (HTTP 429). Réessayez dans quelques minutes."
+
+
+def _onefichier_call(endpoint, payload, key, timeout=45):
+    import urllib.request, urllib.error
+    with _onef_lock:
+        for i in range(len(_ONEF_WAITS) + 1):
+            now = _sh_time.time()
+            if now < _onef_state['rest_until']:
+                raise RuntimeError(_ONEF_BUSY)
+            if now < _onef_state['next']:
+                _sh_time.sleep(_onef_state['next'] - now)
+            req = urllib.request.Request('https://api.1fichier.com/v1/' + endpoint,
+                                         data=json.dumps(payload).encode(), method='POST',
+                                         headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
+                                                  'User-Agent': 'Desktroo'})
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as r:
+                    raw = r.read().decode('utf-8', 'replace')
+                _onef_state['next'] = _sh_time.time() + _ONEF_GAP
+                return json.loads(raw)
+            except urllib.error.HTTPError as e:
+                _onef_state['next'] = _sh_time.time() + _ONEF_GAP
+                if e.code == 429:
+                    if i < len(_ONEF_WAITS):
+                        wait = _ONEF_WAITS[i]
+                        try:
+                            wait = max(wait, min(30, int(e.headers.get('Retry-After') or 0)))
+                        except (TypeError, ValueError):
+                            pass
+                        _sh_time.sleep(wait)
+                        continue
+                    _onef_state['rest_until'] = _sh_time.time() + _ONEF_REST
+                    raise RuntimeError(_ONEF_BUSY)
+                try:   # 1fichier détaille ses refus en JSON ({"status":"KO","message":…})
+                    return json.loads(e.read().decode('utf-8', 'replace'))
+                except Exception:
+                    raise e
+
+
 def _resolve_onefichier(url, cfg):
-    import urllib.request
     key = cfg.get('apikey')
     if not key:
         raise ValueError('1fichier non configuré.')
-    req = urllib.request.Request('https://api.1fichier.com/v1/download/get_token.cgi',
-                                 data=json.dumps({'url': url}).encode(), method='POST',
-                                 headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json',
-                                          'User-Agent': 'Desktroo'})
-    with urllib.request.urlopen(req, timeout=45) as r:
-        j = json.loads(r.read().decode('utf-8', 'replace'))
+    j = _onefichier_call('download/get_token.cgi', {'url': url}, key)
     if j.get('status') == 'OK' and j.get('url'):
         return {'link': j['url'], 'filename': None, 'size': 0}
     raise RuntimeError('1fichier: ' + str(j.get('message') or j))
@@ -5988,12 +6032,14 @@ def _prem_test(provider):
     if provider == 'onefichier':
         if not cfg.get('apikey'):
             raise ValueError('Clé API manquante.')
-        req = urllib.request.Request('https://api.1fichier.com/v1/user/info.cgi', data=b'{}', method='POST',
-                                     headers={'Authorization': 'Bearer ' + cfg['apikey'], 'Content-Type': 'application/json', 'User-Agent': 'Desktroo'})
-        with urllib.request.urlopen(req, timeout=30) as r:
-            j = json.loads(r.read().decode('utf-8', 'replace'))
+        last = _onef_state.get('test')
+        if last and last[0] == cfg['apikey'] and _sh_time.time() - last[1] < 600:
+            return dict(last[2], cached=True)
+        j = _onefichier_call('user/info.cgi', {}, cfg['apikey'], timeout=30)
         if j.get('email') or j.get('status') == 'OK':
-            return {'ok': True, 'account': j.get('email'), 'premium': True, 'until': j.get('premium_until') or j.get('offer')}
+            res = {'ok': True, 'account': j.get('email'), 'premium': True, 'until': j.get('premium_until') or j.get('offer')}
+            _onef_state['test'] = (cfg['apikey'], _sh_time.time(), res)
+            return res
         raise RuntimeError(str(j.get('message') or j))
     if provider == 'rapidgator':
         if not (cfg.get('login') and cfg.get('password')):

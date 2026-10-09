@@ -4262,6 +4262,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Mot de passe console": "Console password",
 "optionnel": "optional",
 "💾 Créer device Display": "💾 Create Display device",
+"en cours…": "in progress…",
+"effectué": "completed",
 "Supprimer la VM \"": "Delete the VM \"",
 "Les disques virtuels seront conservés.": "Virtual disks will be kept.",
 "✅ VM supprimée": "✅ VM deleted",
@@ -4933,6 +4935,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "semaine(s)": "week(s)",
 "· courant": "· current",
 "· Date :": "· Date:",
+"(J-": "(D-",
 "restants": "left",
 "actives": "active",
 "maintenant": "now",
@@ -5743,7 +5746,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Les services ne répondent pas": "Services are not responding",
 "Les sessions SSH ouvertes seront coupées.": "Open SSH sessions will be cut off.",
 "Ligne de commande (SSH)": "Command line (SSH)",
-"Ligne de commande à distance et transfert SFTP": "Remote command line and SFTP transfer",
+"Ligne de commande à distance, et transfert de fichiers SFTP": "Remote command line, and SFTP file transfer",
 "Ligne de commande": "Command line",
 "Linux et serveurs (NFS)": "Linux and servers (NFS)",
 "Masqué, il faut connaître son adresse pour l'ouvrir": "When hidden, you need to know its address to open it",
@@ -5786,11 +5789,11 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Supprimer le groupe": "Delete the group",
 "Supprimer le partage": "Delete the share",
 "Surveillance de la santé des disques": "Disk health monitoring",
-"Surveille l'onduleur et éteint le NAS proprement": "Watches the UPS and shuts down safely",
+"Surveille l'onduleur et éteint le NAS proprement en cas de coupure": "Watches the UPS and shuts the NAS down cleanly on a power cut",
 "Tous les partages": "All shares",
 "Tous les services": "All services",
 "Tous": "All",
-"Transfert de fichiers à l'ancienne, pour le réseau local": "Old-style file transfer, for the local network",
+"Transfert de fichiers à l'ancienne, à réserver au réseau local": "Old-style file transfer, best kept to the local network",
 "Un groupe réunit des comptes pour leur donner les mêmes droits d'un coup.": "A group gathers accounts to give them the same rights at once.",
 "Une seconde fois": "Once more",
 "Utilisable pour les partages Windows (SMB)": "Usable for Windows shares (SMB)",
@@ -5847,21 +5850,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Copie (n'efface rien)": "Copy (deletes nothing)",
 "Copie de dossiers vers une autre machine avec rsync.": "Copies folders to another machine with rsync.",
 "Copie des snapshots vers un autre pool ou un autre NAS : la vraie protection contre la perte de l'appareil.": "Copies snapshots to another pool or another NAS: the real protection against losing the device.",
-"Mot": "Word",
-"{0}j {1}h": "{0}d {1}h",
-"Démarrage en cours…": "Starting…",
-"Arrêt en cours…": "Stopping…",
-"Redémarrage en cours…": "Restarting…",
-"Suspension en cours…": "Suspending…",
-"Démarrage effectué": "Started",
-"Arrêt effectué": "Stopped",
-"Redémarrage effectué": "Restarted",
-"Suspension effectuée": "Suspended",
-"✅ Partage {0} créé pour ce dossier.": "✅ {0} share created for this folder.",
-"(J-{0})": "({0} days left)",
-"(J-1)": "(1 day left)",
-"(aujourd’hui)": "(today)",
-"Copier la sortie": "Copy output",
+"Copier la sortie": "Copy the output",
 "Créer ou régler dans TrueNAS": "Create or set up in TrueNAS",
 "Datasets et espace utilisé": "Datasets and space used",
 "Date inconnue": "Unknown date",
@@ -5995,7 +5984,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Vert, bleu, rouge, ambre, jaune ou gris": "Green, blue, red, amber, yellow or gray",
 "✅ Couleur de l'installation enregistrée": "✅ Installation color saved",
 "Sur ce poste": "On this computer",
-"Celle de l'installation": "Installation default",
+"Celle de l'installation": "The installation's",
 "actuellement {0}": "currently {0}",
 "Pour toute l'installation": "For the whole installation",
 "Couleur proposée à tous les postes qui n'ont pas choisi la leur, écran de connexion compris.": "Color offered to every computer that has not chosen its own, sign-in screen included.",
@@ -6142,7 +6131,11 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Adresse et jeton, pour une saisie à la main": "Address and token, to enter by hand",
 "Favori à glisser, sans installation": "Bookmark to drag, nothing to install",
 "Fais glisser ce bouton dans ta barre de favoris. Ensuite, sur n'importe quel site : sélectionne un ou plusieurs liens (ou rien, pour détecter les liens d'hébergeurs), puis clique le favori. Les liens partent dans la file du NAS.": "Drag this button to your bookmarks bar. Then, on any site: select one or more links (or nothing, to detect file-host links), then click the bookmark. The links go to the NAS queue.",
-"Copier le code du favori": "Copy the bookmark code"
+"Copier le code du favori": "Copy the bookmark code",
+"Le fournisseur limite la fréquence des appels : la clé n'a pas pu être vérifiée. Attends quelques minutes avant de retester.": "The provider limits how often it can be called: the key could not be checked. Wait a few minutes before testing again.",
+"Le fournisseur refuse cette clé : révoquée, régénérée ou expirée. Crée une nouvelle clé sur son site et colle-la ici.": "The provider rejects this key: revoked, regenerated or expired. Create a new key on its site and paste it here.",
+"Le fournisseur n'accepte pas les connexions venant de l'adresse de ce NAS (serveur ou VPN).": "The provider does not accept connections from this NAS's address (server or VPN).",
+"vérifiée il y a moins de dix minutes": "checked less than ten minutes ago"
 }
 </script>
 <script id="dk-i18n">
@@ -7333,7 +7326,7 @@ function fmtUptime(secs) {
   const d = Math.floor(secs/86400);
   const h = Math.floor((secs%86400)/3600);
   const m = Math.floor((secs%3600)/60);
-  if (d > 0) return Tf('{0}j {1}h', d, h);
+  if (d > 0) return `${d}j ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
@@ -8931,7 +8924,7 @@ function licBlockToast(){
   var now = Date.now();
   if (now - _licLastToast > 1500) { _licLastToast = now; try { toast(T('🔒 Abonnement requis — mode lecture seule')); } catch(_){} }
 }
-function licFmtDate(ts){ try { return new Date(ts*1000).toLocaleDateString(DK_LOCALE, { day:'numeric', month:'short', year:'numeric' }); } catch(_){ return ''; } }
+function licFmtDate(ts){ try { return new Date(ts*1000).toLocaleDateString(DK_LOCALE); } catch(_){ return ''; } }
 async function licRefresh(){
   try {
     var s = await fileops('GET', 'license/status');
@@ -8980,10 +8973,7 @@ function loadLicense(){
       : s.state === 'grace' ? T('<span style="color:#fbbf24">⏳ Expiré — période de tolérance</span>')
       : T('<span style="color:#f87171">🔒 Expiré — lecture seule</span>');
     var exp = s.exp ? licFmtDate(s.exp) : '—';
-    var dl = (s.days_left == null) ? ''
-      : ' ' + (s.days_left > 1 ? Tf('(J-{0})', s.days_left)
-             : s.days_left === 1 ? T('(J-1)')
-             : T('(aujourd’hui)'));
+    var dl = (s.days_left != null) ? (T(' (J-') + s.days_left + ')') : '';
     var planLabel = s.plan === 'monthly' ? T('Abonnement mensuel') : (s.plan === 'trial' ? T('Essai 30 jours') : '—');
     var html = '<div class="lic-card">'
       + T('<div class="lic-row"><b>État</b><span>') + stateLabel + '</span></div>'
@@ -9782,7 +9772,7 @@ async function fsNetShareCreate() {
     const box = document.getElementById('ns-result');
     box.style.display = '';
     box.innerHTML = '<div style="padding:10px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);color:var(--success);font-size:13px;">'
-      + Tf('✅ Partage {0} créé pour ce dossier.', isSMB?'SMB':'NFS') + '</div>';
+      + T('✅ Partage ') + (isSMB?'SMB':'NFS') + T(' créé pour ce dossier.</div>');
     toast(T('✅ Partage réseau créé'));
     if (isSMB) toast(T('💡 Vérifiez que le service SMB est démarré (Services)'));
     _fsSharesTs = 0; // force le rechargement de la liste des partages
@@ -13561,13 +13551,13 @@ async function dlPremiumEdit(id) {
   function secretRow(field, label, val) {
     return '<div style="display:flex;flex-direction:column;gap:4px;">'
       + '<label class="tnd-label">' + label + '</label>'
-      + '<div style="display:flex;gap:6px;"><input id="pv-' + id + '-' + field + '" class="tnd-input" type="password" value="' + esc(val) + '" style="flex:1;min-width:0;" />'
+      + '<div style="display:flex;gap:6px;"><input id="pv-' + id + '-' + field + '" class="tnd-input" type="password" value="' + esc(val) + '" autocomplete="new-password" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore="true" style="flex:1;min-width:0;" />'
       + T('<button class="fs-btn" title="Afficher / Masquer" onclick="dlPremReveal(\'pv-') + id + '-' + field + '\',this)">👁</button></div></div>';
   }
   function textRow(field, label, val) {
     return '<div style="display:flex;flex-direction:column;gap:4px;">'
       + '<label class="tnd-label">' + label + '</label>'
-      + '<input id="pv-' + id + '-' + field + '" class="tnd-input" value="' + esc(val) + '" /></div>';
+      + '<input id="pv-' + id + '-' + field + '" class="tnd-input" value="' + esc(val) + '" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore="true" /></div>';
   }
   var fieldsHtml;
   if (p.kind === 'login') {
@@ -13609,14 +13599,28 @@ async function dlPremiumSave(id) {
   try { await fileops('POST', 'premium/set', dlPremiumFields(id)); toast(T('✅ Enregistré')); dlPremiumEditClose(); dlPremiumPanel(); }
   catch(e) { toast('❌ ' + e.message); }
 }
+// Ce que le refus d'un fournisseur veut dire, en clair. « soft » : la clé n'est pas en cause.
+function dlPremWhy(msg) {
+  var m = String(msg || '');
+  if (/429|too many requests|flood/i.test(m)) return { soft: true, text: T('Le fournisseur limite la fréquence des appels : la clé n\'a pas pu être vérifiée. Attends quelques minutes avant de retester.') };
+  if (/bad_?token|bad_?apikey|apikey is invalid|not authenticated|unauthorized/i.test(m)) return { text: T('Le fournisseur refuse cette clé : révoquée, régénérée ou expirée. Crée une nouvelle clé sur son site et colle-la ici.') };
+  if (/serverNotAllowed|disabledServerHost|ip_not_allowed/i.test(m)) return { text: T('Le fournisseur n\'accepte pas les connexions venant de l\'adresse de ce NAS (serveur ou VPN).') };
+  return null;
+}
 async function dlPremiumTest(id) {
   var res = document.getElementById('pv-' + id + '-res');
   if (res) { res.textContent = T('Test en cours…'); res.style.color = 'var(--text-dim)'; }
   try {
     await fileops('POST', 'premium/set', dlPremiumFields(id));
     const r = await fileops('POST', 'premium/test', { provider: id });
-    if (res) { res.style.color = 'var(--success)'; res.textContent = '✅ ' + (r.account || 'OK') + (r.premium ? ' · premium' : '') + (r.until ? (' · exp. ' + dlFmtUntil(r.until)) : ''); }
-  } catch(e) { if (res) { res.style.color = '#f87171'; res.textContent = '❌ ' + e.message; } }
+    if (res) { res.style.color = 'var(--success)'; res.textContent = '✅ ' + (r.account || 'OK') + (r.premium ? ' · premium' : '') + (r.until ? (' · exp. ' + dlFmtUntil(r.until)) : '') + (r.cached ? ' · ' + T('vérifiée il y a moins de dix minutes') : ''); }
+  } catch(e) {
+    if (!res) return;
+    var why = dlPremWhy(e.message), soft = !!(why && why.soft);
+    res.style.color = soft ? '#f5a524' : '#f87171';
+    res.style.lineHeight = '1.5';
+    res.textContent = (soft ? '⏳ ' : '❌ ') + (why ? why.text + ' (' + (/429/.test(e.message) ? 'HTTP 429' : e.message) + ')' : e.message);
+  }
 }
 async function dlPremiumRemove(id) {
   if (!await showConfirm(T('Retirer le compte « ') + id + ' » ?')) return;
@@ -15410,8 +15414,8 @@ const SERVICE_LABELS = {
   iscsitarget:'iSCSI', smartd:'S.M.A.R.T.', netdata:'Netdata', nvmet:'NVMe-oF', webshare:'WebShare'
 };
 function svDesc(name) {
-  return ({ cifs: T('Partages pour Windows, macOS et Linux'), nfs: T('Partages pour Linux et les hyperviseurs'), ftp: T('Transfert de fichiers à l\'ancienne, pour le réseau local'),
-    ssh: T('Ligne de commande à distance et transfert SFTP'), snmp: T('Supervision du NAS par un outil externe'), ups: T('Surveille l\'onduleur et éteint le NAS proprement'),
+  return ({ cifs: T('Partages pour Windows, macOS et Linux'), nfs: T('Partages pour Linux et les hyperviseurs'), ftp: T('Transfert de fichiers à l\'ancienne, à réserver au réseau local'),
+    ssh: T('Ligne de commande à distance, et transfert de fichiers SFTP'), snmp: T('Supervision du NAS par un outil externe'), ups: T('Surveille l\'onduleur et éteint le NAS proprement en cas de coupure'),
     iscsitarget: T('Disques réseau pour serveurs et machines virtuelles'), nvmet: T('Disques réseau NVMe pour serveurs'), smartd: T('Surveillance de la santé des disques'),
     webshare: T('Accès aux fichiers par le navigateur') })[name] || '';
 }
@@ -19779,18 +19783,15 @@ async function vmAction(id, action) {
     restart: {},
     suspend: {}
   };
-  var busyLabels = { start:T('Démarrage en cours…'), stop:T('Arrêt en cours…'),
-                     restart:T('Redémarrage en cours…'), suspend:T('Suspension en cours…') };
-  var doneLabels = { start:T('Démarrage effectué'), stop:T('Arrêt effectué'),
-                     restart:T('Redémarrage effectué'), suspend:T('Suspension effectuée') };
-  toast('⏳ ' + (busyLabels[action] || action));
+  var labels = { start:T('Démarrage'), stop:T('Arrêt'), restart:T('Redémarrage'), suspend:'Suspension' };
+  toast('⏳ ' + (labels[action]||action) + T(' en cours…'));
   try {
     var jobId = await socketCall('/vm/id/' + id + '/' + action, 'POST', bodies[action] || {});
     if (typeof jobId === 'number') {
       // Wait for job
       await waitJob(jobId);
     }
-    toast('✅ ' + (doneLabels[action] || action));
+    toast('✅ ' + (labels[action]||action) + T(' effectué'));
   } catch(e) {
     toast('❌ ' + e.message);
   }
