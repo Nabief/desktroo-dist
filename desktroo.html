@@ -1063,6 +1063,30 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .disk-status { font-size:11px; padding:2px 8px; border-radius:10px; }
   .disk-status.ONLINE { background:rgba(62,207,142,0.15); color:var(--success); }
 
+  /* ===== PROTECTION DES DONNÉES, CERTIFICATS, TERMINAL ===== */
+  #win-dataprotect, #win-certs, #win-terminal { min-width:860px; min-height:520px; }
+  .dp-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; margin-top:6px; }
+  .dp-card {
+    display:flex; flex-direction:column; gap:7px; min-width:0; padding:15px 16px; border:1px solid var(--glass-border); border-radius:14px;
+    background:rgba(255,255,255,0.03); color:var(--text); font:inherit; text-align:left; cursor:pointer; transition:background .15s, border-color .15s;
+  }
+  .dp-card:hover { background:rgba(255,255,255,0.06); border-color:rgba(var(--accent2-rgb),0.4); }
+  .dp-card:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  [data-theme="light"] .dp-card { background:rgba(255,255,255,0.7); }
+  [data-theme="light"] .dp-card:hover { background:#ffffff; }
+  .dp-card-top { display:flex; align-items:center; gap:9px; }
+  .dp-card-top svg { width:17px; height:17px; flex-shrink:0; color:var(--accent); }
+  .dp-card-name { flex:1; min-width:0; font-size:13.5px; font-weight:600; }
+  .dp-card-verdict { font-size:13px; line-height:1.45; }
+  .dp-card-what { font-size:11.5px; line-height:1.5; color:var(--text-dim); }
+  .web-table.dp-list { --wt-cols:minmax(0,1.5fr) minmax(0,1fr) minmax(0,0.9fr) 70px; }
+  .web-table.ce-list { --wt-cols:minmax(0,1.4fr) minmax(0,0.9fr) minmax(0,1fr); }
+  .web-table.dp-list .web-tr:not(.head), .web-table.ce-list .web-tr:not(.head) { min-height:52px; }
+  .ce-pem { font-family:var(--font-mono); font-size:11.5px; line-height:1.5; white-space:pre; resize:vertical; }
+  .web-body.term-body { display:flex; padding:0 22px 22px; overflow:hidden; }
+  #terminal-container { flex:1; min-width:0; min-height:0; border-radius:12px; border:1px solid var(--glass-border); outline:none; }
+  .term-cmd .web-nav-name { font-family:var(--font-mono); font-size:12px; }
+
   /* ===== UTILISATEURS, PARTAGES, SERVICES ===== */
   #win-users, #win-sharing, #win-services { min-width:860px; min-height:520px; }
   /* Formulaires des gestionnaires */
@@ -3739,10 +3763,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "NTP serveur 1": "NTP server 1",
 "NTP serveur 2": "NTP server 2",
 "Configuration enregistree": "Configuration saved",
-"Snapshots periodiques (": "Periodic snapshots (",
-"Aucun snapshot configure": "No snapshots configured",
 "Inactif": "Inactive",
-"Aucune replication": "No replication",
 "Aucun certificat": "No certificates",
 "Expire": "Expired",
 "Valide": "Valid",
@@ -3781,7 +3802,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Variables env (NOM=valeur)": "Env variables (NAME=value)",
 "Image Docker requise": "Docker image required",
 "Container lance !": "Container started!",
-"Connexion au terminal sidecar...": "Connecting to the sidecar terminal...",
 "\u001b[32m ✓ Connecté — cliquez ici pour taper\u001b[0m": "\u001b[32m  ✓ Connected — click here to type\u001b[0m",
 "\u001b[31m [Session terminée: code": "\u001b[31m  [Session ended: code",
 "\u001b[90m Double-cliquez sur la barre de titre pour reconnecter.\u001b[0m": "\u001b[90m  Double-click the title bar to reconnect.\u001b[0m",
@@ -4460,7 +4480,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nom": "Name",
 "Oui": "Yes",
 "Non": "No",
-"↺ Nouvelle session": "↺ New session",
 "⚡ Créer une VM QEMU/KVM": "⚡ Create a QEMU/KVM VM",
 "🖥️ Type de système": "🖥️ System type",
 "⚙️ Autre": "⚙️ Other",
@@ -5388,7 +5407,148 @@ select option{ background:#101b2e; color:#e9eef7; }
 "1 compte": "1 account",
 "{0} est arrêté": "{0} stopped",
 "{0} est démarré": "{0} started",
-"{0} services, {1} en marche": "{0} services, {1} running"
+"{0} services, {1} en marche": "{0} services, {1} running",
+"1 certificat à renouveler": "1 certificate to renew",
+"{0} certificats à renouveler": "{0} certificates to renew",
+"1 tâche active": "1 active task",
+"{0} tâches actives": "{0} active tasks",
+"1 tâche, suspendue": "1 task, suspended",
+"{0} tâches, toutes suspendues": "{0} tasks, all suspended",
+"{0} tâches en échec": "{0} failed tasks",
+"En échec : {0}": "Failed: {0}",
+"Adresses réseau": "Network addresses",
+"Aucun dataset n'est photographié automatiquement.": "No dataset is snapshotted automatically.",
+"Aucun dossier n'est envoyé vers un stockage en ligne.": "No folder is sent to online storage.",
+"Aucune copie rsync n'est planifiée.": "No rsync copy is scheduled.",
+"Aucune vérification n'est planifiée.": "No check is scheduled.",
+"Automatique (ACME, Let's Encrypt)": "Automatic (ACME, Let's Encrypt)",
+"Autorité de certification": "Certificate authority",
+"Ce certificat ne se renouvelle pas tout seul : importez le nouveau, puis choisissez-le là où l'ancien servait.": "This certificate does not renew by itself: import the new one, then select it wherever the old one was used.",
+"Ce certificat se renouvelle normalement tout seul : si la date ne bouge pas, voyez le journal ACME dans TrueNAS.": "This certificate normally renews by itself: if the date does not move, check the ACME log in TrueNAS.",
+"Certificat auto-signé": "Self-signed certificate",
+"Certificat": "Certificate",
+"Clé privée": "Private key",
+"Clé": "Key",
+"Commandes prêtes": "Ready-made commands",
+"Connecté au NAS": "Connected to the NAS",
+"Connecté. Cliquez ici pour taper.": "Connected. Click here to type.",
+"Connexion au service Desktroo...": "Connecting to the Desktroo service...",
+"Connexion impossible": "Cannot connect",
+"Connexion…": "Connecting…",
+"Conteneurs en marche": "Running containers",
+"Copie (n'efface rien)": "Copy (deletes nothing)",
+"Copie de dossiers vers une autre machine avec rsync.": "Copies folders to another machine with rsync.",
+"Copie des snapshots vers un autre pool ou un autre NAS : la vraie protection contre la perte de l'appareil.": "Copies snapshots to another pool or another NAS: the real protection against losing the device.",
+"Copier la sortie": "Copy the output",
+"Créer ou régler dans TrueNAS": "Create or set up in TrueNAS",
+"Datasets et espace utilisé": "Datasets and space used",
+"Date inconnue": "Unknown date",
+"Demande de signature (CSR)": "Signing request (CSR)",
+"Demande de signature en attente": "Signing request pending",
+"Dernier snapshot copié": "Last snapshot copied",
+"Derniers messages du système": "Latest system messages",
+"Dernière erreur": "Last error",
+"Dernière exécution": "Last run",
+"Des photos régulières des datasets, pour revenir en arrière après une erreur ou un rançongiciel.": "Regular pictures of the datasets, to go back after a mistake or ransomware.",
+"Durée de fonctionnement et charge": "Uptime and load",
+"Déplace": "Move",
+"Elle est envoyée à TrueNAS, qui la garde ; Desktroo ne l'enregistre nulle part.": "It is sent to TrueNAS, which keeps it; Desktroo does not store it anywhere.",
+"Empreinte": "Fingerprint",
+"En échec": "Failed",
+"Envoi de dossiers vers un stockage en ligne (S3, Backblaze, Google Drive…).": "Sends folders to online storage (S3, Backblaze, Google Drive…).",
+"Envoie vers la destination": "Sends to the destination",
+"Envoie vers le cloud": "Sends to the cloud",
+"Espace des systèmes de fichiers": "File system space",
+"Expire demain": "Expires tomorrow",
+"Expiré": "Expired",
+"Expire dans {0} jours": "Expires in {0} days",
+"Expiré depuis {0} jours": "Expired {0} days ago",
+"Valide encore {0} ans": "Valid for {0} more years",
+"Valide encore {0} jours": "Valid for {0} more days",
+"Importer un certificat": "Import a certificate",
+"Importer": "Import",
+"Interrompue": "Interrupted",
+"Jamais lancée": "Never run",
+"L'interface web de TrueNAS": "The TrueNAS web interface",
+"La clé privée doit commencer par -----BEGIN … PRIVATE KEY-----": "The private key must start with -----BEGIN … PRIVATE KEY-----",
+"Lancer maintenant": "Run now",
+"Le certificat doit commencer par -----BEGIN CERTIFICATE-----": "The certificate must start with -----BEGIN CERTIFICATE-----",
+"Le certificat puis, à la suite, les certificats intermédiaires s'il y en a.": "The certificate, followed by the intermediate certificates if any.",
+"Le service Desktroo ne répond pas pour le terminal : vérifiez qu'il tourne, puis relancez une session.": "The Desktroo service is not answering for the terminal: check that it is running, then start a new session.",
+"Le terminal n'est pas connecté": "The terminal is not connected",
+"Les certificats ne répondent pas": "Certificates are not responding",
+"Les données ne sont copiées vers aucun autre pool ni aucun autre NAS.": "Data is not copied to any other pool or NAS.",
+"Les données sont protégées en partie.": "Data is partly protected.",
+"Les tâches de protection ne répondent pas": "Protection tasks are not responding",
+"Lettres, chiffres, tiret et tiret bas : il sert à le reconnaître dans les listes.": "Letters, digits, dash and underscore: it is used to recognise it in lists.",
+"Nom invalide : lettres, chiffres, tiret et tiret bas": "Invalid name: letters, digits, dash and underscore",
+"Non lu sur ce NAS": "Not read on this NAS",
+"Nouvelle session": "New session",
+"Pour un certificat obtenu ailleurs, avec sa clé privée.": "For a certificate obtained elsewhere, with its private key.",
+"Pour": "For",
+"Quoi": "What",
+"Relecture complète d'un pool (scrub) pour détecter et réparer les erreurs silencieuses.": "Full read of a pool (scrub) to detect and repair silent errors.",
+"Renouveler, créer une demande de signature, brancher ACME": "Renew, create a signing request, set up ACME",
+"Renouvellement": "Renewal",
+"Reçoit depuis l'autre machine": "Receives from the other machine",
+"Récupère depuis le cloud": "Pulls from the cloud",
+"Régler dans Disques & Scrub": "Set up in Disks & Scrub",
+"Régler dans Snapshots ZFS": "Set up in ZFS snapshots",
+"Régler dans TrueNAS": "Set up in TrueNAS",
+"Réussie": "Succeeded",
+"Révoqué": "Revoked",
+"Sa clé privée est effacée avec lui.": "Its private key is erased with it.",
+"Sens": "Direction",
+"Session terminée": "Session ended",
+"Supprimer le certificat": "Delete the certificate",
+"Suspendue": "Suspended",
+"Suspendue, elle reste en place mais ne se lance plus toute seule": "When suspended, it stays in place but no longer starts by itself",
+"Synchronise (efface ce qui a disparu)": "Sync (deletes what is gone)",
+"Terminal du NAS": "NAS terminal",
+"Tous les certificats sont valides": "All certificates are valid",
+"Tous les certificats": "All certificates",
+"Tout ce qui est planifié tourne normalement.": "Everything scheduled is running normally.",
+"TrueNAS refuse si un service s'en sert encore": "TrueNAS refuses if a service still uses it",
+"Tâche active": "Task enabled",
+"Tâche de réplication": "Replication task",
+"Tâche de sauvegarde cloud": "Cloud backup task",
+"Tâche de snapshots": "Snapshot task",
+"Tâche lancée, elle continue en arrière-plan": "Task started, it continues in the background",
+"Tâche rsync": "Rsync task",
+"Un certificat chiffre les connexions au NAS et prouve son identité au navigateur.": "A certificate encrypts connections to the NAS and proves its identity to the browser.",
+"Un snapshot protège d'une erreur, pas de la perte du NAS : seule une copie ailleurs (réplication ou cloud) couvre un vol, un incendie ou une panne de plusieurs disques.": "A snapshot protects against a mistake, not against losing the NAS: only a copy elsewhere (replication or cloud) covers theft, fire or several disks failing.",
+"Une protection est en échec : à regarder en premier.": "One protection is failing: look at it first.",
+"Une vérification par mois est une bonne habitude.": "One check a month is a good habit.",
+"Utilisé par": "Used by",
+"Validité": "Validity",
+"Vérification des disques": "Disk checks",
+"Vérification planifiée": "Scheduled check",
+"[La connexion au terminal a échoué]": "[The connection to the terminal failed]",
+"avec ses sous-datasets": "with its child datasets",
+"interface du NAS": "NAS interface",
+"« Nouvelle session » relance le terminal.": "“New session” restarts the terminal.",
+"À la main": "Manual",
+"À regarder": "Needs a look",
+"Écrit la commande dans le terminal ; à vous d'appuyer sur Entrée": "Types the command into the terminal; you press Enter",
+"Émis par": "Issued by",
+"État des pools et des disques": "State of pools and disks",
+"✅ Certificat importé": "✅ Certificate imported",
+"✅ Certificat supprimé": "✅ Certificate deleted",
+"✅ Tâche réactivée": "✅ Task re-enabled",
+"✅ Tâche suspendue": "✅ Task suspended",
+"Pool {0} : dernière vérification {1}": "Pool {0}: last check {1}",
+"Pool {0} : jamais vérifié": "Pool {0}: never checked",
+"[Session terminée, code {0}]": "[Session ended, code {0}]",
+"au plus tôt {0} jours après la précédente": "at the earliest {0} days after the previous one",
+"dernière {0}": "last one {0}",
+"du {0} au {1}": "from {0} to {1}",
+"il y a {0} h": "{0} h ago",
+"il y a {0} jours": "{0} days ago",
+"il y a {0} min": "{0} min ago",
+"jusqu'au {0}": "until {0}",
+"{0} : terminée": "{0}: finished",
+"Active": "Enabled",
+"Connecté": "Connected"
 }
 </script>
 <script id="dk-i18n">
@@ -15992,61 +16152,394 @@ async function saveSysConfig() {
 }
 
 // ============================================================
-// DATA PROTECTION
+// DATA PROTECTION — ce qui protège les données : snapshots, réplication, sauvegardes, vérifications
+// Tableau de bord : chaque tâche de TrueNAS, son dernier résultat, et de quoi la lancer ou la suspendre.
 // ============================================================
-async function loadDataprotect() {
-  const el = document.getElementById('dataprotect-content');
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
+var _dp = { nav: 'all', sel: null, data: {}, err: {}, pools: [], loaded: false, seq: 0, busy: {} };
+WEB_ICONS.shield = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
+WEB_ICONS.cloud = '<path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>';
+// Familles de tâches : méthode TrueNAS, lancement immédiat, page TrueNAS.
+function dpFamilies() {
+  return [
+    { key: 'snap', api: 'pool.snapshottask', run: 'pool.snapshottask.run', icon: 'layers', label: T('Snapshots périodiques'), one: T('Tâche de snapshots'),
+      what: T('Des photos régulières des datasets, pour revenir en arrière après une erreur ou un rançongiciel.'), none: T('Aucun dataset n\'est photographié automatiquement.') },
+    { key: 'repl', api: 'replication', run: 'replication.run', icon: 'refresh', label: T('Réplication'), one: T('Tâche de réplication'),
+      what: T('Copie des snapshots vers un autre pool ou un autre NAS : la vraie protection contre la perte de l\'appareil.'), none: T('Les données ne sont copiées vers aucun autre pool ni aucun autre NAS.') },
+    { key: 'cloud', api: 'cloudsync', run: 'cloudsync.sync', icon: 'cloud', label: T('Sauvegarde cloud'), one: T('Tâche de sauvegarde cloud'),
+      what: T('Envoi de dossiers vers un stockage en ligne (S3, Backblaze, Google Drive…).'), none: T('Aucun dossier n\'est envoyé vers un stockage en ligne.') },
+    { key: 'rsync', api: 'rsynctask', run: 'rsynctask.run', icon: 'folder', label: 'Rsync', one: T('Tâche rsync'),
+      what: T('Copie de dossiers vers une autre machine avec rsync.'), none: T('Aucune copie rsync n\'est planifiée.') },
+    { key: 'scrub', api: 'pool.scrub', run: '', icon: 'check', label: T('Vérification des disques'), one: T('Vérification planifiée'),
+      what: T('Relecture complète d\'un pool (scrub) pour détecter et réparer les erreurs silencieuses.'), none: T('Aucune vérification n\'est planifiée.') }
+  ];
+}
+function dpFam(key) { return dpFamilies().find(function(f) { return f.key === key; }) || null; }
+function dpList(key) { return ensureArray(_dp.data[key]); }
+function dpTask(key, id) { return dpList(key).find(function(t) { return t.id === id; }) || null; }
+// Nom lisible d'une tâche.
+function dpName(key, t) {
+  if (key === 'snap') return String(t.dataset || '');
+  if (key === 'repl') return String(t.name || ensureArray(t.source_datasets).join(', '));
+  if (key === 'cloud') return String(t.description || t.path || '');
+  if (key === 'rsync') return String(t.desc || t.path || '');
+  return String(t.pool_name || t.description || '');
+}
+function dpWhere(key, t) {
+  if (key === 'snap') return t.recursive ? T('avec ses sous-datasets') : '';
+  if (key === 'repl') return ensureArray(t.source_datasets).join(', ') + ' → ' + (t.target_dataset || '?') + (t.transport && t.transport !== 'LOCAL' ? ' (' + t.transport + ')' : '');
+  if (key === 'cloud') { var c = t.credentials || {}, a = t.attributes || {}; return (t.path || '') + ' → ' + [c.name || ((c.provider || {}).type) || '', a.bucket || '', a.folder || ''].filter(Boolean).join(' / '); }
+  if (key === 'rsync') return (t.path || '') + ' → ' + [t.remotehost, t.remotemodule || t.remotepath].filter(Boolean).join(':');
+  return t.threshold ? Tf('au plus tôt {0} jours après la précédente', t.threshold) : '';
+}
+// Dernier résultat connu : { key: ok | bad | run | none, label, when, error }
+function dpLast(key, t) {
+  var st = t.state || {}, job = t.job || null, s = '', when = null, err = '';
+  if (key === 'scrub') {
+    var p = _dp.pools.find(function(x) { return x.id === t.pool || x.name === t.pool_name; }), sc = (p && p.scan) || {};
+    s = sc.state === 'SCANNING' ? 'RUNNING' : (sc.state === 'FINISHED' ? (sc.errors ? 'ERROR' : 'FINISHED') : (sc.state || ''));
+    when = mntDate(sc.end_time || sc.start_time);
+  } else if (job && job.state) { s = String(job.state); when = mntDate(job.time_finished || job.time_started); err = String(job.error || ''); }
+  else { s = String(st.state || ''); when = mntDate(st.datetime); err = String(st.error || ''); }
+  s = s.toUpperCase();
+  if (s === 'RUNNING') return { key: 'run', label: T('En cours'), when: when, error: '' };
+  if (s === 'FINISHED' || s === 'SUCCESS') return { key: 'ok', label: T('Réussie'), when: when, error: '' };
+  if (s === 'ERROR' || s === 'FAILED' || s === 'ABORTED' || s === 'CANCELED') return { key: 'bad', label: s === 'ABORTED' || s === 'CANCELED' ? T('Interrompue') : T('En échec'), when: when, error: err };
+  return { key: 'none', label: T('Jamais lancée'), when: null, error: '' };
+}
+function dpWhen(d) {
+  if (!d) return '';
+  var m = Math.round((Date.now() - d.getTime()) / 60000);
+  if (m < 1) return T('à l\'instant');
+  if (m < 60) return Tf('il y a {0} min', m);
+  if (m < 2880) return Tf('il y a {0} h', Math.round(m / 60));
+  return Tf('il y a {0} jours', Math.round(m / 1440));
+}
+function dpDot(l, enabled) { return enabled === false ? 'off' : (l.key === 'bad' ? 'bad' : (l.key === 'run' ? 'warn' : (l.key === 'none' ? 'off' : ''))); }
+function dpGo(nav, id) { _dp.nav = nav; _dp.sel = id == null ? null : id; dpRender(); }
+async function loadDataprotect(soft) {
+  if (!wmBody('dp')) return;
+  var seq = ++_dp.seq, fams = dpFamilies();
+  if (!_dp.loaded) { wmHead('dp', T('Protection des données')); dpSide(); wmLoading('dp'); }
+  var r = await Promise.allSettled(fams.map(function(f) { return wsCall(f.api + '.query', [[], {}], 60000); }).concat([wsCall('pool.query', [[], {}], 60000)]));
+  if (seq !== _dp.seq) return;
+  if (r.slice(0, fams.length).every(function(x) { return x.status !== 'fulfilled'; })) {
+    _dp.loaded = false;
+    wmHead('dp', T('Protection des données')); dpSide();
+    wmFail('dp', T('Les tâches de protection ne répondent pas'), r[0].reason, 'loadDataprotect()');
+    return;
+  }
+  _dp.data = {}; _dp.err = {};
+  fams.forEach(function(f, i) { if (r[i].status === 'fulfilled') _dp.data[f.key] = ensureArray(r[i].value); else { _dp.data[f.key] = []; _dp.err[f.key] = wmErr(r[i].reason); } });
+  _dp.pools = r[fams.length].status === 'fulfilled' ? ensureArray(r[fams.length].value) : [];
+  _dp.loaded = true;
+  dpRender(soft === true);
+}
+function dpFamNav() { return _dp.nav === 'all' ? null : String(_dp.nav).split(':')[0]; }
+function dpSide() {
+  var cur = dpFamNav(), h = wmNav({ active: _dp.nav === 'all', call: 'dpGo(\'all\')', icon: 'shield', name: T('Vue d\'ensemble') }) + wmSep() + wmSideTitle(T('Tâches'));
+  dpFamilies().forEach(function(f) {
+    var l = dpList(f.key), bad = l.some(function(t) { return t.enabled !== false && dpLast(f.key, t).key === 'bad'; });
+    h += wmNav({ active: cur === f.key, call: 'dpGo(\'' + f.key + '\')', icon: f.icon, name: f.label, count: l.length ? (bad ? '!' : l.length) : null });
+  });
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'snapshots\')', icon: 'layers', name: T('Snapshots ZFS') })
+    + wmNav({ call: 'openApp(\'maintenance\')', icon: 'sliders', name: T('Disques & Scrub') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/data-protection\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('dp', h);
+}
+function dpRender(soft) {
+  dpSide();
+  var p = String(_dp.nav).split(':'), fam = dpFam(p[0]);
+  if (fam && p[1] === 'one' && dpTask(fam.key, _dp.sel)) dpOneView(fam, soft);
+  else if (fam) { _dp.nav = fam.key; dpFamView(fam, soft); }
+  else { _dp.nav = 'all'; dpAllView(soft); }
+}
+// Où créer ou régler une tâche : dans Desktroo quand la fenêtre existe, sinon dans TrueNAS.
+function dpManage(key) {
+  if (key === 'snap') { _snapNav = 'tasks'; var w = document.getElementById('win-snapshots'); if (w && w.classList.contains('visible') && _snapLoaded) { bringToFront(w); snapGo('tasks'); } else openApp('snapshots'); }
+  else if (key === 'scrub') openApp('maintenance');
+  else openTrueNASPage('/ui/data-protection');
+}
+function dpManageLabel(key) { return key === 'snap' ? T('Régler dans Snapshots ZFS') : (key === 'scrub' ? T('Régler dans Disques & Scrub') : T('Créer ou régler dans TrueNAS')); }
+// Verdict d'une famille pour la vue d'ensemble.
+function dpVerdict(f) {
+  var l = dpList(f.key), on = l.filter(function(t) { return t.enabled !== false; });
+  if (_dp.err[f.key]) return { lvl: 'off', text: T('Non lu sur ce NAS') };
+  if (!l.length) return { lvl: f.key === 'snap' || f.key === 'scrub' ? 'warn' : 'off', text: f.none };
+  if (!on.length) return { lvl: 'warn', text: l.length > 1 ? Tf('{0} tâches, toutes suspendues', l.length) : T('1 tâche, suspendue') };
+  var bad = on.filter(function(t) { return dpLast(f.key, t).key === 'bad'; }), newest = null;
+  on.forEach(function(t) { var w = dpLast(f.key, t).when; if (w && (!newest || w > newest)) newest = w; });
+  if (bad.length) return { lvl: 'bad', text: bad.length > 1 ? Tf('{0} tâches en échec', bad.length) : Tf('En échec : {0}', dpName(f.key, bad[0])) };
+  return { lvl: '', text: (on.length > 1 ? Tf('{0} tâches actives', on.length) : T('1 tâche active')) + (newest ? ', ' + Tf('dernière {0}', dpWhen(newest)) : '') };
+}
+function dpAllView(soft) {
+  var fams = dpFamilies(), verdicts = fams.map(dpVerdict), bad = verdicts.filter(function(v) { return v.lvl === 'bad'; }).length, warn = verdicts.filter(function(v) { return v.lvl === 'warn'; }).length;
+  wmHead('dp', T('Protection des données'), { keepScroll: soft,
+    sub: bad ? T('Une protection est en échec : à regarder en premier.') : (warn ? T('Les données sont protégées en partie.') : T('Tout ce qui est planifié tourne normalement.')),
+    actions: '<button class="fs-btn" onclick="loadDataprotect()">' + T('Actualiser') + '</button>' });
+  var h = '<div class="dp-cards">';
+  fams.forEach(function(f, i) {
+    var v = verdicts[i];
+    h += '<button class="dp-card" onclick="dpGo(\'' + f.key + '\')"><span class="dp-card-top">' + webIcon(f.icon) + '<span class="dp-card-name">' + webEsc(f.label) + '</span><span class="web-dot' + (v.lvl ? ' ' + v.lvl : '') + '"></span></span>'
+      + '<span class="dp-card-verdict">' + webEsc(v.text) + '</span><span class="dp-card-what">' + webEsc(f.what) + '</span></button>';
+  });
+  h += '</div>';
+  // ce qui demande un coup d'œil
+  var issues = [];
+  fams.forEach(function(f) { dpList(f.key).forEach(function(t) { if (t.enabled === false) return; var l = dpLast(f.key, t); if (l.key === 'bad') issues.push([f, t, l]); }); });
+  _dp.pools.forEach(function(p) {
+    var end = mntDate((p.scan || {}).end_time), old = !end || Date.now() - end.getTime() > 45 * 864e5;
+    if (old && (p.scan || {}).state !== 'SCANNING') issues.push([null, p, { label: end ? Tf('Pool {0} : dernière vérification {1}', p.name, dpWhen(end)) : Tf('Pool {0} : jamais vérifié', p.name) }]);
+  });
+  if (issues.length) {
+    h += '<div class="web-group-title">' + T('À regarder') + '</div><div class="web-group">';
+    issues.slice(0, 12).forEach(function(x) {
+      h += x[0] ? '<button class="web-row" onclick="dpGo(\'' + x[0].key + ':one\',' + Number(x[1].id) + ')"><span class="web-dot bad"></span><span class="web-row-text"><span class="web-row-name">' + webEsc(Tf('{0} : {1}', x[0].label, dpName(x[0].key, x[1]))) + '</span><span class="web-row-desc">'
+            + webEsc(x[2].label + (x[2].when ? ', ' + dpWhen(x[2].when) : '') + (x[2].error ? '. ' + x[2].error.slice(0, 160) : '')) + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>'
+        : '<button class="web-row" onclick="openApp(\'maintenance\')"><span class="web-dot warn"></span><span class="web-row-text"><span class="web-row-name">' + webEsc(x[2].label) + '</span><span class="web-row-desc">' + T('Une vérification par mois est une bonne habitude.') + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+    });
+    h += '</div>';
+  }
+  h += '<p class="web-note">' + T('Un snapshot protège d\'une erreur, pas de la perte du NAS : seule une copie ailleurs (réplication ou cloud) couvre un vol, un incendie ou une panne de plusieurs disques.') + '</p>';
+  wmBody('dp').innerHTML = h;
+}
+function dpFamView(f, soft) {
+  var l = dpList(f.key);
+  wmHead('dp', f.label, { keepScroll: soft, sub: webEsc(f.what), actions: '<button class="' + (l.length ? 'fs-btn' : 'web-open') + '" onclick="dpManage(\'' + f.key + '\')">' + dpManageLabel(f.key) + '</button>' });
+  var el = wmBody('dp');
+  if (_dp.err[f.key]) { el.innerHTML = '<div class="fs-empty">' + webIcon(f.icon) + '<div class="fs-empty-title">' + T('Non lu sur ce NAS') + '</div><div class="mono">' + webEsc(_dp.err[f.key]) + '</div></div>'; return; }
+  if (!l.length) { el.innerHTML = '<div class="fs-empty">' + webIcon(f.icon) + '<div class="fs-empty-title">' + webEsc(f.none) + '</div><div>' + webEsc(f.what) + '</div><button class="web-open" onclick="dpManage(\'' + f.key + '\')">' + dpManageLabel(f.key) + '</button></div>'; return; }
+  var h = '<div class="web-table dp-list"><div class="web-tr head"><span>' + T('Tâche') + '</span><span>' + T('Planification') + '</span><span>' + T('Dernière exécution') + '</span><span>' + T('Active') + '</span></div>';
+  l.forEach(function(t) {
+    var last = dpLast(f.key, t), busy = _dp.busy[f.key + ':' + t.id];
+    h += '<div class="web-tr click' + (t.enabled === false ? ' is-off' : '') + '" role="button" tabindex="0" data-dp="' + Number(t.id) + '"><span class="cron-two"><strong>' + webEsc(dpName(f.key, t)) + '</strong><span class="dim">' + webEsc(dpWhere(f.key, t)) + '</span></span>'
+      + '<span>' + webEsc(t.schedule ? cronHuman(t.schedule) : (t.auto === false ? T('À la main') : '—')) + '</span>'
+      + '<span class="cron-two"><span class="apps-state"><span class="web-dot ' + dpDot(busy ? { key: 'run' } : last) + '"></span>' + webEsc(busy || last.label) + '</span><span class="dim">' + webEsc(dpWhen(last.when)) + '</span></span>'
+      + '<span onclick="event.stopPropagation()"><input type="checkbox" aria-label="' + webEsc(T('Tâche active')) + '"' + (t.enabled !== false ? ' checked' : '') + ' onchange="dpToggle(\'' + f.key + '\',' + Number(t.id) + ',this.checked)"></span></div>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-dp]').forEach(function(r) {
+    var go = function() { dpGo(f.key + ':one', Number(r.dataset.dp)); };
+    r.onclick = go;
+    r.onkeydown = function(ev) { if (ev.target === r && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); go(); } };
+  });
+}
+function dpOneView(f, soft) {
+  var t = dpTask(f.key, _dp.sel), id = Number(t.id), last = dpLast(f.key, t), busy = _dp.busy[f.key + ':' + t.id], on = t.enabled !== false;
+  wmHead('dp', dpName(f.key, t) || f.one, { keepScroll: soft, back: [f.label, 'dpGo(\'' + f.key + '\')'], mono: f.key === 'snap',
+    sub: '<span class="apps-state"><span class="web-dot ' + dpDot(busy ? { key: 'run' } : last, t.enabled) + '"></span>' + webEsc(on ? (busy || last.label) : T('Suspendue')) + '</span>',
+    actions: f.run && !busy ? '<button class="web-open" onclick="dpRun(\'' + f.key + '\',' + id + ')">' + T('Lancer maintenant') + '</button>' : '' });
+  var facts = [[T('Type'), webEsc(f.one)], [T('Quoi'), '<span class="mono">' + webEsc(dpWhere(f.key, t) || dpName(f.key, t)) + '</span>'],
+    [T('Planification'), webEsc(t.schedule ? cronHuman(t.schedule) : (t.auto === false ? T('À la main') : ''))],
+    [T('Dernière exécution'), webEsc(last.label) + (last.when ? '<span class="dim">' + webEsc(dpWhen(last.when) + ', ' + last.when.toLocaleString(DK_LOCALE, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })) + '</span>' : '')]];
+  if (f.key === 'snap') facts.push([T('Conservation'), t.lifetime_value ? webEsc(snapLife(t)) : '']);
+  if (f.key === 'repl') { facts.push([T('Sens'), t.direction === 'PULL' ? T('Reçoit depuis l\'autre machine') : T('Envoie vers la destination')]); facts.push([T('Dernier snapshot copié'), (t.state || {}).last_snapshot ? '<span class="mono">' + webEsc(t.state.last_snapshot) + '</span>' : '']); }
+  if (f.key === 'cloud') { facts.push([T('Sens'), t.direction === 'PULL' ? T('Récupère depuis le cloud') : T('Envoie vers le cloud')]); facts.push([T('Mode'), webEsc({ SYNC: T('Synchronise (efface ce qui a disparu)'), COPY: T('Copie (n\'efface rien)'), MOVE: T('Déplace') }[t.transfer_mode] || t.transfer_mode || '')]); }
+  var h = (last.key === 'bad' && last.error ? '<div class="snap-warn" style="margin:2px 0 14px;"><strong>' + T('Dernière erreur') + '</strong><span class="dim mono" style="display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;">' + webEsc(last.error.slice(0, 1200)) + '</span></div>' : '')
+    + netFacts(facts) + '<div class="web-group-title">' + T('Réglages') + '</div><div class="web-group">'
+    + wmSwitch('', T('Tâche active'), T('Suspendue, elle reste en place mais ne se lance plus toute seule'), on, 'onchange="dpToggle(\'' + f.key + '\',' + id + ',this.checked)"') + '</div>'
+    + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">' + wmRow('dpManage(\'' + f.key + '\')', T('Modifier la tâche'), webEsc(dpManageLabel(f.key))) + '</div>';
+  wmBody('dp').innerHTML = h;
+}
+async function dpToggle(key, id, on) {
+  var f = dpFam(key), t = dpTask(key, id);
+  if (!f || !t) return;
+  try { await wsCall(f.api + '.update', [t.id, { enabled: !!on }], 120000); toast(on ? T('✅ Tâche réactivée') : T('✅ Tâche suspendue')); }
+  catch (e) { wmToastErr(e); }
+  loadDataprotect(true);
+}
+async function dpRun(key, id) {
+  var f = dpFam(key), t = dpTask(key, id), k = key + ':' + id;
+  if (!f || !f.run || !t || _dp.busy[k]) return;
+  if (!await showConfirm(T('Lancer maintenant <strong>') + webEsc(dpName(key, t)) + '</strong> ?', { ok: T('Lancer') })) return;
+  _dp.busy[k] = T('En cours');
+  dpRender(true);
+  toast(T('Tâche lancée, elle continue en arrière-plan'));
   try {
-    const r1 = await socketCall('/pool/snapshottask').catch(function(){ return []; });
-    const r2 = await socketCall('/replication/task').catch(function(){ return []; });
-    const snaps = ensureArray(r1), reps = ensureArray(r2);
-    let html = '<div class="sysinfo" style="padding:0;"><div class="sysinfo-card" style="margin-bottom:12px;">';
-    html += T('<h3 style="margin-top:0;">Snapshots periodiques (') + snaps.length + ')</h3>';
-    if (snaps.length) {
-      html += T('<table class="container-table" style="margin:0;"><thead><tr><th>Dataset</th><th>Planning</th><th>Actif</th></tr></thead><tbody>');
-      snaps.forEach(function(t) {
-        const sched = t.schedule ? (t.schedule.minute + ' ' + t.schedule.hour) : '?';
-        html += '<tr><td>' + (t.dataset||'?') + '</td><td style="font-size:11px;">' + sched + '</td>'
-          + '<td><span style="color:' + (t.enabled!==false?'var(--success)':'var(--danger)') + '">&#9679;</span></td></tr>';
-      });
-      html += '</tbody></table>';
-    } else html += T('<div style="font-size:12px;color:var(--text-dim);">Aucun snapshot configure</div>');
-    html += '</div><div class="sysinfo-card"><h3 style="margin-top:0;">Replication (' + reps.length + ')</h3>';
-    if (reps.length) {
-      reps.forEach(function(t) {
-        html += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:12px;">'
-          + (t.name||t.source_datasets||'?') + ' '
-          + '<span style="color:' + (t.enabled!==false?'var(--success)':'var(--danger)') + '">' + (t.enabled!==false?T('Actif'):T('Inactif')) + '</span></div>';
-      });
-    } else html += T('<div style="font-size:12px;color:var(--text-dim);">Aucune replication</div>');
-    html += '</div></div>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
+    var r = await wsCall(f.run, key === 'cloud' ? [t.id, { dry_run: false }] : [t.id], 300000);
+    if (typeof r === 'number') await waitJob(r, 3600000);
+    toast('✅ ' + Tf('{0} : terminée', dpName(key, t)));
+  } catch (e) { wmToastErr(e); }
+  delete _dp.busy[k];
+  loadDataprotect(true);
 }
 
 // ============================================================
-// CERTIFICATES
+// CERTIFICATES — certificats TLS du NAS
 // ============================================================
-async function loadCerts() {
-  const el = document.getElementById('certs-content');
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
+var _ce = { list: [], ui: null, nav: 'all', sel: null, loaded: false, seq: 0 };
+function ceGet(id) { return _ce.list.find(function(c) { return c.id === id; }) || null; }
+function ceDate(v) { var d = v ? new Date(v) : null; return d && !isNaN(d.getTime()) ? d : null; }
+function ceDays(c) { var d = ceDate(c.until); return d ? Math.floor((d.getTime() - Date.now()) / 864e5) : null; }
+function ceIsCsr(c) { return !!c.cert_type_CSR || c.cert_type === 'CSR' || (!c.certificate && !!c.CSR); }
+function ceState(c) {
+  var n = ceDays(c);
+  if (ceIsCsr(c)) return { dot: 'off', label: T('Demande de signature en attente') };
+  if (c.revoked) return { dot: 'bad', label: T('Révoqué') };
+  if (n == null) return { dot: 'off', label: T('Date inconnue') };
+  if (n < 0 || c.expired) return { dot: 'bad', label: n < -1 ? Tf('Expiré depuis {0} jours', -n) : T('Expiré') };
+  if (n <= 30) return { dot: 'warn', label: n > 1 ? Tf('Expire dans {0} jours', n) : T('Expire demain') };
+  return { dot: '', label: n > 730 ? Tf('Valide encore {0} ans', Math.floor(n / 365)) : Tf('Valide encore {0} jours', n) };
+}
+function ceNames(c) {
+  var l = ensureArray(c.san).map(function(s) { return String(s).replace(/^(DNS|IP Address|IP):\s*/i, ''); });
+  if (c.common && l.indexOf(c.common) < 0) l.unshift(String(c.common));
+  return l;
+}
+function ceIssuer(c) { var i = c.issuer; return typeof i === 'string' ? i : (i && (i.name || i.common)) || ''; }
+function ceGo(nav, id) { _ce.nav = nav; _ce.sel = id == null ? null : id; ceRender(); }
+async function loadCerts(soft) {
+  if (!wmBody('ce')) return;
+  var seq = ++_ce.seq;
+  if (!_ce.loaded) { wmHead('ce', T('Certificats')); ceSide(); wmLoading('ce'); }
+  var r = await Promise.allSettled([wsCall('certificate.query', [[], {}], 60000), wsCall('system.general.config', [])]);
+  if (seq !== _ce.seq) return;
+  if (r[0].status !== 'fulfilled') {
+    _ce.loaded = false;
+    wmHead('ce', T('Certificats')); ceSide();
+    wmFail('ce', T('Les certificats ne répondent pas'), r[0].reason, 'loadCerts()');
+    return;
+  }
+  _ce.list = ensureArray(r[0].value).filter(function(c) { return c && c.id != null; }).sort(function(a, b) { return String(a.name).localeCompare(String(b.name), undefined, { sensitivity: 'base' }); });
+  var ui = r[1].status === 'fulfilled' && r[1].value ? r[1].value.ui_certificate : null;
+  _ce.ui = ui && typeof ui === 'object' ? ui.id : (ui != null ? ui : null);
+  _ce.loaded = true;
+  if (_ce.nav === 'one' && !ceGet(_ce.sel)) _ce.nav = 'all';
+  ceRender(soft === true);
+}
+function ceSide() {
+  var h = wmNav({ active: _ce.nav === 'all', call: 'ceGo(\'all\')', icon: 'key', name: T('Tous les certificats'), count: _ce.list.length || null });
+  if (_ce.list.length) {
+    h += wmSep() + wmSideTitle(T('Certificats'));
+    _ce.list.forEach(function(c) { var st = ceState(c); h += wmNav({ active: _ce.nav === 'one' && _ce.sel === c.id, call: 'ceGo(\'one\',' + Number(c.id) + ')', dot: st.dot, name: c.name, meta: st.label }); });
+  }
+  h += wmSep() + wmNav({ active: _ce.nav === 'import', call: 'ceGo(\'import\')', icon: 'plus', name: T('Importer un certificat') })
+    + wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openWebsites()', icon: 'proxy', name: T('Sites Web') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/credentials/certificates\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
+  wmSide('ce', h);
+}
+function ceRender(soft) {
+  ceSide();
+  if (_ce.nav === 'one' && ceGet(_ce.sel)) ceOneView(soft);
+  else if (_ce.nav === 'import') ceImportForm();
+  else { _ce.nav = 'all'; ceAllView(soft); }
+}
+function ceAllView(soft) {
+  var soon = _ce.list.filter(function(c) { var d = ceState(c).dot; return d === 'warn' || d === 'bad'; }).length;
+  wmHead('ce', T('Certificats'), { keepScroll: soft, sub: _ce.list.length ? webEsc(soon ? (soon > 1 ? Tf('{0} certificats à renouveler', soon) : T('1 certificat à renouveler')) : T('Tous les certificats sont valides')) : '',
+    actions: '<button class="fs-btn" onclick="loadCerts()">' + T('Actualiser') + '</button><button class="web-open" onclick="ceGo(\'import\')">' + T('Importer un certificat') + '</button>' });
+  var el = wmBody('ce');
+  if (!_ce.list.length) { el.innerHTML = '<div class="fs-empty">' + webIcon('key') + '<div class="fs-empty-title">' + T('Aucun certificat') + '</div><div>' + T('Un certificat chiffre les connexions au NAS et prouve son identité au navigateur.') + '</div><button class="web-open" onclick="ceGo(\'import\')">' + T('Importer un certificat') + '</button></div>'; return; }
+  var h = '<div class="web-table ce-list"><div class="web-tr head"><span>' + T('Certificat') + '</span><span>' + T('Émis par') + '</span><span>' + T('Validité') + '</span></div>';
+  _ce.list.forEach(function(c) {
+    var st = ceState(c), names = ceNames(c), d = ceDate(c.until);
+    h += '<button class="web-tr" data-ce="' + Number(c.id) + '"><span class="cron-two"><strong>' + webEsc(c.name) + (_ce.ui === c.id ? ' <span class="acl-chip">' + T('interface du NAS') + '</span>' : '') + '</strong><span class="dim">' + webEsc(names.slice(0, 3).join(', ') + (names.length > 3 ? '…' : '')) + '</span></span>'
+      + '<span class="dim">' + webEsc(ceIssuer(c) || '—') + '</span>'
+      + '<span class="cron-two"><span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span><span class="dim">' + (d ? webEsc(Tf('jusqu\'au {0}', mntDay(d))) : '') + '</span></span></button>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-ce]').forEach(function(b) { b.onclick = function() { ceGo('one', Number(b.dataset.ce)); }; });
+}
+function ceOneView(soft) {
+  var c = ceGet(_ce.sel), st = ceState(c), id = Number(c.id), from = ceDate(c.from), until = ceDate(c.until), names = ceNames(c), used = _ce.ui === c.id;
+  var long = function(d) { return d.toLocaleDateString(DK_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }); };
+  wmHead('ce', c.name, { keepScroll: soft, back: [T('Certificats'), 'ceGo(\'all\')'],
+    sub: '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>',
+    actions: c.certificate ? '<button class="fs-btn" onclick="ceCopy(' + id + ')">' + T('Copier') + '</button><button class="web-open" onclick="ceDownload(' + id + ')">' + T('Télécharger') + '</button>' : '' });
+  var pct = from && until ? Math.max(0, Math.min(100, (Date.now() - from.getTime()) / (until.getTime() - from.getTime()) * 100)) : null;
+  var h = (pct != null ? '<div class="sto-cap"><div class="sto-cap-top"><span class="sto-cap-txt">' + webEsc(Tf('du {0} au {1}', long(from), long(until))) + '</span></div>' + stoBar(Math.round(pct), 'big') + '</div>' : '')
+    + netFacts([
+      [T('Pour'), names.map(function(n) { return '<span class="mono">' + webEsc(n) + '</span>'; }).join('<br>')],
+      [T('Émis par'), webEsc(ceIssuer(c))],
+      [T('Type'), ceIsCsr(c) ? T('Demande de signature (CSR)') : (c.cert_type === 'CA' || c.cert_type_CA ? T('Autorité de certification') : (ceIssuer(c) === 'self-signed' ? T('Certificat auto-signé') : T('Certificat')))],
+      [T('Clé'), webEsc([c.key_type, c.key_length ? c.key_length + ' bits' : (c.ec_curve || ''), c.digest_algorithm].filter(Boolean).join(', '))],
+      [T('Utilisé par'), used ? T('L\'interface web de TrueNAS') : ''],
+      [T('Renouvellement'), c.acme ? T('Automatique (ACME, Let\'s Encrypt)') : ''],
+      [T('Empreinte'), c.fingerprint ? '<span class="mono" style="font-size:11px;">' + webEsc(c.fingerprint) + '</span><button class="web-mini" onclick="copyText(' + wmQ(c.fingerprint) + ')">' + T('Copier') + '</button>' : '']
+    ]);
+  if (st.dot === 'warn' || st.dot === 'bad') h += '<div class="snap-warn" style="margin-top:14px;">' + (c.acme ? T('Ce certificat se renouvelle normalement tout seul : si la date ne bouge pas, voyez le journal ACME dans TrueNAS.') : T('Ce certificat ne se renouvelle pas tout seul : importez le nouveau, puis choisissez-le là où l\'ancien servait.')) + '</div>';
+  h += '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
+    + wmRow('openTrueNASPage(\'/ui/credentials/certificates\')', T('Régler dans TrueNAS'), T('Renouveler, créer une demande de signature, brancher ACME'))
+    + (used ? '' : wmRow('ceDelete(' + id + ')', T('Supprimer'), T('TrueNAS refuse si un service s\'en sert encore'), 'danger')) + '</div>';
+  wmBody('ce').innerHTML = h;
+}
+function ceCopy(id) { var c = ceGet(id); if (c && c.certificate) copyText(encodeURIComponent(c.certificate)); }
+// Le certificat (public) en fichier .crt. La clé privée ne quitte pas le NAS.
+function ceDownload(id) {
+  var c = ceGet(id);
+  if (!c || !c.certificate) return;
+  var a = document.createElement('a'), url = URL.createObjectURL(new Blob([c.certificate], { type: 'application/x-pem-file' }));
+  a.href = url; a.download = String(c.name || 'certificat').replace(/[^\w.-]+/g, '_') + '.crt';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+}
+function ceImportForm() {
+  wmHead('ce', T('Importer un certificat'), { back: [T('Certificats'), 'ceGo(\'all\')'], narrow: true, sub: T('Pour un certificat obtenu ailleurs, avec sa clé privée.') });
+  wmBody('ce').innerHTML = '<div class="wm-form">'
+    + wmField(T('Nom'), wmInput('ce-name', '', 'maxlength="60"'), T('Lettres, chiffres, tiret et tiret bas : il sert à le reconnaître dans les listes.'))
+    + wmField(T('Certificat'), '<textarea class="wm-input ce-pem" id="ce-cert" rows="7" spellcheck="false" placeholder="-----BEGIN CERTIFICATE-----"></textarea>', T('Le certificat puis, à la suite, les certificats intermédiaires s\'il y en a.'))
+    + wmField(T('Clé privée'), '<textarea class="wm-input ce-pem" id="ce-key" rows="7" spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>', T('Elle est envoyée à TrueNAS, qui la garde ; Desktroo ne l\'enregistre nulle part.'))
+    + '<div class="web-foot"><button class="fs-btn" onclick="ceGo(\'all\')">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="ce-save" onclick="ceImportSave()">' + T('Importer') + '</button></div></div>';
+  try { document.getElementById('ce-name').focus(); } catch (_) {}
+}
+async function ceImportSave() {
+  var name = wmVal('ce-name'), cert = wmVal('ce-cert'), key = wmVal('ce-key'), btn = document.getElementById('ce-save');
+  if (!/^[A-Za-z0-9_-]+$/.test(name)) { toast(T('Nom invalide : lettres, chiffres, tiret et tiret bas')); return; }
+  if (cert.indexOf('-----BEGIN CERTIFICATE-----') < 0) { toast(T('Le certificat doit commencer par -----BEGIN CERTIFICATE-----')); return; }
+  if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(key)) { toast(T('La clé privée doit commencer par -----BEGIN … PRIVATE KEY-----')); return; }
+  if (btn) btn.disabled = true;
   try {
-    const certs = ensureArray(await socketCall('/certificate'));
-    if (!certs.length) { el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">&#128272;</div><span>Aucun certificat</span></div>'); return; }
-    let html = T('<table class="container-table"><thead><tr><th>Nom</th><th>CN</th><th>Expiration</th><th>Statut</th></tr></thead><tbody>');
-    certs.forEach(function(c) {
-      const exp = c.until ? new Date(c.until).toLocaleDateString(DK_LOCALE) : '&mdash;';
-      const expired = c.until && new Date(c.until) < new Date();
-      const cn = c.common || (c.san && c.san[0]) || '&mdash;';
-      html += '<tr><td><strong>' + (c.name||'?') + '</strong></td>'
-        + '<td style="font-size:11px;color:var(--text-dim);">' + cn + '</td>'
-        + '<td style="font-size:11px;color:' + (expired?'var(--danger)':'var(--success)') + ';">' + exp + '</td>'
-        + '<td><span style="color:' + (expired?'var(--danger)':'var(--success)') + ';">' + (expired?T('Expire'):T('Valide')) + '</span></td></tr>';
-    });
-    html += '</tbody></table>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
+    var r = await wsCall('certificate.create', [{ name: name, create_type: 'CERTIFICATE_CREATE_IMPORTED', certificate: cert, privatekey: key }], 300000);
+    if (typeof r === 'number') r = await waitJob(r, 120000);
+    toast(T('✅ Certificat importé'));
+    _ce.nav = r && r.id != null ? 'one' : 'all'; _ce.sel = r && r.id != null ? r.id : null;
+    await loadCerts();
+  } catch (e) { wmToastErr(e); if (btn) btn.disabled = false; }
+}
+async function ceDelete(id) {
+  var c = ceGet(id);
+  if (!c) return;
+  if (!await showConfirm(T('Supprimer le certificat <strong>') + webEsc(c.name) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">' + T('Sa clé privée est effacée avec lui.') + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  try {
+    var r = await wsCall('certificate.delete', [c.id, false], 300000);
+    if (typeof r === 'number') await waitJob(r, 120000);
+    toast(T('✅ Certificat supprimé'));
+    _ce.nav = 'all'; _ce.sel = null;
+  } catch (e) { wmToastErr(e); }
+  loadCerts();
+}
+
+// ── Terminal : état de la session et commandes prêtes à taper ──
+var _termState = 'wait';
+var _termFocus = false;
+function termCommands() {
+  return [['zpool status', T('État des pools et des disques')], ['zfs list', T('Datasets et espace utilisé')], ['df -h', T('Espace des systèmes de fichiers')], ['free -h', T('Mémoire utilisée')],
+    ['uptime', T('Durée de fonctionnement et charge')], ['ip -br addr', T('Adresses réseau')], ['sudo docker ps', T('Conteneurs en marche')], ['journalctl -n 40 --no-pager', T('Derniers messages du système')]];
+}
+function termStatus(state) {
+  _termState = state || _termState;
+  var s = { wait: [T('Connexion…'), 'warn'], on: [T('Connecté au NAS'), ''], off: [T('Session terminée'), 'off'], err: [T('Connexion impossible'), 'bad'] }[_termState];
+  wmHead('term', 'Terminal', { keepScroll: true, sub: '<span class="apps-state"><span class="web-dot' + (s[1] ? ' ' + s[1] : '') + '"></span>' + webEsc(s[0]) + '</span>',
+    actions: '<button class="fs-btn" onclick="termCopy()">' + T('Copier la sortie') + '</button><button class="' + (_termState === 'on' || _termState === 'wait' ? 'fs-btn' : 'web-open') + '" onclick="termNewSession()">' + T('Nouvelle session') + '</button>' });
+  var h = wmSideTitle(T('Commandes prêtes'));
+  termCommands().forEach(function(c) { h += '<button class="web-nav term-cmd" onclick="termType(' + wmQ(c[0]) + ')" title="' + webEsc(T('Écrit la commande dans le terminal ; à vous d\'appuyer sur Entrée')) + '"><span class="web-nav-text"><span class="web-nav-name mono">' + webEsc(c[0]) + '</span><span class="web-nav-meta">' + webEsc(c[1]) + '</span></span></button>'; });
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'services\')', icon: 'sliders', name: 'Services' })
+    + wmNav({ call: 'openApp(\'docker\')', icon: 'layers', name: T('Conteneurs') });
+  wmSide('term', h);
+}
+// Écrit une commande dans la session, sans la valider.
+function termType(enc) {
+  var c = document.getElementById('terminal-container');
+  if (!_termWs || _termWs.readyState !== WebSocket.OPEN) { toast(T('Le terminal n\'est pas connecté')); return; }
+  _termWs.send(decodeURIComponent(enc));
+  _termFocus = true;
+  if (c) { try { c.focus(); } catch (_) {} }
+}
+function termCopy() {
+  var pre = document.querySelector('#terminal-container pre');
+  copyText(encodeURIComponent(pre ? (pre._rawText || pre.textContent || '') : ''));
 }
 
 // ===========================
@@ -17198,8 +17691,9 @@ async function loadTerminal() {
   }
   _term.writeln = function(s){ _termAppend(s+'\n'); };
   _term.write   = function(s){ _termAppend(s); };
-  _term.writeln('TrueNAS SCALE - Shell PTY');
-  _term.writeln(T('Connexion au terminal sidecar...'));
+  termStatus('wait');
+  _term.writeln(T('Terminal du NAS'));
+  _term.writeln(T('Connexion au service Desktroo...'));
   _term.writeln('');
 
   // Utilise le fileops_token (même sidecar)
@@ -17213,7 +17707,8 @@ async function loadTerminal() {
     _termWs.binaryType = 'arraybuffer';
 
     _termWs.onopen = function() {
-      _term.writeln(T('\x1b[32m  ✓ Connecté — cliquez ici pour taper\x1b[0m\r\n'));
+      termStatus('on');
+      _term.writeln('  ' + T('Connecté. Cliquez ici pour taper.') + '\r\n');
       var msg = JSON.stringify({ cols: _term.cols || 80, rows: _term.rows || 24 });
       _termWs.send(msg);
       setTimeout(function(){ var c=document.getElementById('terminal-container'); if(c) c.focus(); }, 150);
@@ -17225,14 +17720,15 @@ async function loadTerminal() {
     };
 
         _termWs.onclose = function(ev) {
-      _term.writeln(T('\r\n\x1b[31m  [Session terminée: code ') + ev.code + (ev.reason ? ' — '+ev.reason : '') + ']\x1b[0m');
-      _term.writeln(T('\x1b[90m  Double-cliquez sur la barre de titre pour reconnecter.\x1b[0m'));
+      if (_termState !== 'err') termStatus('off');
+      _term.writeln('\r\n  ' + Tf('[Session terminée, code {0}]', ev.code + (ev.reason ? ' ' + ev.reason : '')));
+      _term.writeln('  ' + T('« Nouvelle session » relance le terminal.'));
     };
 
     _termWs.onerror = function() {
-      _term.writeln(T('\r\n\x1b[31m  [Erreur WebSocket]\x1b[0m'));
-      _term.writeln(T('\x1b[33m  L\'endpoint /api/current/terminal n\'est peut-être pas exposé.\x1b[0m'));
-      _term.writeln(T('\x1b[33m  Essayez l\'interface TrueNAS native (icône "Interface TrueNAS").\x1b[0m'));
+      termStatus('err');
+      _term.writeln('\r\n  ' + T('[La connexion au terminal a échoué]'));
+      _term.writeln('  ' + T('Le service Desktroo ne répond pas pour le terminal : vérifiez qu\'il tourne, puis relancez une session.'));
     };
 
     _term.onData = function(data) {
@@ -17249,20 +17745,22 @@ async function loadTerminal() {
       F5:'\x1b[15~',F6:'\x1b[17~',F7:'\x1b[18~',F8:'\x1b[19~',
       F9:'\x1b[20~',F10:'\x1b[21~',F11:'\x1b[23~',F12:'\x1b[24~'
     };
-    var _termHasFocus = false;
-         container.addEventListener('mousedown', function(){ _termHasFocus = true; });
-         document.addEventListener('mousedown', function(ev){
-           if (!container.contains(ev.target)) _termHasFocus = false;
-         });
-         container.addEventListener('paste', function(ev){
-           if (!_termWs || _termWs.readyState !== WebSocket.OPEN) return;
-           var text = (ev.clipboardData||window.clipboardData).getData('text');
-           if (text) _termWs.send(text);
-           ev.preventDefault();
-         });
+    if (!container._termBound) {   // posés une fois : le conteneur reste le même d'une session à l'autre
+      container._termBound = true;
+      container.addEventListener('mousedown', function(){ _termFocus = true; });
+      document.addEventListener('mousedown', function(ev){
+        if (!container.contains(ev.target) && !(ev.target.closest && ev.target.closest('.term-cmd'))) _termFocus = false;
+      });
+      container.addEventListener('paste', function(ev){
+        if (!_termWs || _termWs.readyState !== WebSocket.OPEN) return;
+        var text = (ev.clipboardData||window.clipboardData).getData('text');
+        if (text) _termWs.send(text);
+        ev.preventDefault();
+      });
+    }
 
          function _termKeyHandler(e) {
-      if (!_termHasFocus) return;
+      if (!_termFocus) return;
       var win = document.getElementById('win-terminal');
       if (!win || !win.classList.contains('visible')) return;
       if (!_termWs || _termWs.readyState !== WebSocket.OPEN) return;
@@ -20874,7 +21372,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      DATA PROTECTION WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-dataprotect" style="top:75px;left:200px;width:700px;height:500px;">
+<div class="window" id="win-dataprotect" style="top:75px;left:200px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="dataprotect">
     <span class="window-icon">🔒</span>
     <span class="window-title">Protection des données</span>
@@ -20882,15 +21380,27 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn min" onclick="minimizeWin('dataprotect')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('dataprotect')"></button>
       <button class="win-btn cls" onclick="closeWin('dataprotect')"></button>
-    </div></div>
-  <div class="window-body"><div id="dataprotect-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div></div>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="dp-side" aria-label="Protection des données"></nav>
+      <section class="web-main">
+        <header class="web-head" id="dp-head"></header>
+        <div class="web-body" id="dp-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
+  </div>
   <div class="resize-handle" data-win="dataprotect"></div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
      CERTIFICATES WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-certs" style="top:80px;left:190px;width:700px;height:460px;">
+<div class="window" id="win-certs" style="top:80px;left:190px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="certs">
     <span class="window-icon">🔐</span>
     <span class="window-title">Certificats</span>
@@ -20898,12 +21408,19 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn min" onclick="minimizeWin('certs')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('certs')"></button>
       <button class="win-btn cls" onclick="closeWin('certs')"></button>
-    </div></div>
-  <div class="window-body">
-    <div style="margin-bottom:12px;display:flex;gap:8px;">
-      <button class="fs-btn" onclick="loadCerts()">↻ Actualiser</button>
     </div>
-    <div id="certs-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="ce-side" aria-label="Certificats"></nav>
+      <section class="web-main">
+        <header class="web-head" id="ce-head"></header>
+        <div class="web-body" id="ce-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
   </div>
   <div class="resize-handle" data-win="certs"></div>
 </div>
@@ -20911,20 +21428,27 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      TERMINAL WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-terminal" style="top:60px;left:120px;width:860px;height:560px;">
-  <div class="window-titlebar" data-win="terminal" ondblclick="termNewSession()">
+<div class="window" id="win-terminal" style="top:60px;left:120px;width:1080px;height:680px;">
+  <div class="window-titlebar" data-win="terminal">
     <span class="window-icon">💻</span>
     <span class="window-title">Terminal</span>
     <div class="window-controls">
       <button class="win-btn min" onclick="minimizeWin('terminal')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('terminal')"></button>
       <button class="win-btn cls" onclick="closeWin('terminal')"></button>
-    </div></div>
-  <div class="window-body" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
-    <div style="display:flex;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">
-      <button class="fs-btn" onclick="termNewSession()" style="font-size:11px;">↺ Nouvelle session</button>
     </div>
-    <div id="terminal-container" tabindex="0" style="flex:1;overflow:hidden;background:#0d0d0d;font-family:monospace;font-size:13px;cursor:text;outline:none;min-height:0;"></div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="term-side" aria-label="Terminal"></nav>
+      <section class="web-main">
+        <header class="web-head" id="term-head"></header>
+        <div class="web-body term-body" id="term-body">
+          <div id="terminal-container" tabindex="0"></div>
+        </div>
+      </section>
+    </div>
   </div>
   <div class="resize-handle" data-win="terminal"></div>
 </div>
