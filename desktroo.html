@@ -402,6 +402,10 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
   .dk-hero svg { position:relative; display:block; width:100%; height:100%; filter:drop-shadow(0 12px 24px rgba(0,0,0,0.42)); }
   .dk-hero .dk-h-arc { opacity:0; transform-origin:26px 37px; transition:opacity .3s; }
+  .login-logo .dk-h-arc { opacity:0; transform-origin:26px 37px; transition:opacity .3s; }
+  .login-logo .dk-h-dot { transform-box:fill-box; transform-origin:center; }
+  .login-logo.is-busy .dk-h-arc { opacity:1; animation:dk-orbit 1.15s linear infinite; }
+  .login-logo.is-busy .dk-h-dot { animation:dk-beat 1.15s ease-in-out infinite; }
   .dk-hero .dk-h-dot { transform-box:fill-box; transform-origin:center; transition:fill .3s; }
   .dk-hero.is-busy .dk-h-arc { opacity:1; animation:dk-orbit 1.15s linear infinite; }
   .dk-hero.is-busy .dk-h-dot { animation:dk-beat 1.15s ease-in-out infinite; }
@@ -409,7 +413,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   @keyframes dk-orbit { to { transform:rotate(360deg); } }
   @keyframes dk-beat { 50% { transform:scale(0.7); } }
   @media (prefers-reduced-motion: reduce) {
-    .dk-hero.is-busy .dk-h-arc, .dk-hero.is-busy .dk-h-dot { animation:none; }
+    .dk-hero.is-busy .dk-h-arc, .dk-hero.is-busy .dk-h-dot, .login-logo.is-busy .dk-h-arc, .login-logo.is-busy .dk-h-dot { animation:none; }
   }
   .dk-steps { display:flex; flex-direction:column; gap:10px; font-size:13.5px; }
   .dk-step { display:flex; align-items:center; gap:10px; }
@@ -674,6 +678,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-nav.add { color:var(--accent2); }
   .web-nav-text { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
   .web-nav-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .web-nav > .web-nav-name { flex:1; min-width:0; }
   .web-nav-text .web-nav-name { font-weight:500; }
   .web-nav-meta { font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .web-nav.active .web-nav-meta { color:inherit; opacity:.75; }
@@ -748,13 +753,24 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-body > div > button.fs-btn { align-self:flex-start; }
   .web-foot { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:6px; }
   /* Bouton principal des formulaires de la fenêtre : aplat d'accent, comme « Ouvrir le site ». */
-  .web-body #web-create-btn, .web-body #app-install-btn, .web-body #php-save-btn, .web-body #db-new-btn, .web-body .web-primary {
+  .web-body #web-create-btn, .web-body #app-install-btn, .web-body #php-save-btn, .web-body #db-new-btn, .web-body #dl-add-btn, .web-body .web-primary {
     background:var(--accent) !important; border-color:transparent !important; color:var(--accent-ink) !important; font-weight:600;
   }
-  .web-body #web-create-btn:hover, .web-body #app-install-btn:hover, .web-body #php-save-btn:hover, .web-body #db-new-btn:hover, .web-body .web-primary:hover {
+  .web-body #web-create-btn:hover, .web-body #app-install-btn:hover, .web-body #php-save-btn:hover, .web-body #db-new-btn:hover, .web-body #dl-add-btn:hover, .web-body .web-primary:hover {
     background:var(--accent2) !important;
   }
   .web-empty-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .web-row select.tnd-input { width:200px; flex-shrink:0; }
+  /* Téléchargements : même gabarit, mêmes dimensions que Sites Web (la vue agrandie garde les siennes). */
+  #modal-create-app.dl-wide:not(.dl-max):has(.web-shell) > div {
+    width:var(--dk-mw, min(1040px,95vw)) !important; height:var(--dk-mh, min(740px,90vh)) !important;
+  }
+  #modal-create-app.dl-wide:has(.web-shell) #create-app-form { overflow:hidden; }
+  .dl-add { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+  .dl-add-row { display:flex; align-items:flex-end; gap:12px; }
+  .dl-add-row > div { flex:1; min-width:0; }
+  .dl-add-row #dl-add-btn { padding:9px 22px; flex-shrink:0; }
+  .dl-list { display:flex; flex-direction:column; gap:10px; }
   .web-nav:focus-visible, .web-crumb:focus-visible, .web-open:focus-visible, .web-mini:focus-visible, button.web-row:focus-visible {
     outline:2px solid var(--accent2); outline-offset:-2px;
   }
@@ -833,7 +849,25 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #fs-editor-cm-host { flex:1; overflow:hidden; min-height:0; }
   #fs-editor-cm-host .CodeMirror { height:100%; font-size:13px; line-height:1.5; font-family:var(--font-mono); }
   #fs-editor-cm-host .CodeMirror-gutters { border-right:1px solid var(--glass-border); }
-  .fs-loading { display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-dim); gap:10px; }
+  .fs-loading { display:flex; align-items:center; justify-content:center; height:100%; color:var(--text-dim); gap:14px; }
+  /* Dans les zones de chargement, la roue devient le « d » de Desktroo : l'anneau est la panse, « ::after » la hampe,
+     le fond le point vert, et « ::before » l'arc d'accent qui tourne (même idée que la fenêtre de mise à jour). */
+  .fs-loading > .spinner {
+    position:relative; box-sizing:border-box; flex-shrink:0;
+    width:21px; height:21px; margin:8px 3px 0 0;
+    border:4.5px solid var(--text); border-radius:50%; animation:none;
+    background:radial-gradient(circle, var(--accent) 0 3.3px, transparent 3.9px);
+  }
+  .fs-loading > .spinner::before {
+    content:''; position:absolute; inset:-4.5px; border-radius:50%;
+    border:4.5px solid transparent; border-top-color:var(--accent);
+    animation:spin 1.15s linear infinite;
+  }
+  .fs-loading > .spinner::after {
+    content:''; position:absolute; left:14.25px; top:-12.75px; width:4.9px; height:28.5px;
+    border-radius:2.45px; background:var(--text);
+  }
+  @media (prefers-reduced-motion: reduce) { .fs-loading > .spinner::before { animation:none; } }
 
   /* ===== STORAGE MANAGER ===== */
   .storage-manager { padding:16px; }
@@ -3218,8 +3252,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Débrideur / compte premium": "Debrid service / premium account",
 "Décompresser à la fin": "Extract when done",
 "Retirer une fois terminé": "Remove once done",
-"🔑 Comptes premium": "🔑 Premium accounts",
-"🌐 Depuis le navigateur": "🌐 From the browser",
 "🧹 Nettoyer les terminés": "🧹 Clear completed",
 "URL(s) à télécharger — une par ligne": "URL(s) to download — one per line",
 "https://exemple.com/fichier1.iso https://autre.com/fichier2.zip": "https://example.com/file1.iso&#10;https://other.com/file2.zip",
@@ -3279,7 +3311,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Configurer": "Configure",
 "✓ Configuré": "✓ Configured",
 "○ Non config.": "○ Not config.",
-"← Retour aux téléchargements": "← Back to downloads",
 "Afficher / Masquer": "Show / Hide",
 "Identifiant / e‑mail": "Username / email",
 "Mot de passe": "Password",
@@ -4467,7 +4498,17 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Réparer l'accès": "Repair access",
 "La réparation redémarre MariaDB : les sites qui utilisent une base sont interrompus quelques secondes. Aucune base ni aucun compte de site n'est modifié.": "The repair restarts MariaDB: sites that use a database are interrupted for a few seconds. No database or site account is changed.",
 "Réparation en cours…": "Repairing…",
-"✅ Accès à MariaDB rétabli": "✅ MariaDB access restored"
+"✅ Accès à MariaDB rétabli": "✅ MariaDB access restored",
+"Terminés": "Completed",
+"Comptes premium": "Premium accounts",
+"Depuis le navigateur": "From the browser",
+"Aucun téléchargement terminé": "No completed downloads",
+"Aucun téléchargement en cours": "No downloads in progress",
+"Elles s'appliquent aux prochains téléchargements ajoutés.": "They apply to the downloads you add next.",
+"Plusieurs connexions accélèrent les gros fichiers.": "Several connections speed up large files.",
+"Les suivants attendent dans la file.": "The others wait in the queue.",
+"Les archives sont extraites une fois téléchargées.": "Archives are extracted once downloaded.",
+"L'entrée quitte la liste ; le fichier reste dans son dossier.": "The entry leaves the list; the file stays in its folder."
 }
 </script>
 <script id="dk-i18n">
@@ -4799,7 +4840,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <!-- LOGIN SCREEN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo"><svg viewBox="4 4 56 56" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="dk-tile-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2c4b"/><stop offset="1" stop-color="#0b1526"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="15" fill="url(#dk-tile-g)"/><rect x="4.25" y="4.25" width="55.5" height="55.5" rx="14.75" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width=".5"/><circle cx="26" cy="37" r="11" fill="none" stroke="#e9eef7" stroke-width="6"/><rect x="37" y="12" width="6.5" height="38" rx="3.25" fill="#e9eef7"/><circle cx="26" cy="37" r="4.6" fill="#3ecf8e"/></svg></div>
+    <div class="login-logo"><svg viewBox="4 4 56 56" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="dk-tile-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2c4b"/><stop offset="1" stop-color="#0b1526"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="15" fill="url(#dk-tile-g)"/><rect x="4.25" y="4.25" width="55.5" height="55.5" rx="14.75" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width=".5"/><circle cx="26" cy="37" r="11" fill="none" stroke="#e9eef7" stroke-width="6"/><circle class="dk-h-arc" cx="26" cy="37" r="11" fill="none" stroke="#3ecf8e" stroke-width="6" stroke-linecap="round" stroke-dasharray="17 52.2"/><rect x="37" y="12" width="6.5" height="38" rx="3.25" fill="#e9eef7"/><circle class="dk-h-dot" cx="26" cy="37" r="4.6" fill="#3ecf8e"/></svg></div>
     <h1 aria-label="Desktroo" translate="no">Desktr<span class="dk-oo">oo</span></h1>
     <p class="subtitle">Le bureau web pour votre TrueNAS</p>
     <div class="login-url" id="login-url-display" translate="no"></div>
@@ -5551,6 +5592,7 @@ async function doLogin() {
   const err  = document.getElementById('login-error');
 
   err.textContent = '';
+  dkLoginBusy(true);
   document.getElementById('login-btn').textContent = T('Connexion...');
   document.getElementById('login-btn').disabled = true;
 
@@ -5611,7 +5653,13 @@ async function doLogin() {
     sessionStorage.removeItem('tn_basic');
     document.getElementById('login-btn').textContent = T('Se connecter');
     document.getElementById('login-btn').disabled = false;
+    dkLoginBusy(false);
   }
+}
+// Le logo de l'écran de connexion sert d'indicateur pendant qu'on se connecte.
+function dkLoginBusy(on) {
+  var l = document.querySelector('.login-logo');
+  if (l) l.classList.toggle('is-busy', !!on);
 }
 
 function enterDesktop(sysInfo) {
@@ -7844,37 +7892,51 @@ function webTypeLabel(s) {
   else if (s.type) parts.push(s.type);
   return parts.join(', ');
 }
-function webShell() {
+// Gabarit commun des boîtes de gestionnaire (Sites Web, Téléchargements…) : colonne de navigation
+// à gauche, contenu à droite. Un seul gestionnaire occupe la boîte à la fois ; « key » dit lequel.
+// Rend true quand la structure vient d'être posée (la colonne est alors à remplir).
+function mgrShell(key, title) {
   const form = document.getElementById('create-app-form');
-  document.getElementById('create-app-title').textContent = T('Sites Web');
-  if (!form.querySelector('.web-shell')) {
-    form.innerHTML = '<div class="web-shell">'
-      + '<nav class="web-side" id="web-side" aria-label="' + webEsc(T('Sites Web')) + '"></nav>'
+  document.getElementById('create-app-title').textContent = title;
+  let fresh = false;
+  if (!form.querySelector('.web-shell[data-mgr="' + key + '"]')) {
+    form.innerHTML = '<div class="web-shell" data-mgr="' + key + '">'
+      + '<nav class="web-side" id="web-side" aria-label="' + webEsc(title) + '"></nav>'
       + '<section class="web-main"><header class="web-head" id="web-head"></header><div class="web-body narrow" id="web-body"></div></section>'
       + '</div>';
+    fresh = true;
+  }
+  document.getElementById('modal-create-app').style.display = 'flex';
+  return fresh;
+}
+function mgrBody() { return document.getElementById('web-body'); }
+// En-tête d'un écran. o.back : [libellé, appel] de l'écran parent — o.sub, o.actions : HTML — o.wide : pleine largeur.
+function mgrHead(title, o) {
+  o = o || {};
+  document.getElementById('web-head').innerHTML = '<div class="web-head-text">'
+    + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
+    + '<h4 class="web-title">' + webEsc(title) + '</h4>'
+    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
+    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+  const body = mgrBody();
+  body.classList.toggle('narrow', !o.wide);
+  body.scrollTop = 0;
+}
+function webShell() {
+  if (mgrShell('web', T('Sites Web'))) {
     webSideRender();
     if (!_webLoaded) webLoad().catch(function(){});
   }
-  document.getElementById('modal-create-app').style.display = 'flex';
 }
-function webBody() { webShell(); return document.getElementById('web-body'); }
+function webBody() { webShell(); return mgrBody(); }
 // o.site : écran d'un site (repère sur le site, retour vers sa page) — o.root : c'est la page du site elle-même.
-// o.nav : rubrique de la colonne — o.back : [libellé, appel] d'un écran parent — o.sub, o.actions : HTML — o.wide : pleine largeur.
+// o.nav : rubrique de la colonne — le reste comme mgrHead.
 function webHead(title, o) {
   o = o || {};
   webShell();
   if (o.site && o.site.id) { _webNav = 'site'; _webSel = o.site.id; }
   else if (o.nav) _webNav = o.nav;
-  let crumb = '';
-  if (o.site && o.site.id && !o.root) crumb = '<button class="web-crumb" onclick="webSiteView()">&lsaquo; ' + webEsc(o.site.name) + '</button>';
-  else if (o.back) crumb = '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>';
-  document.getElementById('web-head').innerHTML = '<div class="web-head-text">' + crumb
-    + '<h4 class="web-title">' + webEsc(title) + '</h4>'
-    + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
-    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
-  const body = document.getElementById('web-body');
-  body.classList.toggle('narrow', !o.wide);
-  body.scrollTop = 0;
+  mgrHead(title, { back: (o.site && o.site.id && !o.root) ? [o.site.name, 'webSiteView()'] : o.back, sub: o.sub, actions: o.actions, wide: o.wide });
   webSideRender();
 }
 function webSideRender() {
@@ -9806,6 +9868,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    dkLoginBusy(true);
     wsEnsureAuthenticated().then(function() {
       return wsCall('system.info', []);
     }).then(function(info) {
@@ -9819,6 +9882,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sessionStorage.removeItem('tn_basic');
       apiKey = null;
       basicAuth = null;
+      dkLoginBusy(false);
     });
   })();
   // Drag + resize : utiliser les fonctions réutilisables
@@ -10070,23 +10134,136 @@ function dlFmtEta(s) {
   var h = Math.floor(m / 60);
   return h + 'h ' + (m % 60) + 'm';
 }
-function openDownloads() {
-  document.getElementById('create-app-title').textContent = T('Téléchargements');
-  var _m = document.getElementById('modal-create-app');
-  _m.style.display = 'flex';
-  _m.classList.add('dl-wide');
+// État de la fenêtre : rubrique affichée, dernière liste reçue, valeurs par défaut du serveur, comptes configurés.
+var _dlNav = 'queue', _dlItems = [], _dlSrv = {}, _dlPremConf = {};
+WEB_ICONS.check = '<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>';
+WEB_ICONS.sliders = '<path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/>';
+WEB_ICONS.key = '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.8 12.2L20 3M16.5 6.5l3 3M13.5 9.5l2.5 2.5"/>';
+// Réglages mémorisés dans ce navigateur, complétés par les valeurs par défaut du serveur.
+function dlPrefs() {
+  var p = {};
+  try { p = JSON.parse(localStorage.getItem('tn-dl-prefs') || '{}') || {}; } catch (e) {}
+  var prem = p.premium || 'auto';
+  if (prem !== 'auto' && prem !== 'off' && !(_dlPremConf[prem] && _dlPremConf[prem].configured)) prem = 'auto';
+  return { dir: p.dir || _dlSrv.dir || _dlDefaultDir || '/mnt', conn: Number(p.conn || _dlSrv.conn || 4), premium: prem, extract: !!p.extract, autoremove: !!p.autoremove };
+}
+function dlPrefSet(k, v) {
+  try {
+    var p = JSON.parse(localStorage.getItem('tn-dl-prefs') || '{}') || {};
+    p[k] = v;
+    localStorage.setItem('tn-dl-prefs', JSON.stringify(p));
+  } catch (e) {}
+}
+function dlIsDone(d) { return d.status === 'done' || d.status === 'canceled'; }
+async function openDownloads() {
+  var m = document.getElementById('modal-create-app');
+  var fresh = mgrShell('dl', T('Téléchargements'));
+  m.classList.add('dl-wide');
   dlWindowChrome();
   dlTaskbarBtn();
-  document.getElementById('create-app-form').innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
-  dlRender();
   if (_dlPollTimer) clearInterval(_dlPollTimer);
   _dlPollTimer = setInterval(function() {
-    var m = document.getElementById('modal-create-app');
-    if (!m || m.style.display === 'none' || !m.classList.contains('dl-wide')) {
+    var mm = document.getElementById('modal-create-app');
+    if (!mm || mm.style.display === 'none' || !mm.classList.contains('dl-wide')) {
       clearInterval(_dlPollTimer); _dlPollTimer = null; return;
     }
     dlRefreshList();
   }, 1000);
+  if (!fresh) { dlSideRender(); dlRefreshList(); return; }   // fenêtre réduite puis rouverte : on la retrouve telle quelle
+  _dlNav = 'queue';
+  dlHead(T('File d\'attente'), { wide:true });
+  mgrBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
+  try {
+    var pr = await fileops('GET', 'premium/status');
+    _dlPremConf = (pr && pr.providers) || {};
+  } catch (e) {}
+  var err = await dlRefreshList();
+  if (!document.querySelector('.web-shell[data-mgr="dl"]')) return;
+  if (err) { mgrBody().innerHTML = errHtml(T('Erreur: ') + err); return; }
+  dlGo('queue');
+}
+function dlGo(k) {
+  _dlNav = k;
+  ({ queue: dlListView, done: dlListView, options: dlOptionsView, premium: dlPremiumPanel, browser: dlBrowserPanel })[k]();
+}
+function dlHead(title, o) { mgrHead(title, o); dlSideRender(); }
+function dlSideRender() {
+  var el = document.querySelector('.web-shell[data-mgr="dl"] .web-side');
+  if (!el) return;
+  var nav = function(k, icon, label, counted) {
+    return '<button class="web-nav' + (_dlNav === k ? ' active' : '') + '" onclick="dlGo(\'' + k + '\')">' + webIcon(icon) + '<span class="web-nav-name">' + label + '</span>'
+      + (counted ? '<span class="web-count" id="dl-cnt-' + k + '"></span>' : '') + '</button>';
+  };
+  el.innerHTML = '<div class="web-side-title"><span>' + T('Téléchargements') + '</span></div>'
+    + nav('queue', 'install', T('File d\'attente'), true) + nav('done', 'check', T('Terminés'), true)
+    + '<div class="web-side-sep"></div><div class="web-side-title"><span>' + T('Réglages') + '</span></div>'
+    + nav('options', 'sliders', T('Options')) + nav('premium', 'key', T('Comptes premium')) + nav('browser', 'proxy', T('Depuis le navigateur'));
+  dlSideCounts();
+}
+function dlSideCounts() {
+  var q = 0, f = 0;
+  _dlItems.forEach(function(d) { if (dlIsDone(d)) f++; else q++; });
+  var a = document.getElementById('dl-cnt-queue'), b = document.getElementById('dl-cnt-done');
+  if (a) a.textContent = q;
+  if (b) b.textContent = f;
+}
+// File d'attente (tout ce qui n'est pas fini, erreurs comprises) ou téléchargements terminés.
+function dlListView() {
+  var done = _dlNav === 'done';
+  dlHead(done ? T('Terminés') : T('File d\'attente'), { wide:true,
+    actions: done ? T('<button class="fs-btn" onclick="dlClear()">🧹 Nettoyer les terminés</button>') : '' });
+  var h = '';
+  if (!done) {
+    h += '<div class="tnd-panel tnd-panel-pad dl-add">'
+      + formRow(T('URL(s) à télécharger — une par ligne'), T('<textarea id="dl-url" class="tnd-input" rows="3" placeholder="https://exemple.com/fichier1.iso&#10;https://autre.com/fichier2.zip" style="resize:vertical;font-family:inherit;"></textarea>'))
+      + '<div class="dl-add-row">'
+      + formRow(T('Dossier de destination'), '<div style="display:flex;gap:6px;"><input id="dl-dir" class="tnd-input" value="' + webEsc(dlPrefs().dir) + T('" style="flex:1;min-width:0;" /><button class="fs-btn" onclick="openFilePicker(\'dl-dir\',null,\'/mnt\')" title="Choisir un dossier">📁</button></div>'))
+      + T('<button class="fs-btn" id="dl-add-btn" onclick="dlAdd()">⬇ Ajouter</button>')
+      + '</div></div>';
+  }
+  h += '<div id="dl-list" class="dl-list"></div>';
+  mgrBody().innerHTML = h;
+  dlListFill();
+  var dd = document.getElementById('dl-dir');
+  if (dd) dd.addEventListener('change', function() { if (dd.value.trim()) dlPrefSet('dir', dd.value.trim()); });
+}
+function dlListFill() {
+  var el = document.getElementById('dl-list');
+  if (!el) return;
+  var done = _dlNav === 'done';
+  var items = _dlItems.filter(function(d) { return dlIsDone(d) === done; });
+  var h = items.length ? dlItemsHtml(items)
+    : '<div class="empty-state" style="height:120px;"><span>' + (done ? T('Aucun téléchargement terminé') : T('Aucun téléchargement en cours')) + '</span></div>';
+  if (el._h !== h) { el._h = h; el.innerHTML = h; }   // rien à redessiner si rien n'a bougé
+}
+async function dlOptionsView() {
+  dlHead(T('Options'), { wide:true, sub: T('Elles s\'appliquent aux prochains téléchargements ajoutés.') });
+  mgrBody().innerHTML = '<div class="fs-loading" style="height:160px;"><div class="spinner"></div></div>';
+  try { var pr = await fileops('GET', 'premium/status'); _dlPremConf = (pr && pr.providers) || {}; } catch (e) {}
+  if (_dlNav !== 'options' || !document.querySelector('.web-shell[data-mgr="dl"]')) return;
+  var p = dlPrefs();
+  var premOpts = T('<option value="auto">Auto (recommandé)</option>');
+  DL_PROVIDERS.forEach(function (x) {
+    if (_dlPremConf[x.id] && _dlPremConf[x.id].configured) premOpts += '<option value="' + x.id + '">' + x.label + (x.type === 'debrid' ? T(' (débrideur)') : '') + '</option>';
+  });
+  premOpts += T('<option value="off">Désactivé (direct)</option>');
+  var row = function(name, desc, control, tag) {
+    tag = tag || 'div';
+    return '<' + tag + ' class="web-row"><span class="web-row-text"><span class="web-row-name">' + name + '</span>' + (desc ? '<span class="web-row-desc">' + desc + '</span>' : '') + '</span>' + control + '</' + tag + '>';
+  };
+  mgrBody().innerHTML = '<div class="web-group">'
+    + row(T('Connexions par lien'), T('Plusieurs connexions accélèrent les gros fichiers.'), '<select id="dl-conn" class="tnd-input"><option value="1">1 (simple)</option><option value="2">2</option><option value="4">4</option><option value="8">8</option><option value="16">16</option></select>')
+    + row(T('Téléchargements simultanés'), T('Les suivants attendent dans la file.'), '<select id="dl-maxc" class="tnd-input"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="8">8</option><option value="10">10</option></select>')
+    + row(T('Débrideur / compte premium'), '', '<select id="dl-premium" class="tnd-input">' + premOpts + '</select>')
+    + row(T('Décompresser à la fin'), T('Les archives sont extraites une fois téléchargées.'), '<input type="checkbox" id="dl-extract">', 'label')
+    + row(T('Retirer une fois terminé'), T('L\'entrée quitte la liste ; le fichier reste dans son dossier.'), '<input type="checkbox" id="dl-autoremove">', 'label')
+    + '</div>';
+  var set = function(id, v) { var el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = !!v; else el.value = String(v); } return el; };
+  set('dl-conn', p.conn).addEventListener('change', function() { dlPrefSet('conn', Number(this.value) || 4); });
+  set('dl-maxc', _dlSrv.maxc || 3).addEventListener('change', dlMaxConcurrentSave);
+  set('dl-premium', p.premium).addEventListener('change', function() { dlPrefSet('premium', this.value); });
+  set('dl-extract', p.extract).addEventListener('change', function() { dlPrefSet('extract', this.checked); });
+  set('dl-autoremove', p.autoremove).addEventListener('change', function() { dlPrefSet('autoremove', this.checked); });
 }
 // Contrôles de fenêtre unifiés (mêmes « feux tricolores » que les autres fenêtres).
 function dlWindowChrome() {
@@ -10138,112 +10315,43 @@ function dlToggleMax() {
   if (!_m) return;
   _m.classList.toggle('dl-max');
 }
-function dlClose() {
+// Rend la boîte à son état ordinaire (taille, bouton ✕, barre des tâches) sans la fermer.
+function dlDetach() {
   if (_dlPollTimer) { clearInterval(_dlPollTimer); _dlPollTimer = null; }
   var _m = document.getElementById('modal-create-app');
   if (_m) {
     _m.classList.remove('dl-wide', 'dl-max');
-    var inner = _m.querySelector(':scope > div');
-    if (inner) { inner.style.width = ''; inner.style.height = ''; }
     var hdr = _m.querySelector(':scope > div > div');
     if (hdr) { var defBtn = hdr.querySelector('button'); if (defBtn) defBtn.style.display = ''; }
     var ctl = document.getElementById('dl-winctl'); if (ctl) ctl.remove();
   }
   removeTaskbarBtn('downloads');
+  dlBadgeUpdate();
+}
+function dlClose() {
+  dlDetach();
   closeCreateApp();
 }
-async function dlRender() {
-  const box = document.getElementById('create-app-form');
-  let r;
-  try { r = await fileops('GET', 'downloads/list'); }
-  catch(e) { box.innerHTML = errHtml(T('Erreur: ') + e.message); return; }
-  if (!_dlDefaultDir) _dlDefaultDir = r.default_dir || '/mnt';
-  // Fournisseurs premium configurés -> options du sélecteur de débrideur.
-  var _premSt = {};
-  try { var _pr = await fileops('GET', 'premium/status'); _premSt = (_pr && _pr.providers) || {}; } catch (e) {}
-  var _premOpts = T('<option value="auto">Auto (recommand\u00e9)</option>');
-  DL_PROVIDERS.forEach(function (p) {
-    if (_premSt[p.id] && _premSt[p.id].configured) {
-      _premOpts += '<option value="' + p.id + '">' + p.label + (p.type === 'debrid' ? T(' (d\u00e9brideur)') : '') + '</option>';
-    }
-  });
-  _premOpts += T('<option value="off">D\u00e9sactiv\u00e9 (direct)</option>');
-  let h = '<div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap;min-height:100%;">';
-
-  // ── Volet gauche : réglages ──
-  h += '<div style="flex:0 0 240px;min-width:210px;display:flex;flex-direction:column;gap:12px;">';
-  h += '<div class="tnd-panel tnd-panel-pad" style="display:flex;flex-direction:column;gap:14px;">';
-  h += T('<div class="tnd-title">Réglages</div>');
-  h += formRow(T('Dossier de destination'), '<div style="display:flex;gap:6px;"><input id="dl-dir" class="tnd-input" value="' + _dlDefaultDir.replace(/"/g,'&quot;') + T('" style="flex:1;min-width:0;" /><button class="fs-btn" onclick="openFilePicker(\'dl-dir\',null,\'/mnt\')" title="Choisir un dossier">📁</button></div>'));
-  h += formRow(T('Connexions par lien'), '<select id="dl-conn" class="tnd-input"><option value="1">1 (simple)</option><option value="2">2</option><option value="4">4</option><option value="8">8</option><option value="16">16</option></select>');
-  h += formRow(T('Téléchargements simultanés'), '<select id="dl-maxc" class="tnd-input"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="8">8</option><option value="10">10</option></select>');
-  h += formRow(T('Débrideur / compte premium'), '<select id="dl-premium" class="tnd-input">' + _premOpts + '</select>');
-  h += T('<label class="tnd-switch" style="display:flex;width:100%;justify-content:space-between;gap:10px;"><span>Décompresser à la fin</span><input type="checkbox" id="dl-extract"></label>');
-  h += T('<label class="tnd-switch" style="display:flex;width:100%;justify-content:space-between;gap:10px;"><span>Retirer une fois terminé</span><input type="checkbox" id="dl-autoremove"></label>');
-  h += '</div>';
-  h += '<div style="display:flex;flex-direction:column;gap:8px;">'
-    + T('<button class="fs-btn" style="width:100%;justify-content:center;text-align:center;" onclick="dlPremiumPanel()">🔑 Comptes premium</button>')
-    + T('<button class="fs-btn" style="width:100%;justify-content:center;text-align:center;" onclick="dlBrowserPanel()">🌐 Depuis le navigateur</button>')
-    + T('<button class="fs-btn" style="width:100%;justify-content:center;text-align:center;" onclick="dlClear()">🧹 Nettoyer les terminés</button>')
-    + '</div>';
-  h += '<span style="flex:1;"></span>';
-  h += T('<button class="fs-btn" style="width:100%;justify-content:center;text-align:center;" onclick="dlClose()">Fermer</button>');
-  h += '</div>';
-
-  // ── Volet droit : saisie + file ──
-  h += '<div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:14px;">';
-  h += '<div class="tnd-panel tnd-panel-pad" style="display:flex;flex-direction:column;gap:10px;">'
-    + formRow(T('URL(s) à télécharger — une par ligne'), T('<textarea id="dl-url" class="tnd-input" rows="3" placeholder="https://exemple.com/fichier1.iso&#10;https://autre.com/fichier2.zip" style="resize:vertical;font-family:inherit;"></textarea>'))
-    + T('<div style="text-align:right;"><button class="fs-btn" id="dl-add-btn" style="background:rgba(62,207,142,0.15);border-color:rgba(62,207,142,0.3);color:var(--success);padding:8px 18px;" onclick="dlAdd()">⬇ Ajouter</button></div>')
-    + '</div>';
-  h += T('<div class="tnd-label" style="padding:0 2px;">File d\'attente</div>');
-  h += '<div id="dl-list" style="display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:140px;overflow:auto;padding-right:2px;">' + dlItemsHtml(r.downloads) + '</div>';
-  h += '</div>';
-
-  h += '</div>';
-  box.innerHTML = h;
-  var _dc = document.getElementById('dl-conn');
-  if (_dc && r.default_connections) _dc.value = String(r.default_connections);
-  var _mc = document.getElementById('dl-maxc');
-  if (_mc && r.max_concurrent) _mc.value = String(r.max_concurrent);
-  if (_mc) _mc.addEventListener('change', dlMaxConcurrentSave);
-  // Restaure les préférences enregistrées (priorité sur les défauts serveur)
-  try {
-    var _p = JSON.parse(localStorage.getItem('tn-dl-prefs') || '{}');
-    var _sd = document.getElementById('dl-dir'); if (_sd && _p.dir) _sd.value = _p.dir;
-    var _sc = document.getElementById('dl-conn'); if (_sc && _p.conn) _sc.value = String(_p.conn);
-    var _sm = document.getElementById('dl-premium');
-    if (_sm && _p.premium) { _sm.value = _p.premium; if (!_sm.value) _sm.value = 'auto'; }
-    var _se = document.getElementById('dl-extract'); if (_se) _se.checked = !!_p.extract;
-    var _sr = document.getElementById('dl-autoremove'); if (_sr) _sr.checked = !!_p.autoremove;
-  } catch (e) {}
-  ['dl-dir', 'dl-conn', 'dl-premium', 'dl-extract', 'dl-autoremove'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('change', dlPrefSave);
-  });
-}
+// Téléchargements réduit, puis un autre écran prend la boîte (À propos, Sites Web…) : il ne doit pas
+// hériter de la taille ni des boutons de Téléchargements.
+document.addEventListener('DOMContentLoaded', function() {
+  var form = document.getElementById('create-app-form'), m = document.getElementById('modal-create-app');
+  if (!form || !m || !window.MutationObserver) return;
+  new MutationObserver(function() {
+    if (m.classList.contains('dl-wide') && !form.querySelector('.web-shell[data-mgr="dl"]')) dlDetach();
+  }).observe(form, { childList: true });
+});
 async function dlMaxConcurrentSave() {
   var el = document.getElementById('dl-maxc');
   if (!el) return;
   var n = Number(el.value) || 3;
   try {
     var r = await fileops('POST', 'downloads/settings', { max_concurrent: n });
-    if (r && r.max_concurrent) el.value = String(r.max_concurrent);
+    if (r && r.max_concurrent) { el.value = String(r.max_concurrent); _dlSrv.maxc = r.max_concurrent; }
     toast(T('Téléchargements simultanés : ') + ((r && r.max_concurrent) || n));
   } catch (e) {
     toast(T('Erreur réglage : ') + ((e && e.message) || e));
   }
-}
-function dlPrefSave() {
-  try {
-    localStorage.setItem('tn-dl-prefs', JSON.stringify({
-      dir: (document.getElementById('dl-dir') || {}).value || '',
-      conn: Number((document.getElementById('dl-conn') || {}).value || 4),
-      premium: (document.getElementById('dl-premium') || {}).value || 'auto',
-      extract: !!(document.getElementById('dl-extract') || {}).checked,
-      autoremove: !!(document.getElementById('dl-autoremove') || {}).checked
-    }));
-  } catch (e) {}
 }
 function dlItemsHtml(items) {
   if (!items || !items.length) return T('<div class="empty-state" style="height:100px;"><div class="es-icon">⬇️</div><span>Aucun téléchargement</span></div>');
@@ -10270,23 +10378,26 @@ function dlItemsHtml(items) {
       + '</div>';
   }).join('');
 }
+// Relit la liste : compteurs de la colonne, puis la liste affichée s'il y en a une. Rend le message d'erreur éventuel.
 async function dlRefreshList() {
   try {
     const r = await fileops('GET', 'downloads/list');
-    const el = document.getElementById('dl-list');
-    if (el) el.innerHTML = dlItemsHtml(r.downloads);
-  } catch(e) {}
+    _dlItems = (r && r.downloads) || [];
+    _dlSrv = { dir: r.default_dir, conn: r.default_connections, maxc: r.max_concurrent };
+    if (!_dlDefaultDir) _dlDefaultDir = r.default_dir || '/mnt';
+    dlSideCounts();
+    dlListFill();
+    return '';
+  } catch(e) { return (e && e.message) || String(e); }
 }
 async function dlAdd() {
   const u = document.getElementById('dl-url'); const dd = document.getElementById('dl-dir');
   const dir = dd ? dd.value.trim() : '';
   const urls = (u ? u.value : '').split(/\r?\n/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length; });
   if (!urls.length) { toast(T('URL requise')); return; }
-  const prem = (document.getElementById('dl-premium') || {}).value || 'auto';
-  const conn = Number((document.getElementById('dl-conn') || {}).value || 4);
-  const ax = !!(document.getElementById('dl-extract') || {}).checked;
-  const ar = !!(document.getElementById('dl-autoremove') || {}).checked;
-  dlPrefSave();
+  const p = dlPrefs();
+  const prem = p.premium, conn = p.conn, ax = p.extract, ar = p.autoremove;
+  if (dir) dlPrefSet('dir', dir);
   const btn = document.getElementById('dl-add-btn'); if (btn) btn.disabled = true;
   try {
     if (urls.length === 1) {
@@ -10311,8 +10422,11 @@ async function dlAction(id, action) {
   catch(e) { toast('❌ ' + e.message); }
 }
 async function dlClear() {
-  try { await fileops('POST', 'downloads/clear', {}); dlRefreshList(); }
-  catch(e) { toast('❌ ' + e.message); }
+  var ids = _dlItems.filter(dlIsDone).map(function(d) { return d.id; });
+  try {
+    for (var i = 0; i < ids.length; i++) await fileops('POST', 'downloads/remove', { id: ids[i] });
+  } catch(e) { toast('❌ ' + e.message); }
+  dlRefreshList();
 }
 function dlOpenDir(enc) {
   var dir = decodeURIComponent(enc);
@@ -10448,9 +10562,9 @@ function dlFmtUntil(u) {
   return String(u);
 }
 async function dlPremiumPanel() {
-  if (_dlPollTimer) { clearInterval(_dlPollTimer); _dlPollTimer = null; }
-  document.getElementById('create-app-title').textContent = T('Comptes premium & débrideurs');
-  const box = document.getElementById('create-app-form');
+  _dlNav = 'premium';
+  dlHead(T('Comptes premium & débrideurs'), { wide:true });
+  const box = mgrBody();
   box.innerHTML = '<div class="fs-loading" style="height:120px;"><div class="spinner"></div></div>';
   let st = {};
   try { const r = await fileops('GET', 'premium/status'); st = r.providers || {}; } catch(e) {}
@@ -10472,8 +10586,8 @@ async function dlPremiumPanel() {
       + '</div>';
   });
   h += '</div>';
-  h += T('<div style="text-align:right;"><button class="fs-btn" onclick="openDownloads()">← Retour aux téléchargements</button></div></div>');
-  box.innerHTML = h;
+  h += '</div>';
+  if (_dlNav === 'premium') box.innerHTML = h;
 }
 function dlPremReveal(inputId, btn) {
   var el = document.getElementById(inputId);
@@ -10604,11 +10718,11 @@ function dlCopyBookmarklet() {
   copyText(encodeURIComponent(dlBookmarkletHref()));
 }
 function dlBrowserPanel() {
-  if (_dlPollTimer) { clearInterval(_dlPollTimer); _dlPollTimer = null; }
-  document.getElementById('create-app-title').textContent = T('Ajouter depuis le navigateur');
-  var box = document.getElementById('create-app-form');
+  _dlNav = 'browser';
+  dlHead(T('Ajouter depuis le navigateur'), { wide:true });
+  var box = mgrBody();
   var base = location.origin + '/fileops', tok = getFileopsToken();
-  var h = '<div style="display:flex;flex-direction:column;gap:20px;padding:6px 4px;">';
+  var h = '<div style="display:flex;flex-direction:column;gap:20px;">';
   h += T('<div class="tnd-panel" style="padding:20px 22px;"><div class="tnd-title" style="margin-bottom:12px;">Bookmarklet — rapide, sans installation</div>')
     + T('<div class="tnd-hint" style="margin-bottom:18px;line-height:1.7;">Fais glisser ce bouton dans ta barre de favoris. Ensuite, sur n\'importe quel site : sélectionne un ou plusieurs liens (ou rien pour détecter automatiquement les liens d\'hébergeurs), puis clique le favori — les liens partent dans la file du NAS.</div>')
     + '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'
@@ -10622,7 +10736,7 @@ function dlBrowserPanel() {
     + '<div style="display:flex;gap:14px;align-items:center;"><span style="color:var(--text-dim);min-width:68px;">URL</span><span style="flex:1;word-break:break-all;">' + base + '</span><button class="fs-btn" style="font-size:11px;padding:6px 11px;" onclick="copyText(\'' + encodeURIComponent(base) + '\')">📋</button></div>'
     + T('<div style="display:flex;gap:14px;align-items:center;"><span style="color:var(--text-dim);min-width:68px;">Jeton</span><span style="flex:1;word-break:break-all;">') + String(tok).replace(/</g,'&lt;') + '</span><button class="fs-btn" style="font-size:11px;padding:6px 11px;" onclick="copyText(\'' + encodeURIComponent(tok) + '\')">📋</button></div>'
     + '</div></div>';
-  h += T('<div style="text-align:right;padding-top:6px;"><button class="fs-btn" style="padding:10px 20px;" onclick="openDownloads()">← Retour</button></div></div>');
+  h += '</div>';
   box.innerHTML = h;
   var a = document.getElementById('dl-bm-link');
   if (a) a.href = dlBookmarkletHref();
