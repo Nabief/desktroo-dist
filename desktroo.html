@@ -364,6 +364,130 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     .wp-orbit { display:none; }
   }
 
+  /* ── Vagues, Respiration, Lueur du curseur ──
+     Même règle que plus haut : seuls « transform » et « opacity » bougent, par petits pas alignés
+     (vingt par seconde pour les vagues, dont le bord est net ; dix pour les halos flous). */
+  #wallpaper[data-preset="vagues-live"], .wp-art[data-preset="vagues-live"] {
+    background-image:
+      radial-gradient(62% 50% at 74% 4%, rgba(var(--brand-rgb),0.17), transparent 70%),
+      radial-gradient(48% 44% at 12% 16%, rgba(90,169,255,0.13), transparent 70%),
+      linear-gradient(180deg, #0c1932 0%, #0a1422 52%, #071019 100%);
+  }
+  #wallpaper[data-preset="souffle-live"], .wp-art[data-preset="souffle-live"] {
+    background-image: linear-gradient(180deg, #0c1830 0%, #0a1220 60%, #070d18 100%);
+  }
+  #wallpaper[data-preset="lueur-live"], .wp-art[data-preset="lueur-live"] {
+    background-image:
+      radial-gradient(70% 60% at 50% 120%, rgba(90,169,255,0.10), transparent 70%),
+      linear-gradient(160deg, #0d1a30 0%, #0a1220 50%, #070d18 100%);
+  }
+  #wallpaper[data-preset="vagues-live"]::after, #wallpaper[data-preset="souffle-live"]::after, #wallpaper[data-preset="lueur-live"]::after { display:none; }
+
+  /* Vagues : chaque nappe est peinte à demi-taille, sur deux périodes, puis agrandie deux fois ;
+     elle glisse d'une période et recommence, pendant que la houle la soulève doucement. */
+  .wp-swell { position:absolute; left:0; top:var(--top); width:100cqw; height:calc(104cqh - var(--top)); animation:wp-swell var(--bob) steps(var(--bpas)) var(--bd, 0s) infinite; }
+  .wp-wave {
+    --rgb:var(--brand-rgb);
+    position:absolute; left:0; top:0; width:100%; height:50%; transform-origin:0 0; transform:scale(2);
+    color:rgba(var(--rgb), calc(var(--a) * var(--wp-k)));
+    animation:wp-roll var(--dur) steps(var(--pas)) var(--delay, 0s) infinite;
+  }
+  .wp-wave.rev { animation-direction:reverse; }
+  .wp-wave.blue, .wp-ripple.blue, .wp-glow.blue { --rgb:90,169,255; }
+  .wp-wave svg { display:block; width:100%; height:100%; overflow:visible; }
+  .wp-wave .crest { fill:none; stroke:rgba(var(--rgb), calc(var(--a) * 3.2 * var(--wp-k))); stroke-width:1.25px; vector-effect:non-scaling-stroke; }
+  .wp-thumb .wp-wave .crest { stroke-width:0.6px; }
+  @keyframes wp-roll { from { transform:translateX(0) scale(2); } to { transform:translateX(-100cqw) scale(2); } }
+  @keyframes wp-swell {
+    0% { transform:translateY(calc(var(--ba) * 0.000)); }
+    12.5% { transform:translateY(calc(var(--ba) * 0.707)); }
+    25% { transform:translateY(calc(var(--ba) * 1.000)); }
+    37.5% { transform:translateY(calc(var(--ba) * 0.707)); }
+    50% { transform:translateY(calc(var(--ba) * 0.000)); }
+    62.5% { transform:translateY(calc(var(--ba) * -0.707)); }
+    75% { transform:translateY(calc(var(--ba) * -1.000)); }
+    87.5% { transform:translateY(calc(var(--ba) * -0.707)); }
+    100% { transform:translateY(calc(var(--ba) * -0.000)); }
+  }
+
+  /* Respiration : un cœur de lumière qui se gonfle puis se relâche, et une onde douce qui part à chaque souffle. */
+  @keyframes wp-b1 {
+    0% { transform:scale(3.520); opacity:0.520; }
+    12.5% { transform:scale(3.715); opacity:0.617; }
+    25% { transform:scale(4.141); opacity:0.831; }
+    37.5% { transform:scale(4.453); opacity:0.987; }
+    50% { transform:scale(4.436); opacity:0.978; }
+    62.5% { transform:scale(4.213); opacity:0.867; }
+    75% { transform:scale(3.897); opacity:0.708; }
+    87.5% { transform:scale(3.626); opacity:0.573; }
+    100% { transform:scale(3.520); opacity:0.520; }
+  }
+  @keyframes wp-b2 {
+    0% { transform:scale(3.845); opacity:0.713; }
+    12.5% { transform:scale(3.800); opacity:0.680; }
+    25% { transform:scale(3.896); opacity:0.750; }
+    37.5% { transform:scale(4.093); opacity:0.893; }
+    50% { transform:scale(4.230); opacity:0.993; }
+    62.5% { transform:scale(4.217); opacity:0.983; }
+    75% { transform:scale(4.112); opacity:0.907; }
+    87.5% { transform:scale(3.967); opacity:0.801; }
+    100% { transform:scale(3.845); opacity:0.713; }
+  }
+  @keyframes wp-b3 {
+    0% { transform:scale(4.113); opacity:0.992; }
+    12.5% { transform:scale(4.104); opacity:0.983; }
+    25% { transform:scale(4.001); opacity:0.872; }
+    37.5% { transform:scale(3.881); opacity:0.744; }
+    50% { transform:scale(3.841); opacity:0.701; }
+    62.5% { transform:scale(3.881); opacity:0.744; }
+    75% { transform:scale(3.965); opacity:0.834; }
+    87.5% { transform:scale(4.055); opacity:0.931; }
+    100% { transform:scale(4.113); opacity:0.992; }
+  }
+  .wp-ripple {
+    --rgb:var(--brand-rgb);
+    position:absolute; left:calc(var(--x) - var(--r) / 4); top:calc(var(--y) - var(--r) / 4); width:calc(var(--r) / 2); height:calc(var(--r) / 2);
+    background:radial-gradient(closest-side, transparent 80%, rgba(var(--rgb), calc(var(--a) * var(--wp-k))) 90%, transparent 100%);
+    opacity:0; animation:wp-ripple var(--dur) steps(var(--pas)) var(--delay, 0s) infinite;
+  }
+  @keyframes wp-ripple {
+    0% { transform:scale(0.400); opacity:0.000; }
+    12.5% { transform:scale(1.131); opacity:0.841; }
+    25% { transform:scale(1.792); opacity:0.688; }
+    37.5% { transform:scale(2.381); opacity:0.543; }
+    50% { transform:scale(2.892); opacity:0.406; }
+    62.5% { transform:scale(3.321); opacity:0.279; }
+    75% { transform:scale(3.659); opacity:0.165; }
+    87.5% { transform:scale(3.895); opacity:0.067; }
+    100% { transform:scale(4.000); opacity:0.000; }
+  }
+
+  /* Lueur du curseur : trois halos posés au même point, que le bureau déplace vers le curseur ;
+     chacun le rejoint à son rythme, le plus petit d'abord. */
+  .wp-follow { position:absolute; left:0; top:0; width:0; height:0; transform:translate(62cqw, 40cqh); transition:transform var(--lag) cubic-bezier(.2,.7,.2,1); }
+  .wp-glow {
+    --rgb:var(--brand-rgb);
+    position:absolute; left:calc(var(--w) / -8); top:calc(var(--w) / -8); width:calc(var(--w) / 4); height:calc(var(--w) / 4);
+    background:radial-gradient(closest-side, rgba(var(--rgb), calc(var(--a) * var(--wp-k))), transparent 72%);
+    transform:scale(4); animation:wp-pulse var(--dur) steps(15) var(--delay, 0s) infinite;
+  }
+  @keyframes wp-pulse {
+    0% { transform:scale(4.000); opacity:0.860; }
+    12.5% { transform:scale(4.198); opacity:0.959; }
+    25% { transform:scale(4.280); opacity:1.000; }
+    37.5% { transform:scale(4.198); opacity:0.959; }
+    50% { transform:scale(4.000); opacity:0.860; }
+    62.5% { transform:scale(3.802); opacity:0.761; }
+    75% { transform:scale(3.720); opacity:0.720; }
+    87.5% { transform:scale(3.802); opacity:0.761; }
+    100% { transform:scale(4.000); opacity:0.860; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wp-swell, .wp-wave, .wp-glow { animation:none; }
+    .wp-ripple { display:none; }
+    .wp-follow { transition:none; }
+  }
+
   /* Sélecteur de fond d'écran */
   .wp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(146px, 1fr)); gap:12px; }
   .wp-tile { position:relative; border-radius:var(--radius-sm); border:1px solid var(--glass-border); background:rgba(255,255,255,0.04); overflow:hidden; cursor:pointer; outline:none; transition:border-color .15s, box-shadow .15s; }
@@ -1858,6 +1982,18 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] #wallpaper[data-preset="aurore-live"], [data-theme="light"] .wp-art[data-preset="aurore-live"] {
     background-image: linear-gradient(180deg, #cfdded 0%, #c3d4e8 58%, #b6cae1 100%);
   }
+  [data-theme="light"] #wallpaper[data-preset="vagues-live"], [data-theme="light"] .wp-art[data-preset="vagues-live"] {
+    background-image:
+      radial-gradient(62% 50% at 74% 4%, rgba(255,255,255,0.55), transparent 70%),
+      linear-gradient(180deg, #d3e0ef 0%, #c6d6e9 52%, #b9cde3 100%);
+  }
+  [data-theme="light"] #wallpaper[data-preset="souffle-live"], [data-theme="light"] .wp-art[data-preset="souffle-live"] {
+    background-image: linear-gradient(180deg, #cfdded 0%, #c3d4e8 60%, #b6cae1 100%);
+  }
+  [data-theme="light"] #wallpaper[data-preset="lueur-live"], [data-theme="light"] .wp-art[data-preset="lueur-live"] {
+    background-image: linear-gradient(160deg, #cfdded 0%, #c3d4e8 50%, #b6cae1 100%);
+  }
+  [data-theme="light"] .wp-wave .crest { stroke:rgba(255,255,255,0.85); }
   [data-theme="light"] .wp-live { --wp-k:1.55; }
   [data-theme="light"] .wp-ring { border-color:rgba(255,255,255, calc(var(--a) * 2.2)); box-shadow:0 0 0.45cqw rgba(255,255,255, calc(var(--a) * 1.6)), inset 0 0 0.45cqw rgba(255,255,255, calc(var(--a) * 1.6)); }
   [data-theme="light"] .wp-comet { background:linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 35%, #fff); }
@@ -6387,7 +6523,10 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Tout déplier": "Expand all",
 "Tout replier": "Collapse all",
 "Déplier {0}": "Expand {0}",
-"Replier {0}": "Collapse {0}"
+"Replier {0}": "Collapse {0}",
+"Vagues": "Waves",
+"Respiration": "Breathing",
+"Lueur du curseur": "Cursor glow"
 }
 </script>
 <script id="dk-i18n">
@@ -13575,7 +13714,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.32.0';
+var DK_PAGE_VERSION = '2.33.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -14395,6 +14534,9 @@ var WP_PRESETS = [
   { id:'desktroo-live', label:T('Desktroo animé'), live:true },
   { id:'aurore',        label:T('Aurore') },
   { id:'aurore-live',   label:T('Aurore animée'), live:true },
+  { id:'vagues-live',   label:T('Vagues'), live:true },
+  { id:'souffle-live',  label:T('Respiration'), live:true },
+  { id:'lueur-live',    label:T('Lueur du curseur'), live:true },
   { id:'nuit',          label:T('Nuit') }
 ];
 // Calques d'un fond animé (halos, arcs, lueurs) ; vide pour un fond fixe. Positions en unités du
@@ -14409,6 +14551,38 @@ function wpLiveHtml(id) {
     return '<i class="wp-ring' + cls.replace(' rev', '') + '" style="' + vars({ cx: W(cx), top: H(top), r: W(r), a: a }) + '"></i>'
          + '<i class="wp-orbit' + cls + '" style="' + vars({ cx: W(cx), top: H(top), r: W(r), dur: S(dur), delay: S(delay), a0: D(a0), a1: D(a1) }) + '"><i class="wp-comet"></i></i>';
   };
+  // Nappe de vagues : une ligne faite de deux ondulations, répétée sur deux périodes pour boucler sans raccord.
+  var wave = function(cls, top, amp, h1, h2, ph, a, dur, bob, ba, bd) {
+    var k = 1000 / (104 - top), mid = amp * 1.7 * k, pts = [], x, y;
+    for (x = 0; x <= 2000; x += 10) {
+      y = mid + amp * k * (0.64 * Math.sin(x / 1000 * 2 * Math.PI * h1 + ph) + 0.36 * Math.sin(x / 1000 * 2 * Math.PI * h2 + ph * 1.7));
+      pts.push(x + ' ' + y.toFixed(1));
+    }
+    var line = 'M' + pts.join('L');
+    return '<i class="wp-swell" style="' + vars({ top: H(top), bob: S(bob), bpas: bob * 2.5, ba: H(ba), bd: S(bd) }) + '">'
+         + '<i class="wp-wave' + cls + '" style="' + vars({ a: a, dur: S(dur), pas: dur * 20 }) + '">'
+         + '<svg viewBox="0 0 2000 1000" preserveAspectRatio="none" aria-hidden="true"><path d="' + line + 'L2000 1000L0 1000Z" fill="currentColor"/><path class="crest" d="' + line + '"/></svg></i></i>';
+  };
+  var ripple = function(cls, x, y, r, a, dur, delay) {
+    return '<i class="wp-ripple' + cls + '" style="' + vars({ x: W(x), y: H(y), r: W(r), a: a, dur: S(dur), pas: dur * 1.25, delay: S(delay) }) + '"></i>';
+  };
+  var glow = function(cls, w, a, lag, dur, delay) {
+    return '<i class="wp-follow" style="--lag:' + S(lag) + '"><i class="wp-glow' + cls + '" style="' + vars({ w: W(w), a: a, dur: S(dur), delay: S(delay) }) + '"></i></i>';
+  };
+  if (id === 'vagues-live') return '<div class="wp-live">'
+    + wave(' blue rev', 50, 2.0, 1, 3, 0.4, 0.10, 136, 28, 0.9, 0)
+    + wave('', 59, 2.6, 2, 3, 1.9, 0.09, 100, 24, 1.1, -7)
+    + wave(' blue rev', 68, 3.0, 1, 2, 3.3, 0.11, 72, 20, 1.3, -3)
+    + wave('', 78, 3.4, 1, 2, 5.1, 0.13, 48, 16, 1.5, -11)
+    + '</div>';
+  if (id === 'souffle-live') return '<div class="wp-live">'
+    + halo(' blue', 50, 47, 104, 128, 0.19, 'wp-b2', 12, 15) + halo('', 50, 112, 120, 56, 0.12, 'wp-b3', 12, 15)
+    + ripple('', 50, 47, 150, 0.22, 36, -31) + ripple(' blue', 50, 47, 150, 0.22, 36, -19) + ripple('', 50, 47, 150, 0.22, 36, -7)
+    + halo('', 50, 47, 42, 64, 0.42, 'wp-b1', 12, 15)
+    + '</div>';
+  if (id === 'lueur-live') return '<div class="wp-live">'
+    + glow(' blue', 96, 0.20, 2.2, 12, -4) + glow('', 46, 0.26, 1.1, 12, -8) + glow('', 17, 0.34, 0.45, 12, 0)
+    + '</div>';
   if (id === 'desktroo-live') return '<div class="wp-live">'
     + halo('', 76, 2, 58, 62, 0.27, 'wp-d1', 56, 70) + halo(' blue', 9, 12, 46, 52, 0.21, 'wp-d2', 68, 85) + halo('', 98, 108, 64, 56, 0.15, 'wp-d3', 80, 100)
     + arc('', 50, 70.7, 159, 0.34, 38, -36, -19.5, 23) + arc(' rev', 45, 73.5, 207, 0.16, 53, -40, 16.5, -16.5) + arc(' blue', 40, 76.7, 264, 0.14, 67, -37, -9.5, 16.5)
@@ -14417,6 +14591,27 @@ function wpLiveHtml(id) {
     + halo('', 26, -4, 95, 46, 0.34, 'wp-v1', 48, 60) + halo(' blue', 88, 10, 85, 42, 0.30, 'wp-v2', 60, 75) + halo('', 56, 34, 78, 50, 0.13, 'wp-v3', 72, 90)
     + '</div>';
   return '';
+}
+// Fond « Lueur du curseur » : la lumière rejoint le curseur. On ne fait que poser la cible, une fois par
+// image au plus ; le navigateur fait glisser les halos (transition sur « transform »). Sans halo à
+// déplacer, ou si le poste demande de réduire les animations, le bureau n'écoute plus le curseur.
+var _wpFollow = { on:false, els:[], x:0, y:0, raf:0 };
+function wpFollowMove(e) {
+  _wpFollow.x = e.clientX; _wpFollow.y = e.clientY;
+  if (_wpFollow.raf) return;
+  _wpFollow.raf = requestAnimationFrame(function() {
+    _wpFollow.raf = 0;
+    var t = 'translate(' + (_wpFollow.x / Math.max(1, window.innerWidth) * 100).toFixed(2) + 'cqw,' + (_wpFollow.y / Math.max(1, window.innerHeight) * 100).toFixed(2) + 'cqh)';
+    for (var i = 0; i < _wpFollow.els.length; i++) _wpFollow.els[i].style.transform = t;
+  });
+}
+function wpFollowSync() {
+  var still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  _wpFollow.els = still ? [] : Array.prototype.slice.call(document.querySelectorAll('.wp-follow'));
+  var want = _wpFollow.els.length > 0;
+  if (want === _wpFollow.on) return;
+  _wpFollow.on = want;
+  document[want ? 'addEventListener' : 'removeEventListener']('pointermove', wpFollowMove, { passive:true });
 }
 var WP_MAX_BYTES = 20 * 1024 * 1024;
 var _wpCurrentUrl = null;   // URL objet du fond affiché
@@ -14451,11 +14646,13 @@ function wpShowPreset(id) {
   if (known && id !== 'desktroo') wp.setAttribute('data-preset', id); else wp.removeAttribute('data-preset');
   wp.innerHTML = known ? wpLiveHtml(id) : '';
   if (_wpCurrentUrl) { URL.revokeObjectURL(_wpCurrentUrl); _wpCurrentUrl = null; }
+  wpFollowSync();
 }
 function wpShowImage(url, isObjectUrl) {
   var wp = document.getElementById('wallpaper');
   wp.removeAttribute('data-preset');
   wp.innerHTML = '';
+  wpFollowSync();
   wp.style.backgroundImage = 'url("' + url + '")';
   wp.classList.add('custom-bg');
   if (_wpCurrentUrl && _wpCurrentUrl !== url) URL.revokeObjectURL(_wpCurrentUrl);
@@ -14537,6 +14734,7 @@ function wpRender(data) {
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)
     h += '<div class="wp-hint">' + T('Ce poste demande de réduire les animations : les fonds animés y restent fixes.') + '</div>';
   box.innerHTML = h;
+  wpFollowSync();
 
   var grid = box.querySelector('.wp-grid');
   function act(target) {
