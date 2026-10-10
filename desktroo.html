@@ -1498,6 +1498,25 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .cp-name { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .cp-desc { font-size:11.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #cp-head .snap-find { width:240px; }
+  /* Arborescence des domaines dans la colonne du Panneau de configuration */
+  .cp-node { display:flex; align-items:center; flex-shrink:0; }
+  .cp-node > .web-nav { flex:1; min-width:0; width:auto; padding-left:5px; }
+  .cp-node.path > .web-nav .web-nav-name { font-weight:600; }
+  .cp-caret, .cp-all { display:grid; place-items:center; flex:0 0 auto; padding:0; border:0; border-radius:6px; background:none; color:var(--text-dim); cursor:pointer; transition:background .15s, color .15s; }
+  .cp-caret { width:22px; height:30px; }
+  .cp-all { width:22px; height:20px; margin:-3px -4px -3px 0; }
+  .cp-caret:hover, .cp-all:hover { background:rgba(255,255,255,0.07); color:var(--text); }
+  .cp-caret:focus-visible, .cp-all:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
+  .cp-caret svg, .cp-all svg { fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+  .cp-caret svg { width:11px; height:11px; transition:transform .12s; }
+  .cp-all svg { width:13px; height:13px; }
+  .cp-node.open > .cp-caret svg { transform:rotate(90deg); }
+  .cp-leaves { display:flex; flex-direction:column; gap:1px; flex-shrink:0; margin:1px 0 5px 10px; padding-left:8px; border-left:1px solid rgba(255,255,255,0.1); }
+  .web-nav.cp-leaf { gap:9px; padding:6px 8px; font-size:12.5px; }
+  .cp-ico.mini { width:18px; height:18px; border-radius:5px; }
+  .cp-ico.mini svg { width:11px; height:11px; opacity:1; }
+  [data-theme="light"] .cp-caret:hover, [data-theme="light"] .cp-all:hover { background:rgba(0,0,0,0.055); }
+  [data-theme="light"] .cp-leaves { border-left-color:rgba(0,0,0,0.12); }
 
   /* ===== APPLICATIONS, CONTENEURS, CATALOGUE ===== */
   #win-apps, #win-docker, #win-catalog { min-width:860px; min-height:520px; }
@@ -6364,7 +6383,11 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Refuser et se déconnecter": "Decline and sign out",
 "Accepter et continuer": "Accept and continue",
 "Licence acceptée, merci.": "Licence accepted, thank you.",
-"L'accord n'a pas pu être enregistré :": "The acceptance could not be saved:"
+"L'accord n'a pas pu être enregistré :": "The acceptance could not be saved:",
+"Tout déplier": "Expand all",
+"Tout replier": "Collapse all",
+"Déplier {0}": "Expand {0}",
+"Replier {0}": "Collapse {0}"
 }
 </script>
 <script id="dk-i18n">
@@ -13552,7 +13575,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.31.0';
+var DK_PAGE_VERSION = '2.32.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -19198,7 +19221,7 @@ function cpInstallView() {
 // ===========================
 // PANNEAU DE CONFIGURATION — tous les réglages, rangés par domaine
 // ===========================
-var _cp = { nav: 'all', q: '' };
+var _cp = { nav: 'all', q: '', open: null };
 var CP_SVG = 'viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"';
 // Entrées qui n'ont pas d'icône dans le tiroir d'applications.
 function cpExtra() {
@@ -19229,15 +19252,88 @@ function cpGroups() {
   ];
 }
 function cpEntry(id) { return cpExtra()[id] || ALL_APPS.find(function(a) { return a.id === id; }) || null; }
-function cpGo(nav) { _cp.nav = nav; _cp.q = ''; loadControl(); }
+var CP_PAGES = { look: cpLookView, bar: cpBarView, widgets: cpWidgetsView, glass: cpGlassView, install: cpInstallView };   // pages de réglage du domaine « Bureau Desktroo »
+function cpGo(nav) {
+  _cp.nav = nav; _cp.q = '';
+  var g = cpGroups().find(function(x) { return x.key === nav || (CP_PAGES[nav] && x.items.some(function(it) { return it[0] === nav; })); });
+  if (g && !cpOpenSet()[g.key]) { cpOpenSet()[g.key] = true; cpOpenSave(); }
+  loadControl();
+}
+// Arborescence de la colonne : chaque domaine se déplie sur ses réglages. Les domaines dépliés sont retenus sur ce poste.
+function cpOpenSet() {
+  if (!_cp.open) {
+    _cp.open = {};
+    try { (JSON.parse(localStorage.getItem('dk-cp-open') || '[]') || []).forEach(function(k) { _cp.open[k] = true; }); } catch (e) {}
+  }
+  return _cp.open;
+}
+function cpOpenSave() {
+  var o = cpOpenSet();
+  try { localStorage.setItem('dk-cp-open', JSON.stringify(Object.keys(o).filter(function(k) { return o[k]; }))); } catch (e) {}
+}
+function cpToggle(key, on) { var o = cpOpenSet(); o[key] = on == null ? !o[key] : !!on; cpOpenSave(); cpSide(); }
+function cpToggleAll() {
+  var o = cpOpenSet(), keys = cpGroups().map(function(g) { return g.key; }), all = keys.every(function(k) { return o[k]; });
+  keys.forEach(function(k) { o[k] = !all; });
+  cpOpenSave(); cpSide();
+}
+function cpLeaf(id) { var e = cpEntry(id); if (e) e.action(); }
+function cpSide() {
+  var el = document.getElementById('cp-side');
+  if (!el) return;
+  var o = cpOpenSet(), groups = cpGroups(), onPage = !!CP_PAGES[_cp.nav];
+  var caret = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  var all = groups.every(function(g) { return o[g.key]; }), allLabel = all ? T('Tout replier') : T('Tout déplier');
+  var h = wmNav({ active: _cp.nav === 'all', call: 'cpGo(\'all\')', icon: 'grid', name: T('Tous les réglages') }) + wmSep()
+    + '<div class="web-side-title"><span>' + T('Domaines') + '</span><button class="cp-all" data-k="all" onclick="cpToggleAll()" title="' + webEsc(allLabel) + '" aria-label="' + webEsc(allLabel) + '">'
+    + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (all ? 'M7 4l5 5 5-5M7 20l5-5 5 5' : 'M7 9l5-5 5 5M7 15l5 5 5-5') + '"/></svg></button></div>';
+  groups.forEach(function(g) {
+    var items = g.items.filter(function(it) { return cpEntry(it[0]); }), open = !!o[g.key];
+    var path = onPage && g.items.some(function(it) { return it[0] === _cp.nav; }), lab = open ? Tf('Replier {0}', g.label) : Tf('Déplier {0}', g.label);
+    h += '<div class="cp-node' + (open ? ' open' : '') + (path ? ' path' : '') + '" data-g="' + g.key + '">'
+      + '<button class="cp-caret" data-k="c:' + g.key + '" onclick="cpToggle(\'' + g.key + '\')" aria-expanded="' + open + '" title="' + webEsc(lab) + '" aria-label="' + webEsc(lab) + '">' + caret + '</button>'
+      + '<button class="web-nav' + (!onPage && _cp.nav === g.key ? ' active' : '') + '" data-k="g:' + g.key + '" onclick="cpGo(\'' + g.key + '\')"><span class="web-nav-name">' + webEsc(g.label) + '</span><span class="web-count">' + items.length + '</span></button></div>';
+    if (open) h += '<div class="cp-leaves" role="group" aria-label="' + webEsc(g.label) + '">' + items.map(function(it) {
+      var e = cpEntry(it[0]);
+      return '<button class="web-nav cp-leaf' + (_cp.nav === it[0] ? ' active' : '') + '" data-k="l:' + webEsc(it[0]) + '" data-g="' + g.key + '" onclick="cpLeaf(\'' + webEsc(it[0]) + '\')" title="' + webEsc(it[1]) + '">'
+        + '<span class="cp-ico mini ' + (e.imgClass || '') + '" style="' + (e.imgStyle || '') + '">' + e.svg + '</span><span class="web-nav-name">' + webEsc(e.label) + '</span></button>';
+    }).join('') + '</div>';
+  });
+  // Le clavier garde sa place quand la colonne se redessine.
+  var f = document.activeElement, fk = f && el.contains(f) ? f.getAttribute('data-k') : null;
+  wmSide('cp', h);
+  if (fk) { var again = el.querySelector('[data-k="' + fk + '"]'); if (again) again.focus(); }
+  if (!el._cpKeys) {
+    el._cpKeys = true;
+    el.addEventListener('keydown', function(ev) {
+      var t = ev.target, k = ev.key;
+      if (!t || !t.getAttribute || !t.getAttribute('data-k') || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(k) < 0) return;
+      var node = t.closest('.cp-node'), key = node ? node.getAttribute('data-g') : null;
+      if (k === 'ArrowUp' || k === 'ArrowDown') {
+        var list = Array.prototype.slice.call(el.querySelectorAll('.web-nav')), i = list.indexOf(t.classList.contains('cp-caret') ? node.querySelector('.web-nav') : t);
+        var next = list[i + (k === 'ArrowDown' ? 1 : -1)];
+        if (next) { ev.preventDefault(); next.focus(); }
+      } else if (key) {
+        ev.preventDefault();
+        var isOpen = node.classList.contains('open');
+        if (k === 'ArrowRight' && !isOpen) cpToggle(key, true);
+        else if (k === 'ArrowLeft' && isOpen) cpToggle(key, false);
+      } else if (k === 'ArrowLeft' && t.classList.contains('cp-leaf')) {
+        var parent = el.querySelector('[data-k="g:' + t.getAttribute('data-g') + '"]');
+        if (parent) { ev.preventDefault(); parent.focus(); }
+      }
+    });
+  }
+}
 function loadControl() {
   if (!wmBody('cp')) return;
-  var page = { look: cpLookView, bar: cpBarView, widgets: cpWidgetsView, glass: cpGlassView, install: cpInstallView }[_cp.nav], look = !!page;   // pages de réglage du domaine « Bureau Desktroo »
+  var page = CP_PAGES[_cp.nav], look = !!page;
   var groups = cpGroups(), cur = groups.find(function(g) { return g.key === (look ? 'desk' : _cp.nav); });
   if (!cur) _cp.nav = 'all';
-  var h = wmNav({ active: _cp.nav === 'all', call: 'cpGo(\'all\')', icon: 'grid', name: T('Tous les réglages') }) + wmSep() + wmSideTitle(T('Domaines'));
-  groups.forEach(function(g) { h += wmNav({ active: (look ? 'desk' : _cp.nav) === g.key, call: 'cpGo(\'' + g.key + '\')', name: g.label, count: g.items.filter(function(it) { return cpEntry(it[0]); }).length }); });
-  wmSide('cp', h);
+  cpSide();
+  // Le réglage ou le domaine choisi reste visible dans la colonne, même dépliée sur toute sa hauteur.
+  var side = document.getElementById('cp-side'), act = side && side.querySelector('.web-nav.active');
+  if (act) { var ra = act.getBoundingClientRect(), rs = side.getBoundingClientRect(); if (ra.top < rs.top) side.scrollTop -= rs.top - ra.top + 8; else if (ra.bottom > rs.bottom) side.scrollTop += ra.bottom - rs.bottom + 8; }
   if (page) { page(); return; }
   wmHead('cp', cur ? cur.label : T('Panneau de configuration'), { sub: cur ? '' : T('Tous les réglages du NAS et du bureau, rangés par domaine.'),
     actions: '<input id="cp-search" class="snap-find" type="search" placeholder="' + webEsc(T('Rechercher un réglage')) + '" aria-label="' + webEsc(T('Rechercher un réglage')) + '" value="' + webEsc(_cp.q) + '" oninput="cpFilter(this.value)">' });
