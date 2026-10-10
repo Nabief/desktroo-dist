@@ -1606,6 +1606,32 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .si-tile-value { font-family:var(--font-display); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
   .si-tile-sub { margin-top:auto; font-size:11.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .web-table.si-disks { --wt-cols:86px minmax(0,1fr) 100px minmax(0,0.7fr); }
+  /* Mémoire : sur la jauge du bureau, le cache ZFS prolonge l'arc en retrait ; la page « Mémoire » d'Informations
+     système détaille la répartition. En couleur, ce qui est réellement pris ; en gris, les caches ; en creux, le libre. */
+  .mini-gauge-cache { fill:none; stroke:rgba(192,132,252,0.30); stroke-width:6; transition:stroke-dasharray .8s cubic-bezier(.4,0,.2,1), stroke-dashoffset .8s cubic-bezier(.4,0,.2,1); }
+  [data-theme="light"] .mini-gauge-cache { stroke:rgba(124,58,237,0.26); }
+  .sys-ring.widget-link { border-radius:12px; outline:none; }
+  .sys-ring.widget-link:focus-visible { box-shadow:0 0 0 2px var(--accent2); }
+  .mem-bar { display:flex; gap:2px; height:14px; margin:8px 0 14px; padding:0; border-radius:7px; overflow:hidden; background:rgba(255,255,255,0.08); }
+  [data-theme="light"] .mem-bar { background:rgba(13,27,53,0.10); }
+  .mem-bar i { display:block; flex:var(--f) 1 0; min-width:3px; height:100%; }
+  .k-apps { background:var(--accent); }
+  .k-vms { background:#5aa9ff; }
+  .k-sys { background:#c084fc; }
+  .k-fcache { background:rgba(148,163,184,0.62); }
+  .k-arc { background:rgba(148,163,184,0.34); }
+  .k-free { background:transparent; }
+  .mem-legend { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:7px 28px; }
+  .mem-key { display:flex; align-items:center; gap:9px; min-width:0; font-size:12.5px; }
+  .mem-key > i { flex:0 0 auto; width:10px; height:10px; border-radius:3px; }
+  .mem-key > i.k-free { box-shadow:inset 0 0 0 1.5px var(--text-dim); }
+  .mem-key-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mem-key-val { font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .mem-key-pct { flex:0 0 42px; text-align:right; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+  .web-table.mem-top { --wt-cols:minmax(0,1.3fr) minmax(0,1fr) 96px 150px; }
+  .web-table.mem-top .web-tr:not(.head) { min-height:42px; }
+  .mem-top .sto-bar i.k-vms { background:#5aa9ff; }
+  .mem-top .sto-bar i.k-sys { background:#c084fc; }
   /* Panneau de configuration */
   .cp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(262px,1fr)); gap:10px; }
   .cp-item {
@@ -6526,7 +6552,31 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Replier {0}": "Collapse {0}",
 "Vagues": "Waves",
 "Respiration": "Breathing",
-"Lueur du curseur": "Cursor glow"
+"Lueur du curseur": "Cursor glow",
+"cache ZFS {0}": "ZFS cache {0}",
+"Applications et système : {0}. Cache ZFS : {1}, rendu dès qu'une application en a besoin. Cliquer pour le détail.": "Applications and system: {0}. ZFS cache: {1}, given back as soon as an application needs it. Click for details.",
+"Cliquer pour le détail de la mémoire.": "Click for memory details.",
+"Système et services": "System and services",
+"Applications et système": "Applications and system",
+"Cache de fichiers": "File cache",
+"Cache ZFS": "ZFS cache",
+"Application, {0} conteneurs": "Application, {0} containers",
+"Machine virtuelle": "Virtual machine",
+"{0} processus": "{0} processes",
+"Programme": "Program",
+"Le NAS ne donne pas le détail de sa mémoire": "The NAS does not give its memory details",
+"{0} utilisés sur {1}, plus {2} de cache ZFS": "{0} used out of {1}, plus {2} of ZFS cache",
+"Répartition": "Breakdown",
+"Le cache ZFS occupe la mémoire libre pour accélérer les disques. TrueNAS le réduit dès qu'une application a besoin de place.": "The ZFS cache fills free memory to speed up the disks. TrueNAS shrinks it as soon as an application needs room.",
+"Le cache ZFS n'a pas pu être lu sur ce NAS : il est compté avec le reste.": "The ZFS cache could not be read on this NAS: it is counted with the rest.",
+"Mémoire d'échange : {0} utilisés sur {1}.": "Swap: {0} used out of {1}.",
+"Les plus gourmands": "Biggest consumers",
+"Mémoire résidente de chaque programme : les pages partagées sont comptées chez chacun, la somme peut dépasser le total.": "Resident memory of each program: shared pages are counted for each of them, so the sum can exceed the total.",
+"Docker ne répond pas : les conteneurs sont désignés par leur identifiant.": "Docker is not answering: containers are shown by their identifier.",
+"Afficher les {0} suivants": "Show the next {0}",
+"Courbes de mémoire": "Memory charts",
+"et {0} autres, pour {1}": "and {0} more, for {1}",
+"{0} et {1} de cache ZFS": "{0} and {1} of ZFS cache"
 }
 </script>
 <script id="dk-i18n">
@@ -6915,13 +6965,14 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="sys-lbl">CPU</div>
         <div class="sys-sub" id="cpu-cores-lbl"></div>
       </div>
-      <div class="sys-ring">
+      <div class="sys-ring widget-link" id="mem-ring" role="button" tabindex="0" onclick="siOpenMem()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();siOpenMem();}">
         <div class="mini-gauge" id="mem-gauge">
-          <svg viewBox="0 0 56 56"><defs><linearGradient id="memGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs><circle class="mini-gauge-bg" cx="28" cy="28" r="22"/><circle class="mini-gauge-fill" id="mem-fill" cx="28" cy="28" r="22" stroke="url(#memGrad)" stroke-dasharray="138.2" stroke-dashoffset="138.2"/></svg>
+          <svg viewBox="0 0 56 56"><defs><linearGradient id="memGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs><circle class="mini-gauge-bg" cx="28" cy="28" r="22"/><circle class="mini-gauge-cache" id="mem-cache-fill" cx="28" cy="28" r="22" stroke-dasharray="0 138.2"/><circle class="mini-gauge-fill" id="mem-fill" cx="28" cy="28" r="22" stroke="url(#memGrad)" stroke-dasharray="138.2" stroke-dashoffset="138.2"/></svg>
           <div class="mini-gauge-text" id="mem-pct">0%</div>
         </div>
         <div class="sys-lbl">RAM</div>
         <div class="sys-sub" id="mem-bytes-lbl"></div>
+        <div class="sys-sub" id="mem-cache-lbl"></div>
       </div>
     </div>
     <div class="sys-facts">
@@ -7779,8 +7830,13 @@ async function loadSysStats() {
     var coresLbl = document.getElementById('cpu-cores-lbl');
     if (coresLbl && (info.cores || info.physical_cores)) coresLbl.textContent = cpuCores > 1 ? Tf('{0} cœurs', cpuCores) : T('1 cœur');
 
-    // RAM : usage via reporting/get_data
-    try {
+    // RAM : ce que prennent les applications et le système, et à part le cache ZFS (rendu à la demande).
+    // Le service lit la répartition sur le NAS ; s'il ne la donne pas (service plus ancien, panne), on retombe
+    // sur la mesure de TrueNAS, qui additionne tout.
+    var memSum = null;
+    try { memSum = await fileops('GET', 'memory/summary'); } catch (e) {}
+    if (memSum && memSum.total && memSum.arc != null) memGauge(memSum.used, memSum.arc, memSum.total);
+    else try {
       const memRpt = await socketCall('/reporting/get_data', 'POST', {
         graphs: [{ name: 'memory' }],
         query: { unit: 'HOUR' }
@@ -7788,14 +7844,8 @@ async function loadSysStats() {
       // TrueNAS ne donne plus la mémoire utilisée mais la mémoire disponible (une seule courbe, « available ») :
       // la colonne se lit d'après la légende, comme dans la fenêtre « Informations système », pas d'après sa position.
       const used = memUsedFrom(memRpt, info.physmem);
-      if (used != null) {
-        const total = info.physmem || 0;
-        const pct   = total ? Math.round((used / total) * 100) : 0;
-        setGauge('mem-fill', 'mem-pct', pct);
-        // Label sous la jauge : octets utilisés / total
-        const lbl = document.getElementById('mem-bytes-lbl');
-        if (lbl) lbl.textContent = fmtBytes(used) + ' / ' + fmtBytes(total);
-      } else if (info.physmem) {
+      if (used != null) memGauge(used, null, info.physmem || 0);
+      else if (info.physmem) {
         document.getElementById('mem-pct').textContent = '—';
         const lbl = document.getElementById('mem-bytes-lbl');
         if (lbl) lbl.textContent = fmtBytes(info.physmem);
@@ -7849,6 +7899,25 @@ async function loadSysStats() {
   } catch {}
 }
 
+// Jauge de mémoire : l'arc plein dit ce qui est réellement pris (c'est lui qui passe à l'orange puis au rouge),
+// l'arc en retrait qui le prolonge dit le cache ZFS. « cache » vaut null quand on ne sait pas le séparer.
+function memGauge(used, cache, total) {
+  var pct = total ? Math.min(100, Math.round(used / total * 100)) : 0, circ = 2 * Math.PI * 22;
+  setGauge('mem-fill', 'mem-pct', pct);
+  var arc = document.getElementById('mem-cache-fill');
+  if (arc) {
+    var start = circ * pct / 100, len = cache && total ? Math.max(0, Math.min(circ * cache / total, circ - start)) : 0;
+    arc.style.strokeDasharray = len.toFixed(1) + ' ' + circ.toFixed(1);
+    arc.style.strokeDashoffset = (-start).toFixed(1);
+    arc.style.visibility = len > 1 ? '' : 'hidden';
+  }
+  var lbl = document.getElementById('mem-bytes-lbl'), sub = document.getElementById('mem-cache-lbl'), ring = document.getElementById('mem-ring');
+  if (lbl) lbl.textContent = fmtBytes(used) + ' / ' + fmtBytes(total);
+  if (sub) sub.textContent = cache ? Tf('cache ZFS {0}', fmtBytes(cache)) : '';
+  if (ring) ring.title = cache != null
+    ? Tf('Applications et système : {0}. Cache ZFS : {1}, rendu dès qu\'une application en a besoin. Cliquer pour le détail.', fmtBytes(used), fmtBytes(cache))
+    : T('Cliquer pour le détail de la mémoire.');
+}
 function setGauge(fillId, pctId, pct) {
   const circ = 2 * Math.PI * 22;
   const fill = document.getElementById(fillId);
@@ -13714,7 +13783,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.33.0';
+var DK_PAGE_VERSION = '2.34.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -18535,8 +18604,9 @@ async function rpView(soft) {
 // ===========================
 // INFORMATIONS SYSTÈME
 // ===========================
-var _si = { nav: 'all', info: null, gen: null, net: null, ifaces: [], disks: [], pools: [], cpu: null, mem: null, temp: null, seq: 0, timer: null, loaded: false };
-function siGo(nav) { _si.nav = nav; siView(); }
+var _si = { nav: 'all', info: null, gen: null, net: null, ifaces: [], disks: [], pools: [], cpu: null, mem: null, temp: null, seq: 0, timer: null, loaded: false,
+  sum: null, memtop: null, memErr: null, memBusy: false, memAll: false, mseq: 0, mtimer: null };
+function siGo(nav) { _si.nav = nav; _si.memAll = false; siView(); }
 async function loadSysInfo(soft) {
   loadSysStats();   // jauges du bureau
   var el = wmBody('si');
@@ -18565,7 +18635,8 @@ async function siLive() {
   clearTimeout(_si.timer);
   if (!wmVisible('sysinfo') || !_si.info) return;
   var ctx = { physmem: Number(_si.info.physmem) || 0 };
-  var r = await Promise.allSettled([rpFetch('cpu', null, 'HOUR'), rpFetch('memory', null, 'HOUR'), rpFetch('cputemp', null, 'HOUR')]);
+  var r = await Promise.allSettled([rpFetch('cpu', null, 'HOUR'), rpFetch('memory', null, 'HOUR'), rpFetch('cputemp', null, 'HOUR'), fileops('GET', 'memory/summary')]);
+  _si.sum = r[3].status === 'fulfilled' && r[3].value && r[3].value.total && r[3].value.arc != null ? r[3].value : null;
   _si.cpu = r[0].status === 'fulfilled' ? rpBuild('cpu', null, r[0].value, null, ctx) : null;
   _si.mem = r[1].status === 'fulfilled' ? rpBuild('memory', null, r[1].value, { vertical_label: 'Bytes' }, ctx) : null;
   _si.temp = r[2].status === 'fulfilled' ? rpBuild('cputemp', null, r[2].value, { vertical_label: 'Celsius' }, ctx) : null;
@@ -18575,6 +18646,7 @@ async function siLive() {
 function siSide() {
   var h = wmNav({ active: _si.nav === 'all', call: 'siGo(\'all\')', icon: 'grid', name: T('Vue d\'ensemble') })
     + wmSep() + wmSideTitle(T('Détails'))
+    + wmNav({ active: _si.nav === 'mem', call: 'siGo(\'mem\')', icon: 'layers', name: T('Mémoire') })
     + wmNav({ active: _si.nav === 'hw', call: 'siGo(\'hw\')', icon: 'box', name: T('Matériel') })
     + wmNav({ active: _si.nav === 'sys', call: 'siGo(\'sys\')', icon: 'settings', name: T('Système') })
     + wmNav({ active: _si.nav === 'net', call: 'siGo(\'net\')', icon: 'proxy', name: T('Réseau') })
@@ -18583,6 +18655,84 @@ function siSide() {
     + wmNav({ call: 'openApp(\'update\')', icon: 'refresh', name: T('Mises à jour TrueNAS') })
     + wmNav({ call: 'openTrueNASPage(\'/ui/system/general\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
   wmSide('si', h);
+}
+// ── Page « Mémoire » : la répartition, puis qui consomme le plus (applications, machines virtuelles, processus) ──
+function siOpenMem() { _si.nav = 'mem'; _si.memAll = false; openApp('sysinfo'); if (_si.loaded) siView(); }
+async function siMemLoad(quiet) {
+  var seq = ++_si.mseq;
+  _si.memBusy = true;
+  try {
+    var d = await fileops('GET', 'memory/overview');
+    if (seq !== _si.mseq) return;
+    _si.memtop = d; _si.memErr = null;
+  } catch (e) {
+    if (seq !== _si.mseq) return;
+    if (_si.memtop) { if (!quiet) wmToastErr(e); } else _si.memErr = e;   // une panne passagère ne vide pas la page déjà affichée
+  }
+  _si.memBusy = false;
+  if (wmVisible('sysinfo') && _si.nav === 'mem') siView(true);
+  clearTimeout(_si.mtimer);
+  _si.mtimer = setTimeout(function() { if (wmVisible('sysinfo') && _si.nav === 'mem') siMemLoad(true); }, 30000);
+}
+function siMemParts(d) {
+  var p = d.apps != null ? [['apps', T('Applications'), d.apps], ['vms', T('Machines virtuelles'), d.vms], ['sys', T('Système et services'), d.system]]
+                         : [['sys', T('Applications et système'), d.used]];
+  p.push(['fcache', T('Cache de fichiers'), d.file_cache]);
+  if (d.arc != null) p.push(['arc', T('Cache ZFS'), d.arc]);
+  p.push(['free', T('Libre'), d.free]);
+  return p.filter(function(x) { return x[0] === 'free' || x[0] === 'arc' || x[2] > d.total * 0.004; });
+}
+function siMemKind(c) {
+  if (c.kind === 'app') return c.count > 1 ? Tf('Application, {0} conteneurs', c.count) : T('Application');
+  if (c.kind === 'container') return T('Conteneur');
+  if (c.kind === 'vm') return T('Machine virtuelle');
+  return c.count > 1 ? Tf('{0} processus', c.count) : T('Programme');
+}
+function siMemView(soft) {
+  var d = _si.memtop, el = wmBody('si');
+  if (!d) {
+    wmHead('si', T('Mémoire'), { keepScroll: soft });
+    if (_si.memErr) wmFail('si', T('Le NAS ne donne pas le détail de sa mémoire'), _si.memErr, 'siMemLoad()');
+    else { wmLoading('si'); if (!_si.memBusy) siMemLoad(true); }
+    return;
+  }
+  var size = mntFmtSize, pct = function(v) { return rpNum(d.total ? v / d.total * 100 : 0, 0) + ' %'; };
+  wmHead('si', T('Mémoire'), { keepScroll: soft,
+    sub: webEsc(d.arc != null ? Tf('{0} utilisés sur {1}, plus {2} de cache ZFS', size(d.used), size(d.total), size(d.arc)) : Tf('{0} utilisés sur {1}', size(d.used), size(d.total))),
+    actions: '<button class="fs-btn" onclick="siMemLoad()">' + T('Actualiser') + '</button>' });
+  var parts = siMemParts(d);
+  var h = '<div class="web-group-title">' + T('Répartition') + '</div>'
+    + '<div class="mem-bar" role="img" aria-label="' + webEsc(parts.map(function(x) { return x[1] + ' ' + pct(x[2]); }).join(', ')) + '">'
+    + parts.map(function(x) { return '<i class="k-' + x[0] + '" style="--f:' + Math.max(0, Math.round(x[2] / d.total * 10000)) + '" title="' + webEsc(x[1] + ' : ' + size(x[2])) + '"></i>'; }).join('') + '</div>'
+    + '<div class="mem-legend">' + parts.map(function(x) {
+        return '<div class="mem-key"><i class="k-' + x[0] + '"></i><span class="mem-key-name">' + webEsc(x[1]) + '</span><span class="mem-key-val">' + webEsc(size(x[2])) + '</span><span class="mem-key-pct">' + pct(x[2]) + '</span></div>';
+      }).join('') + '</div>';
+  h += '<p class="web-note">' + (d.arc != null
+      ? T('Le cache ZFS occupe la mémoire libre pour accélérer les disques. TrueNAS le réduit dès qu\'une application a besoin de place.')
+      : T('Le cache ZFS n\'a pas pu être lu sur ce NAS : il est compté avec le reste.'))
+    + (d.swap_total ? ' ' + webEsc(Tf('Mémoire d\'échange : {0} utilisés sur {1}.', size(d.swap_used), size(d.swap_total))) : '') + '</p>';
+  var list = ensureArray(d.consumers), shown = _si.memAll ? list : list.slice(0, 12), top = list.length ? list[0].mem : 0;
+  if (list.length) {
+    h += '<div class="web-group-title">' + T('Les plus gourmands') + '</div><div class="web-table mem-top"><div class="web-tr head"><span>' + T('Nom') + '</span><span>Type</span><span class="num">' + T('Mémoire') + '</span><span></span></div>';
+    shown.forEach(function(c) {
+      var k = c.kind === 'vm' ? 'k-vms' : c.kind === 'process' ? 'k-sys' : '';
+      var name = c.kind === 'app' ? String(c.name).charAt(0).toUpperCase() + String(c.name).slice(1) : c.name;
+      h += '<div class="web-tr"><span><strong>' + webEsc(name) + '</strong></span><span class="dim">' + webEsc(siMemKind(c)) + '</span><span class="num">' + webEsc(size(c.mem)) + '</span>'
+        + '<span><span class="sto-bar"><i class="' + k + '" style="width:' + (top ? Math.max(1, c.mem / top * 100) : 0).toFixed(1) + '%"></i></span></span></div>';
+    });
+    h += '</div>';
+    var rest = (list.length - shown.length) + (Number(d.others) || 0);
+    h += '<p class="web-note">' + T('Mémoire résidente de chaque programme : les pages partagées sont comptées chez chacun, la somme peut dépasser le total.')
+      + (d.docker_error && list.some(function(c) { return c.kind === 'container'; }) ? ' ' + T('Docker ne répond pas : les conteneurs sont désignés par leur identifiant.') : '') + '</p>';
+    h += '<div class="web-foot" style="justify-content:flex-start;margin-top:12px;">'
+      + (list.length > shown.length ? '<button class="fs-btn" onclick="_si.memAll=true;siView(true)">' + webEsc(Tf('Afficher les {0} suivants', list.length - shown.length)) + '</button>' : '')
+      + '<button class="fs-btn" onclick="openApp(\'docker\')">' + T('Conteneurs') + '</button><button class="fs-btn" onclick="openApp(\'libvirt\')">' + T('Machines virtuelles') + '</button>'
+      + '<button class="fs-btn" onclick="openApp(\'reports\')">' + T('Courbes de mémoire') + '</button>'
+      + (_si.memAll && rest > 0 ? '<span class="dim" style="font-size:12px;margin-left:6px;">' + webEsc(Tf('et {0} autres, pour {1}', rest, size(d.others_mem))) + '</span>' : '') + '</div>';
+  }
+  var sc = el.scrollTop;
+  el.innerHTML = h;
+  if (soft) el.scrollTop = sc;
 }
 function siUptime(secs) {
   secs = Number(secs) || 0;
@@ -18611,6 +18761,7 @@ function siView(soft) {
   if (!i) return;
   siSide();
   var el = wmBody('si'), product = [i.system_manufacturer, i.system_product].filter(function(x) { return x && !/^(to be filled|default string|system (manufacturer|product name))/i.test(x); }).join(' ');
+  if (_si.nav === 'mem') { siMemView(soft); return; }
   if (_si.nav === 'hw') {
     wmHead('si', T('Matériel'), { keepScroll: soft, sub: webEsc(product) });
     var h = netFacts([
@@ -18673,11 +18824,13 @@ function siView(soft) {
   wmHead('si', i.hostname || T('Informations système'), { keepScroll: soft, sub: webEsc(['TrueNAS ' + siVersion(i), product].filter(Boolean).join(', ')) });
   var cpu = _si.cpu && _si.cpu.series[0] ? rpLast(_si.cpu.series[0].values) : null, used = _si.mem && _si.mem.series[0] && _si.mem.series[0].key === 'used' ? rpLast(_si.mem.series[0].values) : null;
   var temp = _si.temp && _si.temp.series[0] ? rpLast(_si.temp.series[0].values) : null, mp = used != null && i.physmem ? used / i.physmem * 100 : null;
+  var sum = _si.sum, memSub = i.physmem ? webEsc(used != null ? Tf('{0} sur {1}', mntFmtSize(used), mntFmtSize(i.physmem)) : mntFmtSize(i.physmem)) : '';
+  if (sum) { mp = sum.used / sum.total * 100; memSub = webEsc(Tf('{0} et {1} de cache ZFS', mntFmtSize(sum.used), mntFmtSize(sum.arc))); }
   var cap = 0, alloc = 0;
   _si.pools.forEach(function(p) { cap += Number(p.size) || 0; alloc += Number(p.allocated) || 0; });
   var ho = '<div class="si-tiles">'
     + siTile(T('Processeur'), cpu == null ? '—' : rpNum(cpu, 0) + ' %', webEsc(siCores(i)), cpu, cpu > 85 ? 'crit' : cpu > 65 ? 'warn' : '')
-    + siTile(T('Mémoire'), mp == null ? '—' : rpNum(mp, 0) + ' %', i.physmem ? webEsc(used != null ? Tf('{0} sur {1}', mntFmtSize(used), mntFmtSize(i.physmem)) : mntFmtSize(i.physmem)) : '', mp, mp > 90 ? 'crit' : mp > 75 ? 'warn' : '')
+    + siTile(T('Mémoire'), mp == null ? '—' : rpNum(mp, 0) + ' %', memSub, mp, mp > 90 ? 'crit' : mp > 75 ? 'warn' : '')
     + siTile(T('Stockage'), cap ? rpNum(alloc / cap * 100, 0) + ' %' : '—', cap ? webEsc(Tf('{0} sur {1}', mntFmtSize(alloc), mntFmtSize(cap))) : T('Aucun pool'), cap ? alloc / cap * 100 : null, alloc / cap > 0.85 ? 'crit' : alloc / cap > 0.65 ? 'warn' : '')
     + siTile(T('Température'), temp == null ? '—' : rpNum(temp, 0) + ' °C', T('processeur'), null)
     + '</div>';

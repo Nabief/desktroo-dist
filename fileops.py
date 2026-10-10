@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.33.0'
+APP_VERSION = '2.34.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -7416,6 +7416,227 @@ def _report_send(b):
     return {'ok': True, 'id': j.get('id')}
 
 
+# ── MDM-MEMORY-V1 : qui occupe la mémoire du NAS ─────────────────────────────
+# Résumé (jauge du bureau) : /proc/meminfo et les compteurs du cache ZFS se lisent d'ici, le conteneur
+# voit ceux de l'hôte. Détail (Informations système) : la liste des processus, elle, se lit sur le NAS,
+# par SSH. Les lignes de commande restent sur le NAS : elles peuvent contenir des mots de passe ; seul
+# le nom du programme en sort (et, pour un interpréteur, le nom du script lancé).
+import time as _mem_time
+import threading as _mem_threading
+
+_MEM_LOCK = _mem_threading.Lock()
+_MEM_CACHE = {}
+_MEM_TOP = 30
+
+_MEM_HOST_PY = r'''
+import json, os, re
+def rd(p):
+    try:
+        with open(p, 'rb') as f:
+            return f.read().decode('utf-8', 'replace')
+    except Exception:
+        return ''
+SH = re.compile(r'^(python[0-9.]*|node|nodejs|java|perl|ruby|php[0-9.]*|sh|bash|dash|zsh|busybox)$')
+ps = []
+for d in os.listdir('/proc'):
+    if not d.isdigit():
+        continue
+    st = rd('/proc/' + d + '/status')
+    m = re.search(r'^VmRSS:\s+(\d+)', st, re.M)
+    if not m:
+        continue
+    n = re.search(r'^Name:\s+(.*)$', st, re.M)
+    comm = n.group(1).strip() if n else ''
+    argv = [a for a in rd('/proc/' + d + '/cmdline').split('\0') if a]
+    label, vm = comm, ''
+    if argv:
+        first = argv[0]
+        exe = os.path.basename(first.split(' ')[0]) if '/' in first else first
+        label = exe or comm
+        if exe.startswith('qemu-system') or comm.startswith('qemu-system'):
+            g = re.search(r'-name\s+(?:guest=)?([^,\s]+)', ' '.join(argv))
+            vm = g.group(1) if g else 'qemu'
+        elif SH.match(exe):
+            skip = False
+            for a in argv[1:]:
+                if skip:
+                    skip = False
+                    continue
+                if a in ('-c', '-e', '-m'):
+                    skip = a != '-m'
+                    continue
+                if a.startswith('-'):
+                    continue
+                if ' ' not in a and len(a) < 120:
+                    label = exe + ' ' + os.path.basename(a)
+                break
+    cg = rd('/proc/' + d + '/cgroup')
+    c = re.search(r'docker[-/]([0-9a-f]{12,64})', cg)
+    x = re.search(r'lxc\.payload\.([^/\s]+)', cg)
+    cid = c.group(1) if c else ('lxc:' + x.group(1) if x else '')
+    ps.append([int(d), int(m.group(1)) * 1024, label[:60], cid, vm[:60]])
+print(json.dumps({'meminfo': rd('/proc/meminfo'), 'arc': rd('/proc/spl/kstat/zfs/arcstats'), 'ps': ps}))
+'''
+
+
+def _mem_file(path):
+    try:
+        with open(path, 'rb') as f:
+            return f.read().decode('utf-8', 'replace')
+    except Exception:
+        return ''
+
+
+def _mem_meminfo(text):
+    out = {}
+    for line in str(text or '').splitlines():
+        parts = line.replace(':', ' ').split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            out[parts[0]] = int(parts[1]) * 1024
+    return out
+
+
+def _mem_arc(text):
+    out = {}
+    for line in str(text or '').splitlines():
+        parts = line.split()
+        if len(parts) == 3 and parts[0] in ('size', 'c_min', 'c_max') and parts[2].isdigit():
+            out[parts[0]] = int(parts[2])
+    return out
+
+
+def _mem_totals(mi, arc):
+    """Répartition de la mémoire : prise (applications et système), cache de fichiers, cache ZFS, libre.
+    « arc » vaut None quand le cache ZFS n'a pas pu être lu : la page n'affiche alors pas de répartition."""
+    total = int(mi.get('MemTotal') or 0)
+    if total <= 0:
+        raise RuntimeError('mémoire du NAS illisible')
+    free = min(total, int(mi.get('MemFree') or 0))
+    known = bool(arc) and 'size' in arc
+    arc_size = min(int(arc.get('size') or 0), total - free) if known else 0
+    cache = max(0, int(mi.get('Buffers') or 0) + int(mi.get('Cached') or 0) - int(mi.get('Shmem') or 0))
+    cache = min(cache, total - free - arc_size)
+    swap_total = int(mi.get('SwapTotal') or 0)
+    return {
+        'total': total, 'free': free, 'available': int(mi.get('MemAvailable') or 0),
+        'arc': arc_size if known else None,
+        'arc_min': int(arc.get('c_min') or 0) if known else 0, 'arc_max': int(arc.get('c_max') or 0) if known else 0,
+        'file_cache': cache, 'used': max(0, total - free - arc_size - cache),
+        'swap_total': swap_total, 'swap_used': max(0, swap_total - int(mi.get('SwapFree') or 0)),
+    }
+
+
+def _mem_cached(key, ttl, make):
+    now = _mem_time.time()
+    with _MEM_LOCK:
+        hit = _MEM_CACHE.get(key)
+        if hit and now - hit[0] < ttl:
+            return hit[1]
+    value = make()
+    with _MEM_LOCK:
+        _MEM_CACHE[key] = (_mem_time.time(), value)
+    return value
+
+
+def _mem_summary():
+    def make():
+        mi = _mem_meminfo(_mem_file('/proc/meminfo'))
+        arc = _mem_arc(_mem_file('/proc/spl/kstat/zfs/arcstats'))
+        with _MEM_LOCK:
+            down = _MEM_CACHE.get('ssh_down') or 0
+        if (not mi or not arc) and _mem_time.time() - down > 120:
+            # Compteurs absents d'ici : on les lit sur le NAS. Sans réponse, la jauge se passera de la répartition,
+            # et on ne redemande pas avant deux minutes pour ne pas faire attendre le bureau à chaque passage.
+            try:
+                out = ssh_ok("sh -c 'cat /proc/meminfo; echo @@ARC@@; cat /proc/spl/kstat/zfs/arcstats 2>/dev/null; true'", timeout=15)
+                a, _sep, b = out.partition('@@ARC@@')
+                mi = _mem_meminfo(a) or mi
+                arc = _mem_arc(b)
+            except Exception:
+                with _MEM_LOCK:
+                    _MEM_CACHE['ssh_down'] = _mem_time.time()
+        res = _mem_totals(mi, arc if arc else None)
+        res['ok'] = True
+        return res
+    return _mem_cached('summary', 5, make)
+
+
+def _mem_app_name(project):
+    p = str(project or '')
+    return p[3:] if p.startswith('ix-') and len(p) > 3 else p
+
+
+def _mem_overview():
+    def make():
+        raw = json.loads(ssh_ok('python3 -c ' + shq(_MEM_HOST_PY), timeout=40) or '{}')
+        arc = _mem_arc(raw.get('arc'))
+        res = _mem_totals(_mem_meminfo(raw.get('meminfo')), arc if arc else None)
+        names, docker_error = {}, ''
+        try:
+            fmt = '{{.ID}}|{{.Names}}|{{.Label "com.docker.compose.project"}}'
+            for line in ssh_ok(_ct_sh('$D ps -a --no-trunc --format ' + shq(fmt)), timeout=30).splitlines():
+                cid, _s, rest = line.strip().partition('|')
+                name, _s, project = rest.partition('|')
+                if cid:
+                    names[cid] = (name, project)
+        except Exception as e:
+            docker_error = str(e)
+
+        def docker_info(cid):
+            if cid in names:
+                return names[cid]
+            for full, info in names.items():
+                if full.startswith(cid) or cid.startswith(full):
+                    return info
+            return None
+
+        groups = {}
+        for row in raw.get('ps') or []:
+            if not isinstance(row, list) or len(row) < 5:
+                continue
+            _pid, rss, label, cid, vm = row[:5]
+            rss = int(rss or 0)
+            part = ''
+            if vm:
+                key, kind, name = ('vm', vm), 'vm', vm
+            elif str(cid).startswith('lxc:'):
+                key, kind, name = ('container', cid), 'container', cid[4:]
+            elif cid:
+                info = docker_info(cid)
+                if info and info[1]:
+                    key, kind, name, part = ('app', info[1]), 'app', _mem_app_name(info[1]), info[0]
+                else:
+                    key, kind, name = ('container', cid), 'container', (info[0] if info else cid[:12])
+            else:
+                key, kind, name = ('process', label), 'process', label or '?'
+            g = groups.setdefault(key, {'kind': kind, 'name': name, 'mem': 0, 'count': 0, 'parts': set()})
+            g['mem'] += rss
+            g['count'] += 1
+            if part:
+                g['parts'].add(part)
+
+        items = []
+        for g in groups.values():
+            n = len(g['parts']) if g['kind'] == 'app' else g['count']
+            items.append({'kind': g['kind'], 'name': g['name'], 'mem': g['mem'], 'count': n})
+        items.sort(key=lambda x: -x['mem'])
+        apps = sum(x['mem'] for x in items if x['kind'] in ('app', 'container'))
+        vms = sum(x['mem'] for x in items if x['kind'] == 'vm')
+        # La mémoire d'un processus compte aussi les pages qu'il partage : la somme peut dépasser ce qui est pris.
+        used = res['used']
+        if apps + vms > used and apps + vms > 0:
+            k = used / float(apps + vms)
+            apps, vms = int(apps * k), int(vms * k)
+        res.update({
+            'ok': True, 'apps': apps, 'vms': vms, 'system': max(0, used - apps - vms),
+            'consumers': items[:_MEM_TOP],
+            'others': max(0, len(items) - _MEM_TOP), 'others_mem': sum(x['mem'] for x in items[_MEM_TOP:]),
+            'docker_error': docker_error,
+        })
+        return res
+    return _mem_cached('overview', 5, make)
+
+
 # ── MDM-WALLPAPERS-V1 : dossier de fonds d'écran ─────────────────────────────
 # Les images vivent dans <install>/wallpapers (volume hôte, donc conservées aux
 # mises à jour). Le bureau les liste, les lit et en ajoute par les routes
@@ -7748,6 +7969,20 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, _web_credentials(sid))
             except (ValueError, PermissionError) as e:
                 self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        # MDM-MEMORY-V1 : répartition de la mémoire (jauge du bureau), puis qui la consomme (Informations système)
+        if path == '/memory/summary':
+            try:
+                self._json(200, _mem_summary())
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+        if path == '/memory/overview':
+            try:
+                self._json(200, _mem_overview())
             except Exception as e:
                 self._json(500, {'error': str(e)})
             return
