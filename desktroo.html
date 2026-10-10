@@ -6576,7 +6576,11 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Afficher les {0} suivants": "Show the next {0}",
 "Courbes de mémoire": "Memory charts",
 "et {0} autres, pour {1}": "and {0} more, for {1}",
-"{0} et {1} de cache ZFS": "{0} and {1} of ZFS cache"
+"{0} et {1} de cache ZFS": "{0} and {1} of ZFS cache",
+"Cette VM tourne encore avec ses réglages de démarrage ({0}). Les réglages enregistrés depuis ({1}) s'appliqueront quand elle aura été arrêtée, puis démarrée : un redémarrage depuis la VM ne suffit pas.": "This VM is still running with the settings it started with ({0}). The settings saved since then ({1}) will apply once it has been shut down, then started: a reboot from inside the VM is not enough.",
+"{0} au prochain démarrage": "{0} at next start",
+"en cours d'utilisation": "in use now",
+"Machine virtuelle, {0} alloués": "Virtual machine, {0} allocated"
 }
 </script>
 <script id="dk-i18n">
@@ -13783,7 +13787,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.34.0';
+var DK_PAGE_VERSION = '2.34.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -18685,7 +18689,7 @@ function siMemParts(d) {
 function siMemKind(c) {
   if (c.kind === 'app') return c.count > 1 ? Tf('Application, {0} conteneurs', c.count) : T('Application');
   if (c.kind === 'container') return T('Conteneur');
-  if (c.kind === 'vm') return T('Machine virtuelle');
+  if (c.kind === 'vm') return c.alloc ? Tf('Machine virtuelle, {0} alloués', mntFmtSize(c.alloc)) : T('Machine virtuelle');
   return c.count > 1 ? Tf('{0} processus', c.count) : T('Programme');
 }
 function siMemView(soft) {
@@ -21929,6 +21933,15 @@ function lv2Mem(mb) {
 }
 function lv2Meta(vm) {
   var res = (vm && vm.resources) || {}, m = [];
+  // VM en marche : ce avec quoi elle tourne, qui peut différer des réglages enregistrés depuis son démarrage.
+  var cpu = res.live_vcpus || res.vcpus, mem = res.live_memory_mb || res.memory_mb;
+  if (cpu) m.push(cpu + ' vCPU');
+  if (mem) m.push(lv2Mem(mem));
+  return m.join(', ');
+}
+// Réglages enregistrés (processeurs, mémoire) tels qu'ils vaudront au prochain démarrage.
+function lv2Planned(res) {
+  var m = [];
   if (res.vcpus) m.push(res.vcpus + ' vCPU');
   if (res.memory_mb) m.push(lv2Mem(res.memory_mb));
   return m.join(', ');
@@ -22064,6 +22077,12 @@ function renderLibvirt2Detail(vm) {
     warnings += T('<div style="padding:9px 11px;border-radius:10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#fbbf24;font-size:12px;">⚠ Conflit boot : legacy + per-device détectés.</div>');
   }
 
+  if (resources.pending_restart) {
+    warnings += '<div style="padding:9px 11px;border-radius:10px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:#fbbf24;font-size:12px;line-height:1.5;">⚠ '
+      + lv2Esc(Tf('Cette VM tourne encore avec ses réglages de démarrage ({0}). Les réglages enregistrés depuis ({1}) s\'appliqueront quand elle aura été arrêtée, puis démarrée : un redémarrage depuis la VM ne suffit pas.', lv2Meta(vm), lv2Planned(resources)))
+      + '</div>';
+  }
+
   var cdEmpty = cdroms.some(function(c) { return c.empty; });
   if (cdEmpty) {
     warnings += T('<div style="padding:9px 11px;border-radius:10px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);color:var(--text-dim);font-size:12px;">💿 Lecteur CD-ROM présent mais aucun ISO monté.</div>');
@@ -22147,8 +22166,10 @@ function renderLibvirt2Detail(vm) {
     + warnings
 
     + '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;">'
-    + lv2Card('CPU', (resources.vcpus || '—') + ' vCPU', '')
-    + lv2Card(T('Mémoire'), resources.memory_mb ? resources.memory_mb + ' MB' : '—', T('actuelle : ') + (resources.current_memory_mb || '—') + ' MB')
+    + lv2Card('CPU', (resources.live_vcpus || resources.vcpus || '—') + ' vCPU', resources.live_vcpus && resources.live_vcpus !== resources.vcpus && resources.pending_restart ? Tf('{0} au prochain démarrage', resources.vcpus + ' vCPU') : '')
+    + (resources.live_memory_mb
+        ? lv2Card(T('Mémoire'), resources.live_memory_mb + ' MB', resources.pending_restart && resources.live_memory_mb !== resources.memory_mb ? Tf('{0} au prochain démarrage', resources.memory_mb + ' MB') : T('en cours d\'utilisation'))
+        : lv2Card(T('Mémoire'), resources.memory_mb ? resources.memory_mb + ' MB' : '—', T('actuelle : ') + (resources.current_memory_mb || '—') + ' MB'))
     + lv2Card('Boot', (vm.boot_order || []).join(' → ') || '—', vm.boot_mode || '')
     + lv2Card('Console', display.type ? display.type.toUpperCase() : '—', port ? 'port ' + port : (vm.display_uri || '—'))
     + '</div>'

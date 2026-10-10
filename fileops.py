@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.34.0'
+APP_VERSION = '2.34.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -1968,6 +1968,31 @@ def _lv2_vm_snapshot_names(name):
     return [x.strip() for x in out.splitlines() if x.strip()]
 
 
+def _lv2_live_resources(res, state, info, xml):
+    """Une VM en marche garde les processeurs et la mémoire reçus à son démarrage : les réglages modifiés depuis
+    ne valent qu'après un arrêt complet. « dominfo » donne ce avec quoi elle tourne, le XML ce qui est prévu."""
+    st = str(state or '').lower()
+    if 'running' not in st and 'paused' not in st:
+        return
+    m = re.match(r'\s*(\d+)\s*([KMG])?', str(info.get('max_memory') or ''), re.I)
+    live_mem = 0
+    if m:
+        n, unit = int(m.group(1)), (m.group(2) or 'K').upper()
+        live_mem = n // 1024 if unit == 'K' else (n if unit == 'M' else n * 1024)
+    try:
+        live_cpu = int(str(info.get('cpu(s)') or '0').strip() or 0)
+    except ValueError:
+        live_cpu = 0
+    if live_mem:
+        res['live_memory_mb'] = live_mem
+    if live_cpu:
+        res['live_vcpus'] = live_cpu
+    partial = bool(re.search(r'<vcpu[^>]*\bcurrent=', xml or ''))   # processeurs ajoutables à chaud : le compte courant diffère du maximum
+    res['pending_restart'] = bool(
+        (live_mem and res.get('memory_mb') and abs(live_mem - int(res['memory_mb'])) > 1)
+        or (live_cpu and res.get('vcpus') and not partial and live_cpu != int(res['vcpus'])))
+
+
 def _lv2_get_vm(name, include_xml=False):
     cmd = (
         "echo '===DOMSTATE===' && (sudo -n virsh -c '" + VIRSH_URI + "' domstate " + shq(name) + " 2>&1 || true)"
@@ -1990,6 +2015,7 @@ def _lv2_get_vm(name, include_xml=False):
     xml = '\n'.join(sec.get('XML', []))
 
     parsed = _lv2_parse_xml(xml, blklist=blklist, iflist=iflist)
+    _lv2_live_resources(parsed['resources'], state, info, xml)
 
     vm = {
         'api': 'libvirt2',
@@ -7448,14 +7474,18 @@ for d in os.listdir('/proc'):
     n = re.search(r'^Name:\s+(.*)$', st, re.M)
     comm = n.group(1).strip() if n else ''
     argv = [a for a in rd('/proc/' + d + '/cmdline').split('\0') if a]
-    label, vm = comm, ''
+    label, vm, alloc = comm, '', 0
     if argv:
         first = argv[0]
         exe = os.path.basename(first.split(' ')[0]) if '/' in first else first
         label = exe or comm
         if exe.startswith('qemu-system') or comm.startswith('qemu-system'):
-            g = re.search(r'-name\s+(?:guest=)?([^,\s]+)', ' '.join(argv))
+            line = ' '.join(argv)
+            g = re.search(r'-name\s+(?:guest=)?([^,\s]+)', line)
             vm = g.group(1) if g else 'qemu'
+            a = re.search(r'\s-m\s+(?:size=)?(\d+)([kKmMgG]?)', line)
+            if a:
+                alloc = int(a.group(1)) * {'k': 1024, 'm': 1048576, 'g': 1073741824}.get(a.group(2).lower(), 1048576)
         elif SH.match(exe):
             skip = False
             for a in argv[1:]:
@@ -7474,7 +7504,7 @@ for d in os.listdir('/proc'):
     c = re.search(r'docker[-/]([0-9a-f]{12,64})', cg)
     x = re.search(r'lxc\.payload\.([^/\s]+)', cg)
     cid = c.group(1) if c else ('lxc:' + x.group(1) if x else '')
-    ps.append([int(d), int(m.group(1)) * 1024, label[:60], cid, vm[:60]])
+    ps.append([int(d), int(m.group(1)) * 1024, label[:60], cid, vm[:60], alloc])
 print(json.dumps({'meminfo': rd('/proc/meminfo'), 'arc': rd('/proc/spl/kstat/zfs/arcstats'), 'ps': ps}))
 '''
 
@@ -7596,6 +7626,7 @@ def _mem_overview():
                 continue
             _pid, rss, label, cid, vm = row[:5]
             rss = int(rss or 0)
+            alloc = int(row[5] or 0) if len(row) > 5 else 0
             part = ''
             if vm:
                 key, kind, name = ('vm', vm), 'vm', vm
@@ -7609,8 +7640,9 @@ def _mem_overview():
                     key, kind, name = ('container', cid), 'container', (info[0] if info else cid[:12])
             else:
                 key, kind, name = ('process', label), 'process', label or '?'
-            g = groups.setdefault(key, {'kind': kind, 'name': name, 'mem': 0, 'count': 0, 'parts': set()})
+            g = groups.setdefault(key, {'kind': kind, 'name': name, 'mem': 0, 'count': 0, 'parts': set(), 'alloc': 0})
             g['mem'] += rss
+            g['alloc'] += alloc
             g['count'] += 1
             if part:
                 g['parts'].add(part)
@@ -7618,7 +7650,10 @@ def _mem_overview():
         items = []
         for g in groups.values():
             n = len(g['parts']) if g['kind'] == 'app' else g['count']
-            items.append({'kind': g['kind'], 'name': g['name'], 'mem': g['mem'], 'count': n})
+            item = {'kind': g['kind'], 'name': g['name'], 'mem': g['mem'], 'count': n}
+            if g['alloc']:
+                item['alloc'] = g['alloc']   # machine virtuelle : la mémoire qui lui a été donnée au démarrage
+            items.append(item)
         items.sort(key=lambda x: -x['mem'])
         apps = sum(x['mem'] for x in items if x['kind'] in ('app', 'container'))
         vms = sum(x['mem'] for x in items if x['kind'] == 'vm')
