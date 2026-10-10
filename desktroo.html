@@ -2388,6 +2388,42 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .wx-src { margin-top:10px; font-size:9.5px; color:var(--text-dim); text-align:right; }
   .wx-src a { color:inherit; }
 
+  /* Widget « Maison » : lampes et prises de Home Assistant, une ligne par appareil, qu'un clic allume ou éteint */
+  .ha-list { display:flex; flex-direction:column; gap:4px; }
+  .ha-item {
+    display:flex; align-items:center; gap:10px; width:100%; min-width:0; padding:6px 9px 6px 6px; border:0; border-radius:10px;
+    background:rgba(255,255,255,0.04); color:var(--text); font:inherit; font-size:12.5px; text-align:left; cursor:pointer; transition:background .15s;
+  }
+  .ha-item:hover { background:rgba(255,255,255,0.08); }
+  .ha-item:focus-visible { outline:2px solid var(--accent2); outline-offset:1px; }
+  .ha-item.away { cursor:default; }
+  .ha-item.away:hover { background:rgba(255,255,255,0.04); }
+  .ha-item.away .ha-name, .ha-item.away .ha-ico { opacity:.5; }
+  .ha-ico { display:grid; place-items:center; flex:0 0 auto; width:28px; height:28px; border-radius:8px; background:rgba(255,255,255,0.07); color:var(--text-dim); transition:background .2s, color .2s, box-shadow .2s; }
+  .ha-ico svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .ha-item.on .ha-ico { background:rgba(var(--accent-rgb),0.2); color:var(--accent2); }
+  .ha-item.on.light .ha-ico { background:rgba(251,191,36,0.2); color:#fbbf24; box-shadow:0 0 12px rgba(251,191,36,0.22); }
+  .ha-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ha-away { flex:0 0 auto; font-size:10.5px; color:var(--text-dim); }
+  .ha-sw { flex:0 0 auto; position:relative; width:30px; height:17px; border-radius:9px; background:rgba(255,255,255,0.16); transition:background .2s; }
+  .ha-sw::after { content:''; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.3); transition:transform .2s; }
+  .ha-item.on .ha-sw { background:var(--accent); }
+  .ha-item.on .ha-sw::after { transform:translateX(13px); }
+  .ha-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; font-size:11px; }
+  .ha-foot a, .ha-foot button { padding:0; border:0; background:none; color:var(--text-dim); font:inherit; text-decoration:none; cursor:pointer; }
+  .ha-foot a:hover, .ha-foot button:hover { color:var(--accent2); }
+  [data-theme="light"] .ha-item { background:rgba(13,27,53,0.05); }
+  [data-theme="light"] .ha-item:hover { background:rgba(13,27,53,0.09); }
+  [data-theme="light"] .ha-item.away:hover { background:rgba(13,27,53,0.05); }
+  [data-theme="light"] .ha-ico { background:rgba(13,27,53,0.08); }
+  [data-theme="light"] .ha-item.on.light .ha-ico { background:rgba(245,158,11,0.22); color:#b45309; box-shadow:none; }
+  [data-theme="light"] .ha-sw { background:rgba(13,27,53,0.2); }
+  @media (prefers-reduced-motion: reduce) { .ha-sw, .ha-sw::after, .ha-ico { transition:none; } }
+  /* Page de réglage : la liste des appareils connus de Home Assistant */
+  .ha-pick { display:flex; flex-direction:column; max-height:340px; overflow-y:auto; }
+  .ha-pick .web-row { min-height:44px; }
+  .ha-pick .web-row-desc { font-family:var(--font-mono); font-size:11px; }
+  .ha-pick input:disabled { opacity:.4; }
   /* Gestionnaire de widgets (Panneau de configuration) */
   .wg-places { display:flex; flex-direction:column; gap:0; margin-top:10px; }
   .wg-city { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border:1px solid var(--glass-border); border-radius:13px; background:rgba(255,255,255,0.03); font-size:13px; }
@@ -6580,7 +6616,54 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Cette VM tourne encore avec ses réglages de démarrage ({0}). Les réglages enregistrés depuis ({1}) s'appliqueront quand elle aura été arrêtée, puis démarrée : un redémarrage depuis la VM ne suffit pas.": "This VM is still running with the settings it started with ({0}). The settings saved since then ({1}) will apply once it has been shut down, then started: a reboot from inside the VM is not enough.",
 "{0} au prochain démarrage": "{0} at next start",
 "en cours d'utilisation": "in use now",
-"Machine virtuelle, {0} alloués": "Virtual machine, {0} allocated"
+"Machine virtuelle, {0} alloués": "Virtual machine, {0} allocated",
+"Maison": "Home",
+"Lampes et prises de Home Assistant": "Home Assistant lights and plugs",
+"Home Assistant refuse le jeton d'accès.": "Home Assistant rejects the access token.",
+"Home Assistant ne répond pas à cette adresse.": "Home Assistant is not answering at this address.",
+"Cette adresse ne répond pas comme un Home Assistant.": "This address does not answer like a Home Assistant.",
+"Le certificat de Home Assistant est refusé.": "The Home Assistant certificate is rejected.",
+"Home Assistant n'est pas relié.": "Home Assistant is not connected.",
+"Home Assistant ne connaît pas cet appareil.": "Home Assistant does not know this device.",
+"Home Assistant a renvoyé une erreur.": "Home Assistant returned an error.",
+"Relier": "Connect",
+"Régler": "Set up",
+"Home Assistant ne répond pas pour le moment.": "Home Assistant is not answering for now.",
+"Aucun appareil choisi.": "No device chosen.",
+"Choisir des appareils": "Choose devices",
+"sans réponse": "no answer",
+"{0} allumés": "{0} on",
+"tout est éteint": "everything is off",
+"indisponible": "unavailable",
+"Ouvrir Home Assistant": "Open Home Assistant",
+"Indiquez l'adresse de Home Assistant.": "Enter the Home Assistant address.",
+"Home Assistant est relié": "Home Assistant is connected",
+"Oublier la liaison avec Home Assistant ?": "Forget the Home Assistant connection?",
+"L'adresse, le jeton et la liste des appareils choisis sont effacés du NAS. Rien ne change dans Home Assistant.": "The address, the token and the list of chosen devices are erased from the NAS. Nothing changes in Home Assistant.",
+"Oublier": "Forget",
+"Aucun appareil ne contient « {0} ».": "No device contains “{0}”.",
+"Home Assistant ne connaît ni lampe ni prise.": "Home Assistant knows no light or plug.",
+"Lampes": "Lights",
+"Prises et interrupteurs": "Plugs and switches",
+"Les lampes et les prises de Home Assistant, sur le bureau.": "Home Assistant lights and plugs, on the desktop.",
+"Afficher le widget « Maison »": "Show the “Home” widget",
+"Une ligne par appareil : un clic l'allume ou l'éteint.": "One line per device: a click turns it on or off.",
+"Liaison": "Connection",
+"Relié à": "Connected to",
+"Adresse de Home Assistant": "Home Assistant address",
+"Jeton d'accès de longue durée": "Long-lived access token",
+"Laisser vide pour garder le jeton actuel": "Leave empty to keep the current token",
+"À coller ici": "Paste it here",
+"Dans Home Assistant : votre profil, onglet Sécurité, « Jetons d'accès de longue durée », puis « Créer un jeton ». Le jeton reste sur le NAS : il n'est jamais renvoyé au navigateur.": "In Home Assistant: your profile, Security tab, “Long-lived access tokens”, then “Create token”. The token stays on the NAS: it is never sent back to the browser.",
+"Vérification...": "Checking...",
+"Vérifier et enregistrer": "Check and save",
+"Appareils affichés": "Devices shown",
+"Rechercher un appareil": "Search for a device",
+"Les appareils apparaissent sur le bureau dans l'ordre où ils ont été cochés. Home Assistant range aussi parmi les prises des réglages d'appareils (voyant, mise à jour) : ne cochez que ce que vous voulez commander.": "Devices appear on the desktop in the order they were ticked. Home Assistant also lists device settings (indicator light, update) among the plugs: tick only what you want to control.",
+"La liaison et la liste des appareils sont gardées sur le NAS : elles valent pour tous les postes. L'affichage du widget, lui, se règle dans chaque navigateur.": "The connection and the device list are kept on the NAS: they apply to every device. Whether the widget is shown is set in each browser.",
+"{0} appareils": "{0} devices",
+"1 appareil": "1 device",
+"aucun appareil choisi": "no device chosen"
 }
 </script>
 <script id="dk-i18n">
@@ -7003,6 +7086,12 @@ document.addEventListener('DOMContentLoaded', function () {
     <div id="widget-pools">
       <div class="fs-loading"><div class="spinner"></div> Chargement...</div>
     </div>
+  </div>
+
+  <!-- Maison : lampes et prises de Home Assistant (masqué tant qu'on ne l'a pas choisi dans le gestionnaire de widgets) -->
+  <div class="widget" data-w="ha" id="widget-ha" hidden>
+    <div class="widget-title">Maison<span class="widget-title-side" id="ha-side"></span></div>
+    <div id="ha-body"></div>
   </div>
 
   <!-- Notifications -->
@@ -7707,6 +7796,7 @@ function initDesktop(sysInfo) {
   loadWidgetData();
   refreshInterval = setInterval(loadWidgetData, 60000); // toutes les 60s pour éviter le spam
   nwStart();
+  haStart();
   dlBadgeStart();
   setTimeout(function() { netPendingCheck(true); }, 2500);
   jobsBadgeStart();
@@ -7788,7 +7878,7 @@ function startClock() {
 // WIDGET DATA LOADER
 // ===========================
 async function loadWidgetData() {
-  await Promise.allSettled([loadPools(), loadSysStats(), loadNotifs(), loadWeather(), loadNetWidget()]);
+  await Promise.allSettled([loadPools(), loadSysStats(), loadNotifs(), loadWeather(), loadNetWidget(), loadHaWidget()]);
   appUpdatesCheck();
 }
 
@@ -13787,7 +13877,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.34.1';
+var DK_PAGE_VERSION = '2.35.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -15455,6 +15545,7 @@ function logout() {
   localStorage.removeItem('tn-user');
   clearInterval(refreshInterval); refreshInterval = null;
   nwStop();
+  haStop();
   // Fermer les fenêtres ouvertes
   document.querySelectorAll('.window.visible').forEach(function(w){ w.classList.remove('visible'); });
   document.getElementById('taskbar-apps').innerHTML = '';
@@ -19195,6 +19286,7 @@ function dkWidgetList() {
     { id: 'sys', label: T('Ressources système'), desc: T('Processeur, mémoire, température et durée de fonctionnement') },
     { id: 'net', label: T('Réseau'), desc: T('Débit reçu et envoyé sur la dernière heure') },
     { id: 'pools', label: T('Stockage'), desc: T('Remplissage et état des pools') },
+    { id: 'ha', label: T('Maison'), desc: T('Lampes et prises de Home Assistant'), off: true },
     { id: 'notifs', label: 'Notifications', desc: T('Alertes en cours et mises à jour disponibles') }
   ];
 }
@@ -19215,7 +19307,7 @@ function dkWidgetsApply() {
 function dkWidgetsShow(on) {
   try { localStorage.setItem('tn-widgets', on ? 'shown' : 'hidden'); } catch (e) {}
   dkWidgetsApply();
-  if (on) { loadWeather(); loadNetWidget(); }
+  if (on) { loadWeather(); loadNetWidget(); loadHaWidget(); }
   if (wmVisible('control') && _cp.nav === 'widgets') loadControl();
 }
 function dkWidgetSet(id, on) {
@@ -19225,9 +19317,207 @@ function dkWidgetSet(id, on) {
   dkWidgetsApply();
   if (on && id === 'weather') loadWeather();
   if (on && id === 'net') loadNetWidget();
-  if (wmVisible('control') && _cp.nav === 'widgets') loadControl();
+  if (on && id === 'ha') loadHaWidget();
+  if (wmVisible('control') && (_cp.nav === 'widgets' || _cp.nav === 'ha')) loadControl();
 }
 function dkWidgetsManage() { openApp('control'); cpGo('widgets'); }
+
+// ── Maison : lampes et prises de Home Assistant ──
+// Le bureau ne parle qu'au service de Desktroo ; c'est lui qui interroge Home Assistant, avec un jeton qu'il garde.
+// « hold » : après un clic, l'état voulu reste affiché quelques secondes, le temps que l'appareil le confirme.
+var _ha = { keepUrl: '', keepTok: '', cfg: null, items: null, url: '', err: null, seq: 0, timer: null, busy: {}, hold: {}, all: null, allErr: null, allBusy: false, q: '', edit: false, saving: false, formErr: '' };
+var HA_ICON = {
+  light: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>',
+  switch: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/></svg>'
+};
+function haErrText(r) {
+  var c = r && r.code;
+  if (c === 'auth') return T('Home Assistant refuse le jeton d\'accès.');
+  if (c === 'unreachable') return T('Home Assistant ne répond pas à cette adresse.');
+  if (c === 'not_ha') return T('Cette adresse ne répond pas comme un Home Assistant.');
+  if (c === 'tls') return T('Le certificat de Home Assistant est refusé.');
+  if (c === 'unconfigured') return T('Home Assistant n\'est pas relié.');
+  if (c === 'missing') return T('Home Assistant ne connaît pas cet appareil.');
+  return T('Home Assistant a renvoyé une erreur.');
+}
+function haManage() { openApp('control'); cpGo('ha'); }
+function haRender() {
+  var el = document.getElementById('ha-body'), side = document.getElementById('ha-side');
+  if (!el) return;
+  var msg = function(text, label) { return '<div class="widget-msg">' + text + (label ? '<br><button class="fs-btn" onclick="haManage()">' + label + '</button>' : '') + '</div>'; };
+  if (side) side.textContent = '';
+  if (_ha.err && _ha.err.code === 'unconfigured') { el.innerHTML = msg(T('Home Assistant n\'est pas relié.'), T('Relier')); return; }
+  if (_ha.err && _ha.err.code === 'auth') { el.innerHTML = msg(webEsc(haErrText(_ha.err)), T('Régler')); return; }
+  if (!_ha.items) { el.innerHTML = msg(_ha.err ? T('Home Assistant ne répond pas pour le moment.') : T('Chargement...')); return; }
+  if (!_ha.items.length) { el.innerHTML = msg(T('Aucun appareil choisi.'), T('Choisir des appareils')); return; }
+  var on = _ha.items.filter(function(i) { return i.state === 'on'; }).length;
+  if (side) side.textContent = _ha.err ? T('sans réponse') : (on ? Tf('{0} allumés', on) : T('tout est éteint'));
+  var h = '<div class="ha-list">' + _ha.items.map(function(i) {
+    var away = i.state === 'unavailable', isOn = i.state === 'on';
+    return '<button class="ha-item ' + (i.domain === 'light' ? 'light' : 'plug') + (isOn ? ' on' : '') + (away ? ' away' : '') + '" role="switch" aria-checked="' + isOn + '"' + (away ? ' aria-disabled="true"' : '')
+      + ' data-ha="' + webEsc(i.id) + '" title="' + webEsc(i.name) + '"><span class="ha-ico">' + (HA_ICON[i.domain] || HA_ICON.switch) + '</span><span class="ha-name">' + webEsc(i.name) + '</span>'
+      + (away ? '<span class="ha-away">' + T('indisponible') + '</span>' : '<span class="ha-sw"></span>') + '</button>';
+  }).join('') + '</div><div class="ha-foot">'
+    + (/^https?:\/\//.test(_ha.url) ? '<a href="' + webEsc(_ha.url) + '" target="_blank" rel="noopener noreferrer">' + T('Ouvrir Home Assistant') + '</a>' : '<span></span>')
+    + '<button type="button" onclick="haManage()">' + T('Régler') + '</button></div>';
+  var focus = document.activeElement && el.contains(document.activeElement) ? document.activeElement.getAttribute('data-ha') : null;
+  el.innerHTML = h;
+  el.querySelectorAll('[data-ha]').forEach(function(b) { b.onclick = function() { haToggle(b.getAttribute('data-ha')); }; if (focus && b.getAttribute('data-ha') === focus) b.focus(); });
+}
+async function loadHaWidget() {
+  if (!dkWidgetOn('ha')) return;
+  var seq = ++_ha.seq;
+  if (!_ha.items && !_ha.err) haRender();
+  var r = null;
+  try { r = await fileops('GET', 'ha/states'); } catch (e) { r = { ok: false, code: 'service' }; }
+  if (seq !== _ha.seq) return;
+  if (r && r.ok && Array.isArray(r.items)) {
+    var now = Date.now();
+    r.items.forEach(function(i) { var h = _ha.hold[i.id]; if (h && h.until > now && i.state !== 'unavailable') i.state = h.state; else delete _ha.hold[i.id]; });
+    _ha.items = r.items; _ha.url = r.url || ''; _ha.err = null;
+  } else {
+    _ha.err = r || { code: 'service' };
+    if (_ha.err.code === 'unconfigured' || _ha.err.code === 'auth') _ha.items = null;   // sinon la dernière liste connue reste affichée
+  }
+  haRender();
+}
+async function haToggle(id) {
+  var it = (_ha.items || []).find(function(i) { return i.id === id; });
+  if (!it || it.state === 'unavailable' || _ha.busy[id]) return;
+  var want = it.state !== 'on', before = it.state;
+  _ha.busy[id] = true;
+  it.state = want ? 'on' : 'off';
+  _ha.hold[id] = { state: it.state, until: Date.now() + 4000 };
+  haRender();
+  try {
+    var r = await fileops('POST', 'ha/switch', { id: id, on: want });
+    if (!r || r.ok === false) throw new Error(haErrText(r));
+  } catch (e) {
+    it.state = before; delete _ha.hold[id];
+    if (!e || e.message !== 'LICENSE_READONLY') toast('❌ ' + ((e && e.message) || e), 6000);
+  }
+  delete _ha.busy[id];
+  haRender();
+  setTimeout(loadHaWidget, 1800);
+}
+// Relu toutes les cinq secondes tant que le bureau est affiché : un interrupteur actionné au mur s'y reflète vite.
+function haStart() { haStop(); _ha.timer = setInterval(function() { if (!document.hidden) loadHaWidget(); }, 5000); }
+function haStop() { if (_ha.timer) { clearInterval(_ha.timer); _ha.timer = null; } }
+
+// ── Page « Maison » du Panneau de configuration : la liaison, puis le choix des appareils ──
+async function haCfgLoad(force) {
+  if (_ha.cfg && !force) return _ha.cfg;
+  try { _ha.cfg = await fileops('GET', 'ha/config'); } catch (e) { _ha.cfg = { ok: false, configured: false, url: '', entities: [], failed: true }; }
+  if (wmVisible('control') && (_cp.nav === 'ha' || _cp.nav === 'widgets')) loadControl();
+  return _ha.cfg;
+}
+async function haAllLoad() {
+  if (_ha.allBusy) return;
+  _ha.allBusy = true; _ha.allErr = null;
+  var r = null;
+  try { r = await fileops('GET', 'ha/entities'); } catch (e) { r = { ok: false, code: 'service' }; }
+  _ha.allBusy = false;
+  if (r && r.ok && Array.isArray(r.entities)) _ha.all = r.entities; else { _ha.all = null; _ha.allErr = r || { code: 'service' }; }
+  if (wmVisible('control') && _cp.nav === 'ha') loadControl();
+}
+async function haConnect() {
+  if (_ha.saving) return;
+  var url = wmVal('ha-url'), tok = (document.getElementById('ha-token') || {}).value || '';
+  if (!url) { _ha.formErr = T('Indiquez l\'adresse de Home Assistant.'); loadControl(); return; }
+  _ha.saving = true; _ha.formErr = '';
+  _ha.keepUrl = url; _ha.keepTok = tok;   // la page se redessine pendant la vérification : ce qui a été saisi reste dans les champs
+  loadControl();
+  try {
+    var r = await fileops('POST', 'ha/config', { url: url, token: tok.trim() });
+    if (!r || r.ok === false) throw new Error(haErrText(r));
+    _ha.cfg = r; _ha.edit = false; _ha.all = null; _ha.items = null; _ha.err = null; _ha.keepUrl = ''; _ha.keepTok = '';
+    if (!dkWidgetsGet().ha) dkWidgetSet('ha', true);
+    toast(T('Home Assistant est relié'));
+    loadHaWidget();
+  } catch (e) {
+    if (e && e.message === 'LICENSE_READONLY') _ha.formErr = '';
+    else _ha.formErr = (e && e.message) || String(e);
+  }
+  _ha.saving = false;
+  if (wmVisible('control') && _cp.nav === 'ha') loadControl();
+}
+async function haForget() {
+  if (!await showConfirm(T('Oublier la liaison avec Home Assistant ?<br><span style="font-size:12px;color:var(--text-dim);">L\'adresse, le jeton et la liste des appareils choisis sont effacés du NAS. Rien ne change dans Home Assistant.</span>'), { danger: true, ok: T('Oublier') })) return;
+  try {
+    _ha.cfg = await fileops('POST', 'ha/forget', {});
+    _ha.all = null; _ha.items = null; _ha.err = { code: 'unconfigured' }; _ha.edit = false; _ha.formErr = ''; _ha.keepUrl = ''; _ha.keepTok = '';
+    haRender();
+  } catch (e) { if (!e || e.message !== 'LICENSE_READONLY') wmToastErr(e); }
+  if (wmVisible('control') && _cp.nav === 'ha') loadControl();
+}
+async function haPick(id, on) {
+  var cur = ((_ha.cfg && _ha.cfg.entities) || []).filter(function(e) { return e !== id; });
+  if (on) cur.push(id);
+  try {
+    var r = await fileops('POST', 'ha/favorites', { entities: cur });
+    if (!r || r.ok === false) throw new Error(haErrText(r));
+    _ha.cfg = r;
+    loadHaWidget();
+  } catch (e) { if (!e || e.message !== 'LICENSE_READONLY') wmToastErr(e); }
+  haPickRender();
+}
+function haPickFilter(q) { _ha.q = String(q || ''); haPickRender(); }
+// La liste seule se redessine à la frappe : le champ de recherche garde la main.
+function haPickRender() {
+  var el = document.getElementById('ha-pick'), count = document.getElementById('ha-count');
+  if (!el || !_ha.all) return;
+  var fav = (_ha.cfg && _ha.cfg.entities) || [], max = (_ha.cfg && _ha.cfg.max) || 24, q = _ha.q.trim().toLowerCase();
+  if (count) count.textContent = Tf('{0} sur {1}', fav.length, max);
+  var list = _ha.all.filter(function(e) { return !q || e.name.toLowerCase().indexOf(q) >= 0 || e.id.toLowerCase().indexOf(q) >= 0; });
+  if (!list.length) { el.innerHTML = '<p class="web-note" style="margin:10px 14px;">' + (_ha.all.length ? webEsc(Tf('Aucun appareil ne contient « {0} ».', _ha.q.trim())) : T('Home Assistant ne connaît ni lampe ni prise.')) + '</p>'; return; }
+  var h = '', group = '';
+  list.forEach(function(e) {
+    if (e.domain !== group) { group = e.domain; h += '<div class="web-side-title" style="padding:10px 14px 4px;"><span>' + (group === 'light' ? T('Lampes') : T('Prises et interrupteurs')) + '</span></div>'; }
+    var picked = fav.indexOf(e.id) >= 0;
+    h += '<label class="web-row" style="cursor:pointer;"><span class="web-row-text"><span class="web-row-name">' + webEsc(e.name) + (e.state === 'unavailable' ? ' <span class="dim" style="font-weight:400;">' + T('indisponible') + '</span>' : '') + '</span>'
+      + '<span class="web-row-desc">' + webEsc(e.id) + '</span></span><input type="checkbox" data-pick="' + webEsc(e.id) + '"' + (picked ? ' checked' : '') + (!picked && fav.length >= max ? ' disabled' : '') + '></label>';
+  });
+  el.innerHTML = h;
+  el.querySelectorAll('[data-pick]').forEach(function(c) { c.onchange = function() { haPick(c.getAttribute('data-pick'), c.checked); }; });
+}
+function cpHaView() {
+  var cfg = _ha.cfg;
+  wmHead('cp', T('Maison'), { back: ['Widgets', 'cpGo(\'widgets\')'], narrow: true, keepScroll: true, sub: T('Les lampes et les prises de Home Assistant, sur le bureau.') });
+  if (!cfg) { wmLoading('cp'); haCfgLoad(); return; }
+  var linked = !!cfg.configured, form = !linked || _ha.edit;
+  var h = '<div class="web-group" style="margin-top:6px;">'
+    + wmSwitch('wg-ha', T('Afficher le widget « Maison »'), T('Une ligne par appareil : un clic l\'allume ou l\'éteint.'), dkWidgetsGet().ha, 'onchange="dkWidgetSet(\'ha\', this.checked)"') + '</div>';
+  h += '<div class="web-group-title">' + T('Liaison') + '</div>';
+  if (linked) h += '<div class="wg-city"><span>' + T('Relié à') + ' <b translate="no">' + webEsc(cfg.url) + '</b></span><span style="display:flex;gap:8px;">'
+    + (form ? '' : '<button class="fs-btn" onclick="_ha.edit=true;_ha.formErr=\'\';loadControl()">' + T('Modifier') + '</button>') + '<button class="fs-btn" onclick="haForget()">' + T('Oublier') + '</button></span></div>';
+  if (form) {
+    h += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:' + (linked ? '14px' : '0') + ';">'
+      + wmField(T('Adresse de Home Assistant'), wmInput('ha-url', _ha.keepUrl || cfg.url || '', 'placeholder="http://192.168.1.10:8123" spellcheck="false" onkeydown="if(event.key===\'Enter\')haConnect()"'))
+      + wmField(T('Jeton d\'accès de longue durée'), '<input class="wm-input" id="ha-token" type="password" autocomplete="off" spellcheck="false" placeholder="' + webEsc(cfg.has_token ? T('Laisser vide pour garder le jeton actuel') : T('À coller ici')) + '" onkeydown="if(event.key===\'Enter\')haConnect()">',
+          T('Dans Home Assistant : votre profil, onglet Sécurité, « Jetons d\'accès de longue durée », puis « Créer un jeton ». Le jeton reste sur le NAS : il n\'est jamais renvoyé au navigateur.'))
+      + '<div class="web-foot" style="justify-content:flex-start;margin-top:0;"><button class="web-open" onclick="haConnect()"' + (_ha.saving ? ' disabled' : '') + '>' + (_ha.saving ? T('Vérification...') : T('Vérifier et enregistrer')) + '</button>'
+      + (linked ? '<button class="fs-btn" onclick="_ha.edit=false;_ha.formErr=\'\';_ha.keepUrl=\'\';_ha.keepTok=\'\';loadControl()">' + T('Annuler') + '</button>' : '') + '</div>'
+      + (_ha.formErr ? '<p class="web-note" style="margin:0;color:var(--warning);">' + webEsc(_ha.formErr) + '</p>' : '') + '</div>';
+  }
+  if (linked) {
+    h += '<div class="web-group-title">' + T('Appareils affichés') + '<span class="web-count" id="ha-count" style="margin-left:8px;"></span></div>';
+    if (_ha.all) {
+      h += '<div style="margin-bottom:8px;"><input class="snap-find" id="ha-q" type="search" style="width:100%;max-width:none;" placeholder="' + webEsc(T('Rechercher un appareil')) + '" aria-label="' + webEsc(T('Rechercher un appareil')) + '" value="' + webEsc(_ha.q) + '" oninput="haPickFilter(this.value)"></div>'
+        + '<div class="web-group ha-pick" id="ha-pick"></div>'
+        + '<p class="web-note">' + T('Les appareils apparaissent sur le bureau dans l\'ordre où ils ont été cochés. Home Assistant range aussi parmi les prises des réglages d\'appareils (voyant, mise à jour) : ne cochez que ce que vous voulez commander.') + '</p>';
+    } else if (_ha.allErr) {
+      h += '<p class="web-note" style="margin-top:0;">' + webEsc(haErrText(_ha.allErr)) + '</p><p style="margin:10px 0 0;"><button class="fs-btn" onclick="haAllLoad()">' + T('Réessayer') + '</button></p>';
+    } else {
+      h += '<div class="fs-loading" style="height:90px;"><div class="spinner"></div> ' + T('Chargement...') + '</div>';
+      haAllLoad();
+    }
+  }
+  h += '<p class="web-note">' + T('La liaison et la liste des appareils sont gardées sur le NAS : elles valent pour tous les postes. L\'affichage du widget, lui, se règle dans chaque navigateur.') + '</p>';
+  wmBody('cp').innerHTML = h;
+  var tok = document.getElementById('ha-token');
+  if (tok && _ha.keepTok) tok.value = _ha.keepTok;   // gardé en mémoire le temps de la saisie, jamais enregistré dans le navigateur
+  haPickRender();
+}
 
 // ── Météo : prévisions de MET Norway, demandées par le NAS ──
 var _wx = { key: '', at: 0, data: null, err: '', places: null, q: '', busy: false };
@@ -19463,6 +19753,12 @@ function cpWidgetsView() {
     } else h += '<p class="web-note">' + (_wx.searchErr ? T('La recherche n\'a pas abouti. Le NAS a besoin d\'un accès à Internet.') : webEsc(Tf('Aucune ville trouvée pour « {0} ».', _wx.q))) + '</p>';
   }
   h += '<p class="web-note">' + T('Prévisions de MET Norway, recherche de ville par OpenStreetMap. C\'est le NAS qui les interroge : il lui faut un accès à Internet, et seule la position de la ville, arrondie au kilomètre, leur est envoyée.') + '</p>';
+  // Maison : la liaison avec Home Assistant et les appareils se règlent sur leur propre page
+  var hc = _ha.cfg;
+  if (!hc) haCfgLoad();
+  h += '<div class="web-group-title">' + T('Maison') + '</div><div class="wg-city"><span>' + (hc && hc.configured
+      ? T('Relié à') + ' <b translate="no">' + webEsc(hc.url) + '</b> <span>' + webEsc(hc.entities.length > 1 ? Tf('{0} appareils', hc.entities.length) : hc.entities.length ? T('1 appareil') : T('aucun appareil choisi')) + '</span>'
+      : T('Home Assistant n\'est pas relié.')) + '</span><button class="fs-btn" onclick="cpGo(\'ha\')">' + (hc && hc.configured ? T('Régler') : T('Relier')) + '</button></div>';
   // Réseau : l'interface suivie
   var ids = _nw.ids || [], cur = nwChosen();
   h += '<div class="web-group-title">' + T('Réseau') + '</div>' + wmField(T('Interface suivie'),
@@ -19607,7 +19903,7 @@ function cpGroups() {
   ];
 }
 function cpEntry(id) { return cpExtra()[id] || ALL_APPS.find(function(a) { return a.id === id; }) || null; }
-var CP_PAGES = { look: cpLookView, bar: cpBarView, widgets: cpWidgetsView, glass: cpGlassView, install: cpInstallView };   // pages de réglage du domaine « Bureau Desktroo »
+var CP_PAGES = { look: cpLookView, bar: cpBarView, widgets: cpWidgetsView, glass: cpGlassView, install: cpInstallView, ha: cpHaView };   // pages de réglage du domaine « Bureau Desktroo »
 function cpGo(nav) {
   _cp.nav = nav; _cp.q = '';
   var g = cpGroups().find(function(x) { return x.key === nav || (CP_PAGES[nav] && x.items.some(function(it) { return it[0] === nav; })); });

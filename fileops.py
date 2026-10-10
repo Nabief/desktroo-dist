@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.34.1'
+APP_VERSION = '2.35.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -7442,6 +7442,213 @@ def _report_send(b):
     return {'ok': True, 'id': j.get('id')}
 
 
+# ── MDM-HA-V1 : lampes et prises de Home Assistant sur le bureau ─────────────
+# Le bureau ne parle jamais à Home Assistant : c'est ce service qui le fait, avec un jeton d'accès
+# que l'utilisateur saisit une fois et qui reste ici (fichier lisible du seul service). Le jeton n'est
+# jamais renvoyé au navigateur. Seuls les appareils choisis comme favoris peuvent être commandés.
+import socket as _ha_socket
+import time as _ha_time
+from concurrent.futures import ThreadPoolExecutor as _HaPool
+
+HA_FILE = os.path.join(ACCESS_DATA_DIR, 'homeassistant.json')
+_ha_lock = _threading.RLock()
+_HA_ENTITY = re.compile(r'^(light|switch)\.[a-z0-9_]{1,200}$')
+_HA_MAX = 24
+_HA_CACHE = {'t': 0.0, 'v': None}
+_HA_ERRORS = {
+    'unconfigured': "Home Assistant n'est pas relié.",
+    'auth': 'Home Assistant refuse le jeton.',
+    'unreachable': 'Home Assistant ne répond pas à cette adresse.',
+    'not_ha': "Cette adresse ne répond pas comme un Home Assistant.",
+    'tls': 'Le certificat de Home Assistant est refusé.',
+    'http': 'Home Assistant a renvoyé une erreur.',
+    'missing': 'Home Assistant ne connaît pas cet appareil.',
+}
+
+
+class _HaError(Exception):
+    def __init__(self, code, detail=''):
+        Exception.__init__(self, _HA_ERRORS.get(code, code))
+        self.code, self.detail = code, str(detail or '')[:200]
+
+
+def _ha_fail(e):
+    """Réponse d'échec lisible par le bureau : un code qu'il traduit, et le détail technique."""
+    if isinstance(e, _HaError):
+        return {'ok': False, 'code': e.code, 'error': str(e), 'detail': e.detail}
+    return {'ok': False, 'code': 'http', 'error': _HA_ERRORS['http'], 'detail': str(e)[:200]}
+
+
+def _ha_read():
+    with _ha_lock:
+        d = _access_read_json(HA_FILE, {})
+        d = d if isinstance(d, dict) else {}
+    ents = [e for e in (d.get('entities') or []) if isinstance(e, str) and _HA_ENTITY.match(e)]
+    return {'url': str(d.get('url') or ''), 'token': str(d.get('token') or ''), 'entities': ents[:_HA_MAX]}
+
+
+def _ha_save(cfg):
+    with _ha_lock:
+        _access_write_json(HA_FILE, {'url': cfg.get('url') or '', 'token': cfg.get('token') or '',
+                                     'entities': list(cfg.get('entities') or [])[:_HA_MAX]})
+        _HA_CACHE['v'] = None
+
+
+def _ha_public(cfg=None):
+    cfg = cfg or _ha_read()
+    return {'ok': True, 'configured': bool(cfg['url'] and cfg['token']), 'url': cfg['url'],
+            'has_token': bool(cfg['token']), 'entities': cfg['entities'], 'max': _HA_MAX}
+
+
+def _ha_clean_url(value):
+    url = str(value or '').strip().rstrip('/')
+    if url and '://' not in url:
+        url = 'http://' + url
+    p = urlparse(url)
+    if p.scheme not in ('http', 'https') or not p.hostname or len(url) > 200:
+        raise ValueError("Adresse attendue sous la forme http://adresse:8123")
+    if p.username or p.password or p.query or p.fragment:
+        raise ValueError("L'adresse ne doit contenir ni identifiant ni paramètre.")
+    return p.scheme + '://' + p.netloc + p.path.rstrip('/')
+
+
+def _ha_http(cfg, method, path, body=None, timeout=8):
+    import urllib.request, urllib.error, ssl
+    if not (cfg.get('url') and cfg.get('token')):
+        raise _HaError('unconfigured')
+
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):   # le jeton ne suit jamais une redirection vers une autre adresse
+            return None
+
+    data = json.dumps(body).encode('utf-8') if body is not None else None
+    req = urllib.request.Request(cfg['url'] + path, data=data, method=method)
+    req.add_header('Authorization', 'Bearer ' + cfg['token'])
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('User-Agent', 'Desktroo')
+    try:
+        with urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout) as r:
+            raw = r.read(32 * 1024 * 1024)
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise _HaError('auth', 'HTTP %d' % e.code)
+        if e.code == 404:
+            raise _HaError('missing', 'HTTP 404')
+        raise _HaError('not_ha' if 300 <= e.code < 400 else 'http', 'HTTP %d' % e.code)
+    except urllib.error.URLError as e:
+        if isinstance(getattr(e, 'reason', None), ssl.SSLError):
+            raise _HaError('tls', e.reason)
+        raise _HaError('unreachable', getattr(e, 'reason', e))
+    except (_ha_socket.timeout, OSError) as e:
+        raise _HaError('unreachable', e)
+    try:
+        return json.loads(raw.decode('utf-8', 'replace') or 'null')
+    except ValueError:
+        raise _HaError('not_ha', 'réponse illisible')
+
+
+def _ha_item(st, eid=None):
+    st = st if isinstance(st, dict) else {}
+    eid = str(st.get('entity_id') or eid or '')
+    attrs = st.get('attributes') if isinstance(st.get('attributes'), dict) else {}
+    state = str(st.get('state') or 'unavailable')
+    return {'id': eid, 'domain': eid.split('.', 1)[0], 'name': str(attrs.get('friendly_name') or eid)[:80],
+            'state': state if state in ('on', 'off') else 'unavailable'}
+
+
+def _ha_test(cfg):
+    try:
+        res = _ha_http(cfg, 'GET', '/api/')
+    except _HaError as e:
+        if e.code == 'missing':
+            raise _HaError('not_ha', e.detail)
+        raise
+    if not isinstance(res, dict) or 'message' not in res:
+        raise _HaError('not_ha', 'réponse inattendue')
+    return True
+
+
+def _ha_connect(body):
+    """Enregistre l'adresse et le jeton, une fois la liaison vérifiée. Sans jeton fourni, celui déjà gardé sert."""
+    cur = _ha_read()
+    url = _ha_clean_url(body.get('url'))
+    token = str(body.get('token') or '').strip() or (cur['token'] if url == cur['url'] else '')
+    if not token or len(token) > 2000 or any(ch.isspace() for ch in token):
+        raise ValueError("Jeton d'accès attendu.")
+    cfg = {'url': url, 'token': token, 'entities': cur['entities'] if url == cur['url'] else []}
+    _ha_test(cfg)
+    _ha_save(cfg)
+    return _ha_public(cfg)
+
+
+def _ha_set_favorites(ids):
+    cfg = _ha_read()
+    out = []
+    for e in (ids if isinstance(ids, list) else []):
+        if isinstance(e, str) and _HA_ENTITY.match(e) and e not in out:
+            out.append(e)
+    if len(out) > _HA_MAX:
+        raise ValueError('%d appareils au plus.' % _HA_MAX)
+    cfg['entities'] = out
+    _ha_save(cfg)
+    return _ha_public(cfg)
+
+
+def _ha_entities():
+    """Toutes les lampes et prises que Home Assistant connaît, pour le choix des favoris."""
+    states = _ha_http(_ha_read(), 'GET', '/api/states', timeout=15)
+    items = [_ha_item(s) for s in (states if isinstance(states, list) else [])
+             if isinstance(s, dict) and _HA_ENTITY.match(str(s.get('entity_id') or ''))]
+    items.sort(key=lambda x: (x['domain'], x['name'].lower()))
+    return {'ok': True, 'entities': items}
+
+
+def _ha_states():
+    cfg = _ha_read()
+    if not (cfg['url'] and cfg['token']):
+        raise _HaError('unconfigured')
+    now = _ha_time.time()
+    with _ha_lock:
+        hit = _HA_CACHE['v']
+        if hit is not None and now - _HA_CACHE['t'] < 1.5:
+            return hit
+
+    def one(eid):
+        try:
+            return _ha_item(_ha_http(cfg, 'GET', '/api/states/' + eid, timeout=6), eid)
+        except _HaError as e:
+            if e.code == 'missing':   # appareil retiré de Home Assistant : il reste affiché, indisponible
+                return _ha_item({}, eid)
+            raise
+
+    if cfg['entities']:
+        with _HaPool(max_workers=6) as pool:
+            items = list(pool.map(one, cfg['entities']))
+    else:
+        _ha_test(cfg)
+        items = []
+    res = {'ok': True, 'items': items, 'url': cfg['url']}
+    with _ha_lock:
+        _HA_CACHE['t'], _HA_CACHE['v'] = _ha_time.time(), res
+    return res
+
+
+def _ha_switch(eid, on):
+    cfg = _ha_read()
+    eid = str(eid or '')
+    if eid not in cfg['entities']:
+        raise ValueError("Cet appareil ne fait pas partie des favoris.")
+    domain = eid.split('.', 1)[0]
+    changed = _ha_http(cfg, 'POST', '/api/services/%s/%s' % (domain, 'turn_on' if on else 'turn_off'), {'entity_id': eid})
+    with _ha_lock:
+        _HA_CACHE['v'] = None
+    item = None
+    for st in (changed if isinstance(changed, list) else []):
+        if isinstance(st, dict) and st.get('entity_id') == eid:
+            item = _ha_item(st)
+    return {'ok': True, 'item': item}
+
+
 # ── MDM-MEMORY-V1 : qui occupe la mémoire du NAS ─────────────────────────────
 # Résumé (jauge du bureau) : /proc/meminfo et les compteurs du cache ZFS se lisent d'ici, le conteneur
 # voit ceux de l'hôte. Détail (Informations système) : la liste des processus, elle, se lit sur le NAS,
@@ -8006,6 +8213,17 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(400, {'error': str(e)})
             except Exception as e:
                 self._json(500, {'error': str(e)})
+            return
+
+        # MDM-HA-V1 : liaison avec Home Assistant, appareils connus, état des favoris
+        if path == '/ha/config':
+            self._json(200, _ha_public())
+            return
+        if path in ('/ha/entities', '/ha/states'):
+            try:
+                self._json(200, _ha_entities() if path == '/ha/entities' else _ha_states())
+            except Exception as e:
+                self._json(200, _ha_fail(e))
             return
 
         # MDM-MEMORY-V1 : répartition de la mémoire (jauge du bureau), puis qui la consomme (Informations système)
@@ -8999,6 +9217,25 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                                  'version': APP_VERSION})
             except Exception as e:
                 self._json(500, {'error': str(e)})
+            return
+
+        # MDM-HA-V1 : relier Home Assistant, choisir les favoris, allumer ou éteindre, oublier la liaison
+        if path in ('/ha/config', '/ha/favorites', '/ha/switch', '/ha/forget'):
+            try:
+                b = self._body()
+                if path == '/ha/config':
+                    self._json(200, _ha_connect(b))
+                elif path == '/ha/favorites':
+                    self._json(200, _ha_set_favorites(b.get('entities')))
+                elif path == '/ha/switch':
+                    self._json(200, _ha_switch(b.get('id'), bool(b.get('on'))))
+                else:
+                    _ha_save({'url': '', 'token': '', 'entities': []})
+                    self._json(200, _ha_public())
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(200, _ha_fail(e))
             return
 
         # MDM-PREMIUM-V1 : gestion des comptes premium / débrideurs
