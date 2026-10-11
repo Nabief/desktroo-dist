@@ -1704,6 +1704,201 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #win-apps, #win-docker, #win-catalog { min-width:860px; min-height:520px; }
   .web-nav > .web-count { margin-left:auto; }
   a.web-mini { text-decoration:none; }
+  /* ── Feuille : corbeille, versions précédentes ── */
+  .dk-sheet-back { position:fixed; inset:0; z-index:3200; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(4,9,18,0.58); backdrop-filter:blur(8px); }
+  .dk-sheet-back.open { display:flex; }
+  .dk-sheet { display:flex; flex-direction:column; width:min(620px,100%); max-height:min(760px,88vh); background:var(--window-bg); border:1px solid var(--glass-border); border-radius:var(--radius); box-shadow:var(--shadow); color:var(--text); overflow:hidden; }
+  .dk-sheet.wide { width:min(880px,100%); }
+  .dk-sheet-head { display:flex; align-items:flex-start; gap:14px; padding:20px 22px 14px; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
+  .dk-sheet-heads { flex:1; min-width:0; }
+  .dk-sheet-heads h3 { margin:0; font-family:var(--font-display); font-size:19px; font-weight:700; letter-spacing:-0.01em; }
+  .dk-sheet-heads p { margin:5px 0 0; font-size:12.5px; line-height:1.5; color:var(--text-dim); overflow-wrap:anywhere; }
+  .dk-sheet-crumb { display:flex; gap:14px; margin-bottom:4px; }
+  .dk-sheet-x { display:grid; place-items:center; width:30px; height:30px; flex-shrink:0; border-radius:8px; border:0; background:transparent; color:var(--text-dim); cursor:pointer; }
+  .dk-sheet-x:hover { background:rgba(255,255,255,0.08); color:var(--text); }
+  .dk-sheet-x svg { width:16px; height:16px; }
+  .dk-sheet-body { flex:1; min-height:140px; overflow:auto; padding:6px 22px 18px; }
+  .dk-sheet-body .dk-wait { min-height:260px; }
+  .dk-sheet-body .dim { color:var(--text-dim); }
+  .dk-sheet .mono { font-family:var(--font-mono); font-size:11.5px; }
+  .dk-sheet-empty { margin:34px auto; }
+  .dk-sheet-empty > svg { width:46px; height:46px; }
+  .dk-sheet-empty .web-open { margin-top:10px; }
+  .dk-sheet-warn { margin:12px 0 4px; padding:10px 12px; border-radius:10px; border:1px solid rgba(245,158,11,0.45); background:rgba(245,158,11,0.08); color:var(--text); }
+  .dk-sheet-foot { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:12px 22px; border-top:1px solid var(--glass-border); flex-shrink:0; }
+  .dk-sheet-grow { flex:1; }
+  .dk-sheet-set { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); }
+  .dk-sheet-set .wm-input { width:auto; padding:5px 10px; font-size:12px; }
+  .dk-sheet-x:focus-visible, .dk-sheet .fs-btn:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
+  .web-table.fsx-trash { --wt-cols:minmax(0,1.5fr) 84px minmax(0,0.9fr) 132px; }
+  .web-table.fsx-vers { --wt-cols:minmax(0,1fr) 84px 336px; }
+  .web-table.fsx-vlist { --wt-cols:minmax(0,1.4fr) 84px 110px 214px; }
+  .web-table.fsx-trash .web-tr:not(.head), .web-table.fsx-vers .web-tr:not(.head), .web-table.fsx-vlist .web-tr:not(.head) { min-height:50px; }
+  .fsx-name { display:flex; align-items:center; gap:10px; }
+  .fsx-name .fs-ic { width:26px; height:26px; flex-shrink:0; }
+  .fsx-name .cron-two { flex:1; }
+  .fsx-acts { display:flex; justify-content:flex-end; gap:6px; overflow:visible !important; }
+  .web-mini:disabled { opacity:.45; cursor:default; pointer-events:none; }
+  .web-mini.fsx-del { display:grid; place-items:center; width:26px; padding:3px 0; }
+  .web-mini.fsx-del svg { width:13px; height:13px; }
+  .web-mini.fsx-del:hover { color:var(--danger); border-color:rgba(224,82,82,0.5); }
+  .fs-btn.fsx-danger { color:var(--danger); border-color:rgba(224,82,82,0.4); }
+  .fs-btn.fsx-danger:hover { background:rgba(224,82,82,0.12); border-color:var(--danger); color:var(--danger); }
+  [data-theme="light"] .fs-btn.fsx-danger { color:#b42323; border-color:rgba(180,35,35,0.45); }
+  .fsx-gone { color:var(--warning); font-size:11px; }
+  [data-theme="light"] .fsx-gone { color:#a25f00; }
+  [data-theme="light"] .dk-sheet-back { background:rgba(30,45,75,0.34); }
+  [data-theme="light"] .dk-sheet-x:hover { background:rgba(13,27,53,0.08); }
+  .fsx-trash-item svg { opacity:.85; }
+  /* ── Analyse de l'espace. Couleurs de série : fixes par nature (fichiers, snapshots, réservations, corbeille), validées sur les deux fonds. ── */
+  .sp-viz { --sp-1:#3987e5; --sp-2:#d95926; --sp-3:#199e70; --sp-4:#c98500; --sp-track:rgba(255,255,255,0.1); }
+  [data-theme="light"] .sp-viz { --sp-1:#2a78d6; --sp-2:#eb6834; --sp-3:#1baf7a; --sp-4:#eda100; --sp-track:rgba(13,27,53,0.12); }
+  .sp-viz .web-group-title.first { margin-top:6px; }
+  .sp-stack { display:flex; gap:2px; height:22px; border-radius:4px; overflow:hidden; }
+  .sp-seg { min-width:3px; height:100%; }
+  .sp-seg.free, .sp-sw.free { background:var(--sp-track); }
+  .sp-viz .s1 { background:var(--sp-1); } .sp-viz .s2 { background:var(--sp-2); } .sp-viz .s3 { background:var(--sp-3); } .sp-viz .s4 { background:var(--sp-4); }
+  .sp-legend { display:flex; flex-direction:column; margin-top:12px; }
+  .sp-leg { display:grid; grid-template-columns:12px minmax(0,1fr) 92px 52px; align-items:baseline; gap:10px; padding:6px 0; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.06); }
+  [data-theme="light"] .sp-leg { border-bottom-color:rgba(13,27,53,0.08); }
+  .sp-leg:last-child { border-bottom:0; }
+  .sp-sw { width:10px; height:10px; border-radius:3px; align-self:center; }
+  .sp-leg-name { color:var(--text); min-width:0; }
+  .sp-leg-hint { margin-left:10px; font-size:12px; color:var(--text-dim); }
+  .sp-leg-val { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:var(--text); }
+  .sp-leg-pct { text-align:right; font-variant-numeric:tabular-nums; color:var(--text-dim); font-size:12px; }
+  .sp-rows { display:flex; flex-direction:column; }
+  .sp-row { display:grid; grid-template-columns:minmax(120px,0.8fr) minmax(0,1.6fr) 84px 14px; align-items:center; gap:12px; width:100%; min-height:34px; padding:4px 8px; border:0; border-radius:8px; background:transparent; color:var(--text); font:inherit; font-size:13px; text-align:left; }
+  button.sp-row { cursor:pointer; }
+  button.sp-row:hover { background:rgba(255,255,255,0.06); }
+  [data-theme="light"] button.sp-row:hover { background:rgba(13,27,53,0.06); }
+  button.sp-row:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
+  .sp-row-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sp-bar { display:flex; gap:2px; height:10px; }
+  .sp-bar i { display:block; height:100%; min-width:2px; }
+  .sp-bar i:last-child { border-radius:0 4px 4px 0; }
+  .sp-row-val { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .sp-row-val.dim { color:var(--text-dim); font-size:12px; }
+  .sp-row-chev { color:var(--text-dim); font-size:15px; line-height:1; }
+  .sp-tag { margin-left:6px; padding:1px 6px; border-radius:999px; border:1px solid var(--glass-border); font-size:10.5px; color:var(--text-dim); }
+  .sp-more { margin:8px 0 0 8px; }
+  .web-table.sp-snaps { --wt-cols:minmax(0,1fr) 150px 92px; }
+  .web-table.sp-snaps .web-tr:not(.head) { min-height:46px; }
+  .web-table.sp-files { --wt-cols:minmax(0,1fr) 92px; }
+  .web-table.sp-files .fsx-name strong { overflow:hidden; text-overflow:ellipsis; font-weight:500; }
+  .sp-wait .dk-wait { min-height:300px; }
+  @media (max-width:720px) { .sp-leg-hint { display:none; } .sp-row { grid-template-columns:minmax(90px,1fr) minmax(0,1fr) 76px 12px; } }
+  /* ── Journal d'activité ── */
+  .ac-list .web-group-title.first { margin-top:4px; }
+  .ac-row { display:grid; grid-template-columns:64px 26px minmax(0,1fr) auto; align-items:start; gap:10px; padding:9px 8px; border-radius:8px; }
+  .ac-row:hover { background:rgba(255,255,255,0.04); }
+  [data-theme="light"] .ac-row:hover { background:rgba(13,27,53,0.045); }
+  .ac-time { padding-top:2px; white-space:nowrap; font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+  .ac-ic { display:grid; place-items:center; width:26px; height:26px; border-radius:8px; background:rgba(255,255,255,0.06); color:var(--text-dim); }
+  [data-theme="light"] .ac-ic { background:rgba(13,27,53,0.07); }
+  .ac-ic svg { width:14px; height:14px; }
+  .ac-row.bad .ac-ic { background:rgba(224,82,82,0.14); color:var(--danger); }
+  .ac-text { display:flex; flex-direction:column; gap:2px; min-width:0; font-size:13px; line-height:1.5; }
+  .ac-what { overflow-wrap:anywhere; }
+  .ac-what strong { font-weight:600; }
+  .ac-who { font-weight:700; }
+  .ac-meta { font-size:12px; color:var(--text-dim); overflow-wrap:anywhere; }
+  .ac-row .web-mini { align-self:center; opacity:0; transition:opacity .12s; }
+  .ac-row:hover .web-mini, .ac-row .web-mini:focus-visible { opacity:1; }
+  .ac-hint { display:flex; align-items:center; gap:14px; margin-top:16px; padding:12px 14px; border-radius:12px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.03); font-size:12.5px; line-height:1.5; color:var(--text-dim); }
+  [data-theme="light"] .ac-hint { background:rgba(255,255,255,0.7); }
+  .ac-hint span { flex:1; }
+  .wm-input.ac-period { width:auto; padding:6px 10px; font-size:12.5px; }
+  .icon-activity { background:linear-gradient(135deg,#0f766e,#5eead4); }
+  .icon-health { background:linear-gradient(135deg,#0a8451,#3ecf8e); }
+  @media (hover:none) { .ac-row .web-mini { opacity:1; } }
+  /* ── Bilan de santé ── */
+  .hl-verdict { display:flex; align-items:center; gap:26px; margin:6px 0 4px; padding:22px 26px; border-radius:var(--radius); border:1px solid var(--glass-border); background:rgba(255,255,255,0.03); }
+  [data-theme="light"] .hl-verdict { background:rgba(255,255,255,0.7); }
+  .hl-verdict .dk-hero { width:76px; height:76px; }
+  .hl-verdict .dk-hero::before { inset:-22px; }
+  .dk-hero.is-warn .dk-h-dot { fill:#f59e0b; }
+  .hl-verdict.is-warn .dk-hero::before { background:radial-gradient(closest-side, rgba(245,158,11,0.24), transparent 72%); }
+  .hl-verdict.is-error .dk-hero::before { background:radial-gradient(closest-side, rgba(224,82,82,0.26), transparent 72%); }
+  .hl-verdict-title { font-family:var(--font-display); font-size:24px; font-weight:800; letter-spacing:-0.02em; line-height:1.15; }
+  .hl-verdict-line { margin-top:6px; font-size:13px; line-height:1.55; color:var(--text-dim); max-width:560px; }
+  .hl-group { display:flex; flex-direction:column; border:1px solid var(--glass-border); border-radius:12px; overflow:hidden; }
+  .hl-row { display:grid; grid-template-columns:10px minmax(0,1fr) auto; align-items:start; gap:14px; width:100%; padding:13px 16px; border:0; border-top:1px solid rgba(255,255,255,0.06); background:transparent; color:var(--text); font:inherit; text-align:left; }
+  [data-theme="light"] .hl-row { border-top-color:rgba(13,27,53,0.08); }
+  .hl-row:first-child { border-top:0; }
+  button.hl-row { cursor:pointer; }
+  button.hl-row:hover { background:rgba(255,255,255,0.05); }
+  [data-theme="light"] button.hl-row:hover { background:rgba(13,27,53,0.05); }
+  button.hl-row:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
+  .hl-row .web-dot { margin-top:6px; }
+  .hl-text { display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .hl-title { font-size:13.5px; font-weight:600; }
+  .hl-desc { font-size:12.5px; line-height:1.55; color:var(--text-dim); overflow-wrap:anywhere; }
+  .hl-act { align-self:center; font-size:12px; color:var(--accent2); white-space:nowrap; }
+  .hl-row.lvl-ok .hl-title, .hl-row.lvl-unknown .hl-title { font-weight:500; }
+  .hl-row.lvl-ok { padding:9px 16px; }
+  @media (max-width:640px) { .hl-verdict { flex-direction:column; text-align:center; gap:16px; } .hl-row { grid-template-columns:10px minmax(0,1fr); } .hl-act { grid-column:2; } }
+  /* ── Recherche globale ── */
+  .gs-back { position:fixed; inset:0; z-index:3400; display:flex; align-items:flex-start; justify-content:center; padding:11vh 16px 16px; background:rgba(4,9,18,0.5); backdrop-filter:blur(6px); }
+  [data-theme="light"] .gs-back { background:rgba(30,45,75,0.28); }
+  .gs-box { display:flex; flex-direction:column; width:min(640px,100%); max-height:min(560px,76vh); background:var(--window-bg); border:1px solid var(--glass-border); border-radius:var(--radius); box-shadow:var(--shadow); color:var(--text); overflow:hidden; }
+  .gs-top { display:flex; align-items:center; gap:12px; padding:15px 18px; border-bottom:1px solid var(--glass-border); }
+  .gs-top > svg { width:18px; height:18px; flex-shrink:0; color:var(--text-dim); }
+  .gs-top input { flex:1; min-width:0; border:0; outline:none; background:transparent; color:var(--text); font:inherit; font-size:16px; }
+  .gs-top input::placeholder { color:var(--text-dim); }
+  .gs-box kbd { padding:2px 6px; border-radius:5px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); font:inherit; font-size:11px; color:var(--text-dim); }
+  [data-theme="light"] .gs-box kbd { background:rgba(13,27,53,0.05); }
+  .gs-list { flex:1; min-height:60px; overflow:auto; padding:6px 8px 10px; }
+  .gs-sec { padding:10px 10px 5px; font-size:11.5px; font-weight:600; color:var(--text-dim); }
+  .gs-item { display:flex; align-items:center; gap:12px; width:100%; padding:7px 10px; border:0; border-radius:9px; background:transparent; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
+  .gs-item.active { background:rgba(var(--accent-rgb),0.16); }
+  .gs-ico { display:grid; place-items:center; width:28px; height:28px; border-radius:8px; flex-shrink:0; }
+  .gs-ico svg { width:16px; height:16px; }
+  .gs-ico.plain { background:rgba(255,255,255,0.06); color:var(--text-dim); }
+  [data-theme="light"] .gs-ico.plain { background:rgba(13,27,53,0.07); }
+  .gs-ico.plain .fs-ic { width:20px; height:20px; }
+  .gs-text { display:flex; align-items:baseline; gap:10px; min-width:0; flex:1; }
+  .gs-label { font-size:13.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; max-width:62%; }
+  .gs-desc { font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .gs-note, .gs-empty { padding:8px 10px; font-size:12.5px; color:var(--text-dim); }
+  .gs-empty { padding:22px 10px; text-align:center; }
+  .gs-foot { display:flex; align-items:center; gap:14px; padding:9px 16px; border-top:1px solid var(--glass-border); font-size:11.5px; color:var(--text-dim); }
+  .gs-keys { white-space:nowrap; }
+  .gs-foot-note { flex:1; text-align:right; }
+  #gs-taskbar svg { width:15px; height:15px; }
+  @media (max-width:640px) { .gs-back { padding-top:16px; } .gs-keys { display:none; } }
+  /* ── Lecteur : la scène est sombre dans les deux thèmes, comme une salle ── */
+  .dk-viewer { position:fixed; inset:0; z-index:3300; display:flex; flex-direction:column; background:rgba(4,8,16,0.95); color:#e9eef7; outline:none; }
+  .mv-bar { display:flex; align-items:center; gap:16px; padding:12px 16px 12px 22px; flex-shrink:0; }
+  .mv-title { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .mv-title strong { font-family:var(--font-display); font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mv-title span { font-size:12px; color:#9db0d0; font-variant-numeric:tabular-nums; }
+  .mv-tools { display:flex; gap:6px; }
+  .mv-btn, .mv-nav { display:grid; place-items:center; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.06); color:#e9eef7; cursor:pointer; transition:background .15s, border-color .15s; }
+  .mv-btn { width:36px; height:36px; border-radius:10px; }
+  .mv-btn svg { width:16px; height:16px; }
+  .mv-btn:hover, .mv-nav:hover { background:rgba(255,255,255,0.14); border-color:rgba(255,255,255,0.28); }
+  .mv-btn:focus-visible, .mv-nav:focus-visible { outline:2px solid #55dca0; outline-offset:2px; }
+  .mv-stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:0 76px 28px; }
+  .mv-stage.is-pdf { padding:0 22px 22px; }
+  .mv-img { max-width:100%; max-height:100%; object-fit:contain; border-radius:6px; box-shadow:0 18px 60px rgba(0,0,0,0.6); user-select:none; }
+  .mv-video { height:100%; max-width:100%; border-radius:8px; background:#000; outline:none; }
+  .mv-pdf { width:min(1100px,100%); height:100%; border:0; border-radius:10px; background:#fff; }
+  .mv-audio { display:flex; flex-direction:column; align-items:center; gap:18px; width:min(520px,100%); }
+  .mv-audio .fs-ic { width:96px; height:96px; color:#55dca0; }
+  .mv-audio-name { font-family:var(--font-display); font-size:20px; font-weight:600; text-align:center; overflow-wrap:anywhere; }
+  .mv-audio audio { width:100%; }
+  .mv-msg .dk-wait { min-height:0; }
+  .mv-msg .dk-wait-title { color:#e9eef7; }
+  .mv-msg .dk-wait-text { color:#9db0d0; }
+  .mv-nav { position:absolute; top:50%; width:46px; height:46px; margin-top:-23px; border-radius:50%; }
+  .mv-nav svg { width:20px; height:20px; }
+  .mv-nav.prev { left:16px; }
+  .mv-nav.next { right:16px; }
+  .mv-progress { position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(255,255,255,0.08); }
+  .mv-progress span { display:block; width:0; height:100%; background:#3ecf8e; }
+  @media (max-width:640px) { .mv-stage { padding:0 12px 20px; } .mv-nav { top:auto; bottom:18px; margin-top:0; } .dk-sheet-back { padding:8px; } .web-table.fsx-trash { --wt-cols:minmax(0,1fr) 70px 96px; } .web-table.fsx-trash .web-tr > :nth-child(3) { display:none; } }
+  @media (prefers-reduced-motion:reduce) { .mv-progress span { transition:none !important; } }
   a.web-row { text-decoration:none; cursor:pointer; transition:background .15s; }
   a.web-row:hover { background:rgba(var(--accent-rgb),0.09); }
   a.web-row:hover .web-row-chev { color:var(--accent2); }
@@ -8479,7 +8674,356 @@ select option{ background:#101b2e; color:#e9eef7; }
 "elle porte plusieurs noms et Docker demande de confirmer": "it has several names and Docker asks for confirmation",
 "{0} n'a pas été supprimée : {1}.": "{0} was not deleted: {1}.",
 "{0} images gardées": "{0} images kept",
-"1 image gardée": "1 image kept"
+"1 image gardée": "1 image kept",
+"1 élément supprimé": "1 item deleted",
+"1 élément à la corbeille": "1 item moved to the recycle bin",
+"1 élément": "1 item",
+"2FA, code, sécurité des comptes": "2FA, code, account security",
+"Active Directory, LDAP, domaine": "Active Directory, LDAP, domain",
+"Activer la corbeille": "Enable recycle bin",
+"Alerte critique de TrueNAS": "Critical TrueNAS alert",
+"Alertes de TrueNAS": "TrueNAS alerts",
+"Analyse de l'espace": "Space analysis",
+"Analyser l'espace": "Analyse space",
+"Arrêter le diaporama": "Stop slideshow",
+"Au-delà de 50 °C, un disque s'use plus vite : vérifiez la ventilation.": "Above 50 °C, a disk wears out faster: check the ventilation.",
+"Au-delà de 90 %, ZFS ralentit nettement et les écritures peuvent échouer.": "Above 90%, ZFS slows down markedly and writes may fail.",
+"Aucun dataset n'occupe de place pour l'instant.": "No dataset takes up any space yet.",
+"Aucun fichier à cet étage": "No file at this level",
+"Aucun refus ni échec sur la période.": "No refusals or failures over the period.",
+"Aucun snapshot pour ce dataset": "No snapshot for this dataset",
+"Aucun snapshot programmé": "No snapshots scheduled",
+"Aucun sous-dossier.": "No subfolders.",
+"Aucune action de ce genre sur la période.": "No action of this kind over the period.",
+"Aucune alerte de TrueNAS en cours": "No active TrueNAS alerts",
+"Aucune sauvegarde hors du NAS": "No backup outside the NAS",
+"Aucune version plus ancienne": "No older version",
+"Aucune vérification n'a rien trouvé à redire.": "No check found anything wrong.",
+"Beaucoup de fichiers correspondent : précisez pour voir les autres.": "Many files match: be more specific to see the others.",
+"Bilan de santé": "Health check",
+"Bilan": "Overview",
+"C'est le disque sur lequel TrueNAS est installé.": "It is the disk TrueNAS is installed on.",
+"Ce dossier ne se laisse pas mesurer": "This folder cannot be measured",
+"Ce dossier était vide": "This folder was empty",
+"Ce fichier ne s'ouvre pas": "This file cannot be opened",
+"Ce format ne se lit pas dans le navigateur": "This format cannot be viewed in the browser",
+"Ce que vous supprimerez depuis Fichiers disparaîtra tout de suite. Ce qui est déjà dans la corbeille y reste jusqu'à son échéance.": "What you delete from Files will disappear straight away. What is already in the recycle bin stays there until it expires.",
+"Ce qui occupe le pool : datasets, dossiers, snapshots, corbeille": "What takes up the pool: datasets, folders, snapshots, recycle bin",
+"Ce qui occupe le pool": "What takes up the pool",
+"Ce qui peut se libérer": "What can be freed",
+"Certaines listes du NAS n'ont pas répondu : la recherche est incomplète.": "Some NAS lists did not respond: the search is incomplete.",
+"Certains dossiers n'ont pas pu être lus : le total est un minimum.": "Some folders could not be read: the total is a minimum.",
+"Certificats valides pour plus de 30 jours": "Certificates valid for more than 30 days",
+"Cet élément n'existe pas dans le snapshot du dataset : il a été créé après.": "This item does not exist in the dataset's snapshot: it was created afterwards.",
+"Cette version ne se laisse pas lire": "This version cannot be read",
+"Chaque snapshot est ouvert pour y chercher cet élément : cela peut prendre quelques secondes.": "Each snapshot is opened to look for this item: this can take a few seconds.",
+"Chercher une fenêtre, un réglage, une application, un fichier…": "Search for a window, a setting, an app, a file…",
+"Cliquez sur un dataset pour voir quels dossiers y pèsent le plus.": "Click a dataset to see which folders take up the most space in it.",
+"Conseils": "Advice",
+"Copie depuis le snapshot…": "Copying from the snapshot…",
+"Corbeille vidée": "Recycle bin emptied",
+"Créer une sauvegarde": "Create a backup",
+"Des disques chauffent": "Disks are running warm",
+"Des disques sont trop chauds": "Disks are too hot",
+"Des pools n'ont pas été vérifiés depuis longtemps": "Pools have not been checked for a long time",
+"Des pools se remplissent": "Pools are filling up",
+"Des pools sont presque pleins": "Pools are almost full",
+"Des tâches de snapshots échouent": "Snapshot tasks are failing",
+"Deux autres mesures sont en cours : celle-ci commencera dès que l'une finit.": "Two other measurements are in progress: this one will start as soon as one finishes.",
+"Disque système en bon état": "System disk healthy",
+"Docker Hub, images non publiques": "Docker Hub, private images",
+"Données vérifiées récemment, sans erreur": "Data checked recently, with no errors",
+"Désactiver la corbeille ?": "Disable recycle bin?",
+"Désactiver la corbeille": "Disable recycle bin",
+"Et un point à regarder ensuite.": "And one thing to look at afterwards.",
+"Examen du NAS…": "Checking the NAS…",
+"Fenêtres et réglages": "Windows and settings",
+"Ils sont réglés pour démarrer avec le NAS.": "They are set to start with the NAS.",
+"Images des conteneurs": "Container images",
+"Journal d'activité": "Activity log",
+"Journal d'audit détaillé": "Detailed audit log",
+"L'analyse des dossiers arrive avec la mise à jour": "Folder analysis comes with the update",
+"L'application installée fonctionne": "The installed app is running",
+"La corbeille arrive avec la mise à jour": "The recycle bin comes with the update",
+"La corbeille est désactivée : ce que vous supprimez depuis Fichiers disparaît tout de suite.": "The recycle bin is disabled: what you delete from Files disappears straight away.",
+"La corbeille est vide": "The recycle bin is empty",
+"La corbeille ne répond pas": "The recycle bin is not responding",
+"La dernière vérification a trouvé des erreurs": "The last check found errors",
+"La double authentification n'est pas activée": "Two-factor authentication is not enabled",
+"La place comptée est celle réellement prise sur les disques, après compression. Les snapshots n'y figurent pas : ils se voient dans l'analyse du pool.": "The space counted is what is actually used on the disks, after compression. Snapshots are not included: they show in the pool analysis.",
+"La période est très remplie : seules les actions les plus récentes de chaque journal sont montrées.": "The period is very busy: only the most recent actions from each log are shown.",
+"La recherche dans les fichiers arrive avec la mise à jour de Desktroo.": "Search in files comes with the Desktroo update.",
+"La recherche dans les fichiers n'a pas répondu.": "Search in files did not respond.",
+"La version actuelle part à la corbeille : elle reste récupérable.": "The current version goes to the recycle bin: it remains recoverable.",
+"Lancer le diaporama": "Start slideshow",
+"Le NAS n'a pas encore d'espace de stockage.": "The NAS has no storage space yet.",
+"Le NAS parcourt chaque fichier du dossier.": "The NAS goes through every file in the folder.",
+"Le détail des snapshots ne répond pas pour l'instant.": "Snapshot details are not responding for now.",
+"Le fichier est intact : téléchargez-le pour l'ouvrir avec une application de votre poste.": "The file is intact: download it to open it with an app on your computer.",
+"Le journal d'audit de TrueNAS ne répond pas : connexions et réglages manquent ici.": "The TrueNAS audit log is not responding: sign-ins and settings are missing here.",
+"Le journal d'audit de TrueNAS ne répond pas : connexions, réglages et actions par le réseau manquent ici.": "The TrueNAS audit log is not responding: sign-ins, settings and actions over the network are missing here.",
+"Le journal des fichiers de Desktroo ne répond pas pour l'instant.": "The Desktroo file log is not responding for now.",
+"Le lecteur arrive avec la mise à jour": "The viewer comes with the update",
+"Le pool de démarrage n'est pas en bon état": "The boot pool is not healthy",
+"Le pool est en ligne, avec de la place": "The pool is online, with space left",
+"Le pool ne se laisse pas mesurer": "The pool cannot be measured",
+"Le reste est en ordre.": "The rest is in order.",
+"Le scrub a corrigé ce qu'il pouvait : voyez l'état des disques.": "The scrub fixed what it could: see the disk status.",
+"Le service Desktroo installé n'a pas encore de corbeille : mettez Desktroo à jour, puis rouvrez cette page.": "The installed Desktroo service has no recycle bin yet: update Desktroo, then reopen this page.",
+"Le service Desktroo installé ne sait pas encore les lire : mettez Desktroo à jour, puis rouvrez cette page.": "The installed Desktroo service cannot read them yet: update Desktroo, then reopen this page.",
+"Le service Desktroo installé ne sait pas encore mesurer les dossiers : mettez Desktroo à jour.": "The installed Desktroo service cannot measure folders yet: update Desktroo.",
+"Le service Desktroo installé ne sait pas encore servir ce fichier au navigateur : mettez Desktroo à jour.": "The installed Desktroo service cannot serve this file to the browser yet: update Desktroo.",
+"Lecteur": "Viewer",
+"Lecture des journaux…": "Reading the logs…",
+"Lecture des snapshots…": "Reading the snapshots…",
+"Les actions faites sur les fichiers depuis Desktroo seront notées une fois Desktroo mis à jour.": "Actions on files made from Desktroo will be recorded once Desktroo is updated.",
+"Les fichiers modifiés par les partages réseau n'apparaissent pas : aucun partage SMB ne tient son journal des accès.": "Files changed through network shares do not appear: no SMB share keeps its access log.",
+"Les plus gros": "Largest",
+"Les services attendus tournent": "The expected services are running",
+"Les snapshots ne se laissent pas lire": "The snapshots cannot be read",
+"Les snapshots protègent d'une erreur, pas d'un vol, d'un incendie ou d'une panne de tout le NAS. Une copie ailleurs manque.": "Snapshots protect against a mistake, not against theft, fire or a failure of the whole NAS. A copy elsewhere is missing.",
+"Les versions précédentes arrivent avec la mise à jour": "Previous versions come with the update",
+"Leurs fichiers supprimés ne pourront pas être retrouvés.": "Their deleted files will not be recoverable.",
+"Mesure des dossiers…": "Measuring the folders…",
+"Mesure du pool…": "Measuring the pool…",
+"Mesurer à nouveau": "Measure again",
+"Mettre à jour Desktroo": "Update Desktroo",
+"Mettre à la corbeille": "Move to the recycle bin",
+"Mise à la corbeille…": "Moving to the recycle bin…",
+"Mises à jour de TrueNAS": "TrueNAS updates",
+"Non vérifié": "Not checked",
+"Ouverture de cette version…": "Opening this version…",
+"Ouverture de la corbeille…": "Opening the recycle bin…",
+"Ouverture…": "Opening…",
+"Ouvrir Alertes": "Open Alerts",
+"Ouvrir Applications": "Open Apps",
+"Ouvrir Certificats": "Open Certificates",
+"Ouvrir Disques & Scrub": "Open Disks & Scrub",
+"Ouvrir Double authentification": "Open Two-factor authentication",
+"Ouvrir Environnements de démarrage": "Open Boot environments",
+"Ouvrir Mises à jour": "Open Updates",
+"Ouvrir Partages": "Open Shares",
+"Ouvrir Protection des données": "Open Data protection",
+"Ouvrir Services": "Open Services",
+"Ouvrir Snapshots": "Open Snapshots",
+"Ouvrir Stockage": "Open Storage",
+"Par dataset": "By dataset",
+"Par domaine": "By area",
+"Par le réseau, seules les suppressions et les renommages sont relevés, sur les partages SMB qui tiennent leur journal des accès. Les actions faites depuis une application ou en ligne de commande ne sont pas vues.": "Over the network, only deletions and renames are recorded, on SMB shares that keep their access log. Actions made from an app or the command line are not seen.",
+"Personnes": "People",
+"Pools, disques, snapshots, sauvegardes, certificats, services : une quinzaine de vérifications.": "Pools, disks, snapshots, backups, certificates, services: about fifteen checks.",
+"Pour commencer": "To get started",
+"Pris": "Taken",
+"Programmer des snapshots": "Schedule snapshots",
+"Prévoyez de libérer de la place ou d'agrandir avant 90 %.": "Plan to free up space or expand before 90%.",
+"Qui a fait quoi : fichiers, connexions, réglages": "Who did what: files, sign-ins, settings",
+"Recherche dans les fichiers du NAS…": "Searching the NAS files…",
+"Recherche": "Search",
+"Refus et échecs": "Refusals and failures",
+"Remettre en place": "Put back",
+"Remplacer l'actuel": "Replace the current one",
+"Restaurer une copie": "Restore a copy",
+"Retient": "Holds",
+"Revenir aux versions": "Back to versions",
+"Rien d'urgent : le NAS fonctionne, mais ces points méritent votre attention.": "Nothing urgent: the NAS is working, but these points deserve your attention.",
+"Rien n'est modifié dans le snapshot : restaurer recopie l'élément dans le dossier d'aujourd'hui.": "Nothing is changed in the snapshot: restoring copies the item back into today's folder.",
+"Rien n'est parti à la corbeille": "Nothing went to the recycle bin",
+"Rien à signaler": "Nothing to report",
+"Réservations": "Reservations",
+"SSH accepte les mots de passe": "SSH accepts passwords",
+"Sans snapshot, un fichier supprimé ou chiffré par un rançongiciel ne se retrouve pas.": "Without a snapshot, a file deleted or encrypted by ransomware cannot be recovered.",
+"Sauvegarde hors du NAS à jour": "Backup outside the NAS up to date",
+"Sauvegardes": "Backups",
+"Seul ce qui est supprimé depuis Desktroo passe par la corbeille. Un fichier supprimé depuis un partage réseau ou une application n'y va pas : pour celui-là, voyez « Versions précédentes ».": "Only what is deleted from Desktroo goes through the recycle bin. A file deleted from a network share or an app does not go there: for that one, see “Previous versions”.",
+"Snapshots programmés sur tous les datasets": "Snapshots scheduled on all datasets",
+"Snapshots programmés": "Scheduled snapshots",
+"Snapshots qui retiennent le plus de place": "Snapshots holding the most space",
+"Supprimer définitivement ? Cette action est irréversible.": "Delete permanently? This action cannot be undone.",
+"Supprimer définitivement": "Delete permanently",
+"Supprimé définitivement": "Permanently deleted",
+"Tout va bien": "All is well",
+"Tout va bien, ou ce qui cloche": "All is well, or what is wrong",
+"Toute l'activité": "All activity",
+"Trois lettres au moins pour chercher dans les fichiers.": "At least three letters to search in files.",
+"TrueNAS n'a pas répondu à cette vérification.": "TrueNAS did not respond to this check.",
+"Tâches de snapshots": "Snapshot tasks",
+"Télécharger le fichier": "Download the file",
+"Un avertissement de TrueNAS": "A TrueNAS warning",
+"Un certificat a expiré": "A certificate has expired",
+"Un certificat expire bientôt": "A certificate expires soon",
+"Un dataset sans snapshot programmé": "A dataset with no scheduled snapshots",
+"Un dataset à part : sa place se mesure pour lui-même.": "A separate dataset: its space is measured on its own.",
+"Un disque chauffe": "A disk is running warm",
+"Un disque est trop chaud": "A disk is too hot",
+"Un disque manque ou est en défaut : tant qu'il n'est pas remplacé, une panne de plus peut coûter des données.": "A disk is missing or faulty: until it is replaced, one more failure can cost data.",
+"Un mot de passe volé suffit alors à entrer dans le NAS.": "A stolen password is then enough to get into the NAS.",
+"Un point à regarder": "One thing to look at",
+"Un pool est presque plein": "A pool is almost full",
+"Un pool n'a pas été vérifié depuis longtemps": "A pool has not been checked for a long time",
+"Un pool n'est pas en bon état": "A pool is not healthy",
+"Un pool se remplit": "A pool is filling up",
+"Un problème à traiter": "One problem to fix",
+"Un redémarrage attend pour finir une mise à jour": "A restart is pending to finish an update",
+"Un scrub relit toutes les données et répare les erreurs silencieuses : un par mois est l'usage.": "A scrub rereads all the data and repairs silent errors: one a month is customary.",
+"Un service devrait tourner et est arrêté": "A service should be running and is stopped",
+"Un élément a quitté la corbeille, son délai écoulé": "One item left the recycle bin once its time was up",
+"Un élément de cette version n'existe plus aujourd'hui.": "One item in this version no longer exists today.",
+"Une application a une mise à jour": "An app has an update",
+"Une application est en panne": "An app is down",
+"Une clé est plus sûre qu'un mot de passe. Desktroo lui-même se connecte en SSH : gardez-lui un accès avant de changer ce réglage.": "A key is safer than a password. Desktroo itself connects over SSH: keep access for it before changing this setting.",
+"Une mise à jour apporte des corrections de sécurité. Sauvegardez la configuration avant de l'installer.": "An update brings security fixes. Back up the configuration before installing it.",
+"Une sauvegarde a échoué": "A backup failed",
+"Une sauvegarde est en retard": "A backup is overdue",
+"Une tâche de snapshots échoue": "A snapshot task is failing",
+"Une version précédente est ce qu'un snapshot a gardé. Sans snapshot programmé, il n'y a rien à retrouver.": "A previous version is what a snapshot kept. Without a scheduled snapshot, there is nothing to recover.",
+"Une vérification n'a pas pu se faire.": "One check could not be run.",
+"Versions précédentes de ce dossier": "Previous versions of this folder",
+"Versions précédentes": "Previous versions",
+"Vider la corbeille ?": "Empty the recycle bin?",
+"Vider la corbeille": "Empty the recycle bin",
+"Voir ce qui prend la place": "See what takes up the space",
+"Voir les actions plus anciennes": "See older actions",
+"Voir les disques": "See the disks",
+"Vérifier à nouveau": "Check again",
+"Vérifié, rien à signaler": "Checked, nothing to report",
+"a mis des éléments à la corbeille": "moved items to the recycle bin",
+"a supprimé pour de bon un élément de la corbeille": "deleted an item from the recycle bin for good",
+"accès pour un script ou une application": "access for a script or an app",
+"autre dataset": "other dataset",
+"ce que contiennent les datasets et les volumes": "what the datasets and volumes contain",
+"ce qui attend dans la corbeille de Fichiers": "what is waiting in the Files recycle bin",
+"celui de l'interface": "the one used by the interface",
+"certificat d'une autorité": "certificate from an authority",
+"certificat gratuit, HTTPS, ACME": "free certificate, HTTPS, ACME",
+"cibles, volumes partagés": "targets, shared extents",
+"commandes lancées au démarrage ou à l'arrêt": "commands run at startup or shutdown",
+"connexions et changements, en détail": "sign-ins and changes, in detail",
+"e-mail, SMTP, envoi des alertes": "email, SMTP, sending alerts",
+"encore 1 jour": "1 day left",
+"fichier de débogage pour le support": "debug file for support",
+"fichier de réglages du NAS": "settings file of the NAS",
+"fichiers supprimés, restaurer": "deleted files, restore",
+"identique au fichier actuel": "identical to the current file",
+"installer une version de TrueNAS sans Internet": "install a TrueNAS version without the Internet",
+"jamais lancée": "never run",
+"l'ancienne version est dans la corbeille": "the old version is in the recycle bin",
+"la place mise de côté pour des volumes, pas encore écrite": "space set aside for volumes, not yet written",
+"les anciennes versions gardées par les snapshots": "the old versions kept by snapshots",
+"les dernières 24 heures": "the last 24 hours",
+"mettre à jour, supprimer les inutilisées": "update, delete unused ones",
+"n'existe plus aujourd'hui": "no longer exists today",
+"nouveau stockage, disques": "new storage, disks",
+"par le réseau": "over the network",
+"place occupée, gros dossiers, snapshots": "space used, large folders, snapshots",
+"pool d'un autre NAS": "pool from another NAS",
+"ports, HTTPS, certificat de l'interface": "ports, HTTPS, interface certificate",
+"privilèges, droits des groupes": "privileges, group rights",
+"programmer des snapshots": "schedule snapshots",
+"qui est connecté": "who is signed in",
+"remettre une sauvegarde, réglages d'usine": "restore a backup, factory settings",
+"s'est connecté": "signed in",
+"supprimé à la prochaine purge": "deleted at the next purge",
+"train, téléchargement automatique": "train, automatic download",
+"« Restaurer une copie » pose la version à côté de l'actuel, sous un nom daté. « Remplacer l'actuel » met d'abord l'actuel à la corbeille.": "“Restore a copy” puts the version next to the current one, under a dated name. “Replace the current one” first moves the current one to the recycle bin.",
+"« Retient » est la place que ce snapshot est seul à garder : le supprimer la rend à coup sûr. Des données gardées par plusieurs snapshots à la fois ne se libèrent qu'avec le dernier d'entre eux.": "“Holds” is the space only this snapshot keeps: deleting it is sure to give it back. Data kept by several snapshots at once is only freed with the last of them.",
+"À traiter": "To fix",
+"État des disques": "Disk status",
+"État des pools": "Pool status",
+"1 action sur {0}.": "1 action in {0}.",
+"1 fichier à cet étage, {0}": "1 file at this level, {0}",
+"\u003cstrong>{0} éléments\u003c/strong>": "\u003cstrong>{0} items\u003c/strong>",
+"\u003cstrong>{0} éléments\u003c/strong> ne peuvent pas aller à la corbeille.": "\u003cstrong>{0} items\u003c/strong> cannot go to the recycle bin.",
+"Afficher les {0} datasets": "Show all {0} datasets",
+"Ce que vous supprimez depuis Fichiers y reste {0}.": "What you delete from Files stays there for {0}.",
+"Cet élément n'existe dans aucun des {0} snapshots du dataset : il a été créé après le dernier.": "This item does not exist in any of the dataset's {0} snapshots: it was created after the last one.",
+"Chaque élément est supprimé pour de bon {0} après y être entré.": "Each item is deleted for good {0} after it arrives here.",
+"Connexion refusée pour {0}": "Sign-in refused for {0}",
+"Desktroo {0} est disponible": "Desktroo {0} is available",
+"Et {0} points à regarder ensuite.": "And {0} things to look at afterwards.",
+"Le NAS parcourt chaque fichier : sur un gros dossier, cela prend plusieurs minutes. {0} s écoulées.": "The NAS goes through every file: on a large folder, this takes several minutes. {0} s elapsed.",
+"Mettre {0} à la corbeille ?": "Move {0} to the recycle bin?",
+"Modifié le {0}": "Modified on {0}",
+"Remplacer {0} par sa version du {1} ?": "Replace {0} with its version from {1}?",
+"Restauration impossible : {0}": "Cannot restore: {0}",
+"Restauré : {0}": "Restored: {0}",
+"Rien sur {0}.": "Nothing in {0}.",
+"Supprimer définitivement {0} ?": "Delete {0} permanently?",
+"Supprimer {0} ?": "Delete {0}?",
+"Version du {0}": "Version from {0}",
+"Vous aurez {0} pour changer d'avis.": "You will have {0} to change your mind.",
+"Vérifié à {0}.": "Checked at {0}.",
+"a copié {0}": "copied {0}",
+"a créé l'archive {0}": "created the archive {0}",
+"a créé le dossier {0}": "created the folder {0}",
+"a créé un lien de partage pour {0}": "created a share link for {0}",
+"a déplacé {0}": "moved {0}",
+"a déposé {0}": "uploaded {0}",
+"a extrait une archive dans {0}": "extracted an archive into {0}",
+"a mis {0} à la corbeille": "moved {0} to the recycle bin",
+"a modifié {0}": "modified {0}",
+"a remplacé {0} par une version précédente": "replaced {0} with a previous version",
+"a renommé {0} en {1}": "renamed {0} to {1}",
+"a récupéré une version précédente : {0}": "recovered a previous version: {0}",
+"a sorti {0} de la corbeille": "took {0} out of the recycle bin",
+"a supprimé définitivement {0}": "permanently deleted {0}",
+"a supprimé pour de bon {0} éléments de la corbeille": "deleted {0} items from the recycle bin for good",
+"a supprimé {0}": "deleted {0}",
+"de {0}": "from {0}",
+"depuis {0}": "from {0}",
+"en {0} min": "in {0} min",
+"encore {0} jours": "{0} days left",
+"et {0} autres": "and {0} others",
+"gardée par {0} snapshots, du {1} au {2}": "kept by {0} snapshots, from {1} to {2}",
+"les {0} derniers jours": "the last {0} days",
+"partage {0}, par le réseau": "share {0}, over the network",
+"s'est connecté {0} fois": "signed in {0} times",
+"s'est vu refuser : {0}": "was refused: {0}",
+"snapshot « {0} » du {1}": "snapshot “{0}” from {1}",
+"vers {0}": "to {0}",
+"{0} (racine du pool)": "{0} (pool root)",
+"{0} actions sur {1}, de la plus récente à la plus ancienne.": "{0} actions in {1}, from most recent to oldest.",
+"{0} applications ont une mise à jour": "{0} apps have an update",
+"{0} applications sont en panne": "{0} apps are down",
+"{0} applications, aucune en panne": "{0} apps, none down",
+"{0} autres alertes critiques": "{0} other critical alerts",
+"{0} avertissements de TrueNAS": "{0} TrueNAS warnings",
+"{0} certificats expirent bientôt": "{0} certificates expire soon",
+"{0} certificats ont expiré": "{0} certificates have expired",
+"{0} connexions refusées": "{0} sign-ins refused",
+"{0} connexions refusées pour {1}": "{0} sign-ins refused for {1}",
+"{0} datasets sans snapshot programmé": "{0} datasets with no scheduled snapshots",
+"{0} disques reconnus": "{0} disks detected",
+"{0} disques, {1} °C pour le plus chaud": "{0} disks, {1} °C for the hottest",
+"{0} et {1}": "{0} and {1}",
+"{0} fichiers à cet étage, {1}": "{0} files at this level, {1}",
+"{0} gardés pour revenir en arrière. En supprimer d'anciens rend de la place.": "{0} kept so you can go back. Deleting old ones frees up space.",
+"{0} ne peut pas aller à la corbeille.": "{0} cannot go to the recycle bin.",
+"{0} occupés sur {1}, {2} libres.": "{0} used out of {1}, {2} free.",
+"{0} points à regarder": "{0} things to look at",
+"{0} pools en ligne, avec de la place": "{0} pools online, with space left",
+"{0} pools ne sont pas en bon état": "{0} pools are not healthy",
+"{0} problèmes à traiter": "{0} problems to fix",
+"{0} sauvegardes hors du NAS, toutes à jour": "{0} backups outside the NAS, all up to date",
+"{0} sauvegardes ont échoué": "{0} backups failed",
+"{0} sauvegardes sont en retard": "{0} backups are overdue",
+"{0} seront libérés. Cette action est irréversible.": "{0} will be freed. This action cannot be undone.",
+"{0} services devraient tourner et sont arrêtés": "{0} services should be running and are stopped",
+"{0} vérifications n'ont pas pu se faire.": "{0} checks could not be run.",
+"{0} à récupérer en la vidant.": "{0} to reclaim by emptying it.",
+"{0} éléments": "{0} items",
+"{0} éléments de cette version n'existent plus aujourd'hui.": "{0} items in this version no longer exist today.",
+"{0} éléments ont quitté la corbeille, leur délai écoulé": "{0} items left the recycle bin once their time was up",
+"{0} éléments restaurés": "{0} items restored",
+"{0} éléments supprimés": "{0} items deleted",
+"{0} éléments à la corbeille": "{0} items moved to the recycle bin",
+"{0}, mesuré {1}": "{0}, measured {1}",
+"{0}, {1} et {2}": "{0}, {1} and {2}",
+"{0}, {1} et {2} autres": "{0}, {1} and {2} others",
+"1 jour": "1 day",
+"Quelqu'un": "Someone",
+"Sous-dossiers": "Subfolders",
+"choisir": "select",
+"ouvrir": "open"
 }
 </script>
 <script id="dk-i18n">
@@ -8954,6 +9498,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="taskbar-notif-badge" id="dl-taskbar" onclick="openDownloads()" title="Téléchargements en cours" style="display:none;gap:5px;">
       ⬇<span id="dl-taskbar-count" style="font-size:11px;font-weight:600;">0</span><span id="dl-taskbar-pct" style="font-size:10px;color:var(--text-dim);"></span>
     </div>
+    <div class="taskbar-notif-badge" id="gs-taskbar" onclick="gsOpen()" role="button" tabindex="0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
     <div class="taskbar-notif-badge" id="theme-toggle-btn" onclick="toggleTheme()" title="Passer en clair" style="font-size:16px;">☀️</div>
     <div class="taskbar-notif-badge" id="taskbar-notif" onclick="openApp('notifs')" title="Alertes">
       🔔<div class="badge-count" id="badge-count">0</div>
@@ -10793,6 +11338,7 @@ async function fsNavigate(path, opts) {
 var FS_SVG_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 function fsRenderEntries(el, items) {
   var wid = el.id.replace(/-fs-files$/, '');
+  fsxDecorate(wid);
   var S = el._fsSearch || null;
   var dir = el._fsPath || '/';
   el._fsItems = items;
@@ -10820,6 +11366,7 @@ function fsRenderEntries(el, items) {
     var pasteEl = ctx.querySelector('.fsctx-paste'), sep = ctx.querySelector('.fsctx-new-sep');
     if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
     if (sep) sep.style.display = _fsClipboard ? '' : 'none';
+    fsxCtxSync(null, false);
     fsCtxPlace(ctx, e);
   };
   if (!items.length) {
@@ -10953,6 +11500,7 @@ function fsRerender() {
 function fsOpenEntry(entry) {
   if (!entry) return;
   if (entry.type === 'DIRECTORY') { fsNavigate(entry.path); return; }
+  if (mvKind(entry.name) && mvOpen(entry, _fsEntries)) return;
   var k = fsKind(entry.name, false);
   if (k === 'script' || k === 'config' || k === 'text' || (k === 'file' && (entry.size || 0) <= 524288)) { fsEditFile(entry.path, entry.name); return; }
   var panel = fsEl('fs-preview');
@@ -10999,7 +11547,7 @@ function fsKey(e, wid) {
   else if (k === 'End') pick(n - 1);
   else if (k === 'Enter') { if (fsSelected && _fsSel.length === 1) fsOpenEntry(fsSelected); }
   else if (k === 'Backspace') { if (el._fsSearch) fsSearchClose(); else if (currentFsPath !== '/') fsGoUp(); }
-  else if (k === 'Delete') { if (fsSelList().length) fsDeleteSelected(); }
+  else if (k === 'Delete') { if (fsSelList().length) fsDeleteSelected(e.shiftKey); }
   else if (k === 'F2') { if (fsSelected && _fsSel.length === 1) fsRenamePrompt(); }
   else if (k === 'Escape') { if (_fsSel.length) fsDeselect(); else if (el._fsSearch) fsSearchClose(); }
   else return;
@@ -11193,6 +11741,7 @@ function fsShowCtx(e, item) {
   // Coller disponible ?
   var pasteEl = ctx.querySelector('.fsctx-paste');
   if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
+  fsxCtxSync(item, multi);
   // Positionner
   fsCtxPlace(ctx, e);
 }
@@ -11203,7 +11752,7 @@ document.addEventListener('contextmenu', function(e) {
 });
 
 function fsCtxOpen() {
-  if (fsSelected && fsSelected.type === 'DIRECTORY') fsNavigate(fsSelected.path);
+  if (fsSelected) fsOpenEntry(fsSelected);
 }
 
 // ---- Attente job async TrueNAS ----
@@ -11327,7 +11876,7 @@ async function fileops(method, endpoint, body, _retried) {
     licBlockToast();
     throw new Error('LICENSE_READONLY');
   }
-  const opts = { method, headers: { 'X-Fileops-Token': getFileopsToken() } };
+  const opts = { method, headers: { 'X-Fileops-Token': getFileopsToken(), 'X-Desktroo-User': encodeURIComponent(currentUser || '') } };
   if (body !== undefined && body !== null && method !== 'GET') {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
@@ -11351,8 +11900,10 @@ async function fileops(method, endpoint, body, _retried) {
   }
   if (!resp.ok) {
     const why = data.error || 'HTTP ' + resp.status;
-    dkLogErr('service', String(endpoint).split('?')[0] + ' : ' + why);
-    throw new Error(why);
+    // Une route absente d'un service plus ancien n'est pas une panne : la page s'en accommode.
+    if (resp.status !== 404) dkLogErr('service', String(endpoint).split('?')[0] + ' : ' + why);
+    const err = new Error(why); err.status = resp.status; err.code = data.code || '';
+    throw err;
   }
   return data;
 }
@@ -13217,23 +13768,6 @@ async function webPhpSave() {
 }
 
 // ---- Suppression ----
-async function fsDeleteSelected() {
-  const list = fsSelList(); if (!list.length) return;
-  const msg = list.length > 1
-    ? Tt`Supprimer <strong>${list.length} éléments</strong> ?<br><span style="font-size:12px;color:var(--danger);">Cette action est irréversible.</span>`
-    : Tt`Supprimer <strong>${list[0].name}</strong> ?<br><span style="font-size:12px;color:var(--danger);">Cette action est irréversible.</span>`;
-  if (!await showConfirm(msg, {danger:true, ok:T("Supprimer")})) return;
-  const prog = fsOp(T('Suppression…'));
-  let okc = 0, errc = 0, lastErr = '', i = 0;
-  for (const it of list) {
-    i++; prog.update(i, list.length, it.name);
-    try { await fileops('DELETE', 'delete', { path: it.path, recursive: it.type === 'DIRECTORY' }); okc++; }
-    catch(e) { errc++; lastErr = e.message; }
-  }
-  prog.done(okc + (okc>1 ? T(' supprimés') : T(' supprimé')) + (errc ? ' · ' + errc + T(' échec(s) — ') + lastErr : ''), errc > 0);
-  fsDeselect();
-  fsRefresh();
-}
 // ---- Renommer ----
 async function fsRenamePrompt() {
   if (!fsSelected) return;
@@ -13258,6 +13792,7 @@ async function fsMkdirPrompt() {
   const path = currentFsPath.replace(/\/$/, '') + '/' + name;
   try {
     await socketCall('/filesystem/mkdir', 'POST', { path });
+    fileops('POST', 'activity/note', { kind: 'file.mkdir', path: path }).catch(function() {});
     toast(T('📁 Dossier créé : ') + name);
     fsRefresh();
   } catch(e) { toast(T('❌ Erreur création dossier : ') + e.message); }
@@ -13298,6 +13833,7 @@ async function fsDoUpload(files) {
         method: 'POST',
         headers: {
           'X-Fileops-Token': getFileopsToken(),
+          'X-Desktroo-User': encodeURIComponent(currentUser || ''),
           'Content-Type': 'application/octet-stream'
         },
         body: file
@@ -13440,6 +13976,8 @@ function stoSideRender() {
 }
 function stoGo(nav, pool) {
   clClose('sto');
+  spLeave();
+  if (nav === 'space' && stoPoolGet(pool !== undefined ? pool : _stoPool) && !(_acl && _acl.dirty)) { _acl = null; _stoNav = 'space'; if (pool !== undefined) _stoPool = pool; spOpen(true); return; }
   if (STOX.indexOf(nav) >= 0) { stxOpen(nav); return; }
   if (_acl && _acl.dirty) { aclLeave(nav, pool); return; }
   _acl = null;
@@ -13492,6 +14030,209 @@ async function loadStorage() {
     el.innerHTML = dkWaitHtml('error', T('Le stockage ne répond pas'), webEsc((e && e.message) || String(e)),
       '<button class="web-open" onclick="loadStorage()">' + T('Réessayer') + '</button>');
   }
+}
+
+// ============================================================
+// STOCKAGE — analyse de l'espace : ce qui occupe un pool, dataset par dataset puis dossier par dossier
+// ============================================================
+WEB_ICONS.chart = '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>';
+var _sp = { pool: null, view: 'pool', path: '', data: null, scan: null, seq: 0, timer: null, all: false, err: null };
+function spPct(n, total) { if (!total || !n) return '0 %'; var p = n / total * 100; return (p < 1 ? '< 1' : String(Math.round(p))) + ' %'; }
+function spOpen(soft) {
+  if (_sp.pool !== _stoPool) { _sp = { pool: _stoPool, view: 'pool', path: '', data: null, scan: null, seq: _sp.seq, timer: null, all: false, err: null }; soft = false; }
+  if (_sp.view === 'dir') { spDirRender(soft); return; }
+  if (_sp.data && soft) { spPoolRender(true); return; }
+  spLoad();
+}
+function spLeave() { if (_sp.timer) { clearTimeout(_sp.timer); _sp.timer = null; } }
+async function spLoad() {
+  var pool = _stoPool, seq = ++_sp.seq;
+  spLeave();
+  _sp.view = 'pool'; _sp.err = null;
+  if (!_sp.data) { spHead(); stoBody().innerHTML = dkWaitHtml('busy', T('Mesure du pool…'), ''); }
+  var props = ['used', 'available', 'usedbydataset', 'usedbysnapshots', 'usedbychildren', 'usedbyrefreservation', 'mountpoint'];
+  var r = await Promise.allSettled([
+    wsCall('pool.dataset.query', [[['pool', '=', pool]], { extra: { flat: true, retrieve_children: false, properties: props } }], 120000),
+    wsCall('pool.snapshot.query', [[['pool', '=', pool]], { extra: { properties: ['creation', 'used'] }, limit: 5000 }], 120000),
+    fileops('GET', 'trash/list')
+  ]);
+  if (seq !== _sp.seq || _stoNav !== 'space' || _stoPool !== pool) return;
+  if (r[0].status !== 'fulfilled') { _sp.data = null; _sp.err = r[0].reason; spPoolRender(); return; }
+  var all = ensureArray(r[0].value), root = all.find(function(d) { return d.name === pool; }) || null;
+  var ds = all.map(function(d) {
+    return { name: d.name, vol: d.type === 'VOLUME', own: stoNum(d, 'usedbydataset'), snap: stoNum(d, 'usedbysnapshots'), res: stoNum(d, 'usedbyrefreservation'),
+             mount: d.type === 'VOLUME' ? '' : (String(stoProp(d, 'mountpoint') || '') || '/mnt/' + d.name) };
+  });
+  var sum = function(k) { return ds.reduce(function(a, d) { return a + d[k]; }, 0); };
+  var trash = 0, trashKnown = r[2].status === 'fulfilled';
+  if (trashKnown) ensureArray(r[2].value.items).forEach(function(i) { if (String(i.root || '').indexOf('/mnt/' + pool) === 0 && (i.root === '/mnt/' + pool || i.root.charAt(('/mnt/' + pool).length) === '/')) trash += Number(i.size) || 0; });
+  var snaps = r[1].status === 'fulfilled' ? ensureArray(r[1].value).filter(function(s) { return String(s.name || '').split('@')[0].split('/')[0] === pool; }).map(function(s) {
+    return { name: s.name, dataset: s.dataset || String(s.name).split('@')[0], snap: s.snapshot_name || String(s.name).split('@')[1] || '', used: stoNum(s.properties || {}, 'used'), created: stoNum(s.properties || {}, 'creation') };
+  }) : null;
+  var own = sum('own');
+  trash = Math.min(trash, own);
+  _sp.data = { ds: ds, files: own - trash, trash: trash, trashKnown: trashKnown, snap: sum('snap'), res: sum('res'),
+               used: root ? stoNum(root, 'used') : own + sum('snap') + sum('res'), free: root ? stoNum(root, 'available') : 0, snaps: snaps };
+  spPoolRender();
+}
+function spHead(title, o) {
+  o = o || {};
+  stoHead(title || T('Analyse de l\'espace'), { back: o.back || [String(_stoPool), 'stoGo(\'pool\')'], sub: o.sub || '', keepScroll: o.keepScroll, mono: o.mono,
+    actions: o.actions != null ? o.actions : '<button class="fs-btn" onclick="spRefresh()">' + T('Mesurer à nouveau') + '</button>' });
+}
+function spRefresh() { if (_sp.view === 'dir') spDir(_sp.path, true); else { _sp.data = null; spLoad(); } }
+// La barre d'un seul tenant : les parts du pool, puis la place libre (la piste).
+function spStack(parts, total) {
+  var h = '<div class="sp-stack" role="img" aria-label="' + webEsc(parts.map(function(p) { return p.label + ' : ' + mntFmtSize(p.v); }).join(', ')) + '">';
+  parts.forEach(function(p) { if (p.v > 0) h += '<span class="sp-seg ' + p.cls + '" style="flex:' + Math.max(0.004, p.v / total).toFixed(5) + ' 0 0" title="' + webEsc(p.label + ' : ' + mntFmtSize(p.v) + ' (' + spPct(p.v, total) + ')') + '"></span>'; });
+  var used = parts.reduce(function(a, p) { return a + p.v; }, 0);
+  if (total > used) h += '<span class="sp-seg free" style="flex:' + ((total - used) / total).toFixed(5) + ' 0 0" title="' + webEsc(T('Libre') + ' : ' + mntFmtSize(total - used)) + '"></span>';
+  return h + '</div>';
+}
+function spPoolRender(soft) {
+  if (_stoNav !== 'space') return;
+  var d = _sp.data, el = stoBody();
+  if (!d) {
+    spHead(null, { keepScroll: soft });
+    el.innerHTML = dkWaitHtml('error', T('Le pool ne se laisse pas mesurer'), webEsc(dkErrText(_sp.err)), '<button class="web-open" onclick="spRefresh()">' + T('Réessayer') + '</button>');
+    return;
+  }
+  var total = d.used + d.free;
+  spHead(null, { keepScroll: soft, sub: webEsc(Tf('{0} occupés sur {1}, {2} libres.', mntFmtSize(d.used), mntFmtSize(total), mntFmtSize(d.free))) });
+  var parts = [{ cls: 's1', label: T('Fichiers'), v: d.files, hint: T('ce que contiennent les datasets et les volumes') },
+               { cls: 's2', label: T('Snapshots'), v: d.snap, hint: T('les anciennes versions gardées par les snapshots') },
+               { cls: 's3', label: T('Réservations'), v: d.res, hint: T('la place mise de côté pour des volumes, pas encore écrite') },
+               { cls: 's4', label: T('Corbeille'), v: d.trash, hint: T('ce qui attend dans la corbeille de Fichiers') }];
+  var h = '<div class="sp-viz"><div class="web-group-title first">' + T('Ce qui occupe le pool') + '</div>' + spStack(parts, total) + '<div class="sp-legend">';
+  parts.forEach(function(p) {
+    if (!p.v && (p.cls === 's3' || p.cls === 's4')) return;
+    h += '<div class="sp-leg"><i class="sp-sw ' + p.cls + '"></i><span class="sp-leg-name">' + webEsc(p.label) + '<span class="sp-leg-hint">' + webEsc(p.hint) + '</span></span><span class="sp-leg-val">' + webEsc(mntFmtSize(p.v)) + '</span><span class="sp-leg-pct">' + spPct(p.v, total) + '</span></div>';
+  });
+  h += '<div class="sp-leg"><i class="sp-sw free"></i><span class="sp-leg-name">' + T('Libre') + '</span><span class="sp-leg-val">' + webEsc(mntFmtSize(d.free)) + '</span><span class="sp-leg-pct">' + spPct(d.free, total) + '</span></div></div>';
+  // Ce qui peut se récupérer sans toucher aux fichiers
+  var tips = [];
+  if (d.snap > 0) tips.push(wmRow('openApp(\'snapshots\')', T('Snapshots'), webEsc(Tf('{0} gardés pour revenir en arrière. En supprimer d\'anciens rend de la place.', mntFmtSize(d.snap)))));
+  if (d.trash > 0) tips.push(wmRow('fsxTrashOpen()', T('Corbeille'), webEsc(Tf('{0} à récupérer en la vidant.', mntFmtSize(d.trash)))));
+  if (tips.length) h += '<div class="web-group-title">' + T('Ce qui peut se libérer') + '</div><div class="web-group">' + tips.join('') + '</div>';
+  // Les datasets, du plus lourd au plus léger
+  var rows = d.ds.map(function(x) { return Object.assign({ tot: x.own + x.snap + x.res }, x); }).filter(function(x) { return x.tot > 0; }).sort(function(a, b) { return b.tot - a.tot; });
+  var max = rows.length ? rows[0].tot : 0, shown = _sp.all ? rows : rows.slice(0, 10);
+  h += '<div class="web-group-title">' + T('Par dataset') + '</div>';
+  if (!rows.length) h += '<p class="web-note" style="margin-top:0;">' + T('Aucun dataset n\'occupe de place pour l\'instant.') + '</p>';
+  else {
+    h += '<div class="sp-rows">';
+    shown.forEach(function(x, i) {
+      var name = x.name === _stoPool ? Tf('{0} (racine du pool)', x.name) : x.name.slice(String(_stoPool).length + 1);
+      var tip = [T('Fichiers') + ' : ' + mntFmtSize(x.own)].concat(x.snap ? [T('Snapshots') + ' : ' + mntFmtSize(x.snap)] : [], x.res ? [T('Réservations') + ' : ' + mntFmtSize(x.res)] : []).join(' · ');
+      var bar = '<span class="sp-bar">' + ['own', 'snap', 'res'].map(function(k, n) { return x[k] > 0 ? '<i class="s' + (n + 1) + '" style="width:' + Math.max(0.4, x[k] / max * 100).toFixed(2) + '%"></i>' : ''; }).join('') + '</span>';
+      var inner = '<span class="sp-row-name" title="' + webEsc(x.name) + '">' + webEsc(name) + (x.vol ? ' <span class="sp-tag">' + T('volume') + '</span>' : '') + '</span>' + bar + '<span class="sp-row-val">' + webEsc(mntFmtSize(x.tot)) + '</span>';
+      h += x.vol ? '<div class="sp-row" title="' + webEsc(tip) + '">' + inner + '<span class="sp-row-chev"></span></div>'
+                 : '<button class="sp-row" data-sp="' + i + '" title="' + webEsc(tip) + '">' + inner + '<span class="sp-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+    });
+    h += '</div>';
+    if (rows.length > shown.length) h += '<button class="web-mini sp-more" onclick="_sp.all=true;spPoolRender(true)">' + webEsc(Tf('Afficher les {0} datasets', rows.length)) + '</button>';
+    h += '<p class="web-note">' + T('Cliquez sur un dataset pour voir quels dossiers y pèsent le plus.') + '</p>';
+  }
+  // Les snapshots qui retiennent le plus
+  if (d.snaps && d.snaps.length) {
+    var top = d.snaps.filter(function(s) { return s.used > 0; }).sort(function(a, b) { return b.used - a.used; }).slice(0, 8);
+    if (top.length) {
+      h += '<div class="web-group-title">' + T('Snapshots qui retiennent le plus de place') + '</div><div class="web-table sp-snaps"><div class="web-tr head"><span>' + T('Snapshot') + '</span><span>' + T('Pris') + '</span><span class="num">' + T('Retient') + '</span></div>';
+      top.forEach(function(s) {
+        h += '<div class="web-tr"><span class="cron-two"><strong class="mono" title="' + webEsc(s.name) + '">' + webEsc(s.snap) + '</strong><span class="dim mono">' + webEsc(s.dataset) + '</span></span>'
+          + '<span>' + webEsc(s.created ? fsFmtWhen(s.created) : '') + '</span><span class="num">' + webEsc(mntFmtSize(s.used)) + '</span></div>';
+      });
+      h += '</div><p class="web-note">' + T('« Retient » est la place que ce snapshot est seul à garder : le supprimer la rend à coup sûr. Des données gardées par plusieurs snapshots à la fois ne se libèrent qu\'avec le dernier d\'entre eux.') + '</p>';
+    }
+  } else if (d.snaps === null && d.snap > 0) h += '<p class="web-note">' + T('Le détail des snapshots ne répond pas pour l\'instant.') + '</p>';
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-sp]').forEach(function(b) { b.onclick = function() { spDir(shown[Number(b.dataset.sp)].mount); }; });
+}
+// ── Les dossiers d'un emplacement : le service les mesure, la page attend le résultat ──
+function spDir(path, fresh) {
+  spLeave();
+  _sp.view = 'dir'; _sp.path = String(path).replace(/\/+$/, ''); _sp.scan = null; _sp.err = null;
+  _sp.pool = _stoPool;
+  spDirRender();
+  spDirPoll(fresh);
+}
+async function spDirPoll(fresh) {
+  var path = _sp.path, seq = ++_sp.seq;
+  var r;
+  try { r = await fileops('GET', 'space/scan?path=' + encodeURIComponent(path) + (fresh ? '&fresh=1' : '')); }
+  catch (e) {
+    if (seq !== _sp.seq || _sp.path !== path || _sp.view !== 'dir') return;
+    _sp.err = e; _sp.scan = null; spDirRender(); return;
+  }
+  if (seq !== _sp.seq || _sp.path !== path || _sp.view !== 'dir' || _stoNav !== 'space') return;
+  _sp.scan = r; _sp.err = null;
+  spDirRender(true);
+  if ((r.state === 'running' || r.state === 'busy') && wmVisible('storage')) _sp.timer = setTimeout(function() { _sp.timer = null; if (_stoNav === 'space' && _sp.view === 'dir' && _sp.path === path) spDirPoll(); }, 2000);
+}
+function spDirBack() {
+  var p = _sp.path, ds = (_sp.data ? _sp.data.ds : []).filter(function(d) { return d.mount; });
+  // On remonte d'un dossier ; arrivé à la racine d'un dataset, on revient à l'analyse du pool.
+  if (ds.some(function(d) { return d.mount === p; }) || p === '/mnt/' + _stoPool || p.split('/').length <= 3) { _sp.view = 'pool'; spLeave(); if (_sp.data) spPoolRender(); else spLoad(); return; }
+  spDir(p.replace(/\/[^\/]*$/, ''));
+}
+function spDirRender(soft) {
+  if (_stoNav !== 'space') return;
+  var path = _sp.path, s = _sp.scan, el = stoBody(), name = path.split('/').pop() || path;
+  var acts = function(done) { return (done ? '<button class="fs-btn" onclick="spRefresh()">' + T('Mesurer à nouveau') + '</button>' : '') + '<button class="fs-btn" onclick="webOpenFolder(\'' + encodeURIComponent(path) + '\')">' + T('Ouvrir dans Fichiers') + '</button>'; };
+  var head = function(sub, done) { spHead(name, { back: [T('Analyse de l\'espace'), 'spDirBack()'], sub: '<span class="mono">' + webEsc(path) + '</span>' + (sub ? ' · ' + sub : ''), actions: acts(done), keepScroll: soft }); };
+  if (_sp.err) {
+    head('', false);
+    var old = _sp.err.status === 404;
+    el.innerHTML = dkWaitHtml('error', old ? T('L\'analyse des dossiers arrive avec la mise à jour') : T('Ce dossier ne se laisse pas mesurer'),
+      old ? T('Le service Desktroo installé ne sait pas encore mesurer les dossiers : mettez Desktroo à jour.') : webEsc(dkErrText(_sp.err)), old ? '' : '<button class="web-open" onclick="spRefresh()">' + T('Réessayer') + '</button>');
+    return;
+  }
+  if (!s || s.state === 'running' || s.state === 'busy') {
+    head('', false);
+    if (!el.querySelector('.sp-wait')) el.innerHTML = '<div class="sp-wait">' + dkWaitHtml('busy', T('Mesure des dossiers…'), '<span id="sp-wait-text"></span>') + '</div>';
+    var t = document.getElementById('sp-wait-text');
+    if (t) t.textContent = s && s.state === 'busy' ? T('Deux autres mesures sont en cours : celle-ci commencera dès que l\'une finit.')
+      : (s && s.elapsed > 8 ? Tf('Le NAS parcourt chaque fichier : sur un gros dossier, cela prend plusieurs minutes. {0} s écoulées.', Math.round(s.elapsed)) : T('Le NAS parcourt chaque fichier du dossier.'));
+    return;
+  }
+  if (s.state === 'error') {
+    head('', false);
+    el.innerHTML = dkWaitHtml('error', T('Ce dossier ne se laisse pas mesurer'), webEsc(s.error || ''), '<button class="web-open" onclick="spRefresh()">' + T('Réessayer') + '</button>');
+    return;
+  }
+  var dirs = ensureArray(s.dirs), files = ensureArray(s.files), total = Number(s.total) || 0;
+  head(webEsc(Tf('{0}, mesuré {1}', mntFmtSize(total), fsFmtWhen(s.scanned_at).toLowerCase())), true);
+  var max = Math.max.apply(null, dirs.map(function(d) { return d.size || 0; }).concat([Number(s.files_size) || 0, 1]));
+  var h = '<div class="sp-viz"><div class="web-group-title first">' + T('Sous-dossiers') + '</div>';
+  if (!dirs.length) h += '<p class="web-note" style="margin-top:0;">' + T('Aucun sous-dossier.') + '</p>';
+  else {
+    h += '<div class="sp-rows">';
+    dirs.forEach(function(d, i) {
+      var label = d.trash ? T('Corbeille') : d.name, val = d.other_fs ? T('autre dataset') : mntFmtSize(d.size || 0);
+      h += '<button class="sp-row" data-sd="' + i + '" title="' + webEsc(d.other_fs ? T('Un dataset à part : sa place se mesure pour lui-même.') : label + ' : ' + mntFmtSize(d.size || 0) + ' (' + spPct(d.size, total) + ')') + '">'
+        + '<span class="sp-row-name">' + webEsc(label) + '</span><span class="sp-bar">' + (d.size > 0 ? '<i class="' + (d.trash ? 's4' : 's1') + '" style="width:' + Math.max(0.4, d.size / max * 100).toFixed(2) + '%"></i>' : '') + '</span>'
+        + '<span class="sp-row-val' + (d.other_fs ? ' dim' : '') + '">' + webEsc(val) + '</span><span class="sp-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="web-group-title">' + webEsc(s.files_count > 1 ? Tf('{0} fichiers à cet étage, {1}', s.files_count, mntFmtSize(s.files_size)) : (s.files_count ? Tf('1 fichier à cet étage, {0}', mntFmtSize(s.files_size)) : T('Aucun fichier à cet étage'))) + '</div>';
+  if (files.length) {
+    h += '<div class="web-table sp-files"><div class="web-tr head"><span>' + T('Les plus gros') + '</span><span class="num">' + T('Taille') + '</span></div>';
+    files.slice(0, 12).forEach(function(f) { h += '<div class="web-tr"><span class="fsx-name">' + fsIcon(f.name, false) + '<strong title="' + webEsc(f.name) + '">' + webEsc(f.name) + '</strong></span><span class="num">' + webEsc(mntFmtSize(f.size)) + '</span></div>'; });
+    h += '</div>';
+  }
+  h += '<p class="web-note">' + (s.partial ? T('Certains dossiers n\'ont pas pu être lus : le total est un minimum.') + ' ' : '') + T('La place comptée est celle réellement prise sur les disques, après compression. Les snapshots n\'y figurent pas : ils se voient dans l\'analyse du pool.') + '</p>';
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-sd]').forEach(function(b) { b.onclick = function() { var d = dirs[Number(b.dataset.sd)]; if (d.trash) fsxTrashOpen(); else spDir(path + '/' + d.name); }; });
+}
+// Depuis Fichiers : « Analyser l'espace » sur un dossier d'un pool.
+function spOpenFolder(path) {
+  var m = /^\/mnt\/([^\/]+)(\/.*)?$/.exec(String(path || ''));
+  if (!m) return;
+  openApp('storage');
+  var go = function() { _stoPool = m[1]; _stoNav = 'space'; _sp = { pool: m[1], view: 'dir', path: '', data: null, scan: null, seq: _sp.seq, timer: null, all: false, err: null }; spDir(path); };
+  if (_stoLoaded && stoPoolGet(m[1])) go();
+  else { var n = 0, wait = setInterval(function() { if (_stoLoaded && stoPoolGet(m[1])) { clearInterval(wait); go(); } else if (++n > 40) clearInterval(wait); }, 250); }
 }
 
 // ── Vue d'ensemble : un bloc par pool ──
@@ -13549,6 +14290,7 @@ function stoSumTab(p) {
     ])
     + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">'
     + row('stoTab(\'ds\')', 'Datasets', T('Parcourir, créer ou supprimer les datasets du pool'))
+    + row('stoGo(\'space\')', T('Analyse de l\'espace'), T('Ce qui occupe le pool : datasets, dossiers, snapshots, corbeille'))
     + row('stoTab(\'disks\')', T('Disques'), T('Les vdevs, l\'état de chaque disque, remplacer un disque'))
     + row('stoOpenScrub(' + q + ')', T('Scrub'), T('Lancer une vérification, la planifier, suivre son avancement'))
     + row('webOpenFolder(\'' + encodeURIComponent(p.path || ('/mnt/' + p.name)) + '\')', T('Ouvrir dans Fichiers'), T('Parcourir le contenu du pool'))
@@ -15255,6 +15997,8 @@ function openApp(id) {
     sysconfig:    loadSysConfig,
     dataprotect:  loadDataprotect,
     certs:        loadCerts,
+    activity:     loadActivity,
+    health:       loadHealth,
     reports:      loadReports,
     failover:     loadFailover,
     alertconfig:  loadAlertconfig,
@@ -16016,7 +16760,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.42.1';
+var DK_PAGE_VERSION = '2.43.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -17199,6 +17943,10 @@ var ALL_APPS = [
     imgClass:'icon-services', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M20 12h-2M6 12H4M19.07 19.07l-1.41-1.41M5.34 6.34L3.93 4.93M12 20v-2M12 6V4"/></svg>' },
   { id:'certs',       label:T('Certificats'),         action:function(){ openApp('certs'); },
     imgClass:'icon-certs',    svg:'<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>' },
+  { id:'health',      label:T('Bilan de santé'), action:function(){ openApp('health'); },
+    imgClass:'icon-health', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-7 4 14 2.5-7H21"/></svg>' },
+  { id:'activity',    label:T('Journal d\'activité'), action:function(){ openApp('activity'); },
+    imgClass:'icon-activity', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 20 9 4 6 12 2 12"/></svg>' },
   { id:'dataprotect', label:T('Protection des données'), action:function(){ openApp('dataprotect'); },
     imgClass:'icon-dp',       svg:'<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
   { id:'truenas-ui', label:T('Interface TrueNAS'), action:function(){ openTrueNAS(); },
@@ -20216,6 +20964,535 @@ let currentShareTab = 'smb';
 var _us = { users: [], groups: [], shells: null, nav: 'users', sel: null, loaded: false, seq: 0 };
 WEB_ICONS.user = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
 WEB_ICONS.users = '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>';
+// ============================================================
+// FICHIERS — corbeille, versions précédentes, lecteur
+// ============================================================
+WEB_ICONS.trash = '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>';
+WEB_ICONS.history = '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/><polyline points="12 7 12 12 15.5 14"/>';
+WEB_ICONS.download = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>';
+WEB_ICONS.close = '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>';
+WEB_ICONS.left = '<polyline points="15 18 9 12 15 6"/>';
+WEB_ICONS.right = '<polyline points="9 18 15 12 9 6"/>';
+WEB_ICONS.play = '<polygon points="7 4 20 12 7 20 7 4" fill="currentColor" stroke="none"/>';
+WEB_ICONS.pause = '<rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" stroke="none"/>';
+WEB_ICONS.search = '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
+
+// ── Une feuille posée au-dessus du bureau : titre, phrase, corps, pied. Une seule à la fois. ──
+var _sheet = { open: false, onClose: null };
+function dkSheet(o) {
+  o = o || {};
+  var back = document.getElementById('dk-sheet');
+  if (!back) {
+    back = document.createElement('div');
+    back.id = 'dk-sheet'; back.className = 'dk-sheet-back';
+    back.innerHTML = '<div class="dk-sheet" role="dialog" aria-modal="true" aria-labelledby="dk-sheet-title">'
+      + '<header class="dk-sheet-head"><div class="dk-sheet-heads"><div class="dk-sheet-crumb" id="dk-sheet-crumb"></div><h3 id="dk-sheet-title"></h3><p id="dk-sheet-sub"></p></div>'
+      + '<button class="dk-sheet-x" onclick="dkSheetClose()" title="' + webEsc(T('Fermer')) + '" aria-label="' + webEsc(T('Fermer')) + '">' + webIcon('close') + '</button></header>'
+      + '<div class="dk-sheet-body" id="dk-sheet-body"></div><footer class="dk-sheet-foot" id="dk-sheet-foot"></footer></div>';
+    back.addEventListener('mousedown', function(e) { if (e.target === back) dkSheetClose(); });
+    document.body.appendChild(back);
+  }
+  back.firstElementChild.className = 'dk-sheet' + (o.wide ? ' wide' : '');
+  _sheet.open = true; _sheet.onClose = o.onClose || null; _sheet.key = o.key || '';
+  dkSheetHead(o.title || '', o.sub || '', o.crumb || '');
+  dkSheetFoot('');
+  back.classList.add('open');
+  return document.getElementById('dk-sheet-body');
+}
+function dkSheetHead(title, sub, crumb) {
+  var t = document.getElementById('dk-sheet-title'), s = document.getElementById('dk-sheet-sub'), c = document.getElementById('dk-sheet-crumb');
+  if (t) t.textContent = title;
+  if (s) { s.innerHTML = sub || ''; s.style.display = sub ? '' : 'none'; }
+  if (c) { c.innerHTML = crumb || ''; c.style.display = crumb ? '' : 'none'; }
+}
+function dkSheetFoot(html) { var f = document.getElementById('dk-sheet-foot'); if (f) { f.innerHTML = html || ''; f.style.display = html ? '' : 'none'; } }
+function dkSheetBody(key) { return _sheet.open && _sheet.key === key ? document.getElementById('dk-sheet-body') : null; }
+function dkSheetClose() {
+  var back = document.getElementById('dk-sheet');
+  if (back) back.classList.remove('open');
+  var cb = _sheet.onClose;
+  _sheet.open = false; _sheet.onClose = null; _sheet.key = '';
+  if (cb) { try { cb(); } catch (_) {} }
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape' || !_sheet.open) return;
+  var c = document.getElementById('confirm-modal'), p = document.getElementById('prompt-modal');
+  if ((c && c.classList.contains('open')) || (p && p.classList.contains('open')) || document.getElementById('dk-viewer')) return;
+  e.preventDefault(); dkSheetClose();
+});
+
+var _fsx = { conf: null, confAt: 0, items: null, busy: '' };
+function fsxPoolPath(p) { return /^\/mnt\/[^\/]+\/.+/.test(String(p || '')); }   // dans un pool, sous sa racine
+function fsxDays(n) { return n > 1 ? Tf('{0} jours', n) : T('1 jour'); }
+// Réglage de la corbeille. null : le service installé n'a pas de corbeille (Desktroo pas encore à jour).
+async function fsxTrashConf(force) {
+  if (!force && _fsx.confAt && Date.now() - _fsx.confAt < 60000) return _fsx.conf;
+  try { var r = await fileops('GET', 'trash/config'); _fsx.conf = r && r.ok ? { enabled: !!r.enabled, days: Number(r.days) || 30 } : null; }
+  catch (e) { _fsx.conf = null; }
+  _fsx.confAt = Date.now();
+  return _fsx.conf;
+}
+// Ajouts à une fenêtre Fichiers : « Corbeille » dans la colonne, deux lignes dans le menu du clic droit.
+function fsxDecorate(wid) {
+  var win = document.getElementById('win-' + wid);
+  if (!win || win.querySelector('.fsx-trash-item')) return;
+  fsxTrashConf();   // le menu du clic droit saura s'il y a une corbeille
+  var sec = win.querySelector('.fs-sidebar-section');
+  if (sec) {
+    var it = document.createElement('div');
+    it.className = 'fs-item fsx-trash-item';
+    it.innerHTML = '<svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + WEB_ICONS.trash + '</svg><span>' + T('Corbeille') + '</span>';
+    it.onclick = function() { setActiveFsWin(wid); fsxTrashOpen(); };
+    sec.appendChild(it);
+  }
+  var ctx = document.getElementById(wid + '-fs-ctx');
+  if (ctx && !ctx.querySelector('.fsx-ctx-vers')) {
+    var mk = function(cls, label, fn) { var d = document.createElement('div'); d.className = 'ctx-item ' + cls; d.textContent = label; d.onclick = function() { setActiveFsWin(wid); fn(); }; return d; };
+    var perm = document.getElementById(wid + '-fsctx-perm');
+    if (perm) perm.parentNode.insertBefore(mk('fsctx-sel fsx-ctx-vers', T('Versions précédentes'), function() { fsxVersions(fsSelected); }), perm);
+    if (perm) perm.parentNode.insertBefore(mk('fsctx-sel fsx-ctx-space', T('Analyser l\'espace'), function() { if (fsSelected) spOpenFolder(fsSelected.path); }), perm);
+    var del = ctx.querySelector('.ctx-item.danger');
+    if (del) del.parentNode.insertBefore(mk('fsctx-sel fsx-ctx-perm', T('Supprimer définitivement'), function() { fsDeleteSelected(true); }), del.nextSibling);
+    var mkdir = ctx.querySelector('.fsctx-new-sep');
+    if (mkdir) mkdir.parentNode.insertBefore(mk('fsx-ctx-versdir', T('Versions précédentes de ce dossier'), function() { fsxVersions({ path: currentFsPath, name: currentFsPath.split('/').pop(), type: 'DIRECTORY' }); }), mkdir.nextSibling);
+  }
+}
+// Ce que le menu du clic droit montre, selon ce qui est visé (item : l'élément ; null : le vide du dossier).
+function fsxCtxSync(item, multi) {
+  var ctx = fsEl('fs-ctx');
+  if (!ctx) return;
+  var v = ctx.querySelector('.fsx-ctx-vers'), p = ctx.querySelector('.fsx-ctx-perm'), d = ctx.querySelector('.fsx-ctx-versdir'), o = fsEl('fsctx-open');
+  if (v) v.style.display = item && !multi && fsxPoolPath(item.path) ? '' : 'none';
+  var sp = ctx.querySelector('.fsx-ctx-space'); if (sp) sp.style.display = item && !multi && item.type === 'DIRECTORY' && fsxPoolPath(item.path) ? '' : 'none';
+  if (p) p.style.display = item && _fsx.conf && _fsx.conf.enabled && fsSelList().every(function(x) { return fsxPoolPath(x.path); }) ? '' : 'none';
+  if (d) d.style.display = !item && fsxPoolPath(currentFsPath + '/x') && currentFsPath !== '/mnt' ? '' : 'none';
+  if (o && item && !multi && item.type !== 'DIRECTORY' && mvKind(item.name)) o.style.display = '';
+}
+
+// ── Supprimer : vers la corbeille quand elle existe, pour de bon sinon (ou sur demande) ──
+async function fsDeleteSelected(forever) {
+  const list = fsSelList(); if (!list.length) return;
+  const conf = await fsxTrashConf();
+  const toTrash = !forever && !!conf && conf.enabled && list.every(function(x) { return fsxPoolPath(x.path); });
+  const what = list.length > 1 ? Tf('<strong>{0} éléments</strong>', list.length) : '<strong>' + webEsc(list[0].name) + '</strong>';
+  const msg = toTrash
+    ? Tf('Mettre {0} à la corbeille ?', what) + '<br><span style="font-size:12px;color:var(--text-dim);">' + webEsc(Tf('Vous aurez {0} pour changer d\'avis.', fsxDays(conf.days))) + '</span>'
+    : Tf('Supprimer {0} ?', what) + '<br><span style="font-size:12px;color:var(--danger);">' + T('Cette action est irréversible.') + '</span>';
+  if (!await showConfirm(msg, toTrash ? { ok: T('Mettre à la corbeille'), icon: '🗑️' } : { danger: true, ok: T('Supprimer') })) return;
+  const prog = fsOp(toTrash ? T('Mise à la corbeille…') : T('Suppression…'));
+  let okc = 0, errc = 0, lastErr = '', i = 0, refused = [], why = '';
+  for (const it of list) {
+    i++; prog.update(i, list.length, it.name);
+    try { await fileops('DELETE', 'delete', toTrash ? { path: it.path, recursive: it.type === 'DIRECTORY', trash: true } : { path: it.path, recursive: it.type === 'DIRECTORY' }); okc++; }
+    catch (e) {
+      if (e && e.message === 'LICENSE_READONLY') break;
+      if (toTrash && e && e.code === 'dataset_root') { errc++; lastErr = e.message; }
+      else if (toTrash && e && e.code === 'no_trash') { refused.push(it); why = e.message; }
+      else { errc++; lastErr = e.message; }
+    }
+  }
+  const tail = (errc ? ' · ' + errc + T(' échec(s) — ') + lastErr : '');
+  if (toTrash) prog.done((okc > 1 ? Tf('{0} éléments à la corbeille', okc) : (okc ? T('1 élément à la corbeille') : T('Rien n\'est parti à la corbeille'))) + tail, errc > 0 || (!okc && !refused.length));
+  else prog.done(okc + (okc > 1 ? T(' supprimés') : T(' supprimé')) + tail, errc > 0);
+  fsDeselect();
+  fsRefresh();
+  // Ce que la corbeille n'a pas pu prendre n'a pas été touché : on demande avant de le supprimer pour de bon.
+  if (refused.length) {
+    const names = refused.length > 1 ? Tf('<strong>{0} éléments</strong> ne peuvent pas aller à la corbeille.', refused.length) : Tf('{0} ne peut pas aller à la corbeille.', '<strong>' + webEsc(refused[0].name) + '</strong>');
+    if (await showConfirm(names + '<br><span style="font-size:12px;color:var(--text-dim);">' + webEsc(why) + '</span><br><span style="font-size:12px;color:var(--danger);">' + T('Supprimer définitivement ? Cette action est irréversible.') + '</span>', { danger: true, ok: T('Supprimer définitivement') })) {
+      _fsSel = refused.slice(); fsRenderSel();
+      let ok2 = 0, bad2 = '';
+      for (const it of refused) { try { await fileops('DELETE', 'delete', { path: it.path, recursive: it.type === 'DIRECTORY' }); ok2++; } catch (e) { bad2 = e.message; } }
+      toast(bad2 ? '❌ ' + bad2 : '✅ ' + (ok2 > 1 ? Tf('{0} éléments supprimés', ok2) : T('1 élément supprimé')), 7000);
+      fsDeselect(); fsRefresh();
+    }
+  }
+}
+
+// ── Corbeille ──
+async function fsxTrashOpen() {
+  dkSheet({ key: 'trash', wide: true, title: T('Corbeille') });
+  await fsxTrashLoad();
+}
+async function fsxTrashLoad() {
+  var body = dkSheetBody('trash');
+  if (!body) return;
+  if (!_fsx.items) body.innerHTML = dkWaitHtml('busy', T('Ouverture de la corbeille…'), '');
+  try {
+    var r = await fileops('GET', 'trash/list');
+    _fsx.items = ensureArray(r.items); _fsx.conf = { enabled: !!r.enabled, days: Number(r.days) || 30 }; _fsx.confAt = Date.now(); _fsx.total = Number(r.total) || 0;
+  } catch (e) {
+    body = dkSheetBody('trash');
+    if (!body) return;
+    _fsx.items = null;
+    var old = e && e.status === 404;
+    body.innerHTML = dkWaitHtml('error', old ? T('La corbeille arrive avec la mise à jour') : T('La corbeille ne répond pas'),
+      old ? T('Le service Desktroo installé n\'a pas encore de corbeille : mettez Desktroo à jour, puis rouvrez cette page.') : webEsc(dkErrText(e)),
+      old ? '' : '<button class="web-open" onclick="fsxTrashLoad()">' + T('Réessayer') + '</button>');
+    dkSheetFoot('<span class="dk-sheet-grow"></span><button class="fs-btn" onclick="dkSheetClose()">' + T('Fermer') + '</button>');
+    return;
+  }
+  fsxTrashRender();
+}
+function fsxTrashLeft(it) {
+  var d = Math.ceil((Number(it.expires_at) * 1000 - Date.now()) / 864e5);
+  return d <= 0 ? T('supprimé à la prochaine purge') : (d === 1 ? T('encore 1 jour') : Tf('encore {0} jours', d));
+}
+function fsxTrashRender() {
+  var body = dkSheetBody('trash');
+  if (!body) return;
+  var list = _fsx.items || [], conf = _fsx.conf || { enabled: true, days: 30 }, busy = !!_fsx.busy, n = list.length;
+  dkSheetHead(T('Corbeille'), n ? webEsc((n > 1 ? Tf('{0} éléments', n) : T('1 élément')) + ', ' + mntFmtSize(_fsx.total)) + ' · ' + webEsc(Tf('Chaque élément est supprimé pour de bon {0} après y être entré.', fsxDays(conf.days))) : '');
+  var h = '';
+  if (!conf.enabled) h += '<p class="web-note dk-sheet-warn">' + T('La corbeille est désactivée : ce que vous supprimez depuis Fichiers disparaît tout de suite.') + '</p>';
+  if (!n) {
+    h += '<div class="fs-empty dk-sheet-empty">' + webIcon('trash') + '<div class="fs-empty-title">' + T('La corbeille est vide') + '</div><div>'
+      + webEsc(Tf('Ce que vous supprimez depuis Fichiers y reste {0}.', fsxDays(conf.days))) + '</div></div>';
+  } else {
+    h += '<div class="web-table fsx-trash"><div class="web-tr head"><span>' + T('Nom') + '</span><span class="num">' + T('Taille') + '</span><span>' + T('Supprimé') + '</span><span></span></div>';
+    list.forEach(function(it, i) {
+      var from = String(it.path || '').replace(/\/[^\/]*$/, '') || '/';
+      h += '<div class="web-tr' + (it.present === false ? ' is-off' : '') + '"><span class="fsx-name">' + fsIcon(it.name, !!it.is_dir) + '<span class="cron-two"><strong title="' + webEsc(it.name) + '">' + webEsc(it.name) + '</strong><span class="dim mono" title="' + webEsc(from) + '">' + webEsc(from) + '</span></span></span>'
+        + '<span class="num">' + (it.size != null ? webEsc((it.size_complete === false ? '≥ ' : '') + mntFmtSize(Number(it.size) || 0)) : '—') + '</span>'
+        + '<span class="cron-two"><span title="' + webEsc(fsFmtDate(it.deleted_at)) + '">' + webEsc(fsFmtWhen(it.deleted_at)) + (it.by ? ' · ' + webEsc(it.by) : '') + '</span><span class="dim">' + webEsc(fsxTrashLeft(it)) + '</span></span>'
+        + '<span class="fsx-acts"><button class="web-mini" data-tr="' + i + '"' + (busy || it.present === false ? ' disabled' : '') + '>' + T('Restaurer') + '</button>'
+        + '<button class="web-mini fsx-del" data-tp="' + i + '"' + (busy ? ' disabled' : '') + ' title="' + webEsc(T('Supprimer définitivement')) + '" aria-label="' + webEsc(T('Supprimer définitivement')) + '">' + webIcon('trash') + '</button></span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<p class="web-note">' + T('Seul ce qui est supprimé depuis Desktroo passe par la corbeille. Un fichier supprimé depuis un partage réseau ou une application n\'y va pas : pour celui-là, voyez « Versions précédentes ».') + '</p>';
+  body.innerHTML = h;
+  body.querySelectorAll('[data-tr]').forEach(function(b) { b.onclick = function() { fsxTrashRestore([list[Number(b.dataset.tr)]]); }; });
+  body.querySelectorAll('[data-tp]').forEach(function(b) { b.onclick = function() { fsxTrashPurge([list[Number(b.dataset.tp)]]); }; });
+  var days = [7, 14, 30, 60, 90, 180, 365];
+  if (days.indexOf(conf.days) < 0) days.push(conf.days);
+  dkSheetFoot('<label class="dk-sheet-set"><span>' + T('Garder') + '</span><select class="wm-input" onchange="fsxTrashSet({days:Number(this.value)})"' + (busy ? ' disabled' : '') + '>'
+    + days.sort(function(a, b) { return a - b; }).map(function(d) { return '<option value="' + d + '"' + (d === conf.days ? ' selected' : '') + '>' + webEsc(fsxDays(d)) + '</option>'; }).join('') + '</select></label>'
+    + '<button class="web-mini" onclick="fsxTrashSet({enabled:' + (conf.enabled ? 'false' : 'true') + '})"' + (busy ? ' disabled' : '') + '>' + (conf.enabled ? T('Désactiver la corbeille') : T('Activer la corbeille')) + '</button>'
+    + '<span class="dk-sheet-grow"></span>'
+    + (n ? '<button class="fs-btn fsx-danger" onclick="fsxTrashPurge(null)"' + (busy ? ' disabled' : '') + '>' + (busy ? webEsc(_fsx.busy) : T('Vider la corbeille')) + '</button>' : '')
+    + '<button class="fs-btn" onclick="dkSheetClose()">' + T('Fermer') + '</button>');
+}
+async function fsxTrashRestore(items) {
+  if (_fsx.busy || !items.length) return;
+  _fsx.busy = T('Restauration…'); fsxTrashRender();
+  try {
+    var r = await fileops('POST', 'trash/restore', { items: items.map(function(i) { return { root: i.root, id: i.id }; }) });
+    var done = ensureArray(r.restored), failed = ensureArray(r.failed);
+    if (done.length === 1) toast('✅ ' + Tf('Restauré : {0}', done[0]), 7000);
+    else if (done.length) toast('✅ ' + Tf('{0} éléments restaurés', done.length), 7000);
+    if (failed.length) toast('❌ ' + String(failed[0].error || ''), 9000);
+  } catch (e) { wmToastErr(e); }
+  _fsx.busy = '';
+  await fsxTrashLoad();
+  try { fsRefresh(); } catch (_) {}
+}
+async function fsxTrashPurge(items) {
+  if (_fsx.busy) return;
+  var all = !items, n = all ? (_fsx.items || []).length : items.length;
+  if (!n) return;
+  var msg = all ? T('Vider la corbeille ?') : Tf('Supprimer définitivement {0} ?', '<strong>' + webEsc(items[0].name) + '</strong>');
+  if (!await showConfirm(msg + '<br><span style="font-size:12px;color:var(--danger);">' + (all ? webEsc(Tf('{0} seront libérés. Cette action est irréversible.', mntFmtSize(_fsx.total))) : T('Cette action est irréversible.')) + '</span>', { danger: true, ok: all ? T('Vider la corbeille') : T('Supprimer définitivement') })) return;
+  _fsx.busy = T('Suppression…'); fsxTrashRender();
+  try {
+    var r = await fileops('POST', 'trash/purge', all ? { all: true } : { items: items.map(function(i) { return { root: i.root, id: i.id }; }) });
+    var failed = ensureArray(r.failed);
+    if (failed.length) toast('❌ ' + String(failed[0].error || ''), 9000);
+    else toast('✅ ' + (all ? T('Corbeille vidée') : T('Supprimé définitivement')));
+  } catch (e) { wmToastErr(e); }
+  _fsx.busy = '';
+  await fsxTrashLoad();
+}
+async function fsxTrashSet(patch) {
+  if (_fsx.busy) return;
+  if (patch.enabled === false && !await showConfirm(T('Désactiver la corbeille ?') + '<br><span style="font-size:12px;color:var(--text-dim);">' + T('Ce que vous supprimerez depuis Fichiers disparaîtra tout de suite. Ce qui est déjà dans la corbeille y reste jusqu\'à son échéance.') + '</span>', { ok: T('Désactiver') })) { fsxTrashRender(); return; }
+  try { var r = await fileops('POST', 'trash/config', patch); _fsx.conf = { enabled: !!r.enabled, days: Number(r.days) || 30 }; _fsx.confAt = Date.now(); }
+  catch (e) { wmToastErr(e); }
+  await fsxTrashLoad();
+}
+
+// ── Versions précédentes : le même élément, tel qu'il était dans les snapshots de son dataset ──
+var _fsv = { item: null, data: null, snap: null, rel: '', list: null, busy: '' };
+function fsxVDate(t) { return new Date(t * 1000).toLocaleDateString(DK_LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + new Date(t * 1000).toLocaleTimeString(DK_LOCALE, { hour: '2-digit', minute: '2-digit' }); }
+async function fsxVersions(item) {
+  if (!item) return;
+  _fsv = { item: item, data: null, snap: null, rel: '', list: null, busy: '' };
+  var body = dkSheet({ key: 'vers', wide: true, title: T('Versions précédentes'), sub: '<span class="mono">' + webEsc(item.path) + '</span>' });
+  body.innerHTML = dkWaitHtml('busy', T('Lecture des snapshots…'), T('Chaque snapshot est ouvert pour y chercher cet élément : cela peut prendre quelques secondes.'));
+  dkSheetFoot('<span class="dk-sheet-grow"></span><button class="fs-btn" onclick="dkSheetClose()">' + T('Fermer') + '</button>');
+  try { _fsv.data = await fileops('GET', 'versions?path=' + encodeURIComponent(item.path)); }
+  catch (e) {
+    body = dkSheetBody('vers');
+    if (!body || _fsv.item !== item) return;
+    var old = e && e.status === 404;
+    body.innerHTML = dkWaitHtml('error', old ? T('Les versions précédentes arrivent avec la mise à jour') : T('Les snapshots ne se laissent pas lire'),
+      old ? T('Le service Desktroo installé ne sait pas encore les lire : mettez Desktroo à jour, puis rouvrez cette page.') : webEsc(dkErrText(e)),
+      old ? '' : '<button class="web-open" id="fsv-retry">' + T('Réessayer') + '</button>');
+    var rb = document.getElementById('fsv-retry'); if (rb) rb.onclick = function() { fsxVersions(item); };
+    return;
+  }
+  if (_fsv.item === item) fsxVersRender();
+}
+// Les snapshots qui gardent la même version d'un fichier (même date, même taille) comptent pour une seule ligne.
+function fsxVersGroups() {
+  var d = _fsv.data, out = [], by = {};
+  ensureArray(d.versions).forEach(function(v) {
+    if (v.is_dir) { out.push({ v: v, first: v, n: 1 }); return; }
+    var k = v.mtime + '|' + v.size;
+    if (by[k]) { by[k].n++; by[k].first = v; } else { by[k] = { v: v, first: v, n: 1 }; out.push(by[k]); }
+  });
+  return out;
+}
+function fsxVersRender() {
+  var body = dkSheetBody('vers');
+  if (!body) return;
+  var d = _fsv.data, item = _fsv.item, isDir = item.type === 'DIRECTORY', busy = !!_fsv.busy, groups = fsxVersGroups(), cur = d.current;
+  dkSheetHead(T('Versions précédentes'), '<span class="mono">' + webEsc(item.path) + '</span>', '');
+  var h = '';
+  if (!d.supported || !d.snapshots) {
+    h = '<div class="fs-empty dk-sheet-empty">' + webIcon('history') + '<div class="fs-empty-title">' + T('Aucun snapshot pour ce dataset') + '</div><div>'
+      + T('Une version précédente est ce qu\'un snapshot a gardé. Sans snapshot programmé, il n\'y a rien à retrouver.') + '</div>'
+      + '<button class="web-open" onclick="dkSheetClose();openApp(\'snapshots\')">' + T('Programmer des snapshots') + '</button></div>';
+  } else if (!groups.length) {
+    h = '<div class="fs-empty dk-sheet-empty">' + webIcon('history') + '<div class="fs-empty-title">' + T('Aucune version plus ancienne') + '</div><div>'
+      + webEsc(d.snapshots > 1 ? Tf('Cet élément n\'existe dans aucun des {0} snapshots du dataset : il a été créé après le dernier.', d.snapshots) : T('Cet élément n\'existe pas dans le snapshot du dataset : il a été créé après.')) + '</div></div>';
+  } else {
+    h = '<div class="web-table fsx-vers"><div class="web-tr head"><span>' + (isDir ? T('Snapshot') : T('Version')) + '</span><span class="num">' + (isDir ? '' : T('Taille')) + '</span><span></span></div>';
+    groups.forEach(function(g, i) {
+      var v = g.v, same = !isDir && cur && cur.mtime === v.mtime && cur.size === v.size;
+      var where = g.n > 1 ? Tf('gardée par {0} snapshots, du {1} au {2}', g.n, fsxVDate(g.first.created), fsxVDate(v.created)) : Tf('snapshot « {0} » du {1}', v.snapshot, fsxVDate(v.created));
+      h += '<div class="web-tr' + (same ? ' is-off' : '') + '"><span class="cron-two"><strong>' + webEsc(isDir ? fsxVDate(v.created) : Tf('Modifié le {0}', fsxVDate(v.mtime))) + '</strong>'
+        + '<span class="dim" title="' + webEsc(isDir ? v.snapshot : where) + '">' + webEsc(same ? T('identique au fichier actuel') : (isDir ? v.snapshot : where)) + '</span></span>'
+        + '<span class="num">' + (isDir ? '' : webEsc(mntFmtSize(v.size))) + '</span>'
+        + '<span class="fsx-acts">' + (isDir ? '<button class="web-mini" data-vb="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Parcourir') + '</button>'
+            : '<button class="web-mini" data-vd="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Télécharger') + '</button>')
+        + '<button class="web-mini" data-vc="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Restaurer une copie') + '</button>'
+        + (cur && !same ? '<button class="web-mini" data-vr="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Remplacer l\'actuel') + '</button>' : (!cur ? '<button class="web-mini" data-vr="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Remettre en place') + '</button>' : '')) + '</span></div>';
+    });
+    h += '</div><p class="web-note">' + (busy ? webEsc(_fsv.busy) : T('« Restaurer une copie » pose la version à côté de l\'actuel, sous un nom daté. « Remplacer l\'actuel » met d\'abord l\'actuel à la corbeille.')) + '</p>';
+  }
+  body.innerHTML = h;
+  var rel = String(item.path).slice(String(d.root).length).replace(/^\/+/, '');
+  body.querySelectorAll('[data-vc]').forEach(function(b) { b.onclick = function() { fsxVersRestore(groups[Number(b.dataset.vc)].v, rel, 'beside'); }; });
+  body.querySelectorAll('[data-vr]').forEach(function(b) { b.onclick = function() { fsxVersRestore(groups[Number(b.dataset.vr)].v, rel, cur ? 'replace' : 'beside'); }; });
+  body.querySelectorAll('[data-vd]').forEach(function(b) { b.onclick = function() { var v = groups[Number(b.dataset.vd)].v; fsxDownload(d.root + '/.zfs/snapshot/' + v.snapshot + '/' + rel, item.name); }; });
+  body.querySelectorAll('[data-vb]').forEach(function(b) { b.onclick = function() { fsxVersBrowse(groups[Number(b.dataset.vb)].v, rel); }; });
+}
+async function fsxVersRestore(v, rel, mode, after) {
+  if (_fsv.busy) return;
+  var name = rel.split('/').pop();
+  if (mode === 'replace' && !await showConfirm(Tf('Remplacer {0} par sa version du {1} ?', '<strong>' + webEsc(name) + '</strong>', webEsc(fsxVDate(v.mtime || v.created)))
+      + '<br><span style="font-size:12px;color:var(--text-dim);">' + T('La version actuelle part à la corbeille : elle reste récupérable.') + '</span>', { ok: T('Remplacer') })) return;
+  _fsv.busy = T('Copie depuis le snapshot…');
+  if (after) after(); else fsxVersRender();
+  try {
+    var r = await fileops('POST', 'versions/restore', { root: _fsv.data.root, snapshot: v.snapshot, rel: rel, mode: mode, created: v.created });
+    toast('✅ ' + Tf('Restauré : {0}', r.name) + (r.trashed ? ' — ' + T('l\'ancienne version est dans la corbeille') : ''), 9000);
+    try { fsRefresh(); } catch (_) {}
+  } catch (e) { if (!(e && e.message === 'LICENSE_READONLY')) toast('❌ ' + Tf('Restauration impossible : {0}', (e && e.code === 'no_trash') ? e.message : wmErr(e)), 12000); }
+  _fsv.busy = '';
+  if (after) after(); else if (dkSheetBody('vers') && !_fsv.snap) fsxVersRender();
+}
+// Parcourir un dossier tel qu'il était : on y retrouve ce qui a été supprimé depuis.
+async function fsxVersBrowse(v, rel) {
+  _fsv.snap = v; _fsv.rel = rel; _fsv.list = null;
+  var body = dkSheetBody('vers');
+  if (!body) return;
+  fsxVersBrowseHead();
+  body.innerHTML = dkWaitHtml('busy', T('Ouverture de cette version…'), '');
+  try { var r = await fileops('GET', 'versions/list?root=' + encodeURIComponent(_fsv.data.root) + '&snapshot=' + encodeURIComponent(v.snapshot) + '&rel=' + encodeURIComponent(rel)); _fsv.list = ensureArray(r.entries); }
+  catch (e) {
+    body = dkSheetBody('vers');
+    if (!body || _fsv.snap !== v || _fsv.rel !== rel) return;
+    body.innerHTML = dkWaitHtml('error', T('Cette version ne se laisse pas lire'), webEsc(dkErrText(e)), '<button class="web-open" onclick="fsxVersBack()">' + T('Revenir aux versions') + '</button>');
+    return;
+  }
+  if (_fsv.snap === v && _fsv.rel === rel) fsxVersBrowseRender();
+}
+function fsxVersBrowseHead() {
+  var base = String(_fsv.item.path).slice(String(_fsv.data.root).length).replace(/^\/+/, ''), deeper = _fsv.rel.length > base.length;
+  dkSheetHead(Tf('Version du {0}', fsxVDate(_fsv.snap.created)), '<span class="mono">' + webEsc(_fsv.data.root + '/' + _fsv.rel) + '</span>',
+    '<button class="web-crumb" onclick="fsxVersBack()">&lsaquo; ' + T('Versions précédentes') + '</button>'
+    + (deeper ? '<button class="web-crumb" onclick="fsxVersUp()">&lsaquo; ' + T('Dossier parent') + '</button>' : ''));
+}
+function fsxVersBack() { _fsv.snap = null; _fsv.list = null; if (dkSheetBody('vers')) fsxVersRender(); }
+function fsxVersUp() { fsxVersBrowse(_fsv.snap, _fsv.rel.replace(/\/[^\/]*$/, '')); }
+function fsxVersBrowseRender() {
+  var body = dkSheetBody('vers');
+  if (!body || !_fsv.snap) return;
+  fsxVersBrowseHead();
+  var list = _fsv.list || [], busy = !!_fsv.busy, gone = list.filter(function(e) { return !e.exists_now; }).length;
+  var h = '';
+  if (!list.length) h = '<div class="fs-empty dk-sheet-empty">' + webIcon('folder') + '<div class="fs-empty-title">' + T('Ce dossier était vide') + '</div></div>';
+  else {
+    h = '<div class="web-table fsx-vlist"><div class="web-tr head"><span>' + T('Nom') + '</span><span class="num">' + T('Taille') + '</span><span>' + T('Modifié') + '</span><span></span></div>';
+    list.forEach(function(e, i) {
+      h += '<div class="web-tr"><span class="fsx-name">' + fsIcon(e.name, e.is_dir) + '<span class="cron-two"><strong title="' + webEsc(e.name) + '">' + webEsc(e.name) + '</strong>'
+        + (e.exists_now ? '' : '<span class="fsx-gone">' + T('n\'existe plus aujourd\'hui') + '</span>') + '</span></span>'
+        + '<span class="num">' + (e.is_dir ? '' : webEsc(mntFmtSize(e.size))) + '</span><span>' + webEsc(fsFmtWhen(e.mtime)) + '</span>'
+        + '<span class="fsx-acts">' + (e.is_dir ? '<button class="web-mini" data-bo="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Ouvrir') + '</button>' : '')
+        + '<button class="web-mini" data-br="' + i + '"' + (busy ? ' disabled' : '') + '>' + (e.exists_now ? T('Restaurer une copie') : T('Remettre en place')) + '</button></span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<p class="web-note">' + (busy ? webEsc(_fsv.busy) : (gone ? webEsc(gone > 1 ? Tf('{0} éléments de cette version n\'existent plus aujourd\'hui.', gone) : T('Un élément de cette version n\'existe plus aujourd\'hui.')) + ' ' : '') + T('Rien n\'est modifié dans le snapshot : restaurer recopie l\'élément dans le dossier d\'aujourd\'hui.')) + '</p>';
+  body.innerHTML = h;
+  body.querySelectorAll('[data-bo]').forEach(function(b) { b.onclick = function() { fsxVersBrowse(_fsv.snap, _fsv.rel + '/' + list[Number(b.dataset.bo)].name); }; });
+  body.querySelectorAll('[data-br]').forEach(function(b) { b.onclick = function() { var e = list[Number(b.dataset.br)]; fsxVersRestore({ snapshot: _fsv.snap.snapshot, created: _fsv.snap.created, mtime: e.mtime }, _fsv.rel + '/' + e.name, 'beside', fsxVersBrowseAfter); }; });
+}
+function fsxVersBrowseAfter() {
+  if (!dkSheetBody('vers') || !_fsv.snap) return;
+  if (_fsv.busy) fsxVersBrowseRender(); else fsxVersBrowse(_fsv.snap, _fsv.rel);
+}
+// Télécharger un fichier par son chemin (TrueNAS prépare une adresse temporaire).
+async function fsxDownload(path, name) {
+  try {
+    var url = await socketDownloadUrl(path, name, false);
+    var a = document.createElement('a');
+    a.href = NAS_URL + url; a.download = name; a.target = '_blank';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast(T('✅ Téléchargement lancé : ') + name);
+  } catch (e) { toast(T('❌ Erreur téléchargement : ') + wmErr(e), 8000); }
+}
+
+// ── Lecteur : photos, vidéos, musique et PDF, sans quitter le bureau ──
+var MV_EXT = { image: 'jpg jpeg png gif webp bmp avif ico svg', video: 'mp4 m4v webm mov mkv ogv', audio: 'mp3 m4a aac ogg oga opus wav flac weba', pdf: 'pdf' };
+var _mvKindOf = null;
+function mvKind(name) {
+  if (!_mvKindOf) { _mvKindOf = {}; Object.keys(MV_EXT).forEach(function(k) { MV_EXT[k].split(' ').forEach(function(x) { _mvKindOf[x] = k; }); }); }
+  return _mvKindOf[fsTypeExt(name)] || '';
+}
+var _mv = null;   // { list, i, urls, playing, timer, seq }
+function mvFamily(kind) { return kind === 'video' || kind === 'audio' ? 'av' : kind; }
+// Ouvre un fichier ; « siblings » : les éléments du dossier, pour passer au suivant et au précédent.
+function mvOpen(entry, siblings) {
+  var kind = mvKind(entry.name);
+  if (!kind) return false;
+  var fam = mvFamily(kind);
+  var list = ensureArray(siblings).filter(function(x) { return x.type !== 'DIRECTORY' && mvFamily(mvKind(x.name)) === fam; });
+  if (!list.some(function(x) { return x.path === entry.path; })) list = [entry];
+  mvClose(true);
+  _mv = { list: list, i: Math.max(0, list.findIndex(function(x) { return x.path === entry.path; })), urls: {}, playing: false, timer: null, seq: 0 };
+  var el = document.createElement('div');
+  el.id = 'dk-viewer'; el.className = 'dk-viewer'; el.tabIndex = -1;
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', T('Lecteur'));
+  el.innerHTML = '<header class="mv-bar"><div class="mv-title"><strong id="mv-name"></strong><span id="mv-meta"></span></div>'
+    + '<div class="mv-tools"><button class="mv-btn" id="mv-play" onclick="mvTogglePlay()"></button>'
+    + '<button class="mv-btn" id="mv-dl" onclick="mvDownload()" title="' + webEsc(T('Télécharger')) + '" aria-label="' + webEsc(T('Télécharger')) + '">' + webIcon('download') + '</button>'
+    + '<button class="mv-btn" onclick="mvClose()" title="' + webEsc(T('Fermer')) + '" aria-label="' + webEsc(T('Fermer')) + '">' + webIcon('close') + '</button></div></header>'
+    + '<div class="mv-stage" id="mv-stage"></div>'
+    + '<button class="mv-nav prev" id="mv-prev" onclick="mvStep(-1)" title="' + webEsc(T('Précédent')) + '" aria-label="' + webEsc(T('Précédent')) + '">' + webIcon('left') + '</button>'
+    + '<button class="mv-nav next" id="mv-next" onclick="mvStep(1)" title="' + webEsc(T('Suivant')) + '" aria-label="' + webEsc(T('Suivant')) + '">' + webIcon('right') + '</button>'
+    + '<div class="mv-progress" id="mv-progress"><span></span></div>';
+  el.addEventListener('mousedown', function(e) { if (e.target === el || e.target.id === 'mv-stage') mvClose(); });
+  el.addEventListener('keydown', mvKey);
+  document.body.appendChild(el);
+  el.focus();
+  mvShow();
+  return true;
+}
+function mvClose(quiet) {
+  if (_mv && _mv.timer) clearTimeout(_mv.timer);
+  var el = document.getElementById('dk-viewer');
+  if (el) { el.querySelectorAll('video,audio').forEach(function(m) { try { m.pause(); m.removeAttribute('src'); m.load(); } catch (_) {} }); el.remove(); }
+  _mv = null;
+  if (!quiet) { var f = fsEl('fs-files'); if (f) { try { f.focus(); } catch (_) {} } }
+}
+function mvKey(e) {
+  if (!_mv) return;
+  var k = e.key, tag = (e.target && e.target.tagName) || '';
+  if (k === 'Escape') mvClose();
+  else if (k === 'ArrowRight' && tag !== 'VIDEO' && tag !== 'AUDIO') mvStep(1);
+  else if (k === 'ArrowLeft' && tag !== 'VIDEO' && tag !== 'AUDIO') mvStep(-1);
+  else if (k === ' ' && mvKind(_mv.list[_mv.i].name) === 'image') mvTogglePlay();
+  else return;
+  e.preventDefault(); e.stopPropagation();
+}
+function mvStep(d, auto) {
+  if (!_mv || _mv.list.length < 2) return;
+  if (!auto && _mv.playing) mvTogglePlay();
+  _mv.i = (_mv.i + d + _mv.list.length) % _mv.list.length;
+  mvShow();
+}
+function mvTogglePlay() {
+  if (!_mv) return;
+  _mv.playing = !_mv.playing;
+  if (_mv.timer) { clearTimeout(_mv.timer); _mv.timer = null; }
+  mvChrome();
+  if (_mv.playing) mvArm();
+}
+// Diaporama : la photo suivante au bout de cinq secondes, une fois l'image en place.
+function mvArm() {
+  if (!_mv || !_mv.playing) return;
+  var bar = document.querySelector('#mv-progress span');
+  if (bar) { bar.style.transition = 'none'; bar.style.width = '0'; void bar.offsetWidth; bar.style.transition = 'width 5s linear'; bar.style.width = '100%'; }
+  _mv.timer = setTimeout(function() { if (_mv && _mv.playing) mvStep(1, true); }, 5000);
+}
+function mvChrome() {
+  if (!_mv) return;
+  var it = _mv.list[_mv.i], kind = mvKind(it.name), many = _mv.list.length > 1;
+  var set = function(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+  set('mv-name', it.name);
+  set('mv-meta', (many ? (_mv.i + 1) + ' / ' + _mv.list.length + ' · ' : '') + mntFmtSize(it.size || 0) + (it.mtime ? ' · ' + fsFmtWhen(it.mtime) : ''));
+  ['mv-prev', 'mv-next'].forEach(function(id) { var e = document.getElementById(id); if (e) e.style.display = many ? '' : 'none'; });
+  var p = document.getElementById('mv-play'), slide = kind === 'image' && many;
+  if (p) { p.style.display = slide ? '' : 'none'; p.innerHTML = webIcon(_mv.playing ? 'pause' : 'play'); p.title = _mv.playing ? T('Arrêter le diaporama') : T('Lancer le diaporama'); p.setAttribute('aria-label', p.title); }
+  var bar = document.getElementById('mv-progress'); if (bar) bar.style.display = slide && _mv.playing ? '' : 'none';
+}
+async function mvUrl(it) {
+  if (_mv.urls[it.path]) return _mv.urls[it.path];
+  var r = await fileops('GET', 'media/ticket?path=' + encodeURIComponent(it.path));
+  if (_mv) _mv.urls[it.path] = '/fileops' + r.url;
+  return '/fileops' + r.url;
+}
+function mvFail(title, text) {
+  var st = document.getElementById('mv-stage');
+  if (st) st.innerHTML = '<div class="mv-msg">' + dkWaitHtml('error', title, text, '<button class="web-open" onclick="mvDownload()">' + T('Télécharger le fichier') + '</button>') + '</div>';
+}
+async function mvShow() {
+  if (!_mv) return;
+  var seq = ++_mv.seq, it = _mv.list[_mv.i], kind = mvKind(it.name), st = document.getElementById('mv-stage');
+  if (_mv.timer) { clearTimeout(_mv.timer); _mv.timer = null; }
+  mvChrome();
+  if (!st) return;
+  st.className = 'mv-stage is-' + kind;
+  st.innerHTML = '<div class="mv-msg">' + dkWaitHtml('busy', T('Ouverture…'), '') + '</div>';
+  var url;
+  try { url = await mvUrl(it); }
+  catch (e) {
+    if (!_mv || seq !== _mv.seq) return;
+    if (e && e.status === 404) mvFail(T('Le lecteur arrive avec la mise à jour'), T('Le service Desktroo installé ne sait pas encore servir ce fichier au navigateur : mettez Desktroo à jour.'));
+    else mvFail(T('Ce fichier ne s\'ouvre pas'), webEsc(dkErrText(e)));
+    return;
+  }
+  if (!_mv || seq !== _mv.seq) return;
+  var unreadable = function() { if (_mv && seq === _mv.seq) mvFail(T('Ce format ne se lit pas dans le navigateur'), T('Le fichier est intact : téléchargez-le pour l\'ouvrir avec une application de votre poste.')); };
+  if (kind === 'image') {
+    var img = new Image();
+    img.className = 'mv-img'; img.alt = it.name; img.draggable = false;
+    img.onload = function() { if (!_mv || seq !== _mv.seq) return; st.innerHTML = ''; st.appendChild(img); mvArm(); mvPreload(); };
+    img.onerror = unreadable;
+    img.src = url;
+  } else if (kind === 'video') {
+    st.innerHTML = '<video class="mv-video" controls autoplay playsinline></video>';
+    var v = st.firstChild; v.onerror = unreadable; v.src = url; try { v.focus(); } catch (_) {}
+  } else if (kind === 'audio') {
+    st.innerHTML = '<div class="mv-audio">' + fsIcon(it.name, false) + '<div class="mv-audio-name">' + webEsc(it.name.replace(/\.[^.]+$/, '')) + '</div><audio controls autoplay></audio></div>';
+    var a = st.querySelector('audio'); a.onerror = unreadable; a.onended = function() { if (_mv && seq === _mv.seq && _mv.list.length > 1 && _mv.i < _mv.list.length - 1) mvStep(1, true); }; a.src = url;
+  } else {
+    st.innerHTML = '<iframe class="mv-pdf" title="' + webEsc(it.name) + '"></iframe>';
+    st.firstChild.src = url;
+  }
+}
+// La photo suivante se charge pendant qu'on regarde celle-ci.
+function mvPreload() {
+  if (!_mv || _mv.list.length < 2) return;
+  var nx = _mv.list[(_mv.i + 1) % _mv.list.length];
+  if (mvKind(nx.name) !== 'image') return;
+  mvUrl(nx).then(function(u) { var p = new Image(); p.src = u; }, function() {});
+}
+function mvDownload() { if (_mv) { var it = _mv.list[_mv.i]; fsxDownload(it.path, it.name); } }
+
 WEB_ICONS.share = '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>';
 
 // ============================================================
@@ -20306,6 +21583,668 @@ async function secSesCloseOthers() {
   try { await wsCall('auth.terminate_other_sessions', [], 60000); toast(T('Autres sessions fermées')); }
   catch (e) { wmToastErr(e); }
   secSesLoad(true);
+}
+
+// ============================================================
+// RECHERCHE GLOBALE (Ctrl+K) — une fenêtre, un réglage, une application, un compte, un partage, un fichier
+// ============================================================
+var _gs = { open: false, q: '', res: [], cur: 0, live: null, liveAt: 0, liveBad: 0, files: null, filesQ: '', filesState: '', seq: 0, timer: null };
+function gsNorm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+// Attend que la fenêtre ait fini de se charger avant d'y aller à une page.
+function gsAfter(win, fn) {
+  var n = 0, t = setInterval(function() {
+    var w = document.getElementById('win-' + win), busy = w && w.querySelector('.fs-loading, .dk-wait[role="status"]');
+    if ((w && !busy) || ++n > 50) { clearInterval(t); try { fn(); } catch (e) {} }
+  }, 160);
+}
+function gsOpenAt(win, fn) { return function() { openApp(win); gsAfter(win, fn); }; }
+// Les pages que l'on cherche par leur nom sans savoir dans quelle fenêtre elles sont.
+function gsPages() {
+  var P = function(label, words, run) { return { sec: 'page', label: label, desc: words, run: run }; };
+  return [
+    P(T('Corbeille'), T('fichiers supprimés, restaurer'), function() { fsxTrashOpen(); }),
+    P(T('Analyse de l\'espace'), T('place occupée, gros dossiers, snapshots'), function() { openApp('storage'); gsAfter('storage', function() { if (_stoPools.length) stoGo('space', (stoPoolGet(_stoPool) || _stoPools[0]).name); }); }),
+    P(T('Créer un pool'), T('nouveau stockage, disques'), gsOpenAt('storage', function() { stoGo('newpool'); })),
+    P(T('Importer un pool'), T('pool d\'un autre NAS'), gsOpenAt('storage', function() { stoGo('import'); })),
+    P(T('Double authentification'), T('2FA, code, sécurité des comptes'), gsOpenAt('users', function() { usGo('tfa'); })),
+    P(T('Clés d\'API'), T('accès pour un script ou une application'), gsOpenAt('users', function() { usGo('keys'); })),
+    P(T('Sessions ouvertes'), T('qui est connecté'), gsOpenAt('users', function() { usGo('sessions'); })),
+    P(T('Journal d\'audit'), T('connexions et changements, en détail'), gsOpenAt('users', function() { usGo('audit'); })),
+    P(T('Rôles d\'administration'), T('privilèges, droits des groupes'), gsOpenAt('users', function() { usGo('priv'); })),
+    P(T('Annuaire'), T('Active Directory, LDAP, domaine'), gsOpenAt('users', function() { usGo('dir'); })),
+    P(T('Messagerie'), T('e-mail, SMTP, envoi des alertes'), gsOpenAt('sysconfig', function() { scGo('mail'); })),
+    P(T('Sauvegarde de la configuration'), T('fichier de réglages du NAS'), gsOpenAt('sysconfig', function() { scGo('bak'); })),
+    P(T('Restauration'), T('remettre une sauvegarde, réglages d\'usine'), gsOpenAt('sysconfig', function() { scGo('rst'); })),
+    P(T('Diagnostic'), T('fichier de débogage pour le support'), gsOpenAt('sysconfig', function() { scGo('dbg'); })),
+    P(T('Interface web de TrueNAS'), T('ports, HTTPS, certificat de l\'interface'), gsOpenAt('sysconfig', function() { scGo('ui'); })),
+    P(T('Scripts de démarrage'), T('commandes lancées au démarrage ou à l\'arrêt'), gsOpenAt('sysconfig', function() { scGo('ini'); })),
+    P(T('Certificat Let\'s Encrypt'), T('certificat gratuit, HTTPS, ACME'), gsOpenAt('certs', function() { ceGo('acme'); })),
+    P(T('Demande de signature (CSR)'), T('certificat d\'une autorité'), gsOpenAt('certs', function() { ceGo('csr'); })),
+    P(T('Disques réseau (iSCSI)'), T('cibles, volumes partagés'), gsOpenAt('sharing', function() { shGo('iscsi'); })),
+    P(T('Mise à jour par fichier'), T('installer une version de TrueNAS sans Internet'), gsOpenAt('update', function() { tuGo('file'); })),
+    P(T('Canal de mises à jour'), T('train, téléchargement automatique'), gsOpenAt('update', function() { tuGo('opts'); })),
+    P(T('Images des conteneurs'), T('mettre à jour, supprimer les inutilisées'), gsOpenAt('docker', function() { ctGo('images'); })),
+    P(T('Registres privés'), T('Docker Hub, images non publiques'), gsOpenAt('apps', function() { appsGoX('reg'); })),
+    P(T('Tâches de snapshots'), T('programmer des snapshots'), gsOpenAt('snapshots', function() { snapGo('tasks'); }))
+  ];
+}
+function gsWindows() {
+  var out = [], seen = {};
+  cpGroups().forEach(function(g) { g.items.forEach(function(it) { var e = cpEntry(it[0]); if (e && !seen[it[0]]) { seen[it[0]] = 1; out.push({ sec: 'win', label: String(e.label), desc: it[1], run: e.action, ico: e }); } }); });
+  ALL_APPS.forEach(function(a) { if (!seen[a.id]) { seen[a.id] = 1; out.push({ sec: 'win', label: String(a.label), desc: '', run: a.action, ico: a }); } });
+  return out;
+}
+// Ce qui existe sur ce NAS : relu à l'ouverture, gardé deux minutes.
+async function gsLiveLoad() {
+  if (_gs.live && Date.now() - _gs.liveAt < 120000) return;
+  var r = await Promise.allSettled([wsCall('app.query', [[], {}], 30000), fileops('GET', 'containers'), wsCall('user.query', [[['builtin', '=', false]], {}], 30000),
+    wsCall('sharing.smb.query', [[], {}], 30000), wsCall('sharing.nfs.query', [[], {}], 30000),
+    wsCall('pool.dataset.query', [[['type', '=', 'FILESYSTEM']], { extra: { flat: true, retrieve_children: false, properties: [] } }], 30000), fileops('GET', 'websites')]);
+  var L = [], ok = function(i) { return r[i].status === 'fulfilled'; };
+  if (ok(0)) ensureArray(r[0].value).forEach(function(a) { var t; try { t = appTitle(a); } catch (e) { t = a.name; } L.push({ sec: 'app', label: t || a.name, desc: a.name !== t ? a.name : '', run: function() { appsOpen(encodeURIComponent(a.name)); } }); });
+  if (ok(1)) ensureArray(r[1].value.containers).forEach(function(c) { L.push({ sec: 'ct', label: c.name, desc: c.image || '', run: gsOpenAt('docker', function() { ctGo('one', c.id); }) }); });
+  if (ok(2)) ensureArray(r[2].value).forEach(function(u) { L.push({ sec: 'user', label: u.username, desc: u.full_name || '', run: gsOpenAt('users', function() { usGo('user', u.id); }) }); });
+  if (ok(3)) ensureArray(r[3].value).forEach(function(s) { L.push({ sec: 'share', label: s.name, desc: 'SMB · ' + (s.path || ''), run: gsOpenAt('sharing', function() { shGo('one', 'smb', s.id); }) }); });
+  if (ok(4)) ensureArray(r[4].value).forEach(function(s) { L.push({ sec: 'share', label: String(s.path || '').split('/').pop() || s.path, desc: 'NFS · ' + (s.path || ''), run: gsOpenAt('sharing', function() { shGo('one', 'nfs', s.id); }) }); });
+  if (ok(5)) ensureArray(r[5].value).forEach(function(d) { var nm = String(d.name || ''), pool = nm.split('/')[0];
+    L.push({ sec: 'ds', label: nm.indexOf('/') < 0 ? nm : nm.split('/').pop(), desc: nm, run: gsOpenAt('storage', function() { if (nm === pool) stoGo('pool', pool); else { _stoPool = pool; _stoDs = nm; stoGo('ds'); } }) }); });
+  if (ok(6)) ensureArray(r[6].value.sites).forEach(function(s) { L.push({ sec: 'site', label: s.name, desc: s.server_name || s.root || '', run: function() { openWebsites(); } }); });
+  _gs.live = L; _gs.liveAt = Date.now(); _gs.liveBad = r.filter(function(x) { return x.status !== 'fulfilled'; }).length;
+  if (_gs.open) gsSearch();
+}
+function gsSecName(k) { return ({ win: T('Fenêtres et réglages'), page: T('Pages'), app: 'Applications', ct: T('Conteneurs'), user: T('Comptes'), share: T('Partages'), ds: 'Datasets', site: T('Sites Web'), file: T('Fichiers') })[k] || k; }
+function gsScore(item, q) {
+  var l = gsNorm(item.label), d = gsNorm(item.desc);
+  if (l === q) return 100;
+  if (l.indexOf(q) === 0) return 80;
+  if ((' ' + l).indexOf(' ' + q) >= 0 || l.indexOf('/' + q) >= 0 || l.indexOf('-' + q) >= 0) return 60;
+  if (l.indexOf(q) >= 0) return 45;
+  if (d.indexOf(q) >= 0) return 20;
+  return 0;
+}
+function gsSearch() {
+  var q = gsNorm(_gs.q.trim()), res = [];
+  if (!q) {
+    var want = ['filestation', 'health', 'storage', 'apps', 'activity', 'control'], wins = gsWindows();
+    want.forEach(function(id) { var w = wins.find(function(x) { return x.ico && x.ico.id === id; }) || null; if (w) res.push(w); });
+  } else {
+    var pool = gsWindows().concat(gsPages(), _gs.live || []), order = ['win', 'page', 'app', 'ct', 'user', 'share', 'ds', 'site'], bySec = {};
+    pool.forEach(function(it) { var s = gsScore(it, q); if (s) (bySec[it.sec] = bySec[it.sec] || []).push({ it: it, s: s }); });
+    order.forEach(function(k) { (bySec[k] || []).sort(function(a, b) { return b.s - a.s || String(a.it.label).localeCompare(String(b.it.label)); }).slice(0, 6).forEach(function(x) { res.push(x.it); }); });
+    if (_gs.files && _gs.filesQ === q) _gs.files.forEach(function(f) { res.push({ sec: 'file', label: f.name, desc: String(f.path).replace(/\/[^\/]*$/, '') || '/', file: f, run: function() { gsOpenFile(f); } }); });
+  }
+  _gs.res = res;
+  _gs.cur = Math.min(_gs.cur, Math.max(0, res.length - 1));
+  gsDraw();
+}
+function gsOpenFile(f) {
+  openApp('fs1');
+  setTimeout(function() { try { setActiveFsWin('fs1'); if (f.is_dir) fsNavigate(f.path); else fsReveal(f.path); } catch (e) {} }, 380);
+}
+// Les fichiers : cherchés sur le NAS, un instant après la dernière frappe.
+function gsFilesAsk() {
+  var q = gsNorm(_gs.q.trim());
+  if (_gs.timer) { clearTimeout(_gs.timer); _gs.timer = null; }
+  if (q.length < 3) { _gs.files = null; _gs.filesQ = ''; _gs.filesState = q ? 'short' : ''; return; }
+  if (_gs.filesQ === q && _gs.files) return;
+  if (_gs.filesState === 'old') return;
+  _gs.files = null; _gs.filesState = 'wait';
+  var seq = ++_gs.seq, raw = _gs.q.trim();
+  _gs.timer = setTimeout(function() {
+    fileops('GET', 'search/global?limit=12&q=' + encodeURIComponent(raw)).then(function(r) {
+      if (seq !== _gs.seq) return;
+      _gs.files = ensureArray(r.results); _gs.filesQ = q; _gs.filesState = r.truncated ? 'more' : 'done';
+      if (_gs.open) gsSearch();
+    }, function(e) {
+      if (seq !== _gs.seq) return;
+      _gs.files = []; _gs.filesQ = q; _gs.filesState = e && e.status === 404 ? 'old' : 'fail';
+      if (_gs.open) gsSearch();
+    });
+  }, 320);
+}
+function gsOpen() {
+  if (_gs.open) { var i0 = document.getElementById('gs-input'); if (i0) { i0.focus(); i0.select(); } return; }
+  var el = document.createElement('div');
+  el.id = 'dk-find'; el.className = 'gs-back';
+  el.innerHTML = '<div class="gs-box" role="dialog" aria-modal="true" aria-label="' + webEsc(T('Recherche')) + '">'
+    + '<div class="gs-top">' + webIcon('search') + '<input id="gs-input" type="text" autocomplete="off" spellcheck="false" placeholder="' + webEsc(T('Chercher une fenêtre, un réglage, une application, un fichier…')) + '" aria-label="' + webEsc(T('Recherche')) + '" aria-controls="gs-list" aria-autocomplete="list"><kbd>' + T('Échap') + '</kbd></div>'
+    + '<div class="gs-list" id="gs-list" role="listbox"></div><div class="gs-foot" id="gs-foot"></div></div>';
+  el.addEventListener('mousedown', function(e) { if (e.target === el) gsClose(); });
+  document.body.appendChild(el);
+  _gs.open = true; _gs.q = ''; _gs.cur = 0; _gs.files = null; _gs.filesQ = ''; _gs.filesState = _gs.filesState === 'old' ? 'old' : '';
+  var inp = document.getElementById('gs-input');
+  inp.addEventListener('input', function() { _gs.q = inp.value; _gs.cur = 0; gsFilesAsk(); gsSearch(); });
+  inp.addEventListener('keydown', gsKey);
+  inp.focus();
+  gsSearch();
+  gsLiveLoad();
+}
+function gsClose() {
+  var el = document.getElementById('dk-find');
+  if (el) el.remove();
+  if (_gs.timer) { clearTimeout(_gs.timer); _gs.timer = null; }
+  _gs.open = false; _gs.seq++;
+}
+function gsRun(i) {
+  var it = _gs.res[i];
+  if (!it) return;
+  gsClose();
+  try { it.run(); } catch (e) {}
+}
+function gsKey(e) {
+  var n = _gs.res.length;
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); gsClose(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); if (n) { _gs.cur = (_gs.cur + 1) % n; gsDraw(true); } }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (n) { _gs.cur = (_gs.cur - 1 + n) % n; gsDraw(true); } }
+  else if (e.key === 'Enter') { e.preventDefault(); gsRun(_gs.cur); }
+}
+function gsDraw(keys) {
+  var list = document.getElementById('gs-list'), foot = document.getElementById('gs-foot');
+  if (!list) return;
+  var q = _gs.q.trim(), h = '', sec = '';
+  _gs.res.forEach(function(it, i) {
+    if (q && it.sec !== sec) { sec = it.sec; h += '<div class="gs-sec">' + webEsc(gsSecName(sec)) + '</div>'; }
+    var ico = it.ico ? '<span class="gs-ico cp-ico ' + (it.ico.imgClass || '') + '" style="' + (it.ico.imgStyle || '') + '">' + it.ico.svg + '</span>'
+      : (it.sec === 'file' ? '<span class="gs-ico plain">' + fsIcon(it.file.name, !!it.file.is_dir) + '</span>'
+      : '<span class="gs-ico plain">' + webIcon(({ page: 'route', app: 'grid', ct: 'box', user: 'user', share: 'share', ds: 'storage', site: 'globe' })[it.sec] || 'list') + '</span>');
+    h += '<button class="gs-item' + (i === _gs.cur ? ' active' : '') + '" role="option" aria-selected="' + (i === _gs.cur) + '" data-gs="' + i + '">' + ico
+      + '<span class="gs-text"><span class="gs-label">' + webEsc(it.label) + '</span>' + (it.desc ? '<span class="gs-desc">' + webEsc(it.desc) + '</span>' : '') + '</span></button>';
+  });
+  if (!q) h = '<div class="gs-sec">' + T('Pour commencer') + '</div>' + h;
+  var st = _gs.filesState;
+  if (q && st === 'wait') h += '<div class="gs-sec">' + T('Fichiers') + '</div><div class="gs-note">' + T('Recherche dans les fichiers du NAS…') + '</div>';
+  if (q && !_gs.res.length && st !== 'wait') h += '<div class="gs-empty">' + webEsc(Tf('Rien ne contient « {0} ».', q)) + '</div>';
+  list.innerHTML = h;
+  list.querySelectorAll('[data-gs]').forEach(function(b) {
+    b.onclick = function() { gsRun(Number(b.dataset.gs)); };
+    b.onmousemove = function() { var i = Number(b.dataset.gs); if (i !== _gs.cur) { _gs.cur = i; list.querySelectorAll('.gs-item').forEach(function(x) { x.classList.toggle('active', x === b); }); } };
+  });
+  if (keys) { var a = list.querySelector('.gs-item.active'); if (a) a.scrollIntoView({ block: 'nearest' }); }
+  if (foot) {
+    var notes = [];
+    if (q && st === 'short') notes.push(T('Trois lettres au moins pour chercher dans les fichiers.'));
+    if (q && st === 'more') notes.push(T('Beaucoup de fichiers correspondent : précisez pour voir les autres.'));
+    if (q && st === 'fail') notes.push(T('La recherche dans les fichiers n\'a pas répondu.'));
+    if (q && st === 'old') notes.push(T('La recherche dans les fichiers arrive avec la mise à jour de Desktroo.'));
+    if (_gs.live && _gs.liveBad) notes.push(T('Certaines listes du NAS n\'ont pas répondu : la recherche est incomplète.'));
+    foot.innerHTML = '<span class="gs-keys"><kbd>↑</kbd><kbd>↓</kbd> ' + T('choisir') + ' <kbd>↵</kbd> ' + T('ouvrir') + '</span><span class="gs-foot-note">' + webEsc(notes.join(' ')) + '</span>';
+  }
+}
+// Ctrl+K (ou Cmd+K) partout, sauf dans le terminal où ce raccourci efface la ligne.
+document.addEventListener('keydown', function(e) {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || (e.key !== 'k' && e.key !== 'K')) return;
+  if (e.target && e.target.closest && e.target.closest('#win-terminal, .xterm')) return;
+  var login = document.getElementById('login-screen');
+  if (login && !login.classList.contains('fade-out')) return;
+  e.preventDefault();
+  if (_gs.open) gsClose(); else gsOpen();
+}, true);
+(function() { var b = document.getElementById('gs-taskbar'); if (b) { b.title = T('Rechercher') + ' (Ctrl+K)'; b.setAttribute('aria-label', b.title); b.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); gsOpen(); } }); } })();
+
+// ============================================================
+// BILAN DE SANTÉ — une page qui dit « tout va bien », ou ce qui cloche
+// ============================================================
+// Chaque vérification lit TrueNAS pour elle-même. Une lecture qui échoue ne compte pas pour « bon » : elle est
+// rangée sous « Non vérifié ». Niveaux : bad (à traiter), warn (à regarder), tip (conseil), ok, unknown.
+WEB_ICONS.pulse = '<path d="M3 12h4l2.5-7 4 14 2.5-7H21"/>';
+var _hl = { nav: 'all', items: null, at: 0, busy: false, seq: 0 };
+var HL_CATS = [['sto', 'storage'], ['disk', 'sliders'], ['prot', 'shield'], ['sys', 'settings'], ['apps', 'grid'], ['sec', 'key']];
+function hlCatName(k) { return ({ sto: T('Stockage'), disk: T('Disques'), prot: T('Protection des données'), sys: T('Système'), apps: 'Applications', sec: T('Sécurité') })[k] || k; }
+function hlGo(nav) { _hl.nav = nav; hlRender(); }
+async function loadHealth(force) {
+  if (!wmBody('hl')) return;
+  if (_hl.busy) return;
+  if (!force && _hl.items && Date.now() - _hl.at < 5 * 60000) { hlRender(); return; }
+  var seq = ++_hl.seq;
+  _hl.busy = true;
+  hlRender(!!_hl.items);
+  var call = function(m, p) { return wsCall(m, p || [], 60000); };
+  var names = ['pools', 'disks', 'alerts', 'snaptasks', 'datasets', 'repl', 'cloud', 'rsync', 'certs', 'general', 'services', 'apps', 'boot', 'tfa', 'ssh', 'update'];
+  var r = await Promise.allSettled([call('pool.query', [[], {}]), call('disk.query', [[], { extra: { pools: true } }]), socketCall('/alert/list'), call('pool.snapshottask.query', [[], {}]),
+    call('pool.dataset.query', [[['type', '=', 'FILESYSTEM']], { extra: { flat: true, retrieve_children: false, properties: ['used'] } }]),
+    call('replication.query', [[], {}]), call('cloudsync.query', [[], {}]), call('rsynctask.query', [[], {}]), call('certificate.query', [[], {}]), call('system.general.config'),
+    call('service.query', [[], {}]), call('app.query', [[], {}]), call('boot.get_state'), call('auth.twofactor.config'), call('ssh.config'), hlUpdateState()]);
+  var d = {}, bad = {};
+  names.forEach(function(n, i) { if (r[i].status === 'fulfilled') d[n] = r[i].value; else bad[n] = r[i].reason; });
+  // Températures : une lecture de plus, quand la liste des disques est là
+  if (d.disks) { try { var dn = ensureArray(d.disks).map(function(x) { return x.name; }).filter(Boolean); d.temps = dn.length ? (await call('disk.temperatures', [dn])) || {} : {}; } catch (e) { bad.temps = e; } }
+  if (seq !== _hl.seq) return;
+  _hl.items = hlBuild(d, bad); _hl.at = Date.now(); _hl.busy = false;
+  hlRender();
+}
+// TrueNAS a-t-il une mise à jour ? Les deux générations de l'interface de programmation.
+async function hlUpdateState() {
+  try { var s = await wsCall('update.status', [], 60000); return { ok: !!s.status && s.code !== 'ERROR', version: s.status && s.status.new_version ? String(s.status.new_version.version || '') : '' }; }
+  catch (e) { var o = await wsCall('update.check_available', [{}], 60000); return { ok: true, version: o && o.status === 'AVAILABLE' ? String(o.version || '') : '', reboot: !!o && o.status === 'REBOOT_REQUIRED' }; }
+}
+function hlBuild(d, bad) {
+  var out = [], add = function(cat, lvl, title, text, act) { out.push({ cat: cat, lvl: lvl, title: title, text: text || '', act: act || null }); };
+  var unknown = function(cat, what, act) { add(cat, 'unknown', what, T('TrueNAS n\'a pas répondu à cette vérification.'), act); };
+  var list = function(a, n) { a = a.slice(); var more = a.length - (n || 3); return a.slice(0, n || 3).join(', ') + (more > 0 ? ' ' + Tf('et {0} autres', more) : ''); };
+  var day = 864e5, now = Date.now();
+  // ── Stockage ──
+  if (!d.pools) unknown('sto', T('État des pools'), ['openApp(\'storage\')', T('Ouvrir Stockage')]);
+  else {
+    var pools = ensureArray(d.pools), sick = [], full = [], near = [], stale = [], errs = [];
+    var fullName = '';
+    pools.forEach(function(p) {
+      var st = mntPoolState(p), sc = mntScan(p), size = Number(p.size) || 0, pct = size ? Math.round((Number(p.allocated) || 0) / size * 100) : 0;
+      if (st.lvl !== 'ok') sick.push(p.name + ' (' + st.label.toLowerCase() + ')');
+      if (pct >= 90) { full.push(p.name + ' (' + pct + ' %)'); fullName = fullName || p.name; } else if (pct >= 80) near.push(p.name + ' (' + pct + ' %)');
+      if (sc.kind === 'done' && Number(sc.errors) > 0) errs.push(p.name);
+      if (sc.kind !== 'run' && sc.kind !== 'pause' && (!sc.end || now - sc.end.getTime() > 40 * day)) stale.push(p.name);
+    });
+    var actS = ['openApp(\'storage\')', T('Ouvrir Stockage')], actM = ['openApp(\'maintenance\')', T('Ouvrir Disques & Scrub')];
+    if (!pools.length) add('sto', 'tip', T('Aucun pool'), T('Le NAS n\'a pas encore d\'espace de stockage.'), actS);
+    if (sick.length) add('sto', 'bad', sick.length > 1 ? Tf('{0} pools ne sont pas en bon état', sick.length) : T('Un pool n\'est pas en bon état'), list(sick) + '. ' + T('Un disque manque ou est en défaut : tant qu\'il n\'est pas remplacé, une panne de plus peut coûter des données.'), actS);
+    if (full.length) add('sto', 'bad', full.length > 1 ? T('Des pools sont presque pleins') : T('Un pool est presque plein'), list(full) + '. ' + T('Au-delà de 90 %, ZFS ralentit nettement et les écritures peuvent échouer.'), ['hlSpace(decodeURIComponent(\'' + encodeURIComponent(fullName) + '\'))', T('Voir ce qui prend la place')]);
+    if (near.length) add('sto', 'warn', near.length > 1 ? T('Des pools se remplissent') : T('Un pool se remplit'), list(near) + '. ' + T('Prévoyez de libérer de la place ou d\'agrandir avant 90 %.'), actS);
+    if (errs.length) add('sto', 'bad', T('La dernière vérification a trouvé des erreurs'), list(errs) + '. ' + T('Le scrub a corrigé ce qu\'il pouvait : voyez l\'état des disques.'), actM);
+    if (stale.length) add('sto', 'warn', stale.length > 1 ? T('Des pools n\'ont pas été vérifiés depuis longtemps') : T('Un pool n\'a pas été vérifié depuis longtemps'), list(stale) + '. ' + T('Un scrub relit toutes les données et répare les erreurs silencieuses : un par mois est l\'usage.'), actM);
+    if (pools.length && !sick.length && !full.length && !near.length && !errs.length) add('sto', 'ok', pools.length > 1 ? Tf('{0} pools en ligne, avec de la place', pools.length) : T('Le pool est en ligne, avec de la place'));
+    if (pools.length && !stale.length && !errs.length) add('sto', 'ok', T('Données vérifiées récemment, sans erreur'));
+  }
+  if (d.boot) {
+    var bs = String(d.boot.status || '').toUpperCase();
+    if (bs && bs !== 'ONLINE') add('sto', 'bad', T('Le pool de démarrage n\'est pas en bon état'), T('C\'est le disque sur lequel TrueNAS est installé.'), ['openApp(\'bootenv\')', T('Ouvrir Environnements de démarrage')]);
+    else if (bs) add('sto', 'ok', T('Disque système en bon état'));
+  }
+  // ── Disques ──
+  if (!d.disks) unknown('disk', T('État des disques'), ['openApp(\'maintenance\')', T('Ouvrir Disques & Scrub')]);
+  else if (d.temps) {
+    var hot = [], warm = [], maxT = 0;
+    Object.keys(d.temps).forEach(function(n) { var t = Number(d.temps[n]); if (d.temps[n] == null || !isFinite(t)) return; maxT = Math.max(maxT, t); if (t >= 50) hot.push(n + ' (' + t + ' °C)'); else if (t >= 45) warm.push(n + ' (' + t + ' °C)'); });
+    var actD = ['openApp(\'maintenance\')', T('Voir les disques')];
+    if (hot.length) add('disk', 'bad', hot.length > 1 ? T('Des disques sont trop chauds') : T('Un disque est trop chaud'), list(hot) + '. ' + T('Au-delà de 50 °C, un disque s\'use plus vite : vérifiez la ventilation.'), actD);
+    if (warm.length) add('disk', 'warn', warm.length > 1 ? T('Des disques chauffent') : T('Un disque chauffe'), list(warm) + '.', actD);
+    if (!hot.length && !warm.length) add('disk', 'ok', maxT ? Tf('{0} disques, {1} °C pour le plus chaud', ensureArray(d.disks).length, maxT) : Tf('{0} disques reconnus', ensureArray(d.disks).length));
+  } else unknown('disk', T('Température des disques'), ['openApp(\'maintenance\')', T('Voir les disques')]);
+  // ── Alertes de TrueNAS : tout ce que le NAS signale lui-même (S.M.A.R.T., onduleur, quotas…) ──
+  if (!d.alerts) unknown('sys', T('Alertes de TrueNAS'), ['openApp(\'notifs\')', T('Ouvrir Alertes')]);
+  else {
+    var al = ensureArray(d.alerts).filter(function(a) { return a && !a.dismissed; }), crit = [], warnA = [];
+    al.forEach(function(a) { var l = String(a.level || '').toUpperCase(); if (/CRIT|ALERT|EMERG|ERROR/.test(l)) crit.push(a); else if (/WARN/.test(l)) warnA.push(a); });
+    var txt = function(a) { return String(a.formatted || a.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220); };
+    crit.slice(0, 6).forEach(function(a) { add(/smart|disk|pool|zpool|scrub/i.test(String(a.klass || '')) ? 'disk' : 'sys', 'bad', T('Alerte critique de TrueNAS'), txt(a), ['openApp(\'notifs\')', T('Ouvrir Alertes')]); });
+    if (crit.length > 6) add('sys', 'bad', Tf('{0} autres alertes critiques', crit.length - 6), '', ['openApp(\'notifs\')', T('Ouvrir Alertes')]);
+    if (warnA.length) add('sys', 'warn', warnA.length > 1 ? Tf('{0} avertissements de TrueNAS', warnA.length) : T('Un avertissement de TrueNAS'), txt(warnA[0]), ['openApp(\'notifs\')', T('Ouvrir Alertes')]);
+    if (!crit.length && !warnA.length) add('sys', 'ok', T('Aucune alerte de TrueNAS en cours'));
+  }
+  // ── Protection : snapshots ──
+  if (!d.snaptasks || !d.datasets || !d.pools) unknown('prot', T('Snapshots programmés'), ['openApp(\'snapshots\')', T('Ouvrir Snapshots')]);
+  else {
+    var tasks = ensureArray(d.snaptasks).filter(function(t) { return t.enabled !== false; }), failedT = ensureArray(d.snaptasks).filter(function(t) { return t.enabled !== false && t.state && /ERROR|FAILED/i.test(String(t.state.state || '')); });
+    var covered = function(ds) { return tasks.some(function(t) { var td = String(t.dataset || ''); return td === ds || (t.recursive && ds.indexOf(td + '/') === 0) || td.indexOf(ds + '/') === 0; }); };
+    var sysDs = /(^|\/)(ix-applications|ix-apps|\.ix-apps|\.system)(\/|$)/, bare = [];
+    ensureArray(d.datasets).forEach(function(x) {
+      var nm = String(x.name || ''), parts = nm.split('/');
+      if (parts.length !== 2 || sysDs.test(nm) || stoNum(x, 'used') < 64 * 1048576) return;     // premier niveau, hors système, non vide
+      if (!covered(nm)) bare.push(nm);
+    });
+    var poolsNoSnap = ensureArray(d.pools).map(function(p) { return p.name; }).filter(function(pn) { return !tasks.some(function(t) { return String(t.dataset || '').split('/')[0] === pn; }); });
+    var actSn = ['openApp(\'snapshots\')', T('Programmer des snapshots')];
+    if (failedT.length) add('prot', 'bad', failedT.length > 1 ? T('Des tâches de snapshots échouent') : T('Une tâche de snapshots échoue'), list(failedT.map(function(t) { return t.dataset; })) + '. ' + String((failedT[0].state || {}).error || '').slice(0, 160), ['openApp(\'snapshots\')', T('Ouvrir Snapshots')]);
+    if (ensureArray(d.pools).length && !tasks.length) add('prot', 'warn', T('Aucun snapshot programmé'), T('Sans snapshot, un fichier supprimé ou chiffré par un rançongiciel ne se retrouve pas.'), actSn);
+    else if (bare.length) add('prot', poolsNoSnap.length ? 'warn' : 'tip', bare.length > 1 ? Tf('{0} datasets sans snapshot programmé', bare.length) : T('Un dataset sans snapshot programmé'), list(bare) + '. ' + T('Leurs fichiers supprimés ne pourront pas être retrouvés.'), actSn);
+    if (tasks.length && !failedT.length && !bare.length) add('prot', 'ok', T('Snapshots programmés sur tous les datasets'));
+  }
+  // ── Protection : sauvegardes hors du NAS ──
+  if (!d.repl || !d.cloud || !d.rsync) unknown('prot', T('Sauvegardes'), ['openApp(\'dataprotect\')', T('Ouvrir Protection des données')]);
+  else {
+    var away = ensureArray(d.repl).filter(function(t) { return String(t.transport || '').toUpperCase() !== 'LOCAL'; }).map(function(t) { return { k: 'repl', t: t, name: t.name || '' }; })
+      .concat(ensureArray(d.cloud).map(function(t) { return { k: 'cloud', t: t, name: t.description || t.path || '' }; }), ensureArray(d.rsync).map(function(t) { return { k: 'rsync', t: t, name: t.desc || t.path || '' }; }))
+      .filter(function(x) { return x.t.enabled !== false; });
+    var actB = ['openApp(\'dataprotect\')', T('Ouvrir Protection des données')], failedB = [], lateB = [], okB = 0;
+    away.forEach(function(x) {
+      var l = dpLast(x.k, x.t);
+      if (l.key === 'bad') failedB.push(x.name + (l.error ? ' — ' + String(l.error).split('\n')[0].slice(0, 120) : ''));
+      else if (l.key === 'ok' && l.when && now - l.when.getTime() > 8 * day) lateB.push(x.name + ' (' + dpWhen(l.when) + ')');
+      else if (l.key === 'none') lateB.push(x.name + ' (' + T('jamais lancée') + ')');
+      else if (l.key === 'ok') okB++;
+    });
+    if (!away.length) add('prot', 'warn', T('Aucune sauvegarde hors du NAS'), T('Les snapshots protègent d\'une erreur, pas d\'un vol, d\'un incendie ou d\'une panne de tout le NAS. Une copie ailleurs manque.'), ['openApp(\'dataprotect\')', T('Créer une sauvegarde')]);
+    if (failedB.length) add('prot', 'bad', failedB.length > 1 ? Tf('{0} sauvegardes ont échoué', failedB.length) : T('Une sauvegarde a échoué'), list(failedB, 2), actB);
+    if (lateB.length) add('prot', 'warn', lateB.length > 1 ? Tf('{0} sauvegardes sont en retard', lateB.length) : T('Une sauvegarde est en retard'), list(lateB) + '.', actB);
+    if (away.length && !failedB.length && !lateB.length) add('prot', 'ok', away.length > 1 ? Tf('{0} sauvegardes hors du NAS, toutes à jour', away.length) : T('Sauvegarde hors du NAS à jour'));
+  }
+  // ── Système : certificats, mises à jour, services ──
+  if (!d.certs) unknown('sys', T('Certificats'), ['openApp(\'certs\')', T('Ouvrir Certificats')]);
+  else {
+    var uiId = d.general && d.general.ui_certificate ? d.general.ui_certificate.id : null, dead = [], soon = [];
+    ensureArray(d.certs).forEach(function(c) {
+      if (ceIsCsr(c) || c.revoked) return;
+      var n = ceDays(c);
+      if (n == null) return;
+      var label = String(c.name || '') + (c.id === uiId ? ' (' + T('celui de l\'interface') + ')' : '');
+      if (n < 0) dead.push({ l: label, ui: c.id === uiId }); else if (n <= 30) soon.push(label + ' (' + (n > 1 ? Tf('{0} jours', n) : T('1 jour')) + ')');
+    });
+    var actC = ['openApp(\'certs\')', T('Ouvrir Certificats')];
+    if (dead.length) add('sys', dead.some(function(x) { return x.ui; }) ? 'bad' : 'warn', dead.length > 1 ? Tf('{0} certificats ont expiré', dead.length) : T('Un certificat a expiré'), list(dead.map(function(x) { return x.l; })) + '.', actC);
+    if (soon.length) add('sys', 'warn', soon.length > 1 ? Tf('{0} certificats expirent bientôt', soon.length) : T('Un certificat expire bientôt'), list(soon) + '.', actC);
+    if (!dead.length && !soon.length) add('sys', 'ok', T('Certificats valides pour plus de 30 jours'));
+  }
+  if (d.update) {
+    if (d.update.reboot) add('sys', 'warn', T('Un redémarrage attend pour finir une mise à jour'), '', ['openApp(\'update\')', T('Ouvrir Mises à jour')]);
+    else if (d.update.version) add('sys', 'tip', Tf('TrueNAS {0} est disponible', d.update.version), T('Une mise à jour apporte des corrections de sécurité. Sauvegardez la configuration avant de l\'installer.'), ['openApp(\'update\')', T('Ouvrir Mises à jour')]);
+    else if (d.update.ok) add('sys', 'ok', T('TrueNAS est à jour'));
+  } else unknown('sys', T('Mises à jour de TrueNAS'), ['openApp(\'update\')', T('Ouvrir Mises à jour')]);
+  try { if (tndUpdatePending()) add('sys', 'tip', Tf('Desktroo {0} est disponible', _tndUpdate.latest || ''), '', ['tndAbout()', T('Mettre à jour Desktroo')]); } catch (e) {}
+  if (!d.services) unknown('sys', T('Services'), ['openApp(\'services\')', T('Ouvrir Services')]);
+  else {
+    var down = ensureArray(d.services).filter(function(s) { return s.enable && String(s.state || '').toUpperCase() !== 'RUNNING'; }).map(function(s) { return String(SERVICE_LABELS[s.service] || s.service || ''); });
+    if (down.length) add('sys', 'warn', down.length > 1 ? Tf('{0} services devraient tourner et sont arrêtés', down.length) : T('Un service devrait tourner et est arrêté'), list(down) + '. ' + T('Ils sont réglés pour démarrer avec le NAS.'), ['openApp(\'services\')', T('Ouvrir Services')]);
+    else add('sys', 'ok', T('Les services attendus tournent'));
+  }
+  // ── Applications ──
+  if (!d.apps) unknown('apps', T('Applications'), ['openApp(\'apps\')', T('Ouvrir Applications')]);
+  else {
+    var apps = ensureArray(d.apps), crashed = apps.filter(function(a) { return /CRASH/i.test(String(a.state || '')); }).map(function(a) { try { return appTitle(a) || a.name; } catch (e) { return a.name; } }), upd = apps.filter(function(a) { return a.upgrade_available; }).length;
+    if (crashed.length) add('apps', 'bad', crashed.length > 1 ? Tf('{0} applications sont en panne', crashed.length) : T('Une application est en panne'), list(crashed) + '.', ['openApp(\'apps\')', T('Ouvrir Applications')]);
+    if (upd) add('apps', 'tip', upd > 1 ? Tf('{0} applications ont une mise à jour', upd) : T('Une application a une mise à jour'), '', ['openApp(\'apps\')', T('Ouvrir Applications')]);
+    if (apps.length && !crashed.length) add('apps', 'ok', apps.length > 1 ? Tf('{0} applications, aucune en panne', apps.length) : T('L\'application installée fonctionne'));
+  }
+  // ── Sécurité : des conseils, pas des pannes ──
+  if (d.tfa && d.tfa.enabled === false) add('sec', 'tip', T('La double authentification n\'est pas activée'), T('Un mot de passe volé suffit alors à entrer dans le NAS.'), ['openApp(\'users\');usGo(\'tfa\')', T('Ouvrir Double authentification')]);
+  else if (d.tfa) add('sec', 'ok', T('Double authentification activée'));
+  if (d.ssh && d.services) {
+    var sshOn = ensureArray(d.services).some(function(s) { return s.service === 'ssh' && String(s.state || '').toUpperCase() === 'RUNNING'; });
+    if (sshOn && d.ssh.passwordauth) add('sec', 'tip', T('SSH accepte les mots de passe'), T('Une clé est plus sûre qu\'un mot de passe. Desktroo lui-même se connecte en SSH : gardez-lui un accès avant de changer ce réglage.'), ['openApp(\'services\')', T('Ouvrir Services')]);
+  }
+  return out;
+}
+function hlCount(lvl, cat) { return (_hl.items || []).filter(function(i) { return i.lvl === lvl && (!cat || i.cat === cat); }).length; }
+function hlWorst(cat) { return hlCount('bad', cat) ? 'bad' : (hlCount('warn', cat) ? 'warn' : (hlCount('unknown', cat) ? 'off' : '')); }
+function hlSide() {
+  var el = document.getElementById('hl-side');
+  if (!el) return;
+  var h = wmNav({ active: _hl.nav === 'all', call: 'hlGo(\'all\')', icon: 'pulse', name: T('Bilan'), count: _hl.items ? (hlCount('bad') + hlCount('warn')) || null : null }) + wmSep() + wmSideTitle(T('Par domaine'));
+  HL_CATS.forEach(function(c) {
+    var n = hlCount('bad', c[0]) + hlCount('warn', c[0]);
+    h += wmNav({ active: _hl.nav === c[0], call: 'hlGo(\'' + c[0] + '\')', dot: _hl.items ? hlWorst(c[0]) : 'off', name: hlCatName(c[0]), count: n || null });
+  });
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'notifs\')', icon: 'bell', name: T('Alertes') })
+    + wmNav({ call: 'openApp(\'activity\')', icon: 'activity', name: T('Journal d\'activité') })
+    + wmNav({ call: 'openApp(\'reports\')', icon: 'chart', name: T('Rapports') });
+  var sc = el.scrollTop; el.innerHTML = h; el.scrollTop = sc;
+}
+function hlRows(items) {
+  return items.map(function(i) {
+    var inner = '<span class="web-dot ' + (i.lvl === 'bad' ? 'bad' : (i.lvl === 'warn' ? 'warn' : (i.lvl === 'ok' ? '' : 'off'))) + '"></span><span class="hl-text"><span class="hl-title">' + webEsc(i.title) + '</span>'
+      + (i.text ? '<span class="hl-desc">' + webEsc(i.text) + '</span>' : '') + '</span>';
+    return i.act ? '<button class="hl-row lvl-' + i.lvl + '" onclick="' + i.act[0] + '">' + inner + '<span class="hl-act">' + webEsc(i.act[1]) + ' &rsaquo;</span></button>' : '<div class="hl-row lvl-' + i.lvl + '">' + inner + '</div>';
+  }).join('');
+}
+function hlRender(soft) {
+  hlSide();
+  var el = wmBody('hl');
+  if (!el) return;
+  var cat = _hl.nav === 'all' ? '' : _hl.nav, when = _hl.at ? new Date(_hl.at).toLocaleTimeString(DK_LOCALE, { hour: '2-digit', minute: '2-digit' }) : '';
+  wmHead('hl', cat ? hlCatName(cat) : T('Bilan de santé'), { keepScroll: soft, back: cat ? [T('Bilan de santé'), 'hlGo(\'all\')'] : null,
+    sub: _hl.items ? webEsc(Tf('Vérifié à {0}.', when)) : '',
+    actions: '<button class="fs-btn" onclick="loadHealth(true)"' + (_hl.busy ? ' disabled' : '') + '>' + (_hl.busy ? T('Vérification…') : T('Vérifier à nouveau')) + '</button>' });
+  if (!_hl.items) { el.innerHTML = dkWaitHtml('busy', T('Examen du NAS…'), T('Pools, disques, snapshots, sauvegardes, certificats, services : une quinzaine de vérifications.')); return; }
+  var its = _hl.items.filter(function(i) { return !cat || i.cat === cat; });
+  var by = function(l) { return its.filter(function(i) { return i.lvl === l; }); };
+  var nb = by('bad').length, nw = by('warn').length, nu = by('unknown').length;
+  var state = nb ? 'error' : (nw ? 'warn' : 'ok');
+  var title = nb ? (nb > 1 ? Tf('{0} problèmes à traiter', nb) : T('Un problème à traiter')) : (nw ? (nw > 1 ? Tf('{0} points à regarder', nw) : T('Un point à regarder')) : T('Tout va bien'));
+  var line = nb ? (nw ? (nw > 1 ? Tf('Et {0} points à regarder ensuite.', nw) : T('Et un point à regarder ensuite.')) : T('Le reste est en ordre.'))
+    : (nw ? T('Rien d\'urgent : le NAS fonctionne, mais ces points méritent votre attention.') : T('Aucune vérification n\'a rien trouvé à redire.'));
+  if (nu) line += ' ' + (nu > 1 ? Tf('{0} vérifications n\'ont pas pu se faire.', nu) : T('Une vérification n\'a pas pu se faire.'));
+  var h = '<div class="hl-verdict is-' + state + '">' + dkHero(_hl.busy ? 'busy' : (state === 'error' ? 'error' : state)) + '<div class="hl-verdict-text"><div class="hl-verdict-title">' + webEsc(title) + '</div><div class="hl-verdict-line">' + webEsc(line) + '</div></div></div>';
+  var sec = function(label, l) { var a = by(l); return a.length ? '<div class="web-group-title">' + label + '</div><div class="hl-group">' + hlRows(a) + '</div>' : ''; };
+  h += sec(T('À traiter'), 'bad') + sec(T('À regarder'), 'warn') + sec(T('Conseils'), 'tip') + sec(T('Non vérifié'), 'unknown') + sec(T('Vérifié, rien à signaler'), 'ok');
+  el.innerHTML = h;
+}
+// Ouvre l'analyse de l'espace d'un pool, une fois Stockage chargé.
+function hlSpace(pool) {
+  openApp('storage');
+  var n = 0, go = function() { if (_stoLoaded && stoPoolGet(pool)) { stoGo('space', pool); return true; } return false; };
+  if (!go()) { var w = setInterval(function() { if (go() || ++n > 40) clearInterval(w); }, 250); }
+}
+
+// ============================================================
+// JOURNAL D'ACTIVITÉ — qui a fait quoi, en phrases
+// ============================================================
+// Trois sources, réunies et triées : les actions faites sur les fichiers depuis Desktroo (notées par le service),
+// le journal d'audit de TrueNAS (connexions, changements de réglages) et celui des partages SMB (suppressions et
+// renommages par le réseau, quand le partage tient son journal).
+WEB_ICONS.activity = '<polyline points="22 12 18 12 15 20 9 4 6 12 2 12"/>';
+WEB_ICONS.file = '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>';
+WEB_ICONS.login = '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>';
+var _ac = { nav: 'all', who: '', days: 7, ev: null, src: {}, seq: 0, busy: false, shown: 300, smbAudit: null };
+var AC_LIMIT = 1500;
+function acName(p) { return String(p || '').replace(/\/+$/, '').split('/').pop() || String(p || ''); }
+function acDir(p) { return String(p || '').replace(/\/+$/, '').replace(/\/[^\/]*$/, '') || '/'; }
+function acGo(nav, who) { _ac.nav = nav; _ac.who = who || ''; _ac.shown = 300; acRender(); }
+function acDays(n) { _ac.days = Number(n) || 7; _ac.ev = null; loadActivity(); }
+async function loadActivity(soft) {
+  if (!wmBody('ac')) return;
+  var seq = ++_ac.seq, since = Math.floor(Date.now() / 1000) - _ac.days * 86400;
+  _ac.busy = true;
+  if (!soft || !_ac.ev) { _ac.ev = soft ? _ac.ev : null; acRender(); }
+  var q = function(services, events) { return wsCall('audit.query', [{ services: services, 'query-filters': [['message_timestamp', '>', since], ['event', 'in', events]], 'query-options': { order_by: ['-message_timestamp'], limit: AC_LIMIT } }], 120000); };
+  var r = await Promise.allSettled([fileops('GET', 'activity?limit=' + AC_LIMIT + '&since=' + since), q(['MIDDLEWARE'], ['AUTHENTICATION', 'METHOD_CALL']), q(['SMB'], ['UNLINK', 'RENAME']),
+    wsCall('sharing.smb.query', [[], {}], 60000)]);
+  if (seq !== _ac.seq) return;
+  var ev = [], src = { desk: 'ok', nas: 'ok', smb: 'ok', cut: false };
+  if (r[0].status === 'fulfilled') { var l0 = ensureArray(r[0].value.events); if (l0.length >= AC_LIMIT) src.cut = true; l0.forEach(function(e) { var x = acFromDesk(e); if (x) ev.push(x); }); }
+  else src.desk = r[0].reason && r[0].reason.status === 404 ? 'old' : 'fail';
+  if (r[1].status === 'fulfilled') { var l1 = ensureArray(r[1].value); if (l1.length >= AC_LIMIT) src.cut = true; l1.forEach(function(e) { var x = acFromNas(e); if (x) ev.push(x); }); } else src.nas = 'fail';
+  if (r[2].status === 'fulfilled') { var l2 = ensureArray(r[2].value); if (l2.length >= AC_LIMIT) src.cut = true; l2.forEach(function(e) { var x = acFromSmb(e); if (x) ev.push(x); }); } else src.smb = 'fail';
+  _ac.smbAudit = r[3].status === 'fulfilled' ? ensureArray(r[3].value).some(function(s) { return s && s.audit && s.audit.enable; }) : null;
+  ev.sort(function(a, b) { return b.t - a.t; });
+  _ac.ev = acGroup(ev); _ac.src = src; _ac.busy = false;
+  acRender(soft === true);
+}
+// ── Lecture des trois sources : chaque ligne devient { t, who, cat, kind, ok, names, where, more, src } ──
+function acFromDesk(e) {
+  var k = String(e.kind || ''), p = String(e.path || ''), o = { t: Number(e.t) || 0, who: String(e.by || ''), cat: 'file', kind: k, ok: true, names: p ? [acName(p)] : [], where: p ? acDir(p) : '', src: 'desk', n: Number(e.count) || 0 };
+  if (k === 'file.rename') { o.from = acName(e.src); }
+  else if (k === 'file.move' || k === 'file.copy') { o.names = [acName(e.src || p)]; o.where = acDir(e.src || p); o.to = acDir(p); }
+  else if (k === 'file.version') { o.more = e.replaced ? 'replaced' : ''; }
+  else if (k === 'file.purge' || k === 'file.expire') { o.names = []; o.where = ''; }
+  return o.t ? o : null;
+}
+function acFromSmb(e) {
+  var d = e.event_data || {}, share = String((e.service_data || {}).service || ''), base = { t: Number(e.message_timestamp) || 0, who: String(e.username || ''), cat: 'file', ok: e.success !== false, src: 'smb', share: share, addr: String(e.address || ''), n: 0 };
+  if (!base.ok || !base.t) return null;
+  if (e.event === 'UNLINK') { var p = String((d.file || {}).path || ''); if (!p) return null; return Object.assign(base, { kind: 'smb.unlink', names: [acName(p)], where: acDir('/' + p) === '/' ? '' : acDir(p) }); }
+  if (e.event === 'RENAME') {
+    var a = String((d.src_file || {}).path || ''), b = String((d.dst_file || {}).path || '');
+    if (!a || !b) return null;
+    var moved = acDir('/' + a) !== acDir('/' + b);
+    return Object.assign(base, { kind: moved ? 'smb.move' : 'smb.rename', names: [acName(moved ? a : b)], from: acName(a), where: acDir('/' + a) === '/' ? '' : acDir(a), to: acDir('/' + b) === '/' ? '' : acDir(b) });
+  }
+  return null;
+}
+var AC_SKIP = /^(Generate authentication token|Generate onetime password|Getacl |Filesystem get|Export Audit Data|Download Audit Data|TrueNAS Connect)/i;
+function acFromNas(e) {
+  var d = e.event_data || {}, o = { t: Number(e.message_timestamp) || 0, who: String(e.username || ''), ok: e.success !== false, src: 'nas', addr: String(e.address || ''), names: [], where: '', n: 0 };
+  if (!o.t) return null;
+  if (e.event === 'AUTHENTICATION') {
+    var c = String((d.credentials && d.credentials.type) || '');
+    // Les jetons de session et la liaison locale sont le fonctionnement interne du bureau, pas une connexion de quelqu'un.
+    if (o.ok && /^(TOKEN|UNIX_SOCKET|TRUENAS_NODE|LOGIN_ONETIME_PASSWORD)$/.test(c)) return null;
+    if (!o.who) o.who = String(((d.credentials || {}).credentials_data || {}).username || '');
+    return Object.assign(o, { cat: 'login', kind: o.ok ? 'login' : 'login.fail', cred: c, more: o.ok ? '' : String(d.error || '') });
+  }
+  if (e.event === 'METHOD_CALL') {
+    var desc = String(d.description || d.method || '');
+    if (!desc || AC_SKIP.test(desc)) return null;
+    return Object.assign(o, { cat: 'conf', kind: 'conf', desc: desc });
+  }
+  return null;
+}
+// ── Les actions voisines se rassemblent : « a supprimé 3 fichiers », « s'est connecté 4 fois » ──
+function acGroup(ev) {
+  var out = [], last = null;
+  ev.forEach(function(e) {
+    var key = [e.who, e.kind, e.src, e.where || '', e.to || '', e.share || '', e.addr || '', e.ok].join('|');
+    var mergeable = e.cat !== 'conf' && e.kind !== 'file.rename' && e.kind !== 'smb.rename' && e.kind !== 'file.purge' && e.kind !== 'file.expire';
+    if (last && mergeable && last._key === key && last.t0 - e.t < 900) { last.t0 = e.t; last.count++; e.names.forEach(function(n) { if (last.names.indexOf(n) < 0) last.names.push(n); }); return; }
+    last = Object.assign({ _key: key, t0: e.t, count: 1 }, e, { names: e.names.slice() });
+    out.push(last);
+  });
+  return out;
+}
+// ── Les phrases ──
+function acList(names, isOne, isMany) {
+  var b = function(x) { return '<strong>' + webEsc(x) + '</strong>'; };
+  if (!names.length) return '';
+  if (names.length === 1) return b(names[0]);
+  if (names.length === 2) return Tf('{0} et {1}', b(names[0]), b(names[1]));
+  if (names.length === 3) return Tf('{0}, {1} et {2}', b(names[0]), b(names[1]), b(names[2]));
+  return Tf('{0}, {1} et {2} autres', b(names[0]), b(names[1]), names.length - 2);
+}
+// Les changements de réglages : TrueNAS les décrit en anglais (« Update user alice »). En français, on les redit.
+var AC_OBJ = [[/^user$/i, 'le compte'], [/^group$/i, 'le groupe'], [/^SMB share$/i, 'le partage SMB'], [/^NFS share$/i, 'le partage NFS'], [/^Webshare share$/i, 'le partage web'], [/^Pool dataset$/i, 'le dataset'],
+  [/^(Pool|ZFS) snapshot$/i, 'le snapshot'], [/^Pool$/i, 'le pool'], [/^VM device$/i, 'un périphérique de machine virtuelle'], [/^VM$/i, 'la machine virtuelle'], [/^Snapshot task$/i, 'la tâche de snapshots'],
+  [/^Replication task$/i, 'la tâche de réplication'], [/^Cloud ?sync task$/i, 'la tâche de sauvegarde cloud'], [/^Rsync task$/i, 'la tâche rsync'], [/^Cron ?job$/i, 'la tâche planifiée'], [/^Network interface$/i, 'l\'interface réseau'],
+  [/^Static route$/i, 'la route'], [/^API key$/i, 'la clé d\'API'], [/^privilege$/i, 'le rôle'], [/^Tunable$/i, 'le paramètre du noyau'], [/^Certificate$/i, 'le certificat'], [/^App$/i, 'l\'application'], [/^S3 bucket$/i, 'le compartiment S3'],
+  [/^iSCSI.*$/i, 'un réglage iSCSI'], [/^NVMe target.*$/i, 'un réglage NVMe'], [/^(SSH|SMB|NFS|FTP|S3|IPMI|Webshare|Kerberos|LXC|Failover) config(uration)?$/i, 'les réglages $1'], [/^service configuration$/i, 'les réglages d\'un service'],
+  [/^System general$/i, 'les réglages généraux'], [/^System advanced$/i, 'les réglages avancés'], [/^System security$/i, 'les réglages de sécurité'], [/^network global configuration$/i, 'les réglages du réseau'],
+  [/^Audit Configuration$/i, 'les réglages du journal d\'audit'], [/^two-factor authentication service configuration$/i, 'les réglages de la double authentification'], [/^Keychain Credential$/i, 'un accès enregistré'], [/^Kerberos (realm|keytab)$/i, 'un réglage Kerberos']];
+var AC_VERB = { create: 'a créé', update: 'a modifié', 'delete': 'a supprimé', destroy: 'a supprimé' };
+function acObj(s) {
+  s = String(s || '').trim();
+  for (var i = 0; i < AC_OBJ.length; i++) { var words = s.split(' '); for (var n = Math.min(6, words.length); n >= 1; n--) { var head = words.slice(0, n).join(' ').replace(/:$/, ''); if (AC_OBJ[i][0].test(head)) return { fr: head.replace(AC_OBJ[i][0], AC_OBJ[i][1]), rest: words.slice(n).join(' ').replace(/^:\s*/, '') }; } }
+  return null;
+}
+function acConfFr(desc) {
+  var b = function(x) { return x ? ' <strong>' + webEsc(x) + '</strong>' : ''; }, m;
+  if ((m = /^Service Control: (START|STOP|RESTART|RELOAD)\s*(.*)$/i.exec(desc))) return ({ START: 'a démarré', STOP: 'a arrêté', RESTART: 'a redémarré', RELOAD: 'a rechargé' })[m[1].toUpperCase()] + ' le service' + b(({ cifs: 'SMB', nfs: 'NFS', ssh: 'SSH', ftp: 'FTP', snmp: 'SNMP', ups: 'onduleur', iscsitarget: 'iSCSI', smartd: 'S.M.A.R.T.', nvmet: 'NVMe-oF' })[m[2].trim().toLowerCase()] || m[2]);
+  if ((m = /^Set account password\s*(.*)$/i.exec(desc))) return 'a changé le mot de passe du compte' + b(m[1]);
+  if ((m = /^Filesystem (set permission|set ACL|add to ACL|change owner|set ZFS attributes)\s*(.*)$/i.exec(desc))) return (/owner/i.test(m[1]) ? 'a changé le propriétaire de' : 'a changé les droits de') + b(m[2]);
+  if ((m = /^Filesystem put\s*(.*)$/i.exec(desc))) return 'a déposé un fichier' + (m[1] ? ' :' + b(m[1]) : '');
+  if ((m = /^Setacl SMB share\s*(.*)$/i.exec(desc))) return 'a changé les droits du partage SMB' + b(m[1]);
+  if ((m = /^Disk Wipe\s*(.*)$/i.exec(desc))) return 'a effacé le disque' + b(m[1]);
+  if ((m = /^Disk (remove|online|offline|detach)\s*(.*)$/i.exec(desc))) return ({ remove: 'a retiré', online: 'a remis en ligne', offline: 'a mis hors ligne', detach: 'a détaché' })[m[1].toLowerCase()] + ' le disque' + b(m[2]);
+  if ((m = /^Pool Export\s*(.*)$/i.exec(desc))) return 'a déconnecté le pool' + b(m[1]);
+  if ((m = /^(?:ZFS|Pool) snapshot rollback\s*(.*)$/i.exec(desc))) return 'a ramené un dataset à son snapshot' + b(m[1]);
+  if ((m = /^(?:ZFS|Pool) snapshot (clone|hold|release|rename from)\s*(.*)$/i.exec(desc))) return ({ clone: 'a cloné', hold: 'a verrouillé', release: 'a déverrouillé', 'rename from': 'a renommé' })[m[1].toLowerCase()] + ' le snapshot' + b(m[2]);
+  if ((m = /^Network interface (rollback|commit) pending changes/i.exec(desc))) return m[1].toLowerCase() === 'commit' ? 'a validé les changements du réseau' : 'a annulé les changements du réseau';
+  if ((m = /^(Renew|Unset) two-factor authentication secret:?\s*(.*)$/i.exec(desc))) return (m[1].toLowerCase() === 'renew' ? 'a renouvelé' : 'a retiré') + ' la double authentification du compte' + b(m[2]);
+  if ((m = /^(Create|Update|Delete)\s+(.+)$/i.exec(desc))) { var o1 = acObj(m[2]); if (o1) return AC_VERB[m[1].toLowerCase()] + ' ' + o1.fr + b(o1.rest); }
+  if ((m = /^(.+?)\s+(create|update|delete|destroy)\b:?\s*(.*)$/i.exec(desc))) { var o2 = acObj(m[1]); if (o2 && !o2.rest) return AC_VERB[m[2].toLowerCase()] + ' ' + o2.fr + b(m[3]); }
+  return 'a changé un réglage : ' + webEsc(desc);
+}
+function acPhrase(e) {
+  var one = e.names.length <= 1 && e.count <= 1, L = acList(e.names), n = Math.max(e.count, e.names.length), k = e.kind;
+  switch (k) {
+    case 'file.trash': return L ? Tf('a mis {0} à la corbeille', L) : T('a mis des éléments à la corbeille');
+    case 'file.delete': return Tf('a supprimé définitivement {0}', L);
+    case 'smb.unlink': return Tf('a supprimé {0}', L);
+    case 'file.restore': return Tf('a sorti {0} de la corbeille', L);
+    case 'file.purge': return e.n > 1 ? Tf('a supprimé pour de bon {0} éléments de la corbeille', e.n) : T('a supprimé pour de bon un élément de la corbeille');
+    case 'file.expire': return e.n > 1 ? Tf('{0} éléments ont quitté la corbeille, leur délai écoulé', e.n) : T('Un élément a quitté la corbeille, son délai écoulé');
+    case 'file.rename': case 'smb.rename': return Tf('a renommé {0} en {1}', '<strong>' + webEsc(e.from || '') + '</strong>', L);
+    case 'file.move': case 'smb.move': return Tf('a déplacé {0}', L);
+    case 'file.copy': return Tf('a copié {0}', L);
+    case 'file.upload': return Tf('a déposé {0}', L);
+    case 'file.mkdir': return Tf('a créé le dossier {0}', L);
+    case 'file.write': return Tf('a modifié {0}', L);
+    case 'file.compress': return Tf('a créé l\'archive {0}', L);
+    case 'file.extract': return Tf('a extrait une archive dans {0}', L);
+    case 'file.version': return e.more === 'replaced' ? Tf('a remplacé {0} par une version précédente', L) : Tf('a récupéré une version précédente : {0}', L);
+    case 'share.create': return Tf('a créé un lien de partage pour {0}', L);
+    case 'login': return n > 1 ? Tf('s\'est connecté {0} fois', n) : T('s\'est connecté');
+    case 'login.fail': return e.who ? (n > 1 ? Tf('{0} connexions refusées pour {1}', n, '<strong>' + webEsc(e.who) + '</strong>') : Tf('Connexion refusée pour {0}', '<strong>' + webEsc(e.who) + '</strong>')) : (n > 1 ? Tf('{0} connexions refusées', n) : T('Connexion refusée'));
+    case 'conf': return !e.ok ? Tf('s\'est vu refuser : {0}', webEsc(e.desc)) : (DK_LANG === 'fr' ? acConfFr(e.desc) : '— ' + webEsc(e.desc));
+  }
+  return webEsc(k);
+}
+function acMeta(e) {
+  var m = [];
+  if (e.kind === 'file.move' || e.kind === 'file.copy' || e.kind === 'smb.move') { if (e.where) m.push(Tf('de {0}', e.where)); m.push(Tf('vers {0}', e.to || '/')); }
+  else if (e.where) m.push(e.where);
+  if (e.src === 'smb') m.push(e.share ? Tf('partage {0}, par le réseau', e.share) : T('par le réseau'));
+  if (e.cat === 'login') { if (e.addr) m.push(Tf('depuis {0}', secOrigin(e.addr))); if (e.cred) m.push(secCredLabel(e.cred)); if (e.more) m.push(e.more); }
+  if (e.count > 1 && e.t - e.t0 >= 120) m.push(Tf('en {0} min', Math.round((e.t - e.t0) / 60)));
+  return m.join(' · ');
+}
+function acFiltered() {
+  return (_ac.ev || []).filter(function(e) { return (_ac.nav === 'all' || e.cat === _ac.nav || (_ac.nav === 'fail' && (!e.ok || e.kind === 'login.fail'))) && (!_ac.who || e.who === _ac.who); });
+}
+function acSide() {
+  var el = document.getElementById('ac-side');
+  if (!el) return;
+  var ev = _ac.ev || [], cnt = function(f) { return ev.filter(f).length || ''; };
+  var nav = function(k, icon, name, f) { return wmNav({ active: _ac.nav === k && !_ac.who, call: 'acGo(\'' + k + '\')', icon: icon, name: name, count: _ac.ev ? cnt(f) : null }); };
+  var h = nav('all', 'activity', T('Toute l\'activité'), function() { return true; })
+    + nav('file', 'file', T('Fichiers'), function(e) { return e.cat === 'file'; })
+    + nav('login', 'login', T('Connexions'), function(e) { return e.cat === 'login'; })
+    + nav('conf', 'sliders', T('Réglages'), function(e) { return e.cat === 'conf'; })
+    + nav('fail', 'shield', T('Refus et échecs'), function(e) { return !e.ok || e.kind === 'login.fail'; });
+  var people = {};
+  ev.forEach(function(e) { if (e.who) people[e.who] = (people[e.who] || 0) + 1; });
+  var names = Object.keys(people).sort(function(a, b) { return people[b] - people[a]; }).slice(0, 12);
+  if (names.length) {
+    h += wmSep() + wmSideTitle(T('Personnes'), names.length);
+    names.forEach(function(n) { h += '<button class="web-nav' + (_ac.who === n ? ' active' : '') + '" data-who="' + webEsc(n) + '">' + webIcon('user') + '<span class="web-nav-name">' + webEsc(n) + '</span><span class="web-count">' + people[n] + '</span></button>'; });
+  }
+  h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'users\');usGo(\'audit\')', icon: 'list', name: T('Journal d\'audit détaillé') })
+    + wmNav({ call: 'fsxTrashOpen()', icon: 'trash', name: T('Corbeille') });
+  var sc = el.scrollTop;
+  el.innerHTML = h;
+  el.scrollTop = sc;
+  el.querySelectorAll('[data-who]').forEach(function(b) { b.onclick = function() { acGo(_ac.who === b.dataset.who ? _ac.nav : _ac.nav, _ac.who === b.dataset.who ? '' : b.dataset.who); }; });
+}
+function acDayLabel(t) {
+  var d = new Date(t * 1000), now = new Date(), day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (d.getTime() >= day0) return T('Aujourd\'hui');
+  if (d.getTime() >= day0 - 864e5) return T('Hier');
+  var s = d.toLocaleDateString(DK_LOCALE, { weekday: 'long', day: 'numeric', month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function acRender(soft) {
+  acSide();
+  var titles = { all: T('Journal d\'activité'), file: T('Fichiers'), login: T('Connexions'), conf: T('Réglages'), fail: T('Refus et échecs') };
+  var list = _ac.ev ? acFiltered() : null, period = _ac.days === 1 ? T('les dernières 24 heures') : Tf('les {0} derniers jours', _ac.days);
+  wmHead('ac', _ac.who ? _ac.who : titles[_ac.nav], { keepScroll: soft,
+    back: _ac.who ? [titles[_ac.nav], 'acGo(\'' + _ac.nav + '\')'] : null,
+    sub: list ? webEsc(list.length ? (list.length > 1 ? Tf('{0} actions sur {1}, de la plus récente à la plus ancienne.', list.length, period) : Tf('1 action sur {0}.', period)) : Tf('Rien sur {0}.', period)) : '',
+    actions: '<select class="wm-input ac-period" onchange="acDays(this.value)" aria-label="' + webEsc(T('Période')) + '">' + [[1, T('24 heures')], [7, T('7 jours')], [30, T('30 jours')]].map(function(o) { return '<option value="' + o[0] + '"' + (_ac.days === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'
+      + '<button class="fs-btn" onclick="loadActivity(true)"' + (_ac.busy ? ' disabled' : '') + '>' + T('Actualiser') + '</button>' });
+  var el = wmBody('ac');
+  if (!el) return;
+  if (!list) { el.innerHTML = dkWaitHtml('busy', T('Lecture des journaux…'), ''); return; }
+  var s = _ac.src, notes = [];
+  if (s.desk === 'old') notes.push(T('Les actions faites sur les fichiers depuis Desktroo seront notées une fois Desktroo mis à jour.'));
+  else if (s.desk === 'fail') notes.push(T('Le journal des fichiers de Desktroo ne répond pas pour l\'instant.'));
+  if (s.nas === 'fail' && s.smb === 'fail') notes.push(T('Le journal d\'audit de TrueNAS ne répond pas : connexions, réglages et actions par le réseau manquent ici.'));
+  else if (s.nas === 'fail') notes.push(T('Le journal d\'audit de TrueNAS ne répond pas : connexions et réglages manquent ici.'));
+  if (s.cut) notes.push(T('La période est très remplie : seules les actions les plus récentes de chaque journal sont montrées.'));
+  var h = '';
+  if (!list.length) {
+    h = '<div class="fs-empty">' + webIcon('activity') + '<div class="fs-empty-title">' + T('Rien à signaler') + '</div><div>'
+      + (_ac.nav === 'fail' ? T('Aucun refus ni échec sur la période.') : T('Aucune action de ce genre sur la période.')) + '</div></div>';
+  } else {
+    var day = '', icons = { file: 'file', login: 'login', conf: 'sliders' };
+    h = '<div class="ac-list">';
+    list.slice(0, _ac.shown).forEach(function(e, i) {
+      var dl = acDayLabel(e.t);
+      if (dl !== day) { day = dl; h += '<div class="web-group-title' + (i ? '' : ' first') + '">' + webEsc(dl) + '</div>'; }
+      var bad = !e.ok || e.kind === 'login.fail', who = e.kind === 'login.fail' || e.kind === 'file.expire' ? '' : (e.who || (e.src === 'desk' ? 'Desktroo' : T('Quelqu\'un'))), meta = acMeta(e);
+      var open = e.cat === 'file' && e.src === 'desk' && e.where && e.kind !== 'file.trash' && e.kind !== 'file.delete';
+      h += '<div class="ac-row' + (bad ? ' bad' : '') + '"><span class="ac-time" title="' + webEsc(secWhen(e.t * 1000)) + '">' + new Date(e.t * 1000).toLocaleTimeString(DK_LOCALE, { hour: '2-digit', minute: '2-digit' }) + '</span>'
+        + '<span class="ac-ic">' + webIcon(bad ? 'shield' : icons[e.cat]) + '</span>'
+        + '<span class="ac-text"><span class="ac-what">' + (who ? '<span class="ac-who">' + webEsc(who) + '</span> ' : '') + acPhrase(e) + '</span>' + (meta ? '<span class="ac-meta">' + webEsc(meta) + '</span>' : '') + '</span>'
+        + (open ? '<button class="web-mini" data-open="' + webEsc(e.to || e.where) + '">' + T('Ouvrir le dossier') + '</button>' : '') + '</div>';
+    });
+    h += '</div>';
+    if (list.length > _ac.shown) h += '<div class="web-foot" style="justify-content:center;margin-top:14px;"><button class="fs-btn" onclick="_ac.shown+=300;acRender(true)">' + T('Voir les actions plus anciennes') + '</button></div>';
+  }
+  // Ce que le journal ne peut pas voir, dit clairement
+  if (_ac.nav === 'all' || _ac.nav === 'file') {
+    if (_ac.smbAudit === false && s.smb !== 'fail' && !(_ac.ev || []).some(function(e) { return e.src === 'smb'; })) h += '<div class="ac-hint"><span>' + T('Les fichiers modifiés par les partages réseau n\'apparaissent pas : aucun partage SMB ne tient son journal des accès.') + '</span><button class="web-mini" onclick="openApp(\'sharing\')">' + T('Ouvrir Partages') + '</button></div>';
+    else h += '<p class="web-note">' + T('Par le réseau, seules les suppressions et les renommages sont relevés, sur les partages SMB qui tiennent leur journal des accès. Les actions faites depuis une application ou en ligne de commande ne sont pas vues.') + '</p>';
+  }
+  notes.forEach(function(n) { h += '<p class="web-note">' + n + '</p>'; });
+  el.innerHTML = h;
+  el.querySelectorAll('[data-open]').forEach(function(b) { b.onclick = function() { webOpenFolder(encodeURIComponent(b.dataset.open)); }; });
 }
 
 // ── Journal d'audit ──
@@ -26547,9 +28486,9 @@ function cpGroups() {
     { key: 'storage', label: T('Stockage'), items: [['storage', T('Pools, datasets et espace disponible')], ['maintenance', T('Santé des disques, températures et vérifications')], ['snapshots', T('Points de restauration des datasets')],
         ['dataprotect', T('Sauvegardes, réplication et tâches de protection')], ['filestation', T('Parcourir les fichiers du NAS')]] },
     { key: 'net', label: T('Réseau et partages'), items: [['network', T('Interfaces, adresses, passerelle et DNS')], ['sharing', T('Dossiers partagés sur le réseau')], ['certs', T('Certificats TLS du NAS')], ['websites', T('Héberger des sites sur le NAS')]] },
-    { key: 'users', label: T('Comptes et accès'), items: [['users', T('Comptes et groupes')], ['access', T('Qui accède à quels partages et applications')]] },
+    { key: 'users', label: T('Comptes et accès'), items: [['users', T('Comptes et groupes')], ['access', T('Qui accède à quels partages et applications')], ['activity', T('Qui a fait quoi : fichiers, connexions, réglages')]] },
     { key: 'apps', label: 'Applications', items: [['apps', T('Applications installées')], ['catalog', T('Installer de nouvelles applications')], ['docker', T('Conteneurs, charge et journaux')], ['libvirt', T('Machines virtuelles')], ['downloads', T('Gestionnaire de téléchargements')]] },
-    { key: 'system', label: T('Système'), items: [['sysinfo', T('Matériel, version et charge du NAS')], ['reports', T('Courbes de charge dans le temps')], ['sysconfig', T('Nom du NAS, fuseau horaire, serveurs de temps')],
+    { key: 'system', label: T('Système'), items: [['health', T('Tout va bien, ou ce qui cloche')], ['sysinfo', T('Matériel, version et charge du NAS')], ['reports', T('Courbes de charge dans le temps')], ['sysconfig', T('Nom du NAS, fuseau horaire, serveurs de temps')],
         ['services', T('SSH, SMB, NFS et autres services')], ['cron', T('Commandes lancées à heure fixe')], ['update', T('Nouvelles versions de TrueNAS')], ['bootenv', T('Versions du système gardées sur le NAS')],
         ['notifs', T('Alertes en cours')], ['alertconfig', T('Où et quand être prévenu')], ['failover', T('Bascule entre deux contrôleurs')], ['terminal', T('Ligne de commande du NAS')], ['truenas-ui', T('L\'interface d\'origine de TrueNAS')]] },
     { key: 'desk', label: T('Bureau Desktroo'), items: [['look', T('Vert, bleu, rouge, ambre, jaune ou gris')], ['wallpaper', T('Image affichée derrière les fenêtres')], ['bar', T('Position, masquage, fond et transparence')], ['widgets', T('Horloge, météo, ressources, réseau, stockage, alertes')], ['glass', T('Fenêtres, widgets et barre système')], ['install', T('Desktroo dans sa propre fenêtre, lancé depuis l\'ordinateur')], ['theme', darkMode ? T('Actuellement sombre') : T('Actuellement clair')], ['license', T('Abonnement Desktroo')], ['about', T('Version et mise à jour de Desktroo')]] }
@@ -31379,6 +33318,54 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      CERTIFICATES WINDOW
 ═══════════════════════════════════════════════════ -->
+<div class="window" id="win-activity" style="top:66px;left:170px;width:1000px;height:680px;">
+  <div class="window-titlebar" data-win="activity">
+    <span class="window-icon">🧾</span>
+    <span class="window-title">Journal d'activité</span>
+    <div class="window-controls">
+      <button class="win-btn min" onclick="minimizeWin('activity')"></button>
+      <button class="win-btn max" onclick="toggleMaxWin('activity')"></button>
+      <button class="win-btn cls" onclick="closeWin('activity')"></button>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="ac-side" aria-label="Journal d'activité"></nav>
+      <section class="web-main">
+        <header class="web-head" id="ac-head"></header>
+        <div class="web-body" id="ac-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="resize-handle" data-win="activity"></div>
+</div>
+<div class="window" id="win-health" style="top:58px;left:210px;width:980px;height:680px;">
+  <div class="window-titlebar" data-win="health">
+    <span class="window-icon">🩺</span>
+    <span class="window-title">Bilan de santé</span>
+    <div class="window-controls">
+      <button class="win-btn min" onclick="minimizeWin('health')"></button>
+      <button class="win-btn max" onclick="toggleMaxWin('health')"></button>
+      <button class="win-btn cls" onclick="closeWin('health')"></button>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="hl-side" aria-label="Bilan de santé"></nav>
+      <section class="web-main">
+        <header class="web-head" id="hl-head"></header>
+        <div class="web-body" id="hl-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="resize-handle" data-win="health"></div>
+</div>
 <div class="window" id="win-certs" style="top:80px;left:190px;width:1080px;height:680px;">
   <div class="window-titlebar" data-win="certs">
     <span class="window-icon">🔐</span>

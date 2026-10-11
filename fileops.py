@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.42.1'
+APP_VERSION = '2.43.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -4347,6 +4347,849 @@ def _truenas_upload(method, params, token, length, rfile, filename):
 # ── MDM-TN-UPLOAD-V1 (fin) ─────────────────────────────────────────
 
 
+# ── MDM-FILES-PLUS-V1 : corbeille, versions précédentes, lecteur, analyse de l'espace, journal, recherche ──
+# Six services rendus à la fenêtre Fichiers et aux pages qui en dépendent. Tout ce bloc ne touche que des fichiers
+# du NAS déjà accessibles au service ; il n'ouvre aucun accès nouveau vers l'extérieur.
+import base64 as _px_b64
+import hashlib as _px_hash
+import hmac as _px_hmac
+import secrets as _px_secrets
+import subprocess as _px_sp
+import threading as _px_th
+import time as _px_time
+from urllib.parse import quote as _px_quote, unquote as _px_unquote
+
+_PX_BASE = '/mnt'                        # la corbeille et les versions ne concernent que les pools
+_PX_TRASH = '.desktroo-corbeille'        # un dossier caché à la racine de chaque dataset : y déplacer est instantané
+_PX_ID_RE = re.compile(r'^[0-9]{8}-[0-9]{6}-[0-9a-f]{6}$')
+_PX_SNAP_RE = re.compile(r'^[A-Za-z0-9_.:\- ]{1,200}$')
+_px_lock = _px_th.Lock()
+
+
+class _PxNoTrash(ValueError):
+    """L'élément ne peut pas aller à la corbeille : la raison est dans le message."""
+    code = 'no_trash'
+
+
+class _PxDatasetRoot(_PxNoTrash):
+    """Un dataset ne se supprime pas comme un dossier : la page ne propose pas de le supprimer pour de bon."""
+    code = 'dataset_root'
+
+
+def _px_dev(p):
+    return os.stat(p).st_dev
+
+
+def _px_fs_root(path):
+    """Racine du système de fichiers (le dataset) qui contient « path » : là où le périphérique change en remontant."""
+    d = os.path.dirname(os.path.abspath(str(path)).rstrip('/')) or '/'
+    dev = _px_dev(d)
+    while d != '/':
+        up = os.path.dirname(d) or '/'
+        try:
+            if _px_dev(up) != dev:
+                break
+        except OSError:
+            break
+        d = up
+    return d
+
+
+def _px_under_base(p):
+    p = os.path.abspath(str(p))
+    return p == _PX_BASE or p.startswith(_PX_BASE.rstrip('/') + '/')
+
+
+def _px_by(handler):
+    try:
+        return _px_unquote(handler.headers.get('X-Desktroo-User', '') or '')[:64]
+    except Exception:
+        return ''
+
+
+def _px_host(script, timeout=60):
+    """Une commande sur le NAS, par SSH, en administrateur si le compte le permet."""
+    out, err, code = ssh_exec('sudo -n sh -c ' + shq(script), timeout=timeout)
+    if code != 0 and re.search(r'sudo: |password is required|not allowed|not in the sudoers', err or ''):
+        out, err, code = ssh_exec('sh -c ' + shq(script), timeout=timeout)
+    return out, err, code
+
+
+def _px_tree_size(path, budget=20000):
+    """Taille d'un dossier, sans y passer plus de « budget » entrées : (octets, complet)."""
+    total, seen = 0, 0
+    try:
+        if not os.path.isdir(path) or os.path.islink(path):
+            return os.lstat(path).st_size, True
+        for root, dirs, files in os.walk(path):
+            for nm in files:
+                seen += 1
+                if seen > budget:
+                    return total, False
+                try:
+                    total += os.lstat(os.path.join(root, nm)).st_size
+                except OSError:
+                    pass
+            seen += len(dirs)
+    except OSError:
+        return total, False
+    return total, True
+
+
+# ── Journal d'activité : ce que Desktroo a fait sur les fichiers ──
+_PX_ACT_FILE = os.path.join(ACCESS_DATA_DIR, 'activity.jsonl')
+_PX_ACT_MAX = 4 * 1024 * 1024
+
+
+def _px_log(kind, by='', **info):
+    """Une ligne par action. Jamais bloquant : un journal qui ne s'écrit pas ne doit pas faire échouer l'action."""
+    try:
+        rec = {'t': int(_px_time.time()), 'kind': str(kind), 'by': str(by or '')}
+        for k, v in info.items():
+            if v is not None and v != '':
+                rec[k] = v
+        line = json.dumps(rec, ensure_ascii=False) + '\n'
+        with _px_lock:
+            os.makedirs(os.path.dirname(_PX_ACT_FILE), exist_ok=True)
+            try:
+                if os.path.getsize(_PX_ACT_FILE) > _PX_ACT_MAX:      # on garde la moitié la plus récente
+                    with open(_PX_ACT_FILE, 'rb') as f:
+                        f.seek(-_PX_ACT_MAX // 2, os.SEEK_END)
+                        tail = f.read()
+                    tail = tail[tail.find(b'\n') + 1:]
+                    with open(_PX_ACT_FILE + '.tmp', 'wb') as f:
+                        f.write(tail)
+                    os.replace(_PX_ACT_FILE + '.tmp', _PX_ACT_FILE)
+            except OSError:
+                pass
+            with open(_PX_ACT_FILE, 'a', encoding='utf-8') as f:
+                f.write(line)
+    except Exception as e:
+        log.warning('journal d\'activité : %s', e)
+
+
+def _px_activity(limit=500, since=0):
+    limit = max(1, min(5000, int(limit or 500)))
+    out = []
+    try:
+        with open(_PX_ACT_FILE, 'rb') as f:
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
+            f.seek(max(0, size - 2 * 1024 * 1024))
+            raw = f.read().decode('utf-8', errors='replace')
+        lines = raw.splitlines()
+        if size > 2 * 1024 * 1024:
+            lines = lines[1:]
+        for ln in reversed(lines):
+            try:
+                rec = json.loads(ln)
+            except Exception:
+                continue
+            if since and rec.get('t', 0) < since:
+                break
+            out.append(rec)
+            if len(out) >= limit:
+                break
+    except FileNotFoundError:
+        pass
+    return out
+
+
+# ── Corbeille ──
+_PX_TRASH_CONF = os.path.join(ACCESS_DATA_DIR, 'trash.json')
+
+
+def _px_trash_conf():
+    conf = {'enabled': True, 'days': 30}
+    try:
+        with open(_PX_TRASH_CONF, encoding='utf-8') as f:
+            d = json.load(f)
+        if isinstance(d, dict):
+            conf['enabled'] = bool(d.get('enabled', True))
+            conf['days'] = max(1, min(365, int(d.get('days', 30))))
+    except Exception:
+        pass
+    return conf
+
+
+def _px_trash_conf_set(body):
+    conf = _px_trash_conf()
+    if 'enabled' in body:
+        conf['enabled'] = bool(body.get('enabled'))
+    if 'days' in body:
+        try:
+            days = int(body.get('days'))
+        except (TypeError, ValueError):
+            raise ValueError('Durée invalide')
+        if days < 1 or days > 365:
+            raise ValueError('La durée va de 1 à 365 jours')
+        conf['days'] = days
+    os.makedirs(os.path.dirname(_PX_TRASH_CONF), exist_ok=True)
+    tmp = _PX_TRASH_CONF + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(conf, f)
+    os.replace(tmp, _PX_TRASH_CONF)
+    return conf
+
+
+def _px_in_trash(path):
+    return ('/' + _PX_TRASH + '/') in (os.path.abspath(str(path)) + '/')
+
+
+def _px_trash_why_not(path):
+    """Pourquoi cet élément ne peut pas aller à la corbeille (None s'il le peut)."""
+    p = os.path.abspath(str(path)).rstrip('/')
+    if not _px_under_base(p) or p == _PX_BASE or os.path.dirname(p) == _PX_BASE:
+        return 'Cet emplacement n\'a pas de corbeille : seuls les fichiers des pools en ont une.'
+    if _px_in_trash(p):
+        return 'Cet élément est déjà dans la corbeille.'
+    if _px_is_dataset_root(p):
+        return 'C\'est un dataset : il se supprime depuis Stockage, pas depuis Fichiers.'
+    return None
+
+
+def _px_is_dataset_root(p):
+    try:
+        return os.path.isdir(p) and not os.path.islink(p) and _px_dev(p) != _px_dev(os.path.dirname(p))
+    except OSError:
+        return False
+
+
+def _px_move(src, dst, timeout=7200):
+    try:
+        os.rename(src, dst)
+    except OSError as local_err:
+        out, err, code = ssh_exec('sudo -n mv -f -- ' + shq(src) + ' ' + shq(dst), timeout=timeout)
+        if code != 0 or os.path.lexists(src):
+            raise RuntimeError((err or out or str(local_err)).strip()[:200])
+
+
+def _px_trash(path, by=''):
+    """Déplace un élément dans la corbeille de son dataset. Rend sa fiche."""
+    src = os.path.abspath(str(path)).rstrip('/')
+    if not os.path.lexists(src):
+        raise ValueError('Introuvable')
+    if not _px_trash_conf()['enabled']:
+        raise _PxNoTrash('La corbeille est désactivée.')
+    why = _px_trash_why_not(src)
+    if why:
+        raise (_PxDatasetRoot if why.startswith('C\'est un dataset') else _PxNoTrash)(why)
+    root = _px_fs_root(src)
+    if not _px_under_base(root) or root == _PX_BASE:
+        raise _PxNoTrash('Cet emplacement n\'a pas de corbeille : seuls les fichiers des pools en ont une.')
+    is_dir = os.path.isdir(src) and not os.path.islink(src)
+    size, complete = _px_tree_size(src) if is_dir else (os.lstat(src).st_size, True)
+    tid = _px_time.strftime('%Y%m%d-%H%M%S') + '-' + _px_secrets.token_hex(3)
+    tdir = os.path.join(root, _PX_TRASH)
+    slot = os.path.join(tdir, tid)
+    name = os.path.basename(src)
+    rec = {'id': tid, 'name': name, 'path': src, 'deleted_at': int(_px_time.time()), 'by': str(by or ''),
+           'is_dir': is_dir, 'size': size, 'size_complete': complete}
+    payload = json.dumps(rec, ensure_ascii=False)
+    try:
+        os.makedirs(slot, mode=0o700, exist_ok=True)
+        try:
+            os.chmod(tdir, 0o700)
+        except OSError:
+            pass
+        with open(slot + '.json', 'w', encoding='utf-8') as f:
+            f.write(payload)
+    except OSError:
+        # Droits ZFS qui refusent l'écriture au service : le vrai administrateur du NAS s'en charge.
+        b64 = _px_b64.b64encode(payload.encode('utf-8')).decode('ascii')
+        script = ('mkdir -p -m 700 ' + shq(slot) + ' && chmod 700 ' + shq(tdir) + ' && printf %s ' + shq(b64)
+                  + ' | base64 -d > ' + shq(slot + '.json'))
+        out, err, code = ssh_exec('sudo -n sh -c ' + shq(script), timeout=60)
+        if code != 0:
+            raise RuntimeError('Corbeille inaccessible : ' + (err or out or 'échec').strip()[:200])
+    try:
+        _px_move(src, os.path.join(slot, name))
+    except Exception:
+        for leftover in (slot + '.json',):
+            try:
+                os.remove(leftover)
+            except OSError:
+                pass
+        try:
+            os.rmdir(slot)
+        except OSError:
+            pass
+        raise
+    rec['root'] = root
+    return rec
+
+
+def _px_trash_roots():
+    roots = []
+    try:
+        with open('/proc/mounts', encoding='utf-8', errors='replace') as f:
+            for ln in f:
+                parts = ln.split()
+                if len(parts) >= 3:
+                    mp = parts[1].replace('\\040', ' ')
+                    if _px_under_base(mp) and mp != _PX_BASE and mp not in roots:
+                        roots.append(mp)
+    except OSError:
+        pass
+    return roots
+
+
+def _px_trash_list(roots=None):
+    conf = _px_trash_conf()
+    items = []
+    for root in (roots if roots is not None else _px_trash_roots()):
+        tdir = os.path.join(root, _PX_TRASH)
+        try:
+            names = os.listdir(tdir)
+        except OSError:
+            continue
+        for nm in names:
+            if not nm.endswith('.json') or not _PX_ID_RE.match(nm[:-5]):
+                continue
+            try:
+                with open(os.path.join(tdir, nm), encoding='utf-8') as f:
+                    rec = json.load(f)
+            except Exception:
+                continue
+            if not isinstance(rec, dict) or rec.get('id') != nm[:-5]:
+                continue
+            rec['root'] = root
+            rec['expires_at'] = int(rec.get('deleted_at', 0)) + conf['days'] * 86400
+            rec['present'] = os.path.lexists(os.path.join(tdir, rec['id'], str(rec.get('name', ''))))
+            items.append(rec)
+    items.sort(key=lambda r: -int(r.get('deleted_at', 0)))
+    return items
+
+
+def _px_trash_slot(root, tid):
+    root = os.path.abspath(str(root or '')).rstrip('/')
+    if not _PX_ID_RE.match(str(tid or '')) or not _px_under_base(root) or root == _PX_BASE:
+        raise ValueError('Élément de corbeille invalide')
+    slot = os.path.join(root, _PX_TRASH, tid)
+    try:
+        with open(slot + '.json', encoding='utf-8') as f:
+            rec = json.load(f)
+    except Exception:
+        raise ValueError('Cet élément n\'est plus dans la corbeille')
+    return slot, rec
+
+
+def _px_trash_restore(root, tid):
+    slot, rec = _px_trash_slot(root, tid)
+    name = str(rec.get('name', ''))
+    src = os.path.join(slot, name)
+    if not name or '/' in name or not os.path.lexists(src):
+        raise ValueError('Le contenu de cet élément a disparu de la corbeille')
+    dst = str(rec.get('path') or '')
+    # La fiche dit d'où vient l'élément. On ne la croit que dans son propre dataset : une fiche fabriquée à la main
+    # ne peut pas faire poser un fichier ailleurs.
+    root_abs = os.path.abspath(str(root)).rstrip('/')
+    if not dst.startswith(root_abs + '/') or _px_in_trash(dst) or os.path.abspath(dst) != dst.rstrip('/'):
+        raise ValueError('Emplacement d\'origine invalide')
+    anc = os.path.dirname(dst)
+    while anc != '/' and not os.path.isdir(anc):
+        anc = os.path.dirname(anc)
+    if _px_fs_root(os.path.join(anc, 'x')) != root_abs:
+        raise ValueError('Emplacement d\'origine invalide')
+    parent = os.path.dirname(dst)
+    if not os.path.isdir(parent):
+        try:
+            os.makedirs(parent, exist_ok=True)
+        except OSError:
+            out, err, code = ssh_exec('sudo -n mkdir -p -- ' + shq(parent), timeout=60)
+            if code != 0:
+                raise RuntimeError('Dossier d\'origine impossible à recréer : ' + (err or out).strip()[:200])
+    if os.path.lexists(dst):
+        dst = _unique_path(dst)
+    _px_move(src, dst)
+    _px_trash_drop(slot)
+    return dst
+
+
+def _px_trash_drop(slot):
+    """Retire un emplacement de corbeille (contenu, fiche), puis le dossier de corbeille s'il est vide."""
+    if os.path.lexists(slot):
+        _privileged_remove(slot)
+    try:
+        os.remove(slot + '.json')
+    except FileNotFoundError:
+        pass
+    except OSError:
+        ssh_exec('sudo -n rm -f -- ' + shq(slot + '.json'), timeout=60)
+    try:
+        os.rmdir(os.path.dirname(slot))
+    except OSError:
+        pass
+
+
+def _px_trash_purge(root, tid):
+    slot, rec = _px_trash_slot(root, tid)
+    _px_trash_drop(slot)
+    return rec
+
+
+def _px_trash_expire():
+    conf = _px_trash_conf()
+    now, n = _px_time.time(), 0
+    for rec in _px_trash_list():
+        if now - int(rec.get('deleted_at', 0)) > conf['days'] * 86400:
+            try:
+                _px_trash_drop(os.path.join(rec['root'], _PX_TRASH, rec['id']))
+                n += 1
+            except Exception as e:
+                log.warning('corbeille : purge de %s impossible : %s', rec.get('name'), e)
+    if n:
+        _px_log('file.expire', '', count=n)
+    return n
+
+
+def _px_trash_loop():
+    _px_time.sleep(600)
+    while True:
+        try:
+            _px_trash_expire()
+        except Exception as e:
+            log.warning('corbeille : %s', e)
+        _px_time.sleep(3 * 3600)
+
+
+# ── Versions précédentes : le même fichier dans les snapshots de son dataset ──
+# Les snapshots se lisent sur le NAS lui-même (le dossier « .zfs » ne se monte pas de façon fiable dans un conteneur).
+def _px_rel_ok(rel):
+    return not any(part in ('..', '') for part in str(rel).split('/')) if rel else True
+
+
+_PX_VERS_SCRIPT = r'''
+P=%(path)s
+d=$P; while [ ! -e "$d" ] && [ "$d" != / ]; do d=$(dirname -- "$d"); done
+root=$(stat -c %%m -- "$d" 2>/dev/null) || exit 3
+case "$root" in %(base)s/*) ;; *) echo "NOSNAP"; exit 0;; esac
+rel=${P#"$root"}; rel=${rel#/}
+echo "ROOT|$root"
+cur=$(stat -c '%%s|%%Y|%%F' -- "$P" 2>/dev/null) && echo "CUR|$cur"
+ds=$(zfs list -H -o name "$root" 2>/dev/null) || { echo "NOSNAP"; exit 0; }
+zfs list -H -p -t snapshot -o name,creation -S creation -d 1 "$ds" 2>/dev/null | head -n %(limit)d | while IFS="$(printf '\t')" read -r full created; do
+  s=${full#*@}
+  st=$(stat -c '%%s|%%Y|%%F' -- "$root/.zfs/snapshot/$s/$rel" 2>/dev/null) && echo "S|$s|$created|$st" || echo "N|$s|$created"
+done
+'''
+
+
+def _px_versions(path, limit=200):
+    p = os.path.abspath(str(path)).rstrip('/')
+    if not _px_under_base(p) or p == _PX_BASE:
+        raise ValueError('Les versions précédentes ne concernent que les fichiers des pools')
+    out, err, code = _px_host(_PX_VERS_SCRIPT % {'path': shq(p), 'base': _PX_BASE.rstrip('/'), 'limit': max(1, min(500, int(limit)))}, timeout=180)
+    if code != 0:
+        raise RuntimeError((err or out or 'lecture des snapshots impossible').strip()[:300])
+    res = {'path': p, 'root': '', 'current': None, 'versions': [], 'snapshots': 0, 'supported': True}
+    for ln in out.splitlines():
+        parts = ln.split('|')
+        if parts[0] == 'NOSNAP':
+            res['supported'] = False
+        elif parts[0] == 'ROOT' and len(parts) >= 2:
+            res['root'] = '|'.join(parts[1:])
+        elif parts[0] == 'CUR' and len(parts) >= 4:
+            res['current'] = {'size': int(parts[1]), 'mtime': int(parts[2]), 'is_dir': parts[3] == 'directory'}
+        elif parts[0] in ('S', 'N') and len(parts) >= 3:
+            res['snapshots'] += 1
+            if parts[0] == 'S' and len(parts) >= 6:
+                try:
+                    res['versions'].append({'snapshot': parts[1], 'created': int(parts[2]), 'size': int(parts[3]),
+                                            'mtime': int(parts[4]), 'is_dir': parts[5] == 'directory'})
+                except ValueError:
+                    pass
+    return res
+
+
+def _px_snap_path(root, snap, rel):
+    root = os.path.abspath(str(root or '')).rstrip('/')
+    snap = str(snap or '')
+    rel = str(rel or '').strip('/')
+    if not _px_under_base(root) or root == _PX_BASE or not _PX_SNAP_RE.match(snap) or snap in ('.', '..') or not _px_rel_ok(rel):
+        raise ValueError('Version invalide')
+    return root + '/.zfs/snapshot/' + snap + ('/' + rel if rel else '')
+
+
+def _px_version_list(root, snap, rel):
+    """Contenu d'un dossier tel qu'il était dans un snapshot."""
+    src = _px_snap_path(root, snap, rel)
+    script = 'cd -- ' + shq(src) + ' 2>/dev/null || exit 4; find . -mindepth 1 -maxdepth 1 -printf \'%y|%s|%T@|%f\\n\' | head -n 5000'
+    out, err, code = _px_host(script, timeout=120)
+    if code == 4:
+        raise ValueError('Ce dossier n\'existe pas dans cette version')
+    if code != 0:
+        raise RuntimeError((err or out or 'lecture impossible').strip()[:300])
+    now_dir = os.path.join(os.path.abspath(str(root)), str(rel or '').strip('/'))
+    entries = []
+    for ln in out.splitlines():
+        parts = ln.split('|', 3)
+        if len(parts) < 4 or not parts[3]:
+            continue
+        try:
+            entries.append({'name': parts[3], 'is_dir': parts[0] == 'd', 'size': 0 if parts[0] == 'd' else int(parts[1]),
+                            'mtime': int(float(parts[2])), 'exists_now': os.path.lexists(os.path.join(now_dir, parts[3]))})
+        except ValueError:
+            pass
+    entries.sort(key=lambda e: (not e['is_dir'], e['name'].lower()))
+    return {'root': os.path.abspath(str(root)), 'snapshot': snap, 'rel': str(rel or '').strip('/'), 'entries': entries}
+
+
+def _px_version_restore(root, snap, rel, mode='beside', created=0, by=''):
+    """Recopie une version depuis un snapshot. « beside » : à côté de l'actuel, sous un nom daté. « replace » : à la place
+    de l'actuel, qui part d'abord à la corbeille."""
+    src = _px_snap_path(root, snap, rel)
+    if not str(rel or '').strip('/'):
+        raise ValueError('Un dataset entier se restaure depuis la fenêtre Snapshots')
+    dst = os.path.join(os.path.abspath(str(root)), str(rel).strip('/'))
+    trashed = None
+    if mode == 'replace':
+        if os.path.lexists(dst):
+            trashed = _px_trash(dst, by)
+    elif os.path.lexists(dst):
+        stamp = _px_time.strftime('%d-%m-%Y %Hh%M', _px_time.localtime(int(created))) if created else snap
+        base = os.path.basename(dst)
+        low = base.lower()
+        for comp in ('.tar.gz', '.tar.bz2', '.tar.xz'):
+            if low.endswith(comp):
+                stem, ext = base[:-len(comp)], base[-len(comp):]
+                break
+        else:
+            stem, ext = os.path.splitext(base)
+        dst = _unique_path(os.path.join(os.path.dirname(dst), stem + ' (version du ' + stamp + ')' + ext))
+    parent = os.path.dirname(dst)
+    script = '[ -e ' + shq(src) + ' ] || exit 4; mkdir -p -- ' + shq(parent) + ' && cp -a -- ' + shq(src) + ' ' + shq(dst)
+    out, err, code = _px_host(script, timeout=7200)
+    if code == 4:
+        raise ValueError('Cet élément n\'existe pas dans cette version')
+    if code != 0:
+        raise RuntimeError((err or out or 'copie impossible').strip()[:300])
+    _px_log('file.version', by, path=dst, snapshot=snap, replaced=bool(trashed))
+    return {'dst': dst, 'name': os.path.basename(dst), 'trashed': bool(trashed)}
+
+
+# ── Lecteur : une adresse temporaire pour lire un fichier dans le navigateur ──
+# Une balise <img>, <video> ou <iframe> ne peut pas envoyer le jeton du service. Le service signe donc une adresse qui
+# ne vaut que pour ce fichier et pour quelques heures. La clé change à chaque démarrage du service.
+_PX_MEDIA_KEY = _px_secrets.token_bytes(32)
+_PX_MEDIA_TTL = 6 * 3600
+_PX_MEDIA_TYPES = {
+    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif', 'webp': 'image/webp',
+    'bmp': 'image/bmp', 'avif': 'image/avif', 'ico': 'image/x-icon', 'svg': 'image/svg+xml',
+    'mp4': 'video/mp4', 'm4v': 'video/mp4', 'webm': 'video/webm', 'mov': 'video/quicktime', 'mkv': 'video/x-matroska',
+    'ogv': 'video/ogg',
+    'mp3': 'audio/mpeg', 'm4a': 'audio/mp4', 'aac': 'audio/aac', 'ogg': 'audio/ogg', 'oga': 'audio/ogg',
+    'opus': 'audio/ogg', 'wav': 'audio/wav', 'flac': 'audio/flac', 'weba': 'audio/webm',
+    'pdf': 'application/pdf',
+}
+
+
+def _px_media_type(path):
+    return _PX_MEDIA_TYPES.get(os.path.splitext(str(path))[1].lower().lstrip('.'))
+
+
+def _px_media_ticket(path, ttl=None):
+    p = os.path.abspath(str(path))
+    if not _px_media_type(p):
+        raise ValueError('Ce type de fichier ne se lit pas dans le navigateur')
+    if not os.path.isfile(p):
+        raise ValueError('Fichier introuvable')
+    raw = json.dumps([p, int(_px_time.time()) + int(ttl or _PX_MEDIA_TTL)], ensure_ascii=False).encode('utf-8')
+    sig = _px_hmac.new(_PX_MEDIA_KEY, raw, _px_hash.sha256).digest()[:16]
+    return _px_b64.urlsafe_b64encode(sig + raw).decode('ascii').rstrip('=')
+
+
+def _px_media_path(ticket):
+    try:
+        blob = _px_b64.urlsafe_b64decode(str(ticket) + '=' * (-len(str(ticket)) % 4))
+        sig, raw = blob[:16], blob[16:]
+        if not _px_hmac.compare_digest(sig, _px_hmac.new(_PX_MEDIA_KEY, raw, _px_hash.sha256).digest()[:16]):
+            return None
+        p, exp = json.loads(raw.decode('utf-8'))
+        if int(exp) < _px_time.time() or not _px_media_type(p):
+            return None
+        return str(p)
+    except Exception:
+        return None
+
+
+def _px_range(header, size):
+    """« bytes=a-b » → (début, fin incluse), None si absent, False si irrecevable."""
+    m = re.match(r'^\s*bytes=(\d*)-(\d*)\s*$', str(header or ''))
+    if not header:
+        return None
+    if not m or (m.group(1) == '' and m.group(2) == ''):
+        return False
+    if m.group(1) == '':
+        n = int(m.group(2))
+        if n <= 0:
+            return False
+        return max(0, size - n), size - 1
+    start = int(m.group(1))
+    end = int(m.group(2)) if m.group(2) != '' else size - 1
+    if start >= size or end < start:
+        return False
+    return start, min(end, size - 1)
+
+
+def _px_media_serve(handler, url_path):
+    parts = [x for x in str(url_path).split('/') if x]     # ['media', <billet>, (nom)]
+    p = _px_media_path(parts[1]) if len(parts) >= 2 else None
+    if not p or not os.path.isfile(p):
+        handler.send_response(404)
+        handler.send_header('Content-Length', '0')
+        handler.end_headers()
+        return
+    ctype = _px_media_type(p)
+    size = os.path.getsize(p)
+    rng = _px_range(handler.headers.get('Range'), size)
+    if rng is False:
+        handler.send_response(416)
+        handler.send_header('Content-Range', 'bytes */%d' % size)
+        handler.send_header('Content-Length', '0')
+        handler.end_headers()
+        return
+    start, end = rng if rng else (0, size - 1)
+    length = max(0, end - start + 1)
+    handler.send_response(206 if rng else 200)
+    handler.send_header('Content-Type', ctype)
+    handler.send_header('Content-Length', str(length))
+    handler.send_header('Accept-Ranges', 'bytes')
+    if rng:
+        handler.send_header('Content-Range', 'bytes %d-%d/%d' % (start, end, size))
+    handler.send_header('Content-Disposition', "inline; filename*=UTF-8''" + _px_quote(os.path.basename(p)))
+    handler.send_header('X-Content-Type-Options', 'nosniff')
+    handler.send_header('Cache-Control', 'private, max-age=3600')
+    if ctype == 'image/svg+xml':     # un SVG peut porter du script : ouvert seul, il ne doit rien pouvoir exécuter
+        handler.send_header('Content-Security-Policy', "sandbox; default-src 'none'; style-src 'unsafe-inline'")
+    handler.end_headers()
+    try:
+        with open(p, 'rb') as f:
+            f.seek(start)
+            left = length
+            while left > 0:
+                chunk = f.read(min(256 * 1024, left))
+                if not chunk:
+                    break
+                handler.wfile.write(chunk)
+                left -= len(chunk)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+    except Exception as e:
+        log.warning('lecteur : %s', e)
+
+
+# ── Analyse de l'espace : la taille de chaque dossier d'un emplacement ──
+_px_scans = {}            # chemin -> {'state', 'started', 'result' | 'error'}
+_PX_SCAN_TTL = 15 * 60
+_PX_SCAN_MAX = 2          # « du » pèse sur les disques : deux analyses à la fois, pas plus
+
+
+def _px_scan_run(path):
+    t0 = _px_time.time()
+    try:
+        proc = _px_sp.run(['du', '-x', '-k', '-d', '1', '--', path], capture_output=True, text=True, timeout=1800)
+        sizes = {}
+        for ln in proc.stdout.splitlines():
+            kb, _tab, full = ln.partition('\t')
+            try:
+                sizes[full.rstrip('/') or '/'] = int(kb) * 1024
+            except ValueError:
+                pass
+        base = path.rstrip('/') or '/'
+        total = sizes.get(base)
+        if total is None:
+            raise RuntimeError((proc.stderr or 'analyse impossible').strip().splitlines()[-1][:200])
+        entries, dirs_sum = [], 0
+        dev = _px_dev(path)
+        with os.scandir(path) as it:
+            for e in it:
+                try:
+                    is_dir = e.is_dir(follow_symlinks=False)
+                    st = e.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                if is_dir:
+                    other = st.st_dev != dev
+                    sz = None if other else sizes.get(os.path.join(base, e.name), 0)
+                    if sz:
+                        dirs_sum += sz
+                    entries.append({'name': e.name, 'is_dir': True, 'size': sz, 'other_fs': other, 'trash': e.name == _PX_TRASH})
+                else:
+                    entries.append({'name': e.name, 'is_dir': False, 'size': st.st_blocks * 512})
+        entries.sort(key=lambda x: -(x['size'] or 0))
+        files = [x for x in entries if not x['is_dir']]
+        result = {'path': base, 'total': total, 'dirs': [x for x in entries if x['is_dir']], 'files': files[:60],
+                  'files_count': len(files), 'files_size': sum(x['size'] for x in files),
+                  'partial': bool(proc.returncode != 0 and proc.stderr), 'scanned_at': int(_px_time.time()),
+                  'took': round(_px_time.time() - t0, 1)}
+        with _px_lock:
+            _px_scans[path] = {'state': 'done', 'started': t0, 'result': result}
+    except _px_sp.TimeoutExpired:
+        with _px_lock:
+            _px_scans[path] = {'state': 'error', 'started': t0, 'error': 'Analyse trop longue : essayez un sous-dossier.'}
+    except Exception as e:
+        with _px_lock:
+            _px_scans[path] = {'state': 'error', 'started': t0, 'error': str(e)[:300]}
+
+
+def _px_scan(path, fresh=False):
+    p = os.path.abspath(str(path)).rstrip('/') or '/'
+    if not _px_under_base(p) or p == _PX_BASE:
+        raise ValueError('L\'analyse porte sur les dossiers des pools')
+    if not os.path.isdir(p):
+        raise ValueError('Dossier introuvable')
+    now = _px_time.time()
+    with _px_lock:
+        for k in [k for k, v in _px_scans.items() if v['state'] != 'running' and now - v['started'] > _PX_SCAN_TTL]:
+            del _px_scans[k]
+        cur = _px_scans.get(p)
+        if cur and (cur['state'] == 'running' or (cur['state'] == 'done' and not fresh)):
+            pass
+        elif sum(1 for v in _px_scans.values() if v['state'] == 'running') >= _PX_SCAN_MAX:
+            return {'state': 'busy', 'path': p}
+        else:
+            cur = _px_scans[p] = {'state': 'running', 'started': now}
+            _px_th.Thread(target=_px_scan_run, args=(p,), daemon=True).start()
+        out = {'state': cur['state'], 'path': p, 'elapsed': round(now - cur['started'], 1)}
+        if cur['state'] == 'done':
+            out.update(cur['result'])
+        elif cur['state'] == 'error':
+            out['error'] = cur.get('error', '')
+        return out
+
+
+# ── Recherche globale : un nom de fichier, dans tous les pools ──
+_PX_FIND_SKIP = ('.zfs', _PX_TRASH, 'ix-applications', '.ix-apps', 'ix-apps', '.system', 'lost+found')
+
+
+def _px_find(q, limit=40, seconds=10):
+    q = str(q or '').strip()
+    if len(q) < 2:
+        return {'results': [], 'truncated': False}
+    limit = max(1, min(200, int(limit or 40)))
+    esc = ''.join(('\\' + c) if c in '*?[]\\' else c for c in q)
+    cmd = ['find', _PX_BASE, '-mindepth', '2', '(']
+    for i, nm in enumerate(_PX_FIND_SKIP):
+        cmd += (['-o'] if i else []) + ['-name', nm]
+    cmd += ['-o', '-name', '.*', ')', '-prune', '-o', '-iname', '*' + esc + '*', '-print']
+    results, truncated = [], False
+    t0 = _px_time.time()
+    proc = _px_sp.Popen(cmd, stdout=_px_sp.PIPE, stderr=_px_sp.DEVNULL, text=True, errors='replace')
+    killer = _px_th.Timer(seconds, proc.kill)
+    killer.start()
+    try:
+        for ln in proc.stdout:
+            full = ln.rstrip('\n')
+            if not full:
+                continue
+            isd, sz, mt = False, 0, 0
+            try:
+                st = os.stat(full)
+                isd = os.path.isdir(full)
+                mt = st.st_mtime
+                sz = 0 if isd else st.st_size
+            except OSError:
+                pass
+            results.append({'name': os.path.basename(full), 'path': full, 'is_dir': isd, 'size': sz, 'mtime': mt})
+            if len(results) >= limit:
+                truncated = True
+                break
+    finally:
+        killer.cancel()
+        try:
+            proc.kill()
+        except Exception:
+            pass
+    if _px_time.time() - t0 >= seconds:
+        truncated = True
+    return {'results': results, 'truncated': truncated}
+
+
+# ── Routes ──
+def _px_get(handler, path, qs):
+    """Rend True si la requête était pour ce bloc."""
+    try:
+        if path == '/trash/config':
+            handler._json(200, dict(_px_trash_conf(), ok=True))
+        elif path == '/trash/list':
+            items = _px_trash_list()
+            handler._json(200, dict(_px_trash_conf(), ok=True, items=items, total=sum(int(i.get('size') or 0) for i in items)))
+        elif path == '/versions':
+            handler._json(200, dict(_px_versions(qs.get('path', ''), qs.get('limit', '200') or 200), ok=True))
+        elif path == '/versions/list':
+            handler._json(200, dict(_px_version_list(qs.get('root', ''), qs.get('snapshot', ''), qs.get('rel', '')), ok=True))
+        elif path == '/media/ticket':
+            p = qs.get('path', '')
+            t = _px_media_ticket(p)
+            handler._json(200, {'ok': True, 'url': '/media/' + t + '/' + _px_quote(os.path.basename(p)), 'ttl': _PX_MEDIA_TTL,
+                                'type': _px_media_type(p), 'size': os.path.getsize(p)})
+        elif path == '/space/scan':
+            handler._json(200, dict(_px_scan(qs.get('path', ''), qs.get('fresh') == '1'), ok=True))
+        elif path == '/activity':
+            handler._json(200, {'ok': True, 'events': _px_activity(qs.get('limit', '500') or 500, int(qs.get('since', '0') or 0))})
+        elif path == '/search/global':
+            handler._json(200, dict(_px_find(qs.get('q', ''), qs.get('limit', '40') or 40), ok=True))
+        else:
+            return False
+    except ValueError as e:
+        handler._json(400, {'error': str(e)})
+    except Exception as e:
+        handler._json(500, {'error': str(e)})
+    return True
+
+
+_PX_POST = ('/trash/config', '/trash/restore', '/trash/purge', '/versions/restore', '/activity/note')
+
+
+def _px_post(handler, path):
+    try:
+        body = handler._body()
+        by = _px_by(handler)
+        if path == '/trash/config':
+            handler._json(200, dict(_px_trash_conf_set(body), ok=True))
+        elif path == '/trash/restore':
+            done, failed = [], []
+            for it in (body.get('items') or [])[:500]:
+                try:
+                    dst = _px_trash_restore(it.get('root'), it.get('id'))
+                    done.append(dst)
+                    _px_log('file.restore', by, path=dst)
+                except Exception as e:
+                    failed.append({'id': it.get('id'), 'error': str(e)})
+            handler._json(200, {'ok': True, 'restored': done, 'failed': failed})
+        elif path == '/trash/purge':
+            items = _px_trash_list() if body.get('all') else (body.get('items') or [])[:2000]
+            done, failed = 0, []
+            for it in items:
+                try:
+                    _px_trash_purge(it.get('root'), it.get('id'))
+                    done += 1
+                except Exception as e:
+                    failed.append({'id': it.get('id'), 'error': str(e)})
+            if done:
+                _px_log('file.purge', by, count=done)
+            handler._json(200, {'ok': True, 'purged': done, 'failed': failed})
+        elif path == '/versions/restore':
+            handler._json(200, dict(_px_version_restore(body.get('root'), body.get('snapshot'), body.get('rel'),
+                                                        str(body.get('mode') or 'beside'), int(body.get('created') or 0), by), ok=True))
+        elif path == '/activity/note':
+            # Ce que la page a fait par TrueNAS plutôt que par le service (nouveau dossier, par exemple)
+            kind = str(body.get('kind') or '')
+            if not re.match(r'^file\.(mkdir|upload)$', kind):
+                raise ValueError('Action inconnue')
+            _px_log(kind, by, path=str(body.get('path') or '')[:1000], count=int(body.get('count') or 0) or None)
+            handler._json(200, {'ok': True})
+        else:
+            return False
+    except ValueError as e:
+        handler._json(400, {'error': str(e)})
+    except Exception as e:
+        handler._json(500, {'error': str(e)})
+    return True
+# ── MDM-FILES-PLUS-V1 (fin) ─────────────────────────────────────────
+
+
 def _npm_status():
     """Détecte un reverse-proxy NPMplus / Nginx Proxy Manager sur l'hôte.
     Matching sur le nom, l'image et le port admin 81. Utilise sudo (socket Docker root)."""
@@ -8295,7 +9138,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         self.send_header('Access-Control-Allow-Headers',
-                         'X-Token, X-Fileops-Token, Content-Type')
+                         'X-Token, X-Fileops-Token, X-Desktroo-User, Content-Type')
         self.end_headers()
 
     # ── GET ───────────────────────────────────────────────────────────────────
@@ -8318,6 +9161,9 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+        # MDM-FILES-PLUS-V1 : fichier lu par le navigateur, sur une adresse signée et temporaire
+        if _pp.path.startswith('/media/') and not _pp.path.startswith('/media/ticket'):
+            return _px_media_serve(self, _pp.path)
         # Couleur du thème : lue par l'écran de connexion, donc sans jeton
         if _pp.path.rstrip('/') == '/branding':
             try:
@@ -8331,6 +9177,10 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         p    = urlparse(self.path)
         path = p.path.rstrip('/')
         qs   = dict(parse_qsl(p.query))
+
+        # MDM-FILES-PLUS-V1
+        if _px_get(self, path, qs):
+            return
 
         # Licence d'utilisation : l'accord a-t-il été donné pour la version en cours du texte ?
         if path == '/terms/status':
@@ -9017,6 +9867,10 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                              'message': 'Abonnement requis — mode lecture seule.'})
             return
 
+        # MDM-FILES-PLUS-V1
+        if path in _PX_POST and _px_post(self, path):
+            return
+
         # MDM-WALLPAPERS-V1 : ajout d'une image (corps binaire, nom en paramètre)
         # MDM-TN-UPLOAD-V1 : relayer un fichier vers TrueNAS (corps brut ; l'opération et le jeton sont en en-têtes)
         if path == '/truenas/upload':
@@ -9570,6 +10424,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     max_downloads=b.get('max_downloads'),
                     password=(b.get('password') or None),
                 )
+                _px_log('share.create', _px_by(self), path=str(rec.get('path') or ''))
                 self._json(200, {
                     'ok': True,
                     'token': rec['token'],
@@ -9672,6 +10527,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 except OSError:
                     pass
                 os.replace(tmp, target)
+                _px_log('file.write', _px_by(self), path=target)
                 self._json(200, {'ok': True, 'size': len(content.encode('utf-8'))})
             except (ValueError, PermissionError) as e:
                 self._json(400, {'error': str(e)})
@@ -9727,6 +10583,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     # Vérifie que la source a bien disparu.
                     if os.path.exists(src):
                         raise RuntimeError('Déplacement incomplet : la source subsiste (' + src + ')')
+                _px_log('file.' + path[1:], _px_by(self), src=src, path=dst)
                 self._json(200, {'ok': True, 'dst': dst, 'name': os.path.basename(dst.rstrip('/'))})
             except (ValueError, PermissionError) as e:
                 self._json(400, {'error': str(e)})
@@ -9767,6 +10624,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     with _tf.open(dest, modes.get(fmt, 'w:gz')) as t:
                         for it in items:
                             t.add(it, arcname=os.path.basename(it.rstrip('/')))
+                _px_log('file.compress', _px_by(self), path=dest, count=len(items))
                 self._json(200, {'ok': True, 'path': dest})
             except (ValueError, PermissionError) as e:
                 self._json(400, {'error': str(e)})
@@ -9844,6 +10702,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     with _c.open(src, 'rb') as fi, open(out, 'wb') as fo:
                         _shutil.copyfileobj(fi, fo)
                     dest_real = out
+                _px_log('file.extract', _px_by(self), path=dest_real)
                 self._json(200, {'ok': True, 'dest': dest_real})
             except (ValueError, PermissionError) as e:
                 self._json(400, {'error': str(e)})
@@ -9945,6 +10804,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     total_size
                 )
 
+                _px_log('file.upload', _px_by(self), path=target_path, size=total_size)
                 self._json(200, {
                     'ok': True,
                     'path': target_path,
@@ -10485,8 +11345,18 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 target = body.get('path', '')
                 if not target:
                     raise ValueError('Chemin requis')
+                # MDM-FILES-PLUS-V1 : « trash » demande la corbeille. Si elle est impossible, on le dit : rien n'est
+                # supprimé pour de bon à la place.
+                if body.get('trash'):
+                    rec = _px_trash(target, _px_by(self))
+                    _px_log('file.trash', _px_by(self), path=str(target), is_dir=rec['is_dir'] or None)
+                    self._json(200, {'ok': True, 'trashed': True, 'id': rec['id'], 'root': rec['root']})
+                    return
                 _privileged_remove(target)
+                _px_log('file.delete', _px_by(self), path=str(target))
                 self._json(200, {'ok': True})
+            except _PxNoTrash as e:
+                self._json(409, {'error': str(e), 'code': e.code})
             except Exception as e:
                 self._json(500, {'error': str(e)})
             return
@@ -11109,6 +11979,9 @@ if os.environ.get('HOST_BOOTSTRAP', '1').lower() not in ('0', 'false', 'no', 'of
         name='host-bootstrap',
         daemon=True,
     ).start()
+
+# MDM-FILES-PLUS-V1 : la corbeille se vide de ce qui a dépassé la durée de conservation
+_threading.Thread(target=_px_trash_loop, name='trash-purge', daemon=True).start()
 
 # MDM-SHARE-LINKS-V1 : purge périodique des liens expirés / épuisés
 _threading.Thread(
