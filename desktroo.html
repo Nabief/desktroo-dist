@@ -4554,10 +4554,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Supprimer la tâche de scrub du pool": "Delete the scrub task for pool",
 "Seuil (jours)": "Threshold (days)",
 "Choisis un pool": "Choose a pool",
-"Parametres generaux": "General settings",
-"NTP serveur 1": "NTP server 1",
-"NTP serveur 2": "NTP server 2",
-"Configuration enregistree": "Configuration saved",
 "Inactif": "Inactive",
 "Aucun certificat": "No certificates",
 "Expire": "Expired",
@@ -6728,7 +6724,34 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Échap": "Esc",
 "Un clic droit sur une application l'ajoute au bureau, ou l'en retire.": "A right-click on an application adds it to the desktop, or removes it.",
 "La place, le rang et les réglages des widgets sont gardés dans ce navigateur.": "The position, order and settings of the widgets are kept in this browser.",
-"Régler {0}": "Set up {0}"
+"Régler {0}": "Set up {0}",
+"Le NAS ne donne pas ses réglages": "The NAS does not give its settings",
+"Langue et fuseau horaire": "Language and time zone",
+"Serveurs de temps": "Time servers",
+"Langue du bureau": "Desktop language",
+"Gardée dans ce navigateur. Le bureau se recharge pour l'appliquer.": "Kept in this browser. The desktop reloads to apply it.",
+"Langue de TrueNAS": "TrueNAS language",
+"Celle de l'interface d'origine de TrueNAS et de ses messages.": "The one used by the original TrueNAS interface and its messages.",
+"Commencez à écrire une région ou une ville, puis choisissez dans la liste.": "Start typing a region or a city, then choose from the list.",
+"Cette version de TrueNAS ne donne pas de langue à régler ici : elle se choisit dans son interface d'origine.": "This version of TrueNAS gives no language to set here: it is chosen in its original interface.",
+"Le NAS règle son horloge sur ces serveurs.": "The NAS sets its clock from these servers.",
+"TrueNAS ne donne pas la liste des serveurs de temps.": "TrueNAS does not give the list of time servers.",
+"serveur préféré": "preferred server",
+"Aucun serveur de temps.": "No time server.",
+"Ajouter un serveur": "Add a server",
+"Adresse du serveur de temps": "Time server address",
+"TrueNAS vérifie que le serveur répond avant de l'ajouter : le NAS a besoin de le joindre.": "TrueNAS checks that the server answers before adding it: the NAS needs to reach it.",
+"Lettres, chiffres et tirets. C'est le nom sous lequel le NAS se présente sur le réseau.": "Letters, digits and hyphens. This is the name the NAS uses on the network.",
+"Nom invalide : des lettres, des chiffres et des tirets, sans tiret au début ni à la fin.": "Invalid name: letters, digits and hyphens, with no hyphen at the start or the end.",
+"Aucun changement à enregistrer": "No change to save",
+"Nom du NAS enregistré": "NAS name saved",
+"Fuseau horaire inconnu : choisissez-le dans la liste.": "Unknown time zone: choose it from the list.",
+"Réglages enregistrés": "Settings saved",
+"Adresse attendue, par exemple pool.ntp.org.": "Address expected, for example pool.ntp.org.",
+"Serveur de temps ajouté": "Time server added",
+"Le NAS n'arrive pas à joindre ce serveur de temps. Vérifiez l'adresse.": "The NAS cannot reach this time server. Check the address.",
+"Retirer le serveur de temps « {0} » ?": "Remove the time server “{0}”?",
+"Serveur de temps retiré": "Time server removed"
 }
 </script>
 <script id="dk-i18n">
@@ -13942,7 +13965,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.37.1';
+var DK_PAGE_VERSION = '2.38.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -18144,34 +18167,136 @@ async function mntScrubSave() {
 }
 
 // ============================================================
-// SYSTEM CONFIG
+// CONFIGURATION SYSTÈME — nom du NAS, langue et fuseau horaire, serveurs de temps
+// Chaque réglage est lu là où TrueNAS le garde : le nom dans la configuration réseau, la langue et le fuseau
+// dans les réglages généraux, les serveurs de temps dans leur propre liste. La langue du bureau, elle, est
+// celle de Desktroo : gardée dans le navigateur.
 // ============================================================
-async function loadSysConfig() {
-  const el = document.getElementById('sysconfig-content');
-  el.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div></div>';
-  try {
-    const cfg = await socketCall('/system/general');
-    const s = 'width:220px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;';
-    const r = function(l,v){ return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;"><span style="font-size:12px;color:var(--text-dim);width:120px;flex-shrink:0;">'+l+'</span>'+v+'</div>'; };
-    el.innerHTML = '<div class="sysinfo" style="padding:0;"><div class="sysinfo-card">'
-      + T('<h3 style="margin-top:0;">Parametres generaux</h3>')
-      + r('Hostname',    '<input id="sc-hostname" value="' + (cfg.hostname||'') + '" style="' + s + '" />')
-      + r('Timezone',    '<input id="sc-timezone" value="' + (cfg.timezone||'') + '" style="' + s + '" />')
-      + r(T('Langue'),      '<input id="sc-language" value="' + (cfg.language||'') + '" style="' + s + '" />')
-      + r(T('NTP serveur 1'),'<input id="sc-ntp1" value="' + ((cfg.ntpservers||[])[0]||'') + '" style="' + s + '" />')
-      + r(T('NTP serveur 2'),'<input id="sc-ntp2" value="' + ((cfg.ntpservers||[])[1]||'') + '" style="' + s + '" />')
-      + '<div style="margin-top:12px;">'
-      + T('<button class="fs-btn" style="background:rgba(var(--accent-rgb),0.15);border-color:rgba(var(--accent-rgb),0.3);color:var(--accent2);" onclick="saveSysConfig()">Enregistrer</button>')
-      + '</div></div></div>';
-  } catch(e) { el.innerHTML = errHtml('Err: ' + e.message); }
+var _sc = { nav: 'gen', gen: null, net: null, langs: null, tzs: null, ntp: null, loaded: false, seq: 0, busy: false, add: '' };
+WEB_ICONS.globe = WEB_ICONS.globe || '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>';
+function scGo(nav) { _sc.nav = nav; scView(); }
+async function loadSysConfig(soft) {
+  if (!wmBody('sc')) return;
+  var seq = ++_sc.seq;
+  if (!_sc.loaded) { wmHead('sc', T('Configuration système')); scSide(); wmLoading('sc'); }
+  var r = await Promise.allSettled([
+    wsCall('system.general.config', []), wsCall('network.configuration.config', []),
+    wsCall('system.general.language_choices', []), wsCall('system.general.timezone_choices', []), wsCall('system.ntpserver.query', [[], {}], 60000)
+  ]);
+  if (seq !== _sc.seq) return;
+  var ok = function(i) { return r[i].status === 'fulfilled' && r[i].value && typeof r[i].value === 'object' ? r[i].value : null; };
+  if (!ok(0) || Array.isArray(ok(0))) {
+    _sc.loaded = false;
+    wmHead('sc', T('Configuration système')); scSide();
+    wmFail('sc', T('Le NAS ne donne pas ses réglages'), r[0].reason || new Error(T('Réponse invalide')), 'loadSysConfig()');
+    return;
+  }
+  _sc.gen = ok(0); _sc.net = ok(1) || {};
+  _sc.langs = ok(2) && !Array.isArray(ok(2)) ? ok(2) : null;
+  _sc.tzs = ok(3) && !Array.isArray(ok(3)) ? ok(3) : null;
+  _sc.ntp = r[4].status === 'fulfilled' ? ensureArray(r[4].value) : null;
+  _sc.loaded = true;
+  scView(soft === true);
 }
-async function saveSysConfig() {
-  const payload = {
-    hostname: document.getElementById('sc-hostname').value.trim(),
-    timezone: document.getElementById('sc-timezone').value.trim()
-  };
-  try { await socketCall('/system/general', 'PUT', payload); toast(T('Configuration enregistree')); }
-  catch(e) { toast('Err: ' + e.message); }
+function scSide() {
+  var nav = function(k, icon, name) { return wmNav({ active: _sc.nav === k, call: 'scGo(\'' + k + '\')', icon: icon, name: name }); };
+  wmSide('sc', wmSideTitle(T('Réglages')) + nav('gen', 'settings', T('Nom du NAS')) + nav('loc', 'globe', T('Langue et fuseau horaire')) + nav('ntp', 'clock', T('Serveurs de temps'))
+    + wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'openApp(\'sysinfo\')', icon: 'list', name: T('Informations système') })
+    + wmNav({ call: 'openApp(\'network\')', icon: 'proxy', name: T('Réseau') })
+    + wmNav({ call: 'openTrueNASPage(\'/ui/system/general\')', icon: 'out', name: T('Ouvrir dans TrueNAS') }));
+}
+function scSaveBtn(call, label) { return '<div class="web-foot" style="justify-content:flex-start;margin-top:16px;"><button class="web-open" onclick="' + call + '"' + (_sc.busy ? ' disabled' : '') + '>' + (_sc.busy ? T('Enregistrement...') : label) + '</button></div>'; }
+function scView(soft) {
+  if (!_sc.gen) return;
+  scSide();
+  var el = wmBody('sc'), g = _sc.gen, h = '';
+  if (_sc.nav === 'loc') {
+    wmHead('sc', T('Langue et fuseau horaire'), { keepScroll: soft, narrow: true });
+    // Langue du bureau : celle de Desktroo, appliquée tout de suite.
+    h += '<div class="web-group-title" style="margin-top:6px;">' + T('Bureau Desktroo') + '</div>'
+      + wmField(T('Langue du bureau'), '<select class="wm-input" id="sc-desk-lang" onchange="dkSetLang(this.value)">'
+        + Object.keys(DK_LANGS).map(function(l) { return '<option value="' + l + '"' + (l === DK_LANG ? ' selected' : '') + ' lang="' + l + '">' + webEsc(DK_LANGS[l]) + '</option>'; }).join('') + '</select>',
+        T('Gardée dans ce navigateur. Le bureau se recharge pour l\'appliquer.'));
+    h += '<div class="web-group-title">TrueNAS</div><div style="display:flex;flex-direction:column;gap:14px;">';
+    var hasLang = Object.prototype.hasOwnProperty.call(g, 'language') && _sc.langs;
+    if (hasLang) {
+      var codes = Object.keys(_sc.langs).sort(function(a, b) { return String(_sc.langs[a]).localeCompare(String(_sc.langs[b])); });
+      if (g.language && codes.indexOf(g.language) < 0) codes.unshift(g.language);
+      h += wmField(T('Langue de TrueNAS'), '<select class="wm-input" id="sc-language">' + codes.map(function(c) {
+          return '<option value="' + webEsc(c) + '"' + (c === g.language ? ' selected' : '') + '>' + webEsc((_sc.langs[c] || c) + ' (' + c + ')') + '</option>'; }).join('') + '</select>',
+        T('Celle de l\'interface d\'origine de TrueNAS et de ses messages.'));
+    }
+    h += wmField(T('Fuseau horaire'), wmInput('sc-timezone', g.timezone || '', 'list="sc-tz-list" spellcheck="false" placeholder="Europe/Paris"')
+        + (_sc.tzs ? '<datalist id="sc-tz-list">' + Object.keys(_sc.tzs).sort().map(function(z) { return '<option value="' + webEsc(z) + '">'; }).join('') + '</datalist>' : ''),
+      T('Commencez à écrire une région ou une ville, puis choisissez dans la liste.'));
+    h += '</div>' + scSaveBtn('scSaveLoc()', T('Enregistrer'));
+    if (!hasLang) h += '<p class="web-note">' + T('Cette version de TrueNAS ne donne pas de langue à régler ici : elle se choisit dans son interface d\'origine.') + '</p>';
+  } else if (_sc.nav === 'ntp') {
+    var list = _sc.ntp;
+    wmHead('sc', T('Serveurs de temps'), { keepScroll: soft, narrow: true, sub: T('Le NAS règle son horloge sur ces serveurs.') });
+    if (!list) h += '<p class="web-note" style="margin-top:6px;">' + T('TrueNAS ne donne pas la liste des serveurs de temps.') + '</p>';
+    else {
+      h += '<div class="web-group" style="margin-top:6px;">' + (list.length ? list.map(function(s) {
+        return '<div class="web-row"><span class="web-row-text"><span class="web-row-name mono">' + webEsc(s.address) + '</span>'
+          + (s.prefer ? '<span class="web-row-desc">' + T('serveur préféré') + '</span>' : '') + '</span>'
+          + '<button class="fs-btn" onclick="scNtpRemove(' + Number(s.id) + ')">' + T('Retirer') + '</button></div>';
+      }).join('') : '<div class="web-row"><span class="web-row-text"><span class="web-row-desc">' + T('Aucun serveur de temps.') + '</span></span></div>') + '</div>'
+        + '<div class="web-group-title">' + T('Ajouter un serveur') + '</div><div class="wm-inline">'
+        + wmInput('sc-ntp-add', _sc.add, 'placeholder="pool.ntp.org" spellcheck="false" aria-label="' + webEsc(T('Adresse du serveur de temps')) + '" onkeydown="if(event.key===\'Enter\')scNtpAdd()"')
+        + '<button class="fs-btn" onclick="scNtpAdd()"' + (_sc.busy ? ' disabled' : '') + '>' + (_sc.busy ? T('Vérification...') : T('Ajouter')) + '</button></div>'
+        + '<p class="web-note">' + T('TrueNAS vérifie que le serveur répond avant de l\'ajouter : le NAS a besoin de le joindre.') + '</p>';
+    }
+  } else {
+    wmHead('sc', T('Nom du NAS'), { keepScroll: soft, narrow: true });
+    h += '<div style="display:flex;flex-direction:column;gap:14px;margin-top:6px;">'
+      + wmField(T('Nom du NAS'), wmInput('sc-hostname', _sc.net.hostname || '', 'spellcheck="false" maxlength="63" onkeydown="if(event.key===\'Enter\')scSaveHost()"'),
+        T('Lettres, chiffres et tirets. C\'est le nom sous lequel le NAS se présente sur le réseau.')) + '</div>'
+      + (_sc.net.domain ? '<div style="margin-top:14px;">' + netFacts([[T('Domaine'), '<span class="mono">' + webEsc(_sc.net.domain) + '</span>']]) + '</div>' : '')
+      + scSaveBtn('scSaveHost()', T('Enregistrer'));
+  }
+  var sc = el.scrollTop;
+  el.innerHTML = h;
+  if (soft) el.scrollTop = sc;
+}
+async function scRun(fn, done) {
+  if (_sc.busy) return;
+  _sc.busy = true; scView(true);
+  var ok = false;
+  try { await fn(); ok = true; } catch (e) { wmToastErr(e); }
+  _sc.busy = false;
+  if (ok) { if (done) toast(done); await loadSysConfig(true); } else scView(true);
+}
+function scSaveHost() {
+  var name = wmVal('sc-hostname');
+  if (!/^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/.test(name)) { toast('❌ ' + T('Nom invalide : des lettres, des chiffres et des tirets, sans tiret au début ni à la fin.'), 7000); return; }
+  if (name === (_sc.net.hostname || '')) { toast(T('Aucun changement à enregistrer')); return; }
+  _sc.net.hostname = name;   // la saisie reste affichée pendant l'enregistrement
+  scRun(function() { return wsCall('network.configuration.update', [{ hostname: name }], 120000); }, T('Nom du NAS enregistré'));
+}
+function scSaveLoc() {
+  var g = _sc.gen, payload = {}, tz = wmVal('sc-timezone'), lang = document.getElementById('sc-language');
+  if (tz && _sc.tzs && !Object.prototype.hasOwnProperty.call(_sc.tzs, tz)) { toast('❌ ' + T('Fuseau horaire inconnu : choisissez-le dans la liste.'), 7000); return; }
+  if (tz && tz !== g.timezone) payload.timezone = tz;
+  if (lang && lang.value && lang.value !== g.language) payload.language = lang.value;
+  if (!Object.keys(payload).length) { toast(T('Aucun changement à enregistrer')); return; }
+  Object.assign(g, payload);
+  scRun(function() { return wsCall('system.general.update', [payload], 120000); }, T('Réglages enregistrés'));
+}
+function scNtpAdd() {
+  var addr = wmVal('sc-ntp-add');
+  if (!/^[A-Za-z0-9.:-]{1,253}$/.test(addr)) { toast('❌ ' + T('Adresse attendue, par exemple pool.ntp.org.'), 7000); return; }
+  _sc.add = addr;
+  scRun(async function() {
+    try { await wsCall('system.ntpserver.create', [{ address: addr }], 120000); }
+    catch (e) { if (/could not be reached/i.test(String(e && e.message || e))) throw new Error(T('Le NAS n\'arrive pas à joindre ce serveur de temps. Vérifiez l\'adresse.')); throw e; }
+    _sc.add = '';
+  }, T('Serveur de temps ajouté'));
+}
+async function scNtpRemove(id) {
+  var s = (_sc.ntp || []).find(function(x) { return x.id === id; });
+  if (!s || !await showConfirm(webEsc(Tf('Retirer le serveur de temps « {0} » ?', s.address)), { ok: T('Retirer') })) return;
+  scRun(function() { return wsCall('system.ntpserver.delete', [id], 120000); }, T('Serveur de temps retiré'));
 }
 
 // ============================================================
@@ -24778,7 +24903,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 <!-- ══════════════════════════════════════════════════
      SYSTEM CONFIG WINDOW
 ═══════════════════════════════════════════════════ -->
-<div class="window panel-win" id="win-sysconfig" style="top:70px;left:220px;width:620px;height:460px;">
+<div class="window panel-win" id="win-sysconfig" style="top:70px;left:220px;width:900px;height:580px;">
   <div class="window-titlebar" data-win="sysconfig">
     <span class="window-icon">🖥️</span>
     <span class="window-title">Configuration système</span>
@@ -24786,8 +24911,20 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       <button class="win-btn min" onclick="minimizeWin('sysconfig')"></button>
       <button class="win-btn max" onclick="toggleMaxWin('sysconfig')"></button>
       <button class="win-btn cls" onclick="closeWin('sysconfig')"></button>
-    </div></div>
-  <div class="window-body"><div id="sysconfig-content"><div class="fs-loading" style="height:200px;"><div class="spinner"></div></div></div></div>
+    </div>
+  </div>
+  <div class="window-body" style="display:flex;padding:0;overflow:hidden;border-radius:0 0 var(--radius) var(--radius);">
+    <!-- Gabarit des gestionnaires : colonne de navigation à gauche, contenu à droite -->
+    <div class="web-shell">
+      <nav class="web-side" id="sc-side" aria-label="Configuration système"></nav>
+      <section class="web-main">
+        <header class="web-head" id="sc-head"></header>
+        <div class="web-body" id="sc-body">
+          <div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>
+        </div>
+      </section>
+    </div>
+  </div>
   <div class="resize-handle" data-win="sysconfig"></div>
 </div>
 
