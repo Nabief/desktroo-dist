@@ -2364,6 +2364,12 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .wg-btn:hover:not(:disabled) { background:rgba(var(--accent-rgb),0.16); border-color:rgba(var(--accent2-rgb),0.45); color:var(--accent2); }
   .wg-btn:focus-visible { outline:2px solid var(--accent2); outline-offset:1px; }
   .wg-btn:disabled { opacity:.3; cursor:default; }
+  .wg-btn.on { background:rgba(var(--accent-rgb),0.2); border-color:rgba(var(--accent2-rgb),0.5); color:var(--accent2); }
+  .wg-btn-gap { width:28px; height:28px; }
+  .wg-panel { padding:14px 16px 16px; border-top:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.16); }
+  .wg-panel + .web-row { border-top:1px solid rgba(255,255,255,0.06); }
+  .wg-panel .web-note:last-child { margin-bottom:0; }
+  [data-theme="light"] .wg-panel { background:rgba(13,27,53,0.04); border-top-color:rgba(0,0,0,0.08); }
   .wg-btn svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
   [data-theme="light"] .wg-btn { background:rgba(255,255,255,0.7); border-color:rgba(0,0,0,0.14); }
   .widget[hidden] { display:none; }
@@ -6706,9 +6712,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Rechercher un appareil": "Search for a device",
 "Les appareils apparaissent sur le bureau dans l'ordre où ils ont été cochés. Home Assistant range aussi parmi les prises des réglages d'appareils (voyant, mise à jour) : ne cochez que ce que vous voulez commander.": "Devices appear on the desktop in the order they were ticked. Home Assistant also lists device settings (indicator light, update) among the plugs: tick only what you want to control.",
 "La liaison et la liste des appareils sont gardées sur le NAS : elles valent pour tous les postes. L'affichage du widget, lui, se règle dans chaque navigateur.": "The connection and the device list are kept on the NAS: they apply to every device. Whether the widget is shown is set in each browser.",
-"{0} appareils": "{0} devices",
-"1 appareil": "1 device",
-"aucun appareil choisi": "no device chosen",
 "Monter {0}": "Move {0} up",
 "Descendre {0}": "Move {0} down",
 "Passer {0} dans la zone de droite": "Move {0} to the right zone",
@@ -6723,7 +6726,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Une deuxième zone, à gauche du bureau, est proposée quand la fenêtre fait au moins 1920 pixels de large.": "A second zone, on the left of the desktop, is offered when the window is at least 1920 pixels wide.",
 "Sur le bureau, un widget se déplace aussi à la souris, plus haut ou plus bas dans la pile.": "On the desktop, a widget can also be moved with the mouse, up or down the stack.",
 "Échap": "Esc",
-"Un clic droit sur une application l'ajoute au bureau, ou l'en retire.": "A right-click on an application adds it to the desktop, or removes it."
+"Un clic droit sur une application l'ajoute au bureau, ou l'en retire.": "A right-click on an application adds it to the desktop, or removes it.",
+"La place, le rang et les réglages des widgets sont gardés dans ce navigateur.": "The position, order and settings of the widgets are kept in this browser.",
+"Régler {0}": "Set up {0}"
 }
 </script>
 <script id="dk-i18n">
@@ -13937,7 +13942,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.37.0';
+var DK_PAGE_VERSION = '2.37.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -19489,6 +19494,15 @@ function dkWgZone(id, z) {
   L[z === 'l' ? 'l' : 'r'].push(id);
   dkWgLayoutSave(L); dkWgChanged('zone:' + id);
 }
+// Roue crantée d'une ligne du gestionnaire : déplie les réglages du widget, ou ouvre leur page (« Maison »).
+var _wgSet = '';
+function dkWgSettings(id) {
+  if (id === 'ha') { cpGo('ha'); return; }
+  _wgSet = _wgSet === id ? '' : id;
+  loadControl();
+  var b = document.querySelector('#cp-body [data-wgk="set:' + id + '"]');
+  if (b) b.focus();
+}
 function dkWgChanged(focusKey) {
   dkWidgetsApply();
   if (wmVisible('control') && _cp.nav === 'widgets') {
@@ -19992,15 +20006,44 @@ function cpWidgetsView() {
   // Une ligne par widget : rang dans la pile, zone, affichage. Fenêtre de moins de 1920 pixels : une seule pile, sans zone de gauche.
   var L = dkWgLayoutGet(), narrow = dkWgNarrow(), byId = {};
   dkWidgetList().forEach(function(w) { byId[w.id] = w; });
-  var ico = { up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', l: 'M15 6l-6 6 6 6', r: 'M9 6l6 6-6 6' };
-  var btn = function(key, path, label, call, off) { return '<button class="wg-btn" data-wgk="' + key + '" onclick="' + call + '" title="' + webEsc(label) + '" aria-label="' + webEsc(label) + '"' + (off ? ' disabled' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg></button>'; };
+  var ico = { up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', l: 'M15 6l-6 6 6 6', r: 'M9 6l6 6-6 6',
+    gear: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z' };
+  var btn = function(key, path, label, call, off, extra) { return '<button class="wg-btn' + (extra && extra.on ? ' on' : '') + '" data-wgk="' + key + '" onclick="' + call + '" title="' + webEsc(label) + '" aria-label="' + webEsc(label) + '"' + (off ? ' disabled' : '') + (extra && extra.expanded != null ? ' aria-expanded="' + extra.expanded + '"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg></button>'; };
+  // Réglages propres à un widget : ils se déplient sous sa ligne, derrière la roue crantée. Ceux de « Maison » ont leur page.
+  var panels = {
+    weather: function() {
+      var p = '<div class="wg-city"><span>' + (place
+          ? '<b>' + webEsc(place.name) + '</b>' + (place.region ? ' <span>' + webEsc(place.region) + '</span>' : '')
+          : T('Aucune ville choisie.')) + '</span></div>'
+        + '<div class="wm-inline" style="margin-top:10px;">' + wmInput('wx-q', _wx.q, 'placeholder="' + webEsc(T('Nom d\'une ville')) + '" aria-label="' + webEsc(T('Nom d\'une ville')) + '" onkeydown="if(event.key===\'Enter\')wxSearch()"')
+        + '<button class="fs-btn" onclick="wxSearch()"' + (_wx.busy ? ' disabled' : '') + '>' + (_wx.busy ? T('Recherche...') : T('Chercher')) + '</button></div>';
+      if (_wx.places) {
+        if (_wx.places.length) {
+          p += '<div class="web-group wg-places">';
+          _wx.places.forEach(function(pl, i) { p += wmRow('wxChoose(' + i + ')', webEsc(pl.name), webEsc(pl.region || '')); });
+          p += '</div>';
+        } else p += '<p class="web-note">' + (_wx.searchErr ? T('La recherche n\'a pas abouti. Le NAS a besoin d\'un accès à Internet.') : webEsc(Tf('Aucune ville trouvée pour « {0} ».', _wx.q))) + '</p>';
+      }
+      return p + '<p class="web-note">' + T('Prévisions de MET Norway, recherche de ville par OpenStreetMap. C\'est le NAS qui les interroge : il lui faut un accès à Internet, et seule la position de la ville, arrondie au kilomètre, leur est envoyée.') + '</p>';
+    },
+    net: function() {
+      var ids = _nw.ids || [], cur = nwChosen();
+      return wmField(T('Interface suivie'),
+        '<select class="wm-input" id="wg-if" onchange="nwSetIface(this.value)"><option value="">' + webEsc(_nw.auto ? Tf('Automatique : la plus active ({0})', _nw.auto) : T('Automatique : la plus active')) + '</option>'
+        + ids.map(function(i) { return '<option value="' + webEsc(i) + '"' + (cur === i ? ' selected' : '') + '>' + webEsc(i) + '</option>'; }).join('') + '</select>',
+        ids.length ? '' : T('La liste des interfaces apparaît une fois le widget Réseau affiché.'));
+    }
+  };
+  var hasSet = function(id) { return !!panels[id] || id === 'ha'; };
   var rows = function(list, z) {
     return list.map(function(id, i) {
       var w = byId[id];
       return '<div class="web-row wg-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(w.label) + '</span><span class="web-row-desc">' + webEsc(w.desc) + '</span></span>'
         + '<span class="wg-ctl">' + btn('up:' + id, ico.up, Tf('Monter {0}', w.label), 'dkWgMove(\'' + id + '\',-1)', i === 0) + btn('down:' + id, ico.down, Tf('Descendre {0}', w.label), 'dkWgMove(\'' + id + '\',1)', i === list.length - 1)
-          + (narrow ? '' : z === 'l' ? btn('zone:' + id, ico.r, Tf('Passer {0} dans la zone de droite', w.label), 'dkWgZone(\'' + id + '\',\'r\')') : btn('zone:' + id, ico.l, Tf('Passer {0} dans la zone de gauche', w.label), 'dkWgZone(\'' + id + '\',\'l\')')) + '</span>'
-        + '<input type="checkbox" id="wg-' + id + '"' + (on[id] ? ' checked' : '') + ' aria-label="' + webEsc(Tf('Afficher {0}', w.label)) + '" onchange="dkWidgetSet(\'' + id + '\', this.checked)"></div>';
+          + (narrow ? '' : z === 'l' ? btn('zone:' + id, ico.r, Tf('Passer {0} dans la zone de droite', w.label), 'dkWgZone(\'' + id + '\',\'r\')') : btn('zone:' + id, ico.l, Tf('Passer {0} dans la zone de gauche', w.label), 'dkWgZone(\'' + id + '\',\'l\')'))
+          + (hasSet(id) ? btn('set:' + id, ico.gear, Tf('Régler {0}', w.label), 'dkWgSettings(\'' + id + '\')', false, panels[id] ? { on: _wgSet === id, expanded: _wgSet === id } : null) : '<span class="wg-btn-gap"></span>') + '</span>'
+        + '<input type="checkbox" id="wg-' + id + '"' + (on[id] ? ' checked' : '') + ' aria-label="' + webEsc(Tf('Afficher {0}', w.label)) + '" onchange="dkWidgetSet(\'' + id + '\', this.checked)"></div>'
+        + (panels[id] && _wgSet === id ? '<div class="wg-panel">' + panels[id]() + '</div>' : '');
     }).join('');
   };
   if (narrow) {
@@ -20014,33 +20057,7 @@ function cpWidgetsView() {
         : '<p class="web-note" style="margin-top:0;">' + T('Aucun widget dans cette zone.') + '</p>')
       + '<p class="web-note">' + T('Sur le bureau, un widget se déplace aussi à la souris : d\'une zone à l\'autre, ou plus haut et plus bas dans sa pile.') + '</p>';
   }
-  // Météo : la ville
-  h += '<div class="web-group-title">' + T('Météo') + '</div><div class="wg-city"><span>' + (place
-      ? '<b>' + webEsc(place.name) + '</b>' + (place.region ? ' <span>' + webEsc(place.region) + '</span>' : '')
-      : T('Aucune ville choisie.')) + '</span></div>'
-    + '<div class="wm-inline" style="margin-top:10px;">' + wmInput('wx-q', _wx.q, 'placeholder="' + webEsc(T('Nom d\'une ville')) + '" aria-label="' + webEsc(T('Nom d\'une ville')) + '" onkeydown="if(event.key===\'Enter\')wxSearch()"')
-    + '<button class="fs-btn" onclick="wxSearch()"' + (_wx.busy ? ' disabled' : '') + '>' + (_wx.busy ? T('Recherche...') : T('Chercher')) + '</button></div>';
-  if (_wx.places) {
-    if (_wx.places.length) {
-      h += '<div class="web-group wg-places">';
-      _wx.places.forEach(function(p, i) { h += wmRow('wxChoose(' + i + ')', webEsc(p.name), webEsc(p.region || '')); });
-      h += '</div>';
-    } else h += '<p class="web-note">' + (_wx.searchErr ? T('La recherche n\'a pas abouti. Le NAS a besoin d\'un accès à Internet.') : webEsc(Tf('Aucune ville trouvée pour « {0} ».', _wx.q))) + '</p>';
-  }
-  h += '<p class="web-note">' + T('Prévisions de MET Norway, recherche de ville par OpenStreetMap. C\'est le NAS qui les interroge : il lui faut un accès à Internet, et seule la position de la ville, arrondie au kilomètre, leur est envoyée.') + '</p>';
-  // Maison : la liaison avec Home Assistant et les appareils se règlent sur leur propre page
-  var hc = _ha.cfg;
-  if (!hc) haCfgLoad();
-  h += '<div class="web-group-title">' + T('Maison') + '</div><div class="wg-city"><span>' + (hc && hc.configured
-      ? T('Relié à') + ' <b translate="no">' + webEsc(hc.url) + '</b> <span>' + webEsc(hc.entities.length > 1 ? Tf('{0} appareils', hc.entities.length) : hc.entities.length ? T('1 appareil') : T('aucun appareil choisi')) + '</span>'
-      : T('Home Assistant n\'est pas relié.')) + '</span><button class="fs-btn" onclick="cpGo(\'ha\')">' + (hc && hc.configured ? T('Régler') : T('Relier')) + '</button></div>';
-  // Réseau : l'interface suivie
-  var ids = _nw.ids || [], cur = nwChosen();
-  h += '<div class="web-group-title">' + T('Réseau') + '</div>' + wmField(T('Interface suivie'),
-    '<select class="wm-input" id="wg-if" onchange="nwSetIface(this.value)"><option value="">' + webEsc(_nw.auto ? Tf('Automatique : la plus active ({0})', _nw.auto) : T('Automatique : la plus active')) + '</option>'
-    + ids.map(function(i) { return '<option value="' + webEsc(i) + '"' + (cur === i ? ' selected' : '') + '>' + webEsc(i) + '</option>'; }).join('') + '</select>',
-    ids.length ? '' : T('La liste des interfaces apparaît une fois le widget Réseau affiché.'));
-  h += '<p class="web-note">' + T('Ces réglages sont gardés dans ce navigateur.') + '</p>';
+  h += '<p class="web-note">' + T('La place, le rang et les réglages des widgets sont gardés dans ce navigateur.') + '</p>';
   wmBody('cp').innerHTML = h;
 }
 
