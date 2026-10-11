@@ -1550,11 +1550,22 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .wm-hint { font-size:11.5px; line-height:1.5; color:var(--text-dim); }
   .wm-inline { display:flex; align-items:center; gap:8px; }
   .wm-inline .wm-input { flex:1; min-width:0; }
+  .dpn-when { display:flex; gap:8px; }
+  .dpn-when .wm-input { flex:1; min-width:0; }
   .wm-checks { display:flex; flex-wrap:wrap; gap:10px 22px; padding:4px 0; }
   .wm-checks label { display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; }
   .web-table.us-list { --wt-cols:minmax(0,1.3fr) minmax(0,1.2fr) 140px 120px; }
   .web-table.us-list .web-tr:not(.head), .web-table.sh-list .web-tr:not(.head), .web-table.sv-list .web-tr:not(.head) { min-height:50px; }
   .web-table.us-sys { --wt-cols:minmax(0,1fr) 80px minmax(0,1.6fr); }
+  .web-table.sec-ses { --wt-cols:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) 124px; }
+  .web-table.sec-aud { --wt-cols:148px minmax(0,0.9fr) minmax(0,1.9fr) 92px; }
+  .web-table.sec-keys { --wt-cols:minmax(0,1.4fr) minmax(0,0.8fr) 110px minmax(0,1.1fr) 104px; }
+  .web-table.sec-ses .web-tr:not(.head), .web-table.sec-aud .web-tr:not(.head), .web-table.sec-keys .web-tr:not(.head) { min-height:50px; }
+  .sec-act { text-align:right; }
+  .sec-filter { display:flex; gap:24px; margin:0 0 12px; border-bottom:1px solid rgba(255,255,255,0.07); }
+  [data-theme="light"] .sec-filter { border-bottom-color:rgba(0,0,0,0.1); }
+  .sec-newkey { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; padding:14px 16px; border-radius:12px; border:1px solid rgba(62,207,142,0.4); background:rgba(62,207,142,0.08); font-size:12.5px; line-height:1.5; }
+  .sec-newkey .wm-input { flex:1; min-width:0; }
   .web-table.us-groups { --wt-cols:minmax(0,1fr) minmax(0,2fr) 80px; }
   .web-table.us-groups .web-tr:not(.head) { min-height:44px; }
   .web-table.sh-list { --wt-cols:minmax(0,1.1fr) minmax(0,1.4fr) 140px; }
@@ -1694,6 +1705,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   [data-theme="light"] .web-tr.click:hover { background:rgba(13,27,53,0.075); }
   .web-table.apps-list { --wt-cols:minmax(0,1.5fr) minmax(0,0.9fr) minmax(0,1fr) 150px; }
   .web-table.apps-list .web-tr:not(.head) { min-height:58px; }
+  .apps-load:empty { display:none; }
   .apps-name { display:flex; align-items:center; gap:12px; }
   .apps-state { display:inline-flex; align-items:center; gap:7px; }
   .apps-up { font-size:11.5px; color:var(--accent2); }
@@ -1711,6 +1723,9 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .web-table.ct-list.no-stats { --wt-cols:minmax(0,1.7fr) minmax(0,0.9fr) minmax(0,1.05fr) minmax(0,0.8fr); }
   .web-table.ct-list.no-stats.no-app { --wt-cols:minmax(0,1.9fr) minmax(0,1.05fr) minmax(0,0.9fr); }
   .web-table.ct-list .web-tr:not(.head) { min-height:52px; }
+  .web-table.ct-img { --wt-cols:minmax(0,1.9fr) 92px minmax(0,1.1fr) 104px; }
+  .web-table.ct-img .web-tr:not(.head) { min-height:52px; }
+  .web-table.ct-img .ct-img-act { text-align:right; }
   .ct-reduced { margin:2px 0 14px; border-color:var(--glass-border); background:rgba(255,255,255,0.03); }
   .ct-reduced .dim { display:block; margin-top:5px; font-size:11.5px; color:var(--text-dim); word-break:break-word; }
   #ct-body:has(> .ct-log) { display:flex; overflow:hidden; padding-bottom:22px; }
@@ -6763,7 +6778,198 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Aucune sauvegarde téléchargée depuis ce navigateur.": "No backup downloaded from this browser yet.",
 "Pour remettre un fichier en place, passez par l'interface d'origine de TrueNAS : le NAS redémarre pendant l'opération.": "To put a file back in place, use the original TrueNAS interface: the NAS restarts during the operation.",
 "TrueNAS a rendu un fichier vide.": "TrueNAS returned an empty file.",
-"Sauvegarde téléchargée : {0}": "Backup downloaded: {0}"
+"Sauvegarde téléchargée : {0}": "Backup downloaded: {0}",
+"Revenir à une version précédente": "Go back to a previous version",
+"Après une mise à jour qui se passe mal": "After an update that goes wrong",
+"Aucune version précédente à reprendre : cette application n'a pas encore été mise à jour.": "No previous version to go back to: this app has not been updated yet.",
+"Revenir à une version précédente de": "Go back to a previous version of",
+"Version à reprendre": "Version to go back to",
+"Remettre aussi ses données comme elles étaient à cette version": "Also put its data back as it was at that version",
+"Ce qu'elle a enregistré depuis dans son espace réservé est perdu. Les dossiers du NAS qu'elle utilise ne changent pas.": "What it has saved since then in its own storage is lost. The NAS folders it uses do not change.",
+"L'application redémarre. Les versions plus récentes ne pourront plus être reprises, seulement réinstallées par une mise à jour.": "The app restarts. Newer versions can no longer be gone back to, only reinstalled through an update.",
+"Revenir à cette version": "Go back to this version",
+"Retour à la version précédente": "Going back to the previous version",
+"{0} est revenue à la version {1}": "{0} is back to version {1}",
+"Les images ne répondent pas": "The images are not responding",
+"{0} inutilisées": "{0} unused",
+"1 inutilisée": "1 unused",
+"toutes utilisées": "all in use",
+"Supprimer les inutilisées": "Delete the unused ones",
+"Aucune image": "No image",
+"Le NAS télécharge une image pour chaque conteneur : elles apparaîtront ici.": "The NAS downloads an image for each container: they will appear here.",
+"Image sans nom": "Unnamed image",
+"Reste d'une ancienne version": "Left over from an older version",
+"Inutilisée": "Unused",
+"Une image supprimée est téléchargée de nouveau si une application en a besoin, par exemple au démarrage d'une application arrêtée.": "A deleted image is downloaded again if an app needs it, for example when a stopped app starts.",
+"Supprimer l'image": "Delete the image",
+"{0} seront libérés sur le NAS.": "{0} will be freed on the NAS.",
+"Suppression...": "Deleting...",
+"Image supprimée : {0}": "Image deleted: {0}",
+"Supprimer les {0} images inutilisées ?": "Delete the {0} unused images?",
+"Supprimer l'image inutilisée ?": "Delete the unused image?",
+"Jusqu'à {0} seront libérés : les images partagent parfois une partie de leur contenu.": "Up to {0} will be freed: images sometimes share part of their content.",
+"Suppression {0} sur {1}...": "Deleting {0} of {1}...",
+"{0} images supprimées": "{0} images deleted",
+"1 image supprimée": "1 image deleted",
+"{0} gardées car encore utilisées": "{0} kept because still in use",
+"1 gardée car encore utilisée": "1 kept because still in use",
+"Aucune image supprimée : Docker les dit encore utilisées.": "No image deleted: Docker says they are still in use.",
+"Mot de passe et code": "Password and code",
+"Mot de passe à usage unique": "One-time password",
+"Clé d'API": "API key",
+"Jeton de session": "Session token",
+"Connexion locale au NAS": "Local connection on the NAS",
+"Autre nœud TrueNAS": "Other TrueNAS node",
+"Sessions ouvertes": "Open sessions",
+"Journal d'audit": "Audit log",
+"Clés d'API": "API keys",
+"Double authentification": "Two-factor authentication",
+"{0} connexions au NAS en ce moment": "{0} connections to the NAS right now",
+"1 connexion au NAS en ce moment": "1 connection to the NAS right now",
+"Fermer les autres": "Close the others",
+"Les sessions ne répondent pas": "The sessions are not responding",
+"Ouverte le": "Opened on",
+"connexion non chiffrée": "unencrypted connection",
+"Cette session": "This session",
+"Un appareil qui a gardé ses identifiants se reconnecte tout seul. Pour lui retirer l'accès, changez le mot de passe du compte ou supprimez sa clé d'API.": "A device that kept its credentials reconnects by itself. To remove its access, change the account password or delete its API key.",
+"Fermer la session de": "Close the session of",
+"Ouverte depuis {0}, le {1}.": "Opened from {0}, on {1}.",
+"Fermer la session": "Close the session",
+"Session fermée": "Session closed",
+"Fermer toutes les autres sessions ?": "Close all other sessions?",
+"Les autres onglets et appareils connectés au NAS devront se reconnecter. Votre session reste ouverte.": "The other tabs and devices connected to the NAS will have to reconnect. Your session stays open.",
+"Autres sessions fermées": "Other sessions closed",
+"Connexion refusée": "Sign-in refused",
+"Qui s'est connecté au NAS et ce qui y a été changé, du plus récent au plus ancien.": "Who signed in to the NAS and what was changed on it, newest first.",
+"Connexions": "Sign-ins",
+"Changements": "Changes",
+"Échecs": "Failures",
+"Le journal d'audit ne répond pas": "The audit log is not responding",
+"Aucun événement": "No event",
+"Rien ne correspond à ce filtre dans le journal gardé par le NAS.": "Nothing matches this filter in the log kept by the NAS.",
+"Quand": "When",
+"Qui": "Who",
+"Réussi": "Succeeded",
+"Échec": "Failed",
+"Voir les événements plus anciens": "Show older events",
+"Révoquée": "Revoked",
+"Expirée": "Expired",
+"Expire le {0}": "Expires on {0}",
+"Sans date de fin": "No end date",
+"Elles ouvrent le NAS à un programme sans lui donner de mot de passe.": "They open the NAS to a program without giving it a password.",
+"Nouvelle clé": "New key",
+"Les clés d'API ne répondent pas": "The API keys are not responding",
+"Clé « {0} » créée": "Key “{0}” created",
+"Copiez-la maintenant : elle ne sera plus jamais affichée, ni ici ni dans TrueNAS.": "Copy it now: it will never be shown again, neither here nor in TrueNAS.",
+"C'est noté": "Got it",
+"Aucune clé d'API": "No API key",
+"Créez-en une pour un script, une application ou pour vous connecter à Desktroo sans mot de passe.": "Create one for a script, an app, or to sign in to Desktroo without a password.",
+"Créée le": "Created on",
+"utilisée par cette session": "used by this session",
+"Clé copiée": "Key copied",
+"Sélectionnez la clé et copiez-la à la main.": "Select the key and copy it by hand.",
+"Nouvelle clé d'API": "New API key",
+"Nom de la clé": "Key name",
+"Pour vous souvenir de ce qui s'en sert : « Sauvegarde du portable », « Desktroo »…": "To remember what uses it: “Laptop backup”, “Desktroo”…",
+"La clé a exactement les droits de ce compte. Seuls les comptes administrateurs peuvent en avoir une.": "The key has exactly the rights of this account. Only administrator accounts can have one.",
+"Durée de validité": "Validity",
+"90 jours": "90 days",
+"365 jours": "365 days",
+"Connexion": "Sign-in",
+"Créer la clé": "Create the key",
+"Donnez un nom à la clé.": "Give the key a name.",
+"Choisissez le compte de la clé.": "Choose the account for the key.",
+"TrueNAS a créé la clé sans la rendre : supprimez-la et recommencez.": "TrueNAS created the key without returning it: delete it and start again.",
+"Cette clé est celle de votre session : supprimez-la depuis une session ouverte autrement.": "This key is the one your session uses: delete it from a session opened another way.",
+"Supprimer la clé": "Delete the key",
+"Tout ce qui s'en sert perd aussitôt l'accès au NAS.": "Everything that uses it loses access to the NAS at once.",
+"Clé supprimée": "Key deleted",
+"Un code à six chiffres, donné par une application du téléphone, en plus du mot de passe.": "A six-digit code, given by a phone app, on top of the password.",
+"TrueNAS ne donne pas ce réglage": "TrueNAS does not give this setting",
+"Activée sur ce NAS": "Enabled on this NAS",
+"Désactivée sur ce NAS": "Disabled on this NAS",
+"Connexions SSH": "SSH connections",
+"Code demandé aussi": "Code required too",
+"Sans code": "No code",
+"Comptes avec un code": "Accounts with a code",
+"Elle s'active dans l'interface d'origine de TrueNAS, où chaque compte associe son téléphone.": "It is enabled in the original TrueNAS interface, where each account pairs its phone.",
+"Desktroo ne demande pas encore ce code à la connexion. Un compte protégé par un code se connecte à Desktroo avec une clé d'API : créez-la avant d'activer la double authentification.": "Desktroo does not ask for this code at sign-in yet. An account protected by a code signs in to Desktroo with an API key: create it before enabling two-factor authentication.",
+"{0} % du processeur, {1} de mémoire": "{0}% of the processor, {1} of memory",
+"Charge": "Load",
+"lundi": "Monday",
+"mardi": "Tuesday",
+"mercredi": "Wednesday",
+"jeudi": "Thursday",
+"vendredi": "Friday",
+"samedi": "Saturday",
+"dimanche": "Sunday",
+"Fréquence": "Frequency",
+"Toutes les heures": "Every hour",
+"Chaque jour": "Every day",
+"Chaque semaine": "Every week",
+"Jour de la semaine": "Day of the week",
+"Nouvelle réplication": "New replication",
+"Nouvelle sauvegarde cloud": "New cloud backup",
+"TrueNAS ne donne pas de quoi préparer la tâche": "TrueNAS does not give what is needed to prepare the task",
+"Aucun dataset à copier": "No dataset to copy",
+"Créez d'abord un pool et un dataset dans Stockage.": "First create a pool and a dataset in Storage.",
+"Copie de {0}": "Copy of {0}",
+"Dataset à copier": "Dataset to copy",
+"Avec ses sous-datasets": "With its child datasets",
+"Copie aussi tout ce que ce dataset contient": "Also copies everything this dataset contains",
+"Où copier": "Where to copy",
+"Sur ce NAS, dans un autre pool": "On this NAS, in another pool",
+"Sur un autre NAS : {0}": "On another NAS: {0}",
+"Pour copier vers un autre NAS, créez d'abord sa connexion SSH dans TrueNAS : Identifiants, puis Identifiants de sauvegarde.": "To copy to another NAS, first create its SSH connection in TrueNAS: Credentials, then Backup Credentials.",
+"Dataset de destination": "Destination dataset",
+"pool/copies/documents, sur l'autre NAS": "pool/copies/documents, on the other NAS",
+"Même pool que la source : cette copie ne protège pas d'une panne des disques.": "Same pool as the source: this copy does not protect against a disk failure.",
+"Il est créé s'il n'existe pas. Ne choisissez pas un dataset déjà utilisé pour autre chose.": "It is created if it does not exist. Do not choose a dataset already used for something else.",
+"Nom de la tâche": "Task name",
+"Ce dataset a déjà des snapshots planifiés ({0}) : la copie part après chacun d'eux.": "This dataset already has scheduled snapshots ({0}): the copy runs after each of them.",
+"Aucun snapshot n'est planifié pour ce dataset : la tâche est créée en même temps, et la copie part après chaque snapshot.": "No snapshot is scheduled for this dataset: the task is created at the same time, and the copy runs after each snapshot.",
+"Garder les snapshots": "Keep the snapshots",
+"Unité": "Unit",
+"Sur la destination": "On the destination",
+"Garder les mêmes snapshots que la source": "Keep the same snapshots as the source",
+"Tout garder, sans jamais rien effacer": "Keep everything, never delete anything",
+"« Tout garder » finit par remplir la destination : à réserver aux archives.": "“Keep everything” ends up filling the destination: best kept for archives.",
+"Création...": "Creating...",
+"Créer la réplication": "Create the replication",
+"Choisissez le dataset à copier.": "Choose the dataset to copy.",
+"Donnez un nom à la tâche.": "Give the task a name.",
+"Destination attendue sous la forme pool/dataset, par exemple sauvegarde/copies/documents.": "Destination expected as pool/dataset, for example backup/copies/documents.",
+"Le pool « {0} » n'existe pas sur ce NAS.": "The pool “{0}” does not exist on this NAS.",
+"La destination ne peut pas être la source, ni se trouver dedans ou autour.": "The destination cannot be the source, nor be inside or around it.",
+"TrueNAS n'a pas rendu la tâche de snapshots créée.": "TrueNAS did not return the snapshot task it created.",
+"La tâche de snapshots créée pour l'occasion est restée en place : retirez-la dans Snapshots ZFS si elle ne sert pas.": "The snapshot task created for this stayed in place: remove it in ZFS Snapshots if it is not needed.",
+"Réplication créée : la première copie partira après le prochain snapshot.": "Replication created: the first copy will run after the next snapshot.",
+"Aucun compte cloud enregistré": "No cloud account saved",
+"Le compte du stockage en ligne (S3, Backblaze, Google Drive…) se déclare une fois dans TrueNAS : Identifiants, puis Identifiants de sauvegarde. Revenez ensuite ici.": "The online storage account (S3, Backblaze, Google Drive…) is declared once in TrueNAS: Credentials, then Backup Credentials. Then come back here.",
+"Compte cloud": "Cloud account",
+"Les comptes se déclarent dans TrueNAS : Identifiants, puis Identifiants de sauvegarde.": "Accounts are declared in TrueNAS: Credentials, then Backup Credentials.",
+"Lecture de la liste chez le fournisseur...": "Reading the list from the provider...",
+"Liste illisible ({0}) : écrivez son nom.": "List unreadable ({0}): type its name.",
+"Aucun n'existe encore : créez-le chez le fournisseur, puis écrivez son nom.": "None exists yet: create it at the provider, then type its name.",
+"Dossier dans le cloud": "Folder in the cloud",
+"Laissez vide pour la racine.": "Leave empty for the root.",
+"Envoyer le dossier du NAS vers le cloud": "Send the NAS folder to the cloud",
+"Récupérer le dossier du cloud sur le NAS": "Fetch the cloud folder onto the NAS",
+"Copier : rien n'est jamais effacé à l'arrivée": "Copy: nothing is ever deleted at the destination",
+"Synchroniser : ce qui a disparu au départ est effacé à l'arrivée": "Sync: what disappeared at the source is deleted at the destination",
+"Attention : les fichiers du NAS absents du cloud seront effacés du NAS.": "Warning: NAS files missing from the cloud will be deleted from the NAS.",
+"Attention : un fichier effacé par erreur sur le NAS le sera aussi dans le cloud au passage suivant.": "Warning: a file deleted by mistake on the NAS will also be deleted in the cloud on the next run.",
+"Documents vers le cloud": "Documents to the cloud",
+"Créer la sauvegarde": "Create the backup",
+"Choisissez un compte cloud.": "Choose a cloud account.",
+"Choisissez un dossier du NAS, sous /mnt.": "Choose a NAS folder, under /mnt.",
+"Indiquez le {0}.": "Enter the {0}.",
+"{0} vers {1}": "{0} to {1}",
+"Sauvegarde cloud créée. Lancez-la une première fois pour vérifier que tout passe.": "Cloud backup created. Run it once to check that everything goes through.",
+"Les copies déjà faites restent sur la destination, et les snapshots planifiés continuent.": "The copies already made stay on the destination, and the scheduled snapshots go on.",
+"Les fichiers déjà envoyés restent dans le cloud.": "The files already sent stay in the cloud.",
+"Ce qui a déjà été copié reste sur la destination": "What has already been copied stays on the destination",
+"Ce qui a déjà été envoyé reste dans le cloud": "What has already been sent stays in the cloud"
 }
 </script>
 <script id="dk-i18n">
@@ -7978,6 +8184,7 @@ function startClock() {
 // WIDGET DATA LOADER
 // ===========================
 async function loadWidgetData() {
+  rtWatch();
   await Promise.allSettled([loadPools(), loadSysStats(), loadNotifs(), loadWeather(), loadNetWidget(), loadHaWidget()]);
   appUpdatesCheck();
 }
@@ -8048,8 +8255,8 @@ async function loadSysStats() {
       if (info.physmem) { const lbl = document.getElementById('mem-bytes-lbl'); if(lbl) lbl.textContent = fmtBytes(info.physmem); }
     }
 
-    // CPU usage via reporting/get_data
-    try {
+    // CPU usage via reporting/get_data — sauf si TrueNAS pousse déjà la mesure (voir « temps réel par abonnement »)
+    if (!rtAlive()) try {
       const rpt = await socketCall('/reporting/get_data', 'POST', {
         graphs: [{ name: 'cpu' }],
         query: { unit: 'HOUR' }
@@ -8072,7 +8279,7 @@ async function loadSysStats() {
     }
 
     // Température CPU via reporting
-    try {
+    if (!rtAlive()) try {
       const tempRpt = await socketCall('/reporting/get_data', 'POST', {
         graphs: [{ name: 'cputemp' }],
         query: { unit: 'HOUR' }
@@ -12547,6 +12754,7 @@ async function loadApps(soft) {
     wmFail('apps', T('Les applications ne répondent pas'), e, 'loadApps()');
   }
   appsWatch();
+  rtSync();
 }
 // Tant qu'une application change d'état, la fenêtre se relit toute seule.
 function appsWatch() {
@@ -12591,11 +12799,13 @@ function appsAllView(soft) {
     h += '<div class="web-tr click" role="button" tabindex="0" data-app="' + i + '">'
       + '<span class="apps-name">' + appIconOf(a) + '<span class="cron-two"><strong>' + webEsc(appTitle(a)) + '</strong><span class="dim">' + webEsc(origin) + '</span></span></span>'
       + '<span class="cron-two"><span>' + webEsc(v.app || '—') + '</span>' + (a.upgrade_available ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
-      + '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>'
+      + '<span class="cron-two"><span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>'
+        + (st.key === 'run' ? '<span class="dim apps-load" data-rt-app="' + webEsc(appKey(a)) + '"></span>' : '') + '</span>'
       + '<span class="apps-open">' + (portal ? (ok && st.key === 'run' ? '<a class="web-mini" href="' + webEsc(portal.url) + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">' + T('Ouvrir') + '</a>'
           : '<span class="dim">' + (ok ? webEsc(portal.url.replace(/^https?:\/\//, '').replace(/\/.*$/, '')) : T('Accès refusé')) + '</span>') : '<span class="dim">—</span>') + '</span></div>';
   });
   el.innerHTML = h + '</div>';
+  rtAppPaint();
   el.querySelectorAll('[data-app]').forEach(function(r) {
     var go = function() { appsGo('one', appKey(_apps[Number(r.dataset.app)])); };
     r.onclick = go;
@@ -12642,6 +12852,7 @@ function appsOneView(soft) {
   var nct = ensureArray((a.active_workloads || {}).container_details).length || (a.active_workloads || {}).containers || 0;
   h += netFacts([
     [T('État'), webEsc(st.label)],
+    [T('Charge'), run && rtHas('app.stats') ? '<span data-rt-app="' + webEsc(name) + '" data-rt-empty="—">—</span>' : ''],
     ['Version', webEsc(v.app || '—') + (v.pack && v.pack !== v.app ? '<span class="dim">' + webEsc(Tf('fiche du catalogue {0}', v.pack)) + '</span>' : '')],
     [T('Origine'), a.custom_app ? T('Application personnalisée') : webEsc(m.train ? Tf('Catalogue TrueNAS, train {0}', m.train) : T('Catalogue TrueNAS'))],
     [T('Nom technique'), '<span class="mono">' + webEsc(name) + '</span>'],
@@ -12666,12 +12877,14 @@ function appsOneView(soft) {
     + (run && !busy ? wmRow('appsAct(' + q + ',\'restart\')', T('Redémarrer'), T('Arrête l\'application puis la relance')) : '')
     + (busy ? '' : wmRow('openEditApp(decodeURIComponent(' + q + '))', T('Modifier la configuration'), T('Ports, dossiers, variables et réglages de l\'application')))
     + wmRow('ctOpenApp(' + q + ')', T('Conteneurs et journal'), T('Ce qui tourne réellement, sa charge et ses messages'))
+    + (run && !busy && !a.custom_app ? wmRow('appRollback(' + q + ')', T('Revenir à une version précédente'), T('Après une mise à jour qui se passe mal')) : '')
     + wmRow('appRename(' + q + ')', T('Renommer'), T('Le nom affiché dans Desktroo ; TrueNAS garde le sien'))
     + (appAlias(name) ? wmRow('appRename(' + q + ',true)', T('Reprendre le nom d\'origine'), webEsc(appTitleBase(a))) : '')
     + (m.home && /^https?:\/\//i.test(m.home) ? '<a class="web-row line" href="' + webEsc(m.home) + '" target="_blank" rel="noopener noreferrer"><span class="web-row-text"><span class="web-row-name">' + T('Site du projet') + '</span><span class="web-row-desc">' + webEsc(String(m.home).replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></a>' : '')
     + (busy ? '' : wmRow('appsDelete(' + q + ')', T('Supprimer'), T('Retire l\'application et ses conteneurs, pas les dossiers du NAS'), 'danger'))
     + '</div>';
   wmBody('apps').innerHTML = h;
+  rtAppPaint();
 }
 // Appel TrueNAS qui rend un numéro de tâche : on attend sa fin.
 async function appsJob(method, params, maxWait) {
@@ -12697,6 +12910,38 @@ async function appsAct(enc, action) {
     else await appsJob(action === 'start' ? 'app.start' : 'app.stop', [name]);
     if (action === 'upgrade' || action === 'pull') { _appUp.at = 0; appUpdatesCheck(true); }
     toast('✅ ' + ({ start: Tf('{0} est démarrée', title), stop: Tf('{0} est arrêtée', title), restart: Tf('{0} a redémarré', title), upgrade: Tf('{0} est à jour', title), pull: Tf('{0} : images récupérées', title) }[action] || title));
+  } catch (e) { toast('❌ ' + title + ' : ' + ((e && e.message) || e), 9000); }
+  delete _appsBusy[name];
+  await loadApps(true);
+  if (wmVisible('docker')) loadContainers(true);
+}
+// Retour arrière : TrueNAS garde les versions installées avant chaque mise à jour, et un instantané des données
+// de l'application pris à ce moment-là. Les versions plus récentes que celle reprise sont ensuite oubliées.
+async function appRollback(enc) {
+  var name = decodeURIComponent(enc), a = appGet(name), title = a ? appTitle(a) : name;
+  if (!name || _appsBusy[name]) return;
+  var versions;
+  try { versions = ensureArray(await wsCall('app.rollback_versions', [name], 60000)).map(String).filter(Boolean); }
+  catch (e) { wmToastErr(e); return; }
+  if (!versions.length) { toast(T('Aucune version précédente à reprendre : cette application n\'a pas encore été mise à jour.'), 8000); return; }
+  versions.sort(function(x, y) { return y.localeCompare(x, undefined, { numeric: true }); });
+  var ok = await showConfirm(T('Revenir à une version précédente de <strong>') + webEsc(title) + '</strong> ?'
+    + '<div style="margin-top:14px;text-align:left;display:flex;flex-direction:column;gap:10px;font-size:12.5px;">'
+    + '<label for="app-rb-ver" style="color:var(--text-dim);">' + T('Version à reprendre') + '</label>'
+    + '<select class="wm-input" id="app-rb-ver">' + versions.map(function(v) { return '<option value="' + webEsc(v) + '">' + webEsc(v) + '</option>'; }).join('') + '</select>'
+    + '<label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;"><input type="checkbox" id="app-rb-snap" style="margin-top:2px;"><span>' + T('Remettre aussi ses données comme elles étaient à cette version')
+    + '<br><span style="color:var(--text-dim);">' + T('Ce qu\'elle a enregistré depuis dans son espace réservé est perdu. Les dossiers du NAS qu\'elle utilise ne changent pas.') + '</span></span></label>'
+    + '<span style="color:var(--text-dim);">' + T('L\'application redémarre. Les versions plus récentes ne pourront plus être reprises, seulement réinstallées par une mise à jour.') + '</span></div>',
+    { ok: T('Revenir à cette version'), danger: true });
+  var sel = document.getElementById('app-rb-ver'), snap = document.getElementById('app-rb-snap');
+  var ver = sel ? sel.value : '', withData = !!(snap && snap.checked);
+  if (!ok || !ver) return;
+  _appsBusy[name] = T('Retour à la version précédente');
+  appsRender(true);
+  try {
+    await appsJob('app.rollback', [name, { app_version: ver, rollback_snapshot: withData }], 1200000);
+    _appUp.at = 0; appUpdatesCheck(true);
+    toast('✅ ' + Tf('{0} est revenue à la version {1}', title, ver), 7000);
   } catch (e) { toast('❌ ' + title + ' : ' + ((e && e.message) || e), 9000); }
   delete _appsBusy[name];
   await loadApps(true);
@@ -12730,6 +12975,104 @@ function appDelete(name) { return appsDelete(encodeURIComponent(name)); }
 var _ct = { list: [], apps: [], docker: null, why: '', stats: null, loaded: false, nav: 'all', group: null, sel: null, seq: 0, timer: null,
             log: { text: '', lines: 300, follow: false, timer: null, seq: 0, err: '' } };
 
+// ── Images Docker : ce que le NAS garde sur disque pour ses conteneurs (app.image.query, app.image.delete) ──
+// Une image « inutilisée » n'est rattachée à aucun conteneur, même arrêté. Docker refuse de toute façon de supprimer
+// une image dont un conteneur dépend : la suppression n'est jamais forcée.
+_ct.img = { list: null, busy: '', seq: 0 };
+function ctImgRef(s) {
+  s = String(s || '').trim();
+  if (!s || /^sha256:/.test(s)) return s;
+  s = s.replace(/^(index\.)?docker\.io\//, '').replace(/^library\//, '');
+  if (s.indexOf('@') < 0 && !/:[^\/]+$/.test(s)) s += ':latest';
+  return s;
+}
+function ctImgShort(id) { return String(id || '').replace(/^sha256:/, '').slice(0, 12); }
+function ctImgName(img) {
+  var t = ensureArray(img.repo_tags).filter(Boolean)[0];
+  if (t) return ctImgRef(t);
+  var d = ensureArray(img.repo_digests).filter(Boolean)[0];
+  return d ? ctImgRef(String(d).split('@')[0]).replace(/:latest$/, '') : '';
+}
+function ctImgUsers(img) {
+  var refs = {}, id = String(img.id || '').replace(/^sha256:/, '');
+  ensureArray(img.repo_tags).concat(ensureArray(img.repo_digests)).forEach(function(t) { if (t) refs[ctImgRef(t)] = true; });
+  return _ct.list.filter(function(c) {
+    var ci = String(c.image || '');
+    if (/^sha256:/.test(ci) || /^[0-9a-f]{12,64}$/.test(ci)) { var h = ci.replace(/^sha256:/, ''); return !!id && (id.indexOf(h) === 0 || h.indexOf(id) === 0); }
+    return !!refs[ctImgRef(ci)];
+  });
+}
+function ctImgUnused() { return ensureArray(_ct.img.list).filter(function(i) { return !ctImgUsers(i).length; }); }
+async function ctImagesLoad(soft) {
+  var seq = ++_ct.img.seq;
+  if (!soft || !_ct.img.list) { wmHead('ct', 'Images', { back: [T('Conteneurs'), 'ctGo(\'group\',null)'] }); ctSide(); wmLoading('ct'); }
+  try {
+    var list = ensureArray(await wsCall('app.image.query', [], 60000));
+    if (seq !== _ct.img.seq) return;
+    _ct.img.list = list.sort(function(a, b) { return (Number(b.size) || 0) - (Number(a.size) || 0); });
+    if (_ct.nav === 'images') ctRender(soft === true);
+  } catch (e) {
+    if (seq !== _ct.img.seq || _ct.nav !== 'images') return;
+    _ct.img.list = null;
+    wmHead('ct', 'Images', { back: [T('Conteneurs'), 'ctGo(\'group\',null)'] }); ctSide();
+    wmFail('ct', T('Les images ne répondent pas'), e, 'ctImagesLoad()');
+  }
+}
+function ctImagesView(soft) {
+  var list = _ct.img.list;
+  if (!list) return;
+  var unused = ctImgUnused(), n = list.length, busy = !!_ct.img.busy;
+  wmHead('ct', 'Images', { keepScroll: soft, back: [T('Conteneurs'), 'ctGo(\'group\',null)'],
+    sub: n ? webEsc((n > 1 ? Tf('{0} images', n) : T('1 image')) + ', ' + (unused.length > 1 ? Tf('{0} inutilisées', unused.length) : (unused.length ? T('1 inutilisée') : T('toutes utilisées')))) : '',
+    actions: '<button class="fs-btn" onclick="ctImagesLoad()"' + (busy ? ' disabled' : '') + '>' + T('Actualiser') + '</button>'
+      + (unused.length ? '<button class="web-open" onclick="ctImgPurge()"' + (busy ? ' disabled' : '') + '>' + (busy ? webEsc(_ct.img.busy) : T('Supprimer les inutilisées')) + '</button>' : '') });
+  var el = wmBody('ct');
+  if (!n) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('box') + '<div class="fs-empty-title">' + T('Aucune image') + '</div><div>' + T('Le NAS télécharge une image pour chaque conteneur : elles apparaîtront ici.') + '</div></div>';
+    return;
+  }
+  var h = '<div class="web-table ct-img"><div class="web-tr head"><span>Image</span><span class="num">' + T('Taille') + '</span><span>' + T('Utilisation') + '</span><span></span></div>';
+  list.forEach(function(img, i) {
+    var users = ctImgUsers(img), name = ctImgName(img), apps = [];
+    users.forEach(function(c) { var a = ctAppOf(c), l = a ? appTitle(a) : (c.name || ctShort(c.id)); if (apps.indexOf(l) < 0) apps.push(l); });
+    h += '<div class="web-tr"><span class="cron-two"><strong class="mono">' + (name ? webEsc(name) : T('Image sans nom')) + '</strong><span class="dim mono">' + webEsc(ctImgShort(img.id)) + '</span></span>'
+      + '<span class="num">' + webEsc(mntFmtSize(Number(img.size) || 0)) + '</span>'
+      + '<span class="cron-two"><span>' + (users.length ? webEsc(apps.slice(0, 2).join(', ') + (apps.length > 2 ? '…' : '')) : '<span class="dim">' + (img.dangling || !name ? T('Reste d\'une ancienne version') : T('Inutilisée')) + '</span>') + '</span>'
+        + (img.update_available ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
+      + '<span class="ct-img-act">' + (users.length ? '' : '<button class="web-mini" data-img="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Supprimer') + '</button>') + '</span></div>';
+  });
+  el.innerHTML = h + '</div><p class="web-note">' + T('Une image supprimée est téléchargée de nouveau si une application en a besoin, par exemple au démarrage d\'une application arrêtée.') + '</p>';
+  el.querySelectorAll('[data-img]').forEach(function(b) { b.onclick = function() { ctImgDelete(list[Number(b.dataset.img)]); }; });
+}
+async function ctImgRemove(img) { await wsCall('app.image.delete', [String(img.id), { force: false }], 300000); }
+async function ctImgDelete(img) {
+  if (!img || _ct.img.busy) return;
+  var name = ctImgName(img) || ctImgShort(img.id);
+  if (!await showConfirm(T('Supprimer l\'image <strong>') + webEsc(name) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">'
+    + webEsc(Tf('{0} seront libérés sur le NAS.', mntFmtSize(Number(img.size) || 0))) + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  _ct.img.busy = T('Suppression...'); ctRender(true);
+  try { await ctImgRemove(img); toast('✅ ' + Tf('Image supprimée : {0}', name)); }
+  catch (e) { wmToastErr(e); }
+  _ct.img.busy = '';
+  await ctImagesLoad(true);
+}
+async function ctImgPurge() {
+  if (_ct.img.busy) return;
+  var unused = ctImgUnused(), total = 0;
+  if (!unused.length) return;
+  unused.forEach(function(i) { total += Number(i.size) || 0; });
+  if (!await showConfirm((unused.length > 1 ? webEsc(Tf('Supprimer les {0} images inutilisées ?', unused.length)) : T('Supprimer l\'image inutilisée ?')) + '<br><span style="font-size:12px;color:var(--text-dim);">'
+    + webEsc(Tf('Jusqu\'à {0} seront libérés : les images partagent parfois une partie de leur contenu.', mntFmtSize(total))) + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  var done = 0, failed = 0;
+  for (var k = 0; k < unused.length; k++) {
+    _ct.img.busy = Tf('Suppression {0} sur {1}...', k + 1, unused.length); ctRender(true);
+    try { await ctImgRemove(unused[k]); done++; } catch (e) { if (e && e.message === 'LICENSE_READONLY') break; failed++; }
+  }
+  _ct.img.busy = '';
+  if (done) toast('✅ ' + (done > 1 ? Tf('{0} images supprimées', done) : T('1 image supprimée')) + (failed ? ', ' + (failed > 1 ? Tf('{0} gardées car encore utilisées', failed) : T('1 gardée car encore utilisée')) : ''), 8000);
+  else if (failed) toast('❌ ' + T('Aucune image supprimée : Docker les dit encore utilisées.'), 9000);
+  await ctImagesLoad(true);
+}
 function ctGet(id) { return _ct.list.find(function(c) { return c.id === id; }) || null; }
 function ctShort(id) { return String(id || '').slice(0, 12); }
 function ctStateInfo(c) {
@@ -12794,7 +13137,7 @@ async function loadContainers(soft) {
     });
   } else _ct.list = ctFromApps(_ct.apps);
   _ct.loaded = true;
-  if (_ct.nav !== 'all' && !ctGet(_ct.sel)) { _ct.nav = 'all'; _ct.sel = null; ctLogStop(); }
+  if (_ct.nav !== 'all' && _ct.nav !== 'images' && !ctGet(_ct.sel)) { _ct.nav = 'all'; _ct.sel = null; ctLogStop(); }
   if (_ct.group != null && !_ct.list.some(function(c) { return c.app === _ct.group; })) _ct.group = null;
   ctRender(soft === true);
   ctStatsLoad();
@@ -12805,13 +13148,14 @@ async function ctStatsLoad() {
   if (!_ct.docker || !wmVisible('docker')) return;
   try {
     var r = await fileops('GET', 'containers/stats');
-    if (r && r.stats) { _ct.stats = r.stats; if (wmVisible('docker') && _ct.nav !== 'log') ctRender(true); }
+    if (r && r.stats) { _ct.stats = r.stats; if (wmVisible('docker') && _ct.nav !== 'log' && _ct.nav !== 'images') ctRender(true); }
   } catch (e) {}
   _ct.timer = setTimeout(ctStatsLoad, 15000);
 }
 function ctStat(c) { return (_ct.stats && _ct.stats[ctShort(c.id)]) || null; }
 function ctGo(nav, id) {
   ctLogStop();
+  if (nav === 'images') { _ct.nav = 'images'; _ct.sel = null; _ct.group = null; ctImagesLoad(!!_ct.img.list); if (_ct.img.list) ctRender(); return; }
   if (nav === 'group') { _ct.nav = 'all'; _ct.group = id == null ? null : id; _ct.sel = null; }
   else if ((nav === 'one' || nav === 'log') && ctGet(id)) { _ct.nav = nav; _ct.sel = id; if (_ct.group != null && ctGet(id).app !== _ct.group) _ct.group = null; }
   else { _ct.nav = 'all'; _ct.sel = null; }
@@ -12826,6 +13170,7 @@ function ctOpenApp(enc) {
 }
 function ctRender(soft) {
   ctSide();
+  if (_ct.nav === 'images') { ctImagesView(soft); return; }
   if (_ct.nav === 'log' && ctGet(_ct.sel)) ctLogView(soft);
   else if (_ct.nav === 'one' && ctGet(_ct.sel)) ctOneView(soft);
   else ctAllView(soft);
@@ -12836,6 +13181,7 @@ function ctSide() {
   groups.sort(function(a, b) { return (a === '') - (b === '') || ctGroupLabel(a).localeCompare(ctGroupLabel(b), undefined, { sensitivity: 'base' }); });
   var cur = _ct.nav === 'all' ? _ct.group : (ctGet(_ct.sel) || {}).app;
   var h = wmNav({ active: _ct.nav === 'all' && _ct.group == null, call: 'ctGo(\'group\',null)', icon: 'layers', name: T('Tous les conteneurs'), count: _ct.list.length || null })
+    + wmNav({ active: _ct.nav === 'images', call: 'ctGo(\'images\')', icon: 'box', name: 'Images', count: _ct.img.list ? _ct.img.list.length : null })
     + wmSep() + wmSideTitle(T('Par application'));
   groups.forEach(function(g) {
     var l = by[g], bad = l.some(function(c) { return ctStateInfo(c).key === 'bad'; }), run = l.filter(function(c) { return ctStateInfo(c).key === 'run'; }).length;
@@ -13977,7 +14323,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.39.0';
+var DK_PAGE_VERSION = '2.40.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -14443,7 +14789,7 @@ async function jobsBadgeUpdate() {
 function jobsBadgeStart() {
   if (_jobsBadgeTimer) return;
   jobsBadgeUpdate();
-  _jobsBadgeTimer = setInterval(jobsBadgeUpdate, 4000);
+  _jobsBadgeTimer = setInterval(function() { if (rtHas('core.get_jobs') && (++_rt.jobsTick % 5)) return; jobsBadgeUpdate(); }, 4000);
 }
 function jobsRenderPopover() {
   var box = document.getElementById('jobs-popover-list');
@@ -15479,6 +15825,119 @@ function dctxPin()   { if (_drawerCtxApp) { pinToDesktop(_drawerCtxApp.id); rend
 function dctxUnpin() { if (_drawerCtxApp) { unpinFromDesktop(_drawerCtxApp.id); renderDrawer(document.getElementById('drawer-search').value || ''); } }
 
 // ===========================
+// TEMPS RÉEL PAR ABONNEMENT
+// TrueNAS pousse lui-même certaines mesures (core.subscribe) : charge du processeur et débit réseau toutes les
+// deux secondes, charge de chaque application, alertes, tâches, changements d'état des applications. Quand le
+// flux est là, les jauges le suivent et les relectures périodiques s'espacent ; s'il manque (compte sans ce droit,
+// version qui ne le propose pas, flux interrompu), tout continue comme avant, par relecture.
+// ===========================
+var _rt = { ids: {}, pending: {}, failed: {}, at: 0, ifs: null, apps: null, appsAt: 0, soon: {}, jobsTick: 0 };
+var RT_ALWAYS = ['alert.list', 'core.get_jobs', 'app.query'];   // des événements rares : gardés même onglet masqué
+function rtHas(name) { return !!_rt.ids[name]; }
+function rtAlive() { return Date.now() - _rt.at < 8000; }
+async function rtSub(name) {
+  if (!_wsAuthed || _rt.ids[name] || _rt.pending[name] || _rt.failed[name]) return;
+  _rt.pending[name] = true;
+  try { _rt.ids[name] = (await rpcRawCall('core.subscribe', [name], 15000)) || true; }
+  catch (e) { if (_wsAuthed) _rt.failed[name] = true; }   // refusé : on n'insiste pas avant la prochaine connexion
+  delete _rt.pending[name];
+}
+function rtUnsub(name) {
+  var id = _rt.ids[name];
+  delete _rt.ids[name];
+  if (id && id !== true && _wsAuthed) rpcRawCall('core.unsubscribe', [id], 8000).catch(function() {});
+}
+// À chaque connexion authentifiée : les abonnements de l'ancienne connexion ont disparu avec elle.
+function rtStart() {
+  _rt.ids = {}; _rt.pending = {}; _rt.failed = {};
+  RT_ALWAYS.forEach(rtSub);
+  rtSync();
+}
+function rtStop() { _rt.ids = {}; _rt.pending = {}; _rt.at = 0; _rt.appsAt = 0; }
+// Les deux flux continus ne tournent que s'ils servent : bureau affiché, et fenêtre Applications ouverte pour le second.
+function rtSync() {
+  if (!_wsAuthed) return;
+  if (document.hidden) { rtUnsub('reporting.realtime'); rtUnsub('app.stats'); return; }
+  rtSub('reporting.realtime');
+  if (wmVisible('apps')) rtSub('app.stats'); else rtUnsub('app.stats');
+}
+// Le flux est abonné mais muet : on le reprend. Appelé avec la relecture des widgets.
+function rtWatch() {
+  if (!_wsAuthed || document.hidden) return;
+  if (rtHas('reporting.realtime') && !rtAlive()) rtUnsub('reporting.realtime');
+  rtSync();
+}
+function rtSoon(key, fn, delay) {
+  if (_rt.soon[key]) return;
+  _rt.soon[key] = setTimeout(function() { _rt.soon[key] = null; try { fn(); } catch (_) {} }, delay);
+}
+function rtEvent(p) {
+  var c = String(p.collection || '').split(':')[0], f = p.fields;
+  if (c === 'reporting.realtime') { if (f && typeof f === 'object' && !f.failed_to_connect) rtStats(f); }
+  else if (c === 'app.stats') rtAppStats(f);
+  else if (c === 'alert.list') rtSoon('alerts', wsRefreshAlertBadge, 800);
+  else if (c === 'core.get_jobs') rtSoon('jobs', jobsBadgeUpdate, 1500);
+  else if (c === 'app.query') rtSoon('apps', function() {
+    if (wmVisible('apps') && !Object.keys(_appsBusy).length) loadApps(true);
+    if (wmVisible('docker')) loadContainers(true);
+  }, 1500);
+}
+function rtUnsubscribed(p) { var c = String((p && p.collection) || '').split(':')[0]; if (c) delete _rt.ids[c]; }
+function rtStats(f) {
+  var cpu = f.cpu && f.cpu.cpu, usage = cpu ? Number(cpu.usage) : NaN;
+  if (isFinite(usage)) {
+    _rt.at = Date.now();
+    setGauge('cpu-fill', 'cpu-pct', Math.round(Math.max(0, Math.min(100, usage))));
+    var temp = Number(cpu.temp) || 0;
+    if (!(temp > 0)) {   // pas de mesure d'ensemble : moyenne des cœurs qui en donnent une
+      var n = 0, s = 0;
+      Object.keys(f.cpu).forEach(function(k) { var t = k !== 'cpu' && f.cpu[k] ? Number(f.cpu[k].temp) : 0; if (t > 0) { n++; s += t; } });
+      temp = n ? s / n : 0;
+    }
+    var tEl = document.getElementById('cpu-temp-val');
+    if (tEl && temp > 0) {
+      var tv = Math.round(temp);
+      tEl.textContent = tv + '°C';
+      tEl.style.color = tv >= 75 ? '#f87171' : (tv >= 60 ? '#fbbf24' : '#3ecf8e');
+    }
+  }
+  if (f.interfaces && typeof f.interfaces === 'object') { _rt.ifs = f.interfaces; nwLive(); }
+}
+// Widget réseau : les deux débits affichés suivent le flux ; la courbe de l'heure reste relue à son rythme.
+function nwLive() {
+  var body = document.getElementById('nw-body'), i = _rt.ifs && _nw.cur ? _rt.ifs[_nw.cur] : null;
+  if (!body || !i || !rtAlive()) return;
+  var rx = body.querySelector('.nw-rx .nw-rate-val'), tx = body.querySelector('.nw-tx .nw-rate-val');
+  if (!rx || !tx) return;
+  var bits = /bit/i.test(_nw.unit || 'Kilobits/s'), fmt = rpFormatter(bits ? 'Kilobits/s' : 'bytes/s').fmt, val = function(v) { v = Math.max(0, Number(v) || 0); return fmt(bits ? v * 8 / 1000 : v); };
+  rx.textContent = val(i.received_bytes_rate);
+  tx.textContent = val(i.sent_bytes_rate);
+}
+// Charge de chaque application : écrite dans les éléments qui l'attendent, sans redessiner la fenêtre.
+function rtAppStats(list) {
+  if (!wmVisible('apps')) { rtUnsub('app.stats'); return; }
+  var by = {};
+  ensureArray(list).forEach(function(s) { if (s && s.app_name) by[s.app_name] = s; });
+  _rt.apps = by; _rt.appsAt = Date.now();
+  rtAppPaint();
+}
+function rtAppText(s, long) {
+  var cpu = Math.max(0, Number(s.cpu_usage) || 0), mem = Math.max(0, Number(s.memory) || 0);
+  var c = (cpu >= 10 ? Math.round(cpu) : cpu.toFixed(1)).toString().replace('.', DK_LOCALE === 'fr-FR' ? ',' : '.');
+  return long ? Tf('{0} % du processeur, {1} de mémoire', c, mntFmtSize(mem)) : c + ' %, ' + mntFmtSize(mem);
+}
+function rtAppPaint() {
+  var fresh = _rt.apps && Date.now() - _rt.appsAt < 8000, el = wmBody('apps');
+  if (!el) return;
+  el.querySelectorAll('[data-rt-app]').forEach(function(n) {
+    var s = fresh ? _rt.apps[n.dataset.rtApp] : null, long = n.dataset.rtEmpty != null;
+    n.textContent = s ? rtAppText(s, long) : (n.dataset.rtEmpty || '');
+    if (!long) n.title = s ? rtAppText(s, true) : '';
+  });
+}
+document.addEventListener('visibilitychange', function() { try { rtSync(); } catch (_) {} });
+
+// ===========================
 // WEBSOCKET TEMPS RÉEL
 // ===========================
 var _ws = null;
@@ -15525,6 +15984,7 @@ function wsConnect() {
 
       _wsAuthed = true;
       wsSetDot('connected');
+      rtStart();
     }).catch(function(error) {
       _wsAuthed = false;
       _wsAuthError = error;
@@ -15562,13 +16022,13 @@ function wsConnect() {
       return;
     }
 
-    if (d.method === 'collection_update' && d.params && d.params.collection === 'alert.list') {
-      wsRefreshAlertBadge();
-    }
+    if (d.method === 'collection_update' && d.params) { try { rtEvent(d.params); } catch (_) {} }
+    else if (d.method === 'notify_unsubscribed') rtUnsubscribed(d.params);
   };
 
   _ws.onclose = function(ev) {
     _wsAuthed = false;
+    rtStop();
     wsSetDot('');
 
     if (apiKey || basicAuth) {
@@ -16077,6 +16537,273 @@ WEB_ICONS.user = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle c
 WEB_ICONS.users = '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>';
 WEB_ICONS.share = '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>';
 
+// ============================================================
+// SÉCURITÉ DES COMPTES — sessions ouvertes, journal d'audit, clés d'API, double authentification
+// Tout vient de TrueNAS : auth.sessions, audit.query, api_key.*, auth.twofactor.config. Une clé d'API créée ici
+// n'est montrée qu'une fois, à l'écran, et n'est gardée nulle part par Desktroo.
+// ============================================================
+var _sec = { ses: null, sesErr: null, sesSeq: 0, aud: { list: null, err: null, kind: 'all', more: false, busy: false, seq: 0 },
+             keys: null, keysErr: null, keysSeq: 0, curKey: null, newKey: null, keyBusy: false, tfa: null, tfaErr: null, tfaSeq: 0 };
+var SEC_NAVS = ['sessions', 'audit', 'keys', 'newkey', 'tfa'];
+WEB_ICONS.shield = WEB_ICONS.shield || '<path d="M12 3 4.5 6v5.5c0 4.5 3.1 8.3 7.5 9.5 4.4-1.2 7.5-5 7.5-9.5V6z"/>';
+WEB_ICONS.key = WEB_ICONS.key || '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3"/>';
+function secDate(v) {
+  var t = v && typeof v === 'object' ? (v.$date != null ? v.$date : null) : v;
+  if (typeof t === 'number' && t < 1e11) t *= 1000;
+  var d = t == null || t === '' ? null : new Date(t);
+  return d && isFinite(d.getTime()) ? d : null;
+}
+function secWhen(v) { var d = secDate(v); return d ? d.toLocaleString(DK_LOCALE, { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }
+function secDay(v) { var d = secDate(v); return d ? d.toLocaleDateString(DK_LOCALE, { dateStyle: 'medium' }) : '—'; }
+function secCredLabel(c) {
+  return ({ LOGIN_PASSWORD: T('Mot de passe'), LOGIN_TWOFACTOR: T('Mot de passe et code'), LOGIN_ONETIME_PASSWORD: T('Mot de passe à usage unique'), API_KEY: T('Clé d\'API'),
+            TOKEN: T('Jeton de session'), UNIX_SOCKET: T('Connexion locale au NAS'), TRUENAS_NODE: T('Autre nœud TrueNAS') })[c] || String(c || '');
+}
+function secCredData(s) { var d = (s && s.credentials_data) || {}, n = 0; while (d && !d.username && d.parent && n++ < 5) d = d.parent.credentials_data || {}; return d || {}; }
+function secOrigin(o) { o = String(o || ''); return /^[0-9a-f.:\[\]]+:\d+$/i.test(o) ? o.replace(/:\d+$/, '').replace(/^\[|\]$/g, '') : o; }
+// Arrivée sur une page : on relit ce que dit le NAS.
+function secEnter(nav) {
+  if (nav !== 'keys') _sec.newKey = null;
+  if (nav === 'sessions') secSesLoad();
+  else if (nav === 'audit') secAudLoad(true);
+  else if (nav === 'keys') secKeysLoad();
+  else if (nav === 'tfa') secTfaLoad();
+}
+function secDraw(nav, soft) { if (_us.nav === nav && wmVisible('users')) usRender(soft === true); }
+function secSideNav() {
+  return wmSep() + wmSideTitle(T('Sécurité'))
+    + wmNav({ active: _us.nav === 'sessions', call: 'usGo(\'sessions\')', icon: 'globe', name: T('Sessions ouvertes') })
+    + wmNav({ active: _us.nav === 'audit', call: 'usGo(\'audit\')', icon: 'list', name: T('Journal d\'audit') })
+    + wmNav({ active: _us.nav === 'keys' || _us.nav === 'newkey', call: 'usGo(\'keys\')', icon: 'key', name: T('Clés d\'API') })
+    + wmNav({ active: _us.nav === 'tfa', call: 'usGo(\'tfa\')', icon: 'shield', name: T('Double authentification') });
+}
+
+// ── Sessions ouvertes ──
+async function secSesLoad(soft) {
+  var seq = ++_sec.sesSeq;
+  if (!soft) _sec.ses = null;
+  _sec.sesErr = null;
+  try {
+    var l = ensureArray(await wsCall('auth.sessions', [[['internal', '=', false]], {}], 60000));
+    if (seq !== _sec.sesSeq) return;
+    _sec.ses = l.sort(function(a, b) { return (b.current === true) - (a.current === true) || ((secDate(b.created_at) || 0) - (secDate(a.created_at) || 0)); });
+  } catch (e) { if (seq !== _sec.sesSeq) return; _sec.ses = null; _sec.sesErr = e; }
+  secDraw('sessions', soft);
+}
+function secSesView(soft) {
+  var list = _sec.ses, n = list ? list.length : 0, others = list ? list.filter(function(s) { return !s.current; }).length : 0;
+  wmHead('us', T('Sessions ouvertes'), { keepScroll: soft, sub: list ? webEsc(n > 1 ? Tf('{0} connexions au NAS en ce moment', n) : T('1 connexion au NAS en ce moment')) : '',
+    actions: '<button class="fs-btn" onclick="secSesLoad()">' + T('Actualiser') + '</button>' + (others ? '<button class="web-open" onclick="secSesCloseOthers()">' + T('Fermer les autres') + '</button>' : '') });
+  if (_sec.sesErr) { wmFail('us', T('Les sessions ne répondent pas'), _sec.sesErr, 'secSesLoad()'); return; }
+  if (!list) { wmLoading('us'); return; }
+  var h = '<div class="web-table sec-ses"><div class="web-tr head"><span>' + T('Compte') + '</span><span>' + T('Adresse') + '</span><span>' + T('Ouverte le') + '</span><span></span></div>';
+  list.forEach(function(s, i) {
+    var d = secCredData(s), how = secCredLabel(s.credentials) + (d.api_key && d.api_key.name ? ' « ' + d.api_key.name + ' »' : '');
+    h += '<div class="web-tr"><span class="cron-two"><strong>' + webEsc(d.username || '—') + '</strong><span class="dim">' + webEsc(how) + '</span></span>'
+      + '<span class="cron-two"><span class="mono">' + webEsc(secOrigin(s.origin) || '—') + '</span>' + (s.secure_transport === false ? '<span class="dim">' + T('connexion non chiffrée') + '</span>' : '') + '</span>'
+      + '<span class="dim">' + webEsc(secWhen(s.created_at)) + '</span>'
+      + '<span class="sec-act">' + (s.current ? '<span class="apps-up">' + T('Cette session') + '</span>' : '<button class="web-mini" data-ses="' + i + '">' + T('Fermer') + '</button>') + '</span></div>';
+  });
+  var el = wmBody('us');
+  el.innerHTML = h + '</div><p class="web-note">' + T('Un appareil qui a gardé ses identifiants se reconnecte tout seul. Pour lui retirer l\'accès, changez le mot de passe du compte ou supprimez sa clé d\'API.') + '</p>';
+  el.querySelectorAll('[data-ses]').forEach(function(b) { b.onclick = function() { secSesClose(list[Number(b.dataset.ses)]); }; });
+}
+async function secSesClose(s) {
+  if (!s) return;
+  var who = secCredData(s).username || secOrigin(s.origin) || '';
+  if (!await showConfirm(T('Fermer la session de <strong>') + webEsc(who) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">'
+    + webEsc(Tf('Ouverte depuis {0}, le {1}.', secOrigin(s.origin) || '—', secWhen(s.created_at))) + '</span>', { ok: T('Fermer la session') })) return;
+  try { await wsCall('auth.terminate_session', [String(s.id)], 60000); toast(T('Session fermée')); }
+  catch (e) { wmToastErr(e); }
+  secSesLoad(true);
+}
+async function secSesCloseOthers() {
+  if (!await showConfirm(T('Fermer toutes les autres sessions ?') + '<br><span style="font-size:12px;color:var(--text-dim);">'
+    + T('Les autres onglets et appareils connectés au NAS devront se reconnecter. Votre session reste ouverte.') + '</span>', { ok: T('Fermer les autres') })) return;
+  try { await wsCall('auth.terminate_other_sessions', [], 60000); toast(T('Autres sessions fermées')); }
+  catch (e) { wmToastErr(e); }
+  secSesLoad(true);
+}
+
+// ── Journal d'audit ──
+async function secAudLoad(reset) {
+  var a = _sec.aud, seq = ++a.seq;
+  if (reset) { a.list = null; a.err = null; a.more = false; }
+  a.busy = true;
+  if (!reset) secDraw('audit', true);
+  var filters = a.kind === 'login' ? [['event', '=', 'AUTHENTICATION']] : a.kind === 'act' ? [['event', '=', 'METHOD_CALL']] : a.kind === 'fail' ? [['success', '=', false]] : [];
+  try {
+    var l = ensureArray(await wsCall('audit.query', [{ services: ['MIDDLEWARE'], 'query-filters': filters,
+      'query-options': { order_by: ['-message_timestamp'], limit: 101, offset: reset || !a.list ? 0 : a.list.length } }], 120000));
+    if (seq !== a.seq) return;
+    a.more = l.length > 100;
+    l = l.slice(0, 100);
+    a.list = reset || !a.list ? l : a.list.concat(l);
+  } catch (e) {
+    if (seq !== a.seq) return;
+    if (reset || !a.list) { a.list = null; a.err = e; } else wmToastErr(e);
+  }
+  a.busy = false;
+  secDraw('audit', !reset);
+}
+function secAudKind(k) { if (_sec.aud.kind === k && _sec.aud.list) return; _sec.aud.kind = k; secAudLoad(true); secDraw('audit'); }
+function secAudWhat(e) {
+  var d = e.event_data || {};
+  if (e.event === 'AUTHENTICATION') {
+    var c = (d.credentials && d.credentials.type) || '';
+    return { name: e.success === false ? T('Connexion refusée') : T('Connexion'), more: [secCredLabel(c), e.success === false && d.error ? String(d.error) : ''].filter(Boolean).join(', '), mono: false };
+  }
+  if (e.event === 'METHOD_CALL') return { name: String(d.description || d.method || T('Action')), more: d.description && d.method ? String(d.method) : '', mono: true };
+  return { name: String(e.event || '—'), more: '', mono: false };
+}
+function secAudView(soft) {
+  var a = _sec.aud, list = a.list;
+  wmHead('us', T('Journal d\'audit'), { keepScroll: soft, sub: T('Qui s\'est connecté au NAS et ce qui y a été changé, du plus récent au plus ancien.'),
+    actions: '<button class="fs-btn" onclick="secAudLoad(true);secDraw(\'audit\')">' + T('Actualiser') + '</button>' });
+  var kinds = [['all', T('Tout')], ['login', T('Connexions')], ['act', T('Changements')], ['fail', T('Échecs')]];
+  var h = '<div class="sec-filter" role="tablist">' + kinds.map(function(k) {
+    return '<button class="web-tab' + (a.kind === k[0] ? ' active' : '') + '" role="tab" aria-selected="' + (a.kind === k[0]) + '" onclick="secAudKind(\'' + k[0] + '\')">' + k[1] + '</button>'; }).join('') + '</div>';
+  var el = wmBody('us');
+  if (a.err) { wmFail('us', T('Le journal d\'audit ne répond pas'), a.err, 'secAudLoad(true)'); return; }
+  if (!list) { el.innerHTML = h + '<div class="fs-loading" style="height:160px;"><div class="spinner"></div> ' + T('Chargement...') + '</div>'; return; }
+  if (!list.length) {
+    el.innerHTML = h + '<div class="fs-empty">' + webIcon('list') + '<div class="fs-empty-title">' + T('Aucun événement') + '</div><div>' + T('Rien ne correspond à ce filtre dans le journal gardé par le NAS.') + '</div></div>';
+    return;
+  }
+  h += '<div class="web-table sec-aud"><div class="web-tr head"><span>' + T('Quand') + '</span><span>' + T('Qui') + '</span><span>' + T('Quoi') + '</span><span>' + T('Résultat') + '</span></div>';
+  list.forEach(function(e) {
+    var w = secAudWhat(e), ok = e.success !== false;
+    h += '<div class="web-tr"><span class="dim">' + webEsc(secWhen(e.message_timestamp || e.timestamp)) + '</span>'
+      + '<span class="cron-two"><strong>' + webEsc(e.username || '—') + '</strong><span class="dim mono">' + webEsc(e.address || '') + '</span></span>'
+      + '<span class="cron-two"><span>' + webEsc(w.name) + '</span>' + (w.more ? '<span class="dim' + (w.mono ? ' mono' : '') + '">' + webEsc(w.more) + '</span>' : '') + '</span>'
+      + '<span class="apps-state"><span class="web-dot' + (ok ? '' : ' bad') + '"></span>' + (ok ? T('Réussi') : T('Échec')) + '</span></div>';
+  });
+  h += '</div>' + (a.more ? '<div class="web-foot" style="justify-content:center;margin-top:14px;"><button class="fs-btn" onclick="secAudLoad(false)"' + (a.busy ? ' disabled' : '') + '>' + (a.busy ? T('Chargement...') : T('Voir les événements plus anciens')) + '</button></div>' : '');
+  el.innerHTML = h;
+}
+
+// ── Clés d'API ──
+async function secKeysLoad(soft) {
+  var seq = ++_sec.keysSeq;
+  if (!soft) _sec.keys = null;
+  _sec.keysErr = null;
+  var r = await Promise.allSettled([wsCall('api_key.query', [[], {}], 60000), wsCall('auth.sessions', [[['current', '=', true]], {}], 60000)]);
+  if (seq !== _sec.keysSeq) return;
+  if (r[0].status === 'fulfilled') {
+    _sec.keys = ensureArray(r[0].value).sort(function(a, b) { return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }); });
+    var cur = r[1].status === 'fulfilled' ? ensureArray(r[1].value)[0] : null, d = cur ? secCredData(cur) : {};
+    _sec.curKey = d.api_key && d.api_key.id != null ? d.api_key.id : null;
+  } else { _sec.keys = null; _sec.keysErr = r[0].reason; }
+  secDraw('keys', soft);
+}
+function secKeyState(k) {
+  var exp = secDate(k.expires_at);
+  if (k.revoked) return { label: T('Révoquée'), dot: 'bad' };
+  if (exp && exp.getTime() < Date.now()) return { label: T('Expirée'), dot: 'bad' };
+  return { label: exp ? Tf('Expire le {0}', secDay(k.expires_at)) : T('Sans date de fin'), dot: '' };
+}
+function secKeysView(soft) {
+  var list = _sec.keys, nk = _sec.newKey;
+  wmHead('us', T('Clés d\'API'), { keepScroll: soft, sub: T('Elles ouvrent le NAS à un programme sans lui donner de mot de passe.'),
+    actions: '<button class="fs-btn" onclick="secKeysLoad()">' + T('Actualiser') + '</button><button class="web-open" onclick="usGo(\'newkey\')">' + T('Nouvelle clé') + '</button>' });
+  if (_sec.keysErr) { wmFail('us', T('Les clés d\'API ne répondent pas'), _sec.keysErr, 'secKeysLoad()'); return; }
+  if (!list) { wmLoading('us'); return; }
+  var el = wmBody('us'), h = '';
+  if (nk) h += '<div class="sec-newkey"><strong>' + webEsc(Tf('Clé « {0} » créée', nk.name)) + '</strong><span>' + T('Copiez-la maintenant : elle ne sera plus jamais affichée, ni ici ni dans TrueNAS.') + '</span>'
+    + '<div class="wm-inline"><input class="wm-input mono" id="sec-newkey" readonly value="' + webEsc(nk.key) + '" aria-label="' + webEsc(T('Clé d\'API')) + '" onfocus="this.select()">'
+    + '<button class="fs-btn" onclick="secKeyCopy()">' + T('Copier') + '</button><button class="fs-btn" onclick="_sec.newKey=null;secDraw(\'keys\',true)">' + T('C\'est noté') + '</button></div></div>';
+  if (!list.length) {
+    el.innerHTML = h + '<div class="fs-empty">' + webIcon('key') + '<div class="fs-empty-title">' + T('Aucune clé d\'API') + '</div><div>' + T('Créez-en une pour un script, une application ou pour vous connecter à Desktroo sans mot de passe.') + '</div><button class="web-open" onclick="usGo(\'newkey\')">' + T('Nouvelle clé') + '</button></div>';
+    return;
+  }
+  h += '<div class="web-table sec-keys"><div class="web-tr head"><span>' + T('Nom') + '</span><span>' + T('Compte') + '</span><span>' + T('Créée le') + '</span><span>' + T('État') + '</span><span></span></div>';
+  list.forEach(function(k, i) {
+    var st = secKeyState(k), mine = _sec.curKey != null && k.id === _sec.curKey;
+    h += '<div class="web-tr"><span class="cron-two"><strong>' + webEsc(k.name || '—') + '</strong>' + (mine ? '<span class="apps-up">' + T('utilisée par cette session') + '</span>' : '') + '</span>'
+      + '<span>' + webEsc(k.username || '—') + '</span><span class="dim">' + webEsc(secDay(k.created_at)) + '</span>'
+      + '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>'
+      + '<span class="sec-act"><button class="web-mini" data-key="' + i + '"' + (_sec.keyBusy ? ' disabled' : '') + '>' + T('Supprimer') + '</button></span></div>';
+  });
+  el.innerHTML = h + '</div>';
+  el.querySelectorAll('[data-key]').forEach(function(b) { b.onclick = function() { secKeyDelete(list[Number(b.dataset.key)]); }; });
+}
+function secKeyCopy() {
+  var i = document.getElementById('sec-newkey');
+  if (!i) return;
+  var done = function() { toast(T('Clé copiée')); }, manual = function() { try { i.focus(); i.select(); document.execCommand('copy'); done(); } catch (_) { toast(T('Sélectionnez la clé et copiez-la à la main.'), 7000); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(i.value).then(done, manual); else manual();
+}
+function secKeyUsers() {
+  var l = _us.users.filter(function(u) { return ensureArray(u.roles).length && !u.locked; });
+  if (!l.length) l = _us.users.filter(function(u) { return u.builtin !== true || u.username === 'root' || u.username === 'truenas_admin'; });
+  return l;
+}
+function secKeyForm() {
+  var users = secKeyUsers(), me = String(currentUser || '');
+  wmHead('us', T('Nouvelle clé d\'API'), { back: [T('Clés d\'API'), 'usGo(\'keys\')'], narrow: true });
+  wmBody('us').innerHTML = '<div class="wm-form">'
+    + wmField(T('Nom de la clé'), wmInput('sec-kname', '', 'maxlength="200" onkeydown="if(event.key===\'Enter\')secKeyCreate()"'), T('Pour vous souvenir de ce qui s\'en sert : « Sauvegarde du portable », « Desktroo »…'))
+    + wmField(T('Compte'), '<select class="wm-input" id="sec-kuser">' + users.map(function(u) { return '<option value="' + webEsc(u.username) + '"' + (u.username === me ? ' selected' : '') + '>' + webEsc(u.username) + '</option>'; }).join('') + '</select>',
+        T('La clé a exactement les droits de ce compte. Seuls les comptes administrateurs peuvent en avoir une.'))
+    + wmField(T('Durée de validité'), '<select class="wm-input" id="sec-kexp"><option value="0">' + T('Sans date de fin') + '</option><option value="30">' + T('30 jours') + '</option><option value="90">' + T('90 jours') + '</option><option value="365">' + T('365 jours') + '</option></select>')
+    + '<div class="web-foot"><button class="fs-btn" onclick="usGo(\'keys\')">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="sec-ksave" onclick="secKeyCreate()">' + T('Créer la clé') + '</button></div></div>';
+  try { document.getElementById('sec-kname').focus(); } catch (_) {}
+}
+async function secKeyCreate() {
+  var name = wmVal('sec-kname'), user = wmVal('sec-kuser'), days = Number(wmVal('sec-kexp')) || 0, btn = document.getElementById('sec-ksave');
+  if (!name) { toast(T('Donnez un nom à la clé.')); return; }
+  if (!user) { toast(T('Choisissez le compte de la clé.')); return; }
+  if (btn) btn.disabled = true;
+  try {
+    var body = { name: name, username: user };
+    if (days) body.expires_at = { $date: Date.now() + days * 86400000 };
+    var r = await wsCall('api_key.create', [body], 120000);
+    if (!r || !r.key) throw new Error(T('TrueNAS a créé la clé sans la rendre : supprimez-la et recommencez.'));
+    _sec.newKey = { name: name, key: String(r.key) };
+    _us.nav = 'keys';
+    await secKeysLoad();
+  } catch (e) { wmToastErr(e); if (btn) btn.disabled = false; }
+}
+async function secKeyDelete(k) {
+  if (!k || _sec.keyBusy) return;
+  if (_sec.curKey != null && k.id === _sec.curKey) { toast(T('Cette clé est celle de votre session : supprimez-la depuis une session ouverte autrement.'), 9000); return; }
+  if (!await showConfirm(T('Supprimer la clé <strong>') + webEsc(k.name || '') + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">'
+    + T('Tout ce qui s\'en sert perd aussitôt l\'accès au NAS.') + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  _sec.keyBusy = true; secDraw('keys', true);
+  try { await wsCall('api_key.delete', [k.id], 120000); toast(T('Clé supprimée')); }
+  catch (e) { wmToastErr(e); }
+  _sec.keyBusy = false;
+  secKeysLoad(true);
+}
+
+// ── Double authentification : l'état, sans l'activer d'ici ──
+async function secTfaLoad(soft) {
+  var seq = ++_sec.tfaSeq;
+  if (!soft) _sec.tfa = null;
+  _sec.tfaErr = null;
+  try { var c = await wsCall('auth.twofactor.config', [], 60000); if (seq !== _sec.tfaSeq) return; _sec.tfa = c && typeof c === 'object' ? c : {}; }
+  catch (e) { if (seq !== _sec.tfaSeq) return; _sec.tfa = null; _sec.tfaErr = e; }
+  secDraw('tfa', soft);
+}
+function secTfaView(soft) {
+  var c = _sec.tfa;
+  wmHead('us', T('Double authentification'), { keepScroll: soft, narrow: true, sub: T('Un code à six chiffres, donné par une application du téléphone, en plus du mot de passe.'),
+    actions: '<button class="fs-btn" onclick="secTfaLoad()">' + T('Actualiser') + '</button>' });
+  if (_sec.tfaErr) { wmFail('us', T('TrueNAS ne donne pas ce réglage'), _sec.tfaErr, 'secTfaLoad()'); return; }
+  if (!c) { wmLoading('us'); return; }
+  var who = _us.users.filter(function(u) { return u.twofactor_auth_configured === true; });
+  var h = netFacts([
+    [T('État'), '<span class="apps-state"><span class="web-dot' + (c.enabled ? '' : ' off') + '"></span>' + (c.enabled ? T('Activée sur ce NAS') : T('Désactivée sur ce NAS')) + '</span>'],
+    [T('Connexions SSH'), c.enabled ? ((c.services || {}).ssh ? T('Code demandé aussi') : T('Sans code')) : ''],
+    [T('Comptes avec un code'), who.length ? who.map(function(u) { return webEsc(u.username); }).join(', ') : '<span class="dim">' + T('Aucun') + '</span>']
+  ]);
+  h += '<p class="web-note" style="margin-top:16px;">' + T('Elle s\'active dans l\'interface d\'origine de TrueNAS, où chaque compte associe son téléphone.') + '</p>'
+    + '<div class="snap-warn" style="margin-top:12px;">' + T('Desktroo ne demande pas encore ce code à la connexion. Un compte protégé par un code se connecte à Desktroo avec une clé d\'API : créez-la avant d\'activer la double authentification.')
+    + '</div><div class="web-foot" style="justify-content:flex-start;margin-top:16px;"><button class="fs-btn" onclick="usGo(\'keys\')">' + T('Clés d\'API') + '</button>'
+    + '<button class="web-open" onclick="openTrueNASPage(\'/ui/credentials/two-factor\')">' + T('Régler dans TrueNAS') + '</button></div>';
+  wmBody('us').innerHTML = h;
+}
+
 function usGroupName(g) { return String((g && (g.group || g.name)) || ''); }
 function usUser(id) { return _us.users.find(function(u) { return u.id === id; }) || null; }
 function usGroup(id) { return _us.groups.find(function(g) { return g.id === id; }) || null; }
@@ -16086,7 +16813,7 @@ function usPrimary(u) { var g = u && u.group; return g ? String(g.bsdgrp_group |
 function usGroupsOf(u) { return ensureArray(u && u.groups).map(usGroup).filter(Boolean); }
 function usMembers(g) { return _us.users.filter(function(u) { return ensureArray(u.groups).indexOf(g.id) >= 0 || (u.group && u.group.id === g.id); }); }
 function usState(u) { return u.locked ? { label: T('Verrouillé'), dot: 'off' } : { label: T('Actif'), dot: '' }; }
-function usGo(nav, id) { _us.nav = nav; _us.sel = id == null ? null : id; usRender(); }
+function usGo(nav, id) { _us.nav = nav; _us.sel = id == null ? null : id; if (nav !== 'keys') _sec.newKey = null; if (SEC_NAVS.indexOf(nav) >= 0) secEnter(nav); usRender(); }
 async function loadUsers(soft) {
   if (!wmBody('us')) return;
   var seq = ++_us.seq;
@@ -16098,6 +16825,7 @@ async function loadUsers(soft) {
     _us.users = ensureArray(r[0]).filter(function(u) { return u && u.username; }).sort(by(function(u) { return u.username; }));
     _us.groups = ensureArray(r[1]).filter(function(g) { return g && usGroupName(g); }).sort(by(usGroupName));
     _us.loaded = true;
+    if (soft !== true && SEC_NAVS.indexOf(_us.nav) >= 0) secEnter(_us.nav);
     if (!_us.shells) wsCall('user.shell_choices', []).then(function(c) { if (c && typeof c === 'object') _us.shells = c; }, function() {});
     if ((_us.nav === 'user' || _us.nav === 'edituser' || _us.nav === 'pwd') && !usUser(_us.sel)) usGo('users'); else if ((_us.nav === 'group') && !usGroup(_us.sel)) usGo('groups'); else usRender(soft === true);
   } catch (e) {
@@ -16112,7 +16840,8 @@ function usSide() {
   var inUsers = ['users', 'user', 'edituser', 'newuser', 'pwd'].indexOf(_us.nav) >= 0, inGroups = ['groups', 'group', 'newgroup'].indexOf(_us.nav) >= 0;
   var h = wmNav({ active: inUsers, call: 'usGo(\'users\')', icon: 'user', name: T('Utilisateurs'), count: people.length || null })
     + wmNav({ active: inGroups, call: 'usGo(\'groups\')', icon: 'users', name: T('Groupes'), count: teams.length || null })
-    + wmNav({ active: _us.nav === 'system', call: 'usGo(\'system\')', icon: 'settings', name: T('Comptes du système'), count: sys || null });
+    + wmNav({ active: _us.nav === 'system', call: 'usGo(\'system\')', icon: 'settings', name: T('Comptes du système'), count: sys || null })
+    + secSideNav();
   if (people.length) {
     h += wmSep() + wmSideTitle(T('Utilisateurs'));
     people.forEach(function(u) { h += wmNav({ active: inUsers && _us.sel === u.id, call: 'usGo(\'user\',' + Number(u.id) + ')', dot: usState(u).dot, name: u.username, meta: u.full_name && u.full_name !== u.username ? u.full_name : usState(u).label }); });
@@ -16134,6 +16863,11 @@ function usRender(soft) {
   else if (n === 'group' && usGroup(_us.sel)) usGroupView(soft);
   else if (n === 'newgroup') usGroupForm();
   else if (n === 'system') usSystemView(soft);
+  else if (n === 'sessions') secSesView(soft);
+  else if (n === 'audit') secAudView(soft);
+  else if (n === 'keys') secKeysView(soft);
+  else if (n === 'newkey') secKeyForm();
+  else if (n === 'tfa') secTfaView(soft);
   else { _us.nav = 'users'; usUsersView(soft); }
 }
 function usUsersView(soft) {
@@ -18431,6 +19165,240 @@ async function loadDataprotect(soft) {
   _dp.loaded = true;
   dpRender(soft === true);
 }
+// ============================================================
+// PROTECTION DES DONNÉES — créer une réplication ou une sauvegarde cloud
+// Deux formulaires courts, qui ne posent que les questions utiles. Une réplication s'appuie sur des snapshots
+// planifiés : s'il n'y en a pas pour le dataset choisi, la tâche de snapshots est créée avec elle (et retirée si
+// la réplication est refusée). Les comptes (connexion SSH vers un autre NAS, compte cloud) se créent dans
+// TrueNAS : Desktroo ne manipule pas leurs secrets.
+// ============================================================
+var _dpn = { kind: '', loading: false, err: null, seq: 0, busy: false, ds: [], tasks: [], ssh: [], remote: {}, creds: [], prov: {}, buckets: {}, f: {} };
+var DPN_DAYS = function() { return [['1', T('lundi')], ['2', T('mardi')], ['3', T('mercredi')], ['4', T('jeudi')], ['5', T('vendredi')], ['6', T('samedi')], ['7', T('dimanche')]]; };
+function dpnOpen(kind) {
+  var seq = ++_dpn.seq;
+  _dpn.kind = kind; _dpn.loading = true; _dpn.err = null; _dpn.busy = false; _dpn.f = {};
+  _dp.nav = kind + ':new'; _dp.sel = null;
+  dpRender();
+  var calls = kind === 'repl'
+    ? [wsCall('pool.dataset.query', [[], {}], 60000), wsCall('pool.snapshottask.query', [[], {}], 60000), wsCall('keychaincredential.query', [[['type', '=', 'SSH_CREDENTIALS']], {}], 60000)]
+    : [wsCall('cloudsync.credentials.query', [[], {}], 60000), wsCall('cloudsync.providers', [], 60000)];
+  Promise.allSettled(calls).then(function(r) {
+    if (seq !== _dpn.seq) return;
+    _dpn.loading = false;
+    if (r[0].status !== 'fulfilled') _dpn.err = r[0].reason;
+    else if (kind === 'repl') {
+      _dpn.ds = _snapFlattenDs(ensureArray(r[0].value), []).filter(function(v, i, a) { return v && a.indexOf(v) === i; }).sort();
+      _dpn.tasks = r[1].status === 'fulfilled' ? ensureArray(r[1].value) : [];
+      _dpn.ssh = r[2].status === 'fulfilled' ? ensureArray(r[2].value) : [];
+    } else {
+      _dpn.creds = ensureArray(r[0].value);
+      _dpn.prov = {};
+      if (r[1].status === 'fulfilled') ensureArray(r[1].value).forEach(function(p) { if (p && p.name) _dpn.prov[p.name] = p; });
+    }
+    if (_dp.nav === kind + ':new') dpRender();
+  });
+}
+function dpnPools() { return _dpn.ds.filter(function(d) { return d.indexOf('/') < 0; }); }
+function dpnGet(id, d) { var e = document.getElementById(id); return e ? (e.type === 'checkbox' ? e.checked : String(e.value || '').trim()) : d; }
+// Ce qui est saisi est repris avant chaque redessin (changer la source ou le compte redessine le formulaire).
+function dpnRead() {
+  var f = _dpn.f, k = _dpn.kind === 'repl' ? ['rp-name', 'rp-src', 'rp-rec', 'rp-where', 'rp-dst', 'rp-keep', 'rp-lifeval', 'rp-lifeunit'] : ['cs-desc', 'cs-cred', 'cs-path', 'cs-bucket', 'cs-folder', 'cs-dir', 'cs-mode'];
+  k.concat(['dn-freq', 'dn-time', 'dn-dow']).forEach(function(id) { var v = dpnGet(id, undefined); if (v !== undefined) f[id] = v; });
+  return f;
+}
+function dpnChange() { dpnRead(); dpRender(true); }
+function dpnSel(id, opts, val, attrs) {
+  return '<select class="wm-input" id="' + id + '" ' + (attrs || '') + '>' + opts.map(function(o) { return '<option value="' + webEsc(o[0]) + '"' + (String(val) === String(o[0]) ? ' selected' : '') + '>' + webEsc(o[1]) + '</option>'; }).join('') + '</select>';
+}
+function dpnWhenFields(hint) {
+  var f = _dpn.f, freq = f['dn-freq'] || 'day';
+  return wmField(T('Fréquence'), '<span class="dpn-when">' + dpnSel('dn-freq', [['hour', T('Toutes les heures')], ['day', T('Chaque jour')], ['week', T('Chaque semaine')]], freq, 'onchange="dpnChange()"')
+    + (freq === 'week' ? dpnSel('dn-dow', DPN_DAYS(), f['dn-dow'] || '7', 'aria-label="' + webEsc(T('Jour de la semaine')) + '"') : '')
+    + (freq === 'hour' ? '' : '<input class="wm-input" id="dn-time" type="time" value="' + webEsc(f['dn-time'] || '02:00') + '" aria-label="' + webEsc(T('Heure')) + '">') + '</span>', hint);
+}
+function dpnSchedule() {
+  var freq = dpnGet('dn-freq', 'day'), t = /^(\d{1,2}):(\d{2})$/.exec(dpnGet('dn-time', '02:00')) || [0, '2', '00'];
+  if (freq === 'hour') return { minute: '0', hour: '*', dom: '*', month: '*', dow: '*' };
+  return { minute: String(Number(t[2])), hour: String(Number(t[1])), dom: '*', month: '*', dow: freq === 'week' ? dpnGet('dn-dow', '7') : '*' };
+}
+function dpnHead(f, title) { wmHead('dp', title, { back: [f.label, 'dpGo(\'' + f.key + '\')'], narrow: true, keepScroll: true }); }
+function dpNewView(f, soft) {
+  var title = f.key === 'repl' ? T('Nouvelle réplication') : T('Nouvelle sauvegarde cloud');
+  dpnHead(f, title);
+  if (_dpn.kind !== f.key) { dpnOpen(f.key); return; }
+  if (_dpn.loading) { wmLoading('dp'); return; }
+  if (_dpn.err) { wmFail('dp', T('TrueNAS ne donne pas de quoi préparer la tâche'), _dpn.err, 'dpnOpen(\'' + f.key + '\')'); return; }
+  var sc = wmBody('dp').scrollTop;
+  if (soft && document.getElementById('dpn-save')) dpnRead();
+  if (f.key === 'repl') dpnReplForm(f); else dpnCloudForm(f);
+  if (soft) wmBody('dp').scrollTop = sc;
+}
+
+// ── Réplication ──
+function dpnSshId(where) { var m = /^ssh:(\d+)$/.exec(where || ''); return m ? Number(m[1]) : null; }
+function dpnSnapTask(src, rec) {
+  return _dpn.tasks.find(function(t) { return t.enabled !== false && (!rec || t.recursive) && (t.dataset === src || (t.recursive && src.indexOf(t.dataset + '/') === 0)) && ensureArray(t.exclude).indexOf(src) < 0; }) || null;
+}
+function dpnDefaultDst(src, where) {
+  if (!src || where !== 'local') return '';
+  var pool = src.split('/')[0], other = dpnPools().filter(function(p) { return p !== pool; })[0] || pool;
+  return other + '/copies/' + src.replace(/\//g, '-');
+}
+function dpnDstHintHtml(src, where, dst) {
+  var same = where === 'local' && dst && String(dst).replace(/^\/+/, '').split('/')[0] === String(src).split('/')[0];
+  return same ? '<span style="color:#fbbf24;">' + T('Même pool que la source : cette copie ne protège pas d\'une panne des disques.') + '</span>' : T('Il est créé s\'il n\'existe pas. Ne choisissez pas un dataset déjà utilisé pour autre chose.');
+}
+function dpnDstHint() { var h = document.getElementById('rp-dst-hint'); if (h) h.innerHTML = dpnDstHintHtml(dpnGet('rp-src', ''), dpnGet('rp-where', 'local'), dpnGet('rp-dst', '')); }
+function dpnReplForm(fam) {
+  var f = _dpn.f, el = wmBody('dp');
+  if (!_dpn.ds.length) { el.innerHTML = '<div class="fs-empty">' + webIcon('refresh') + '<div class="fs-empty-title">' + T('Aucun dataset à copier') + '</div><div>' + T('Créez d\'abord un pool et un dataset dans Stockage.') + '</div></div>'; return; }
+  var src = f['rp-src'] && _dpn.ds.indexOf(f['rp-src']) >= 0 ? f['rp-src'] : (_dpn.ds.filter(function(d) { return d.indexOf('/') > 0; })[0] || _dpn.ds[0]);
+  var where = f['rp-where'] || 'local', sshId = dpnSshId(where), rec = f['rp-rec'] !== false;
+  if (sshId != null && !_dpn.ssh.some(function(s) { return s.id === sshId; })) { where = 'local'; sshId = null; }
+  var autoDst = dpnDefaultDst(src, where);
+  if (f._auto === undefined || f['rp-dst'] === f._auto || f['rp-dst'] == null) f['rp-dst'] = autoDst;   // la proposition suit la source tant qu'on ne l'a pas corrigée
+  f._auto = autoDst;
+  var autoName = Tf('Copie de {0}', src);
+  if (f._autoName === undefined || f['rp-name'] === f._autoName || f['rp-name'] == null) f['rp-name'] = autoName;
+  f._autoName = autoName;
+  var task = dpnSnapTask(src, rec), remote = sshId != null ? ensureArray(_dpn.remote[sshId]) : [];
+  var h = '<div class="wm-form">'
+    + wmField(T('Dataset à copier'), dpnSel('rp-src', _dpn.ds.map(function(d) { return [d, d]; }), src, 'onchange="dpnChange()" style="font-family:var(--font-mono);"'))
+    + '<div class="web-group">' + wmSwitch('rp-rec', T('Avec ses sous-datasets'), T('Copie aussi tout ce que ce dataset contient'), rec, 'onchange="dpnChange()"') + '</div>'
+    + wmField(T('Où copier'), dpnSel('rp-where', [['local', T('Sur ce NAS, dans un autre pool')]].concat(_dpn.ssh.map(function(s) { return ['ssh:' + s.id, Tf('Sur un autre NAS : {0}', s.name || ('SSH ' + s.id))]; })), where, 'onchange="dpnChange()"'),
+        _dpn.ssh.length ? '' : T('Pour copier vers un autre NAS, créez d\'abord sa connexion SSH dans TrueNAS : Identifiants, puis Identifiants de sauvegarde.'))
+    + wmField(T('Dataset de destination'), wmInput('rp-dst', f['rp-dst'] || '', 'list="rp-dst-list" style="font-family:var(--font-mono);" placeholder="' + webEsc(where === 'local' ? 'pool/copies/documents' : T('pool/copies/documents, sur l\'autre NAS')) + '" oninput="dpnDstHint()"')
+        + '<datalist id="rp-dst-list">' + (where === 'local' ? dpnPools().map(function(p) { return p + '/'; }) : remote).map(function(d) { return '<option value="' + webEsc(d) + '">'; }).join('') + '</datalist>',
+        '<span id="rp-dst-hint">' + dpnDstHintHtml(src, where, f['rp-dst']) + '</span>')
+    + wmField(T('Nom de la tâche'), wmInput('rp-name', f['rp-name'] || '', 'maxlength="120"'));
+  if (task) h += '<div class="web-group-title">' + T('Snapshots') + '</div><p class="web-note" style="margin-top:0;">' + webEsc(Tf('Ce dataset a déjà des snapshots planifiés ({0}) : la copie part après chacun d\'eux.', cronHuman(task.schedule || {}))) + '</p>';
+  else h += '<div class="web-group-title">' + T('Snapshots') + '</div>'
+    + dpnWhenFields(T('Aucun snapshot n\'est planifié pour ce dataset : la tâche est créée en même temps, et la copie part après chaque snapshot.'))
+    + wmField(T('Garder les snapshots'), '<span class="dpn-when"><input class="wm-input" id="rp-lifeval" type="number" min="1" max="999" value="' + webEsc(f['rp-lifeval'] || '2') + '" aria-label="' + webEsc(T('Durée')) + '">'
+        + dpnSel('rp-lifeunit', SNAP_UNITS, f['rp-lifeunit'] || 'WEEK', 'aria-label="' + webEsc(T('Unité')) + '"') + '</span>');
+  h += wmField(T('Sur la destination'), dpnSel('rp-keep', [['SOURCE', T('Garder les mêmes snapshots que la source')], ['NONE', T('Tout garder, sans jamais rien effacer')]], f['rp-keep'] || 'SOURCE'),
+        T('« Tout garder » finit par remplir la destination : à réserver aux archives.'))
+    + '<div class="web-foot"><button class="fs-btn" onclick="dpGo(\'repl\')">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="dpn-save" onclick="dpnReplSave()"' + (_dpn.busy ? ' disabled' : '') + '>' + (_dpn.busy ? T('Création...') : T('Créer la réplication')) + '</button></div></div>';
+  el.innerHTML = h;
+  if (sshId != null && _dpn.remote[sshId] === undefined) {   // datasets de l'autre NAS, pour aider la saisie : sans gravité s'ils ne viennent pas
+    _dpn.remote[sshId] = null;
+    wsCall('replication.list_datasets', ['SSH', sshId], 60000).then(function(l) { _dpn.remote[sshId] = ensureArray(l).map(String); if (_dp.nav === 'repl:new') dpnChange(); }, function() {});
+  }
+}
+async function dpnReplSave() {
+  if (_dpn.busy) return;
+  var f = dpnRead(), src = f['rp-src'] || '', where = f['rp-where'] || 'local', sshId = dpnSshId(where), dst = (f['rp-dst'] || '').replace(/^\/+|\/+$/g, ''), name = f['rp-name'] || '', rec = f['rp-rec'] !== false;
+  if (!src) { toast(T('Choisissez le dataset à copier.')); return; }
+  if (!name) { toast(T('Donnez un nom à la tâche.')); return; }
+  if (!/^[^\/\s][^\/]*(\/[^\/]+)+$/.test(dst)) { toast('❌ ' + T('Destination attendue sous la forme pool/dataset, par exemple sauvegarde/copies/documents.'), 8000); return; }
+  if (where === 'local') {
+    if (dpnPools().indexOf(dst.split('/')[0]) < 0) { toast('❌ ' + Tf('Le pool « {0} » n\'existe pas sur ce NAS.', dst.split('/')[0]), 8000); return; }
+    if (dst === src || dst.indexOf(src + '/') === 0 || src.indexOf(dst + '/') === 0) { toast('❌ ' + T('La destination ne peut pas être la source, ni se trouver dedans ou autour.'), 8000); return; }
+  }
+  var task = dpnSnapTask(src, rec), life = Math.max(1, parseInt(f['rp-lifeval'], 10) || 2), made = null;
+  _dpn.busy = true; dpRender(true);
+  try {
+    if (!task) {
+      task = await wsCall('pool.snapshottask.create', [{ dataset: src, recursive: rec, lifetime_value: life, lifetime_unit: f['rp-lifeunit'] || 'WEEK', naming_schema: 'auto-%Y-%m-%d_%H-%M',
+        schedule: Object.assign(dpnSchedule(), { begin: '00:00', end: '23:59' }), allow_empty: true, enabled: true }], 120000);
+      if (!task || task.id == null) throw new Error(T('TrueNAS n\'a pas rendu la tâche de snapshots créée.'));
+      made = task.id;
+    }
+    var body = { name: name, direction: 'PUSH', transport: sshId != null ? 'SSH' : 'LOCAL', source_datasets: [src], target_dataset: dst, recursive: rec,
+      periodic_snapshot_tasks: [task.id], auto: true, retention_policy: f['rp-keep'] === 'NONE' ? 'NONE' : 'SOURCE', readonly: 'SET', enabled: true };
+    if (sshId != null) body.ssh_credentials = sshId;
+    var r;
+    try { r = await wsCall('replication.create', [body], 180000); }
+    catch (e) {
+      if (made != null) { try { await wsCall('pool.snapshottask.delete', [made], 60000); } catch (_) { toast(T('La tâche de snapshots créée pour l\'occasion est restée en place : retirez-la dans Snapshots ZFS si elle ne sert pas.'), 12000); } }
+      throw e;
+    }
+    toast('✅ ' + T('Réplication créée : la première copie partira après le prochain snapshot.'), 9000);
+    _dpn.busy = false; _dpn.kind = '';
+    _dp.nav = 'repl:one'; _dp.sel = r && r.id != null ? r.id : null;
+    if (_dp.sel == null) _dp.nav = 'repl';
+    await loadDataprotect();
+    return;
+  } catch (e) { wmToastErr(e); }
+  _dpn.busy = false;
+  if (_dp.nav === 'repl:new') dpRender(true);
+}
+
+// ── Sauvegarde cloud ──
+function dpnCredType(c) { var p = c && c.provider; return p && typeof p === 'object' ? String(p.type || '') : String(p || ''); }
+function dpnCred(id) { return _dpn.creds.find(function(c) { return String(c.id) === String(id); }) || null; }
+function dpnBucketsLoad(c) {
+  if (!c || _dpn.buckets[c.id] !== undefined) return;
+  _dpn.buckets[c.id] = null;
+  wsCall('cloudsync.list_buckets', [c.id], 90000).then(function(l) { _dpn.buckets[c.id] = ensureArray(l).map(function(b) { return String((b && (b.Name || b.Path || b.name)) || ''); }).filter(Boolean).sort(); },
+    function(e) { _dpn.buckets[c.id] = { err: wmErr(e) }; }).then(function() { if (_dp.nav === 'cloud:new') dpnChange(); });
+}
+function dpnPickPath() { fsPickFolder(dpnGet('cs-path', '') || '/mnt', function(path) { var e = document.getElementById('cs-path'); if (e) { e.value = path; _dpn.f['cs-path'] = path; } }); }
+function dpnCloudForm(fam) {
+  var f = _dpn.f, el = wmBody('dp');
+  if (!_dpn.creds.length) {
+    el.innerHTML = '<div class="fs-empty">' + webIcon('cloud') + '<div class="fs-empty-title">' + T('Aucun compte cloud enregistré') + '</div><div>'
+      + T('Le compte du stockage en ligne (S3, Backblaze, Google Drive…) se déclare une fois dans TrueNAS : Identifiants, puis Identifiants de sauvegarde. Revenez ensuite ici.') + '</div>'
+      + '<button class="web-open" onclick="openTrueNASPage(\'/ui/credentials/backup-credentials\')">' + T('Ouvrir dans TrueNAS') + '</button><button class="fs-btn" onclick="dpnOpen(\'cloud\')">' + T('Actualiser') + '</button></div>';
+    return;
+  }
+  var c = dpnCred(f['cs-cred']) || _dpn.creds[0], type = dpnCredType(c), prov = _dpn.prov[type] || null, hasBuckets = prov ? !!prov.buckets : false, bl = _dpn.buckets[c.id];
+  var dir = f['cs-dir'] || 'PUSH', mode = f['cs-mode'] || 'COPY';
+  var h = '<div class="wm-form">'
+    + wmField(T('Compte cloud'), dpnSel('cs-cred', _dpn.creds.map(function(x) { var t = dpnCredType(x), p = _dpn.prov[t]; return [x.id, (x.name || t) + (p && p.title ? ', ' + p.title : (t ? ', ' + t : ''))]; }), c.id, 'onchange="dpnChange()"'),
+        T('Les comptes se déclarent dans TrueNAS : Identifiants, puis Identifiants de sauvegarde.'))
+    + wmField(T('Dossier du NAS'), '<span class="wm-inline">' + wmInput('cs-path', f['cs-path'] || '', 'placeholder="/mnt/pool/documents" style="font-family:var(--font-mono);"') + '<button class="fs-btn" type="button" onclick="dpnPickPath()">' + T('Parcourir') + '</button></span>');
+  if (hasBuckets) {
+    var title = webEsc((prov && prov.bucket_title) || 'Bucket');
+    if (Array.isArray(bl) && bl.length) h += wmField(title, dpnSel('cs-bucket', bl.map(function(b) { return [b, b]; }), f['cs-bucket'] || bl[0]));
+    else h += wmField(title, wmInput('cs-bucket', f['cs-bucket'] || '', 'style="font-family:var(--font-mono);"'),
+      bl === null || bl === undefined ? T('Lecture de la liste chez le fournisseur...') : (bl.err ? webEsc(Tf('Liste illisible ({0}) : écrivez son nom.', bl.err.slice(0, 140))) : T('Aucun n\'existe encore : créez-le chez le fournisseur, puis écrivez son nom.')));
+  }
+  h += wmField(T('Dossier dans le cloud'), wmInput('cs-folder', f['cs-folder'] || '', 'placeholder="/nas/documents" style="font-family:var(--font-mono);"'), T('Laissez vide pour la racine.'))
+    + wmField(T('Sens'), dpnSel('cs-dir', [['PUSH', T('Envoyer le dossier du NAS vers le cloud')], ['PULL', T('Récupérer le dossier du cloud sur le NAS')]], dir, 'onchange="dpnChange()"'))
+    + wmField(T('Mode'), dpnSel('cs-mode', [['COPY', T('Copier : rien n\'est jamais effacé à l\'arrivée')], ['SYNC', T('Synchroniser : ce qui a disparu au départ est effacé à l\'arrivée')]], mode, 'onchange="dpnChange()"'),
+        mode === 'SYNC' ? '<span style="color:#fbbf24;">' + (dir === 'PULL' ? T('Attention : les fichiers du NAS absents du cloud seront effacés du NAS.') : T('Attention : un fichier effacé par erreur sur le NAS le sera aussi dans le cloud au passage suivant.')) + '</span>' : '')
+    + dpnWhenFields('')
+    + wmField(T('Nom de la tâche'), wmInput('cs-desc', f['cs-desc'] || '', 'maxlength="120" placeholder="' + webEsc(T('Documents vers le cloud')) + '"'))
+    + '<div class="web-foot"><button class="fs-btn" onclick="dpGo(\'cloud\')">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="dpn-save" onclick="dpnCloudSave()"' + (_dpn.busy ? ' disabled' : '') + '>' + (_dpn.busy ? T('Création...') : T('Créer la sauvegarde')) + '</button></div></div>';
+  el.innerHTML = h;
+  if (hasBuckets) dpnBucketsLoad(c);
+}
+async function dpnCloudSave() {
+  if (_dpn.busy) return;
+  var f = dpnRead(), c = dpnCred(f['cs-cred']) || _dpn.creds[0], prov = c ? _dpn.prov[dpnCredType(c)] : null, path = (f['cs-path'] || '').replace(/\/+$/, ''), folder = (f['cs-folder'] || '').trim();
+  if (!c) { toast(T('Choisissez un compte cloud.')); return; }
+  if (!/^\/mnt\/[^\/]+/.test(path)) { toast('❌ ' + T('Choisissez un dossier du NAS, sous /mnt.'), 7000); return; }
+  if (prov && prov.buckets && !f['cs-bucket']) { toast('❌ ' + Tf('Indiquez le {0}.', String(prov.bucket_title || 'bucket').toLowerCase()), 7000); return; }
+  if (folder && folder.charAt(0) !== '/') folder = '/' + folder;
+  var attrs = { folder: folder.replace(/\/+$/, '') };
+  if (prov && prov.buckets) attrs.bucket = f['cs-bucket'];
+  else if (!prov && f['cs-bucket']) attrs.bucket = f['cs-bucket'];
+  var body = { description: f['cs-desc'] || Tf('{0} vers {1}', path.split('/').pop(), c.name || dpnCredType(c)), path: path, credentials: c.id, attributes: attrs, schedule: dpnSchedule(),
+    direction: f['cs-dir'] === 'PULL' ? 'PULL' : 'PUSH', transfer_mode: f['cs-mode'] === 'SYNC' ? 'SYNC' : 'COPY', enabled: true };
+  _dpn.busy = true; dpRender(true);
+  try {
+    var r = await wsCall('cloudsync.create', [body], 180000);
+    toast('✅ ' + T('Sauvegarde cloud créée. Lancez-la une première fois pour vérifier que tout passe.'), 9000);
+    _dpn.busy = false; _dpn.kind = '';
+    _dp.nav = 'cloud:one'; _dp.sel = r && r.id != null ? r.id : null;
+    if (_dp.sel == null) _dp.nav = 'cloud';
+    await loadDataprotect();
+    return;
+  } catch (e) { wmToastErr(e); }
+  _dpn.busy = false;
+  if (_dp.nav === 'cloud:new') dpRender(true);
+}
+// Retirer une réplication ou une sauvegarde cloud : la tâche seulement, jamais ce qu'elle a déjà copié.
+async function dpDelete(key, id) {
+  var f = dpFam(key), t = dpTask(key, id);
+  if (!f || !t || (key !== 'repl' && key !== 'cloud')) return;
+  if (!await showConfirm(T('Supprimer la tâche <strong>') + webEsc(dpName(key, t)) + '</strong> ?<br><span style="font-size:12px;color:var(--text-dim);">'
+    + (key === 'repl' ? T('Les copies déjà faites restent sur la destination, et les snapshots planifiés continuent.') : T('Les fichiers déjà envoyés restent dans le cloud.')) + '</span>', { danger: true, ok: T('Supprimer') })) return;
+  try { await wsCall(f.api + '.delete', [t.id], 120000); toast('✅ ' + T('Tâche supprimée')); _dp.nav = key; _dp.sel = null; }
+  catch (e) { wmToastErr(e); }
+  loadDataprotect(true);
+}
 function dpFamNav() { return _dp.nav === 'all' ? null : String(_dp.nav).split(':')[0]; }
 function dpSide() {
   var cur = dpFamNav(), h = wmNav({ active: _dp.nav === 'all', call: 'dpGo(\'all\')', icon: 'shield', name: T('Vue d\'ensemble') }) + wmSep() + wmSideTitle(T('Tâches'));
@@ -18447,7 +19415,8 @@ function dpSide() {
 function dpRender(soft) {
   dpSide();
   var p = String(_dp.nav).split(':'), fam = dpFam(p[0]);
-  if (fam && p[1] === 'one' && dpTask(fam.key, _dp.sel)) dpOneView(fam, soft);
+  if (fam && p[1] === 'new' && (fam.key === 'repl' || fam.key === 'cloud')) dpNewView(fam, soft);
+  else if (fam && p[1] === 'one' && dpTask(fam.key, _dp.sel)) dpOneView(fam, soft);
   else if (fam) { _dp.nav = fam.key; dpFamView(fam, soft); }
   else { _dp.nav = 'all'; dpAllView(soft); }
 }
@@ -18501,11 +19470,12 @@ function dpAllView(soft) {
   wmBody('dp').innerHTML = h;
 }
 function dpFamView(f, soft) {
-  var l = dpList(f.key);
-  wmHead('dp', f.label, { keepScroll: soft, sub: webEsc(f.what), actions: '<button class="' + (l.length ? 'fs-btn' : 'web-open') + '" onclick="dpManage(\'' + f.key + '\')">' + dpManageLabel(f.key) + '</button>' });
+  var l = dpList(f.key), canNew = f.key === 'repl' || f.key === 'cloud', newBtn = canNew ? '<button class="web-open" onclick="dpnOpen(\'' + f.key + '\')">' + (f.key === 'repl' ? T('Nouvelle réplication') : T('Nouvelle sauvegarde cloud')) + '</button>' : '';
+  wmHead('dp', f.label, { keepScroll: soft, sub: webEsc(f.what), actions: canNew ? (l.length ? '<button class="fs-btn" onclick="dpManage(\'' + f.key + '\')">' + T('Régler dans TrueNAS') + '</button>' : '') + (_dp.err[f.key] ? '' : newBtn)
+    : '<button class="' + (l.length ? 'fs-btn' : 'web-open') + '" onclick="dpManage(\'' + f.key + '\')">' + dpManageLabel(f.key) + '</button>' });
   var el = wmBody('dp');
   if (_dp.err[f.key]) { el.innerHTML = '<div class="fs-empty">' + webIcon(f.icon) + '<div class="fs-empty-title">' + T('Non lu sur ce NAS') + '</div><div class="mono">' + webEsc(_dp.err[f.key]) + '</div></div>'; return; }
-  if (!l.length) { el.innerHTML = '<div class="fs-empty">' + webIcon(f.icon) + '<div class="fs-empty-title">' + webEsc(f.none) + '</div><div>' + webEsc(f.what) + '</div><button class="web-open" onclick="dpManage(\'' + f.key + '\')">' + dpManageLabel(f.key) + '</button></div>'; return; }
+  if (!l.length) { el.innerHTML = '<div class="fs-empty">' + webIcon(f.icon) + '<div class="fs-empty-title">' + webEsc(f.none) + '</div><div>' + webEsc(f.what) + '</div>' + (canNew ? newBtn : '<button class="web-open" onclick="dpManage(\'' + f.key + '\')">' + dpManageLabel(f.key) + '</button>') + '</div>'; return; }
   var h = '<div class="web-table dp-list"><div class="web-tr head"><span>' + T('Tâche') + '</span><span>' + T('Planification') + '</span><span>' + T('Dernière exécution') + '</span><span>' + T('Active') + '</span></div>';
   l.forEach(function(t) {
     var last = dpLast(f.key, t), busy = _dp.busy[f.key + ':' + t.id];
@@ -18535,7 +19505,8 @@ function dpOneView(f, soft) {
   var h = (last.key === 'bad' && last.error ? '<div class="snap-warn" style="margin:2px 0 14px;"><strong>' + T('Dernière erreur') + '</strong><span class="dim mono" style="display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;">' + webEsc(last.error.slice(0, 1200)) + '</span></div>' : '')
     + netFacts(facts) + '<div class="web-group-title">' + T('Réglages') + '</div><div class="web-group">'
     + wmSwitch('', T('Tâche active'), T('Suspendue, elle reste en place mais ne se lance plus toute seule'), on, 'onchange="dpToggle(\'' + f.key + '\',' + id + ',this.checked)"') + '</div>'
-    + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">' + wmRow('dpManage(\'' + f.key + '\')', T('Modifier la tâche'), webEsc(dpManageLabel(f.key))) + '</div>';
+    + '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">' + wmRow('dpManage(\'' + f.key + '\')', T('Modifier la tâche'), webEsc(f.key === 'repl' || f.key === 'cloud' ? T('Régler dans TrueNAS') : dpManageLabel(f.key)))
+    + (f.key === 'repl' || f.key === 'cloud' ? wmRow('dpDelete(\'' + f.key + '\',' + id + ')', T('Supprimer la tâche'), f.key === 'repl' ? T('Ce qui a déjà été copié reste sur la destination') : T('Ce qui a déjà été envoyé reste dans le cloud'), 'danger') : '') + '</div>';
   wmBody('dp').innerHTML = h;
 }
 async function dpToggle(key, id, on) {
@@ -20132,7 +21103,9 @@ async function loadNetWidget() {
     if (!data) data = nwParse(await rpFetch('interface', id, 'HOUR'));
     if (seq !== _nw.seq) return;
     if (side) side.textContent = id;
+    _nw.cur = id;
     nwRender(body, data);
+    nwLive();
   } catch (e) {
     if (seq !== _nw.seq) return;
     if (side) side.textContent = '';
