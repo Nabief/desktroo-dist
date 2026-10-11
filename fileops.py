@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.41.1'
+APP_VERSION = '2.42.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -4278,6 +4278,73 @@ def _ct_fresh_add(items):
     _access_write_json(CT_FRESH_FILE, cur)
     return _ct_fresh_get()
 # ── MDM-CT-FRESH-V1 (fin) ──────────────────────────────────────────
+
+
+# ── MDM-TN-UPLOAD-V1 : envoi d'un fichier à TrueNAS ────────────────────────
+# Certaines opérations de TrueNAS reçoivent un fichier (restaurer la configuration, mettre à jour par fichier). Elles
+# passent par son adresse /_upload, que le serveur web du bureau ne relaie pas. Le service fait le relais, sans rien
+# garder : le fichier traverse, de la requête du navigateur à TrueNAS. C'est TrueNAS qui décide si l'opération est
+# permise, d'après le jeton à usage unique que la session du bureau a obtenu de lui ; le service ne relaie que les
+# opérations de la liste ci-dessous.
+_TN_UPLOAD_MAX = {'config.upload': 12 * 1024 * 1024, 'update.file': 8 * 1024 ** 3}
+_TN_UPLOAD_TOKEN = re.compile(r'^[A-Za-z0-9_-]{16,256}$')
+
+
+def _truenas_upload(method, params, token, length, rfile, filename):
+    """Relaie « length » octets lus sur « rfile » vers TrueNAS. Rend (statut HTTP, réponse de TrueNAS)."""
+    import http.client
+    import ssl
+    import uuid
+    if method not in _TN_UPLOAD_MAX:
+        raise ValueError('opération non relayée')
+    if not _TN_UPLOAD_TOKEN.match(token or ''):
+        raise ValueError('jeton invalide')
+    if not isinstance(params, list):
+        raise ValueError('paramètres invalides')
+    if not isinstance(length, int) or length <= 0 or length > _TN_UPLOAD_MAX[method]:
+        raise ValueError('taille de fichier refusée')
+    boundary = 'dk' + uuid.uuid4().hex
+    safe = re.sub(r'[^A-Za-z0-9._-]', '_', filename or '')[:120] or 'fichier'
+    pre = ('--%s\r\nContent-Disposition: form-data; name="data"\r\nContent-Type: application/json\r\n\r\n%s\r\n'
+           '--%s\r\nContent-Disposition: form-data; name="file"; filename="%s"\r\n'
+           'Content-Type: application/octet-stream\r\n\r\n'
+           % (boundary, json.dumps({'method': method, 'params': params}), boundary, safe)).encode('utf-8')
+    post = ('\r\n--%s--\r\n' % boundary).encode('ascii')
+
+    def body():
+        yield pre
+        left = length
+        while left > 0:
+            chunk = rfile.read(min(1024 * 1024, left))
+            if not chunk:
+                raise IOError('envoi interrompu')
+            left -= len(chunk)
+            yield chunk
+        yield post
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False          # certificat auto-signé du NAS, comme pour la connexion
+    ctx.verify_mode = ssl.CERT_NONE
+    conn = http.client.HTTPSConnection(TRUENAS_API_HOST, timeout=900, context=ctx)
+    try:
+        conn.request('POST', '/_upload', body=body(), headers={
+            'Authorization': 'Token ' + token,
+            'Content-Type': 'multipart/form-data; boundary=' + boundary,
+            'Content-Length': str(len(pre) + length + len(post)),
+        })
+        resp = conn.getresponse()
+        raw = resp.read(65536).decode('utf-8', 'replace')
+        status = resp.status
+    finally:
+        conn.close()
+    try:
+        data = json.loads(raw)
+        if not isinstance(data, dict):
+            data = {'result': data}
+    except Exception:
+        data = {'error': raw.strip()[:500]}
+    return status, data
+# ── MDM-TN-UPLOAD-V1 (fin) ─────────────────────────────────────────
 
 
 def _npm_status():
@@ -8951,6 +9018,28 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return
 
         # MDM-WALLPAPERS-V1 : ajout d'une image (corps binaire, nom en paramètre)
+        # MDM-TN-UPLOAD-V1 : relayer un fichier vers TrueNAS (corps brut ; l'opération et le jeton sont en en-têtes)
+        if path == '/truenas/upload':
+            try:
+                from urllib.parse import unquote as _unq
+                n = int(self.headers.get('Content-Length', 0) or 0)
+                try:
+                    params = json.loads(_unq(self.headers.get('X-TN-Params', '') or '[]'))
+                except Exception:
+                    raise ValueError('paramètres invalides')
+                status, data = _truenas_upload(
+                    str(self.headers.get('X-TN-Method', '')), params, str(self.headers.get('X-TN-Token', '')),
+                    n, self.rfile, _unq(self.headers.get('X-File-Name', '') or ''))
+                if 200 <= status < 300:
+                    self._json(200, dict(data, ok=True))
+                else:
+                    self._json(502, {'error': data.get('error') or ('TrueNAS a répondu %d' % status), 'truenas_status': status})
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(502, {'error': 'TrueNAS injoignable pour cet envoi : %s' % e})
+            return
+
         if path == '/wallpapers/upload':
             tmp_path = None
             try:
