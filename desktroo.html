@@ -2335,6 +2335,36 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   }
   #widgets::-webkit-scrollbar { display:none; }
   #widgets > .widget { pointer-events:auto; flex-shrink:0; }
+  /* Deuxième zone de widgets, à gauche : mêmes règles que celle de droite, en miroir. Les icônes du bureau se décalent pour lui laisser la place. */
+  #widgets-l {
+    position:fixed; top:var(--wa-t); left:var(--wa-l); z-index:10; display:flex; flex-direction:column; gap:12px; width:300px;
+    max-height:calc(100vh - var(--wa-t) - var(--wa-b)); padding:16px 24px 28px 16px; overflow:hidden auto; scrollbar-width:none; pointer-events:none;
+  }
+  #widgets-l::-webkit-scrollbar { display:none; }
+  #widgets-l > .widget { pointer-events:auto; flex-shrink:0; }
+  html[data-wg-left] #desktop { padding-left:300px; }
+  /* Déplacement à la souris : le widget suit le curseur, un emplacement en pointillés marque où il se posera,
+     et les deux zones se dessinent sur toute la hauteur, même vides. */
+  .wg-zone > .widget > .widget-title, .wg-zone > .widget > .clock-display { cursor:grab; }
+  .widget.wg-drag { position:fixed; z-index:9000; margin:0; pointer-events:none; opacity:.95; box-shadow:0 26px 60px rgba(0,0,0,0.55); cursor:grabbing; }
+  .wg-slot { flex-shrink:0; box-sizing:border-box; border:1.5px dashed rgba(var(--accent2-rgb),0.65); border-radius:var(--radius); background:rgba(var(--accent-rgb),0.08); }
+  html.wg-dragging, html.wg-dragging * { cursor:grabbing !important; }
+  html.wg-dragging .wg-zone { display:flex !important; min-height:calc(100vh - var(--wa-t) - var(--wa-b)); box-sizing:border-box; }
+  html.wg-dragging .wg-zone::before { content:''; position:fixed; top:calc(var(--wa-t) + 8px); bottom:calc(var(--wa-b) + 8px); width:284px; border:1.5px dashed rgba(255,255,255,0.16); border-radius:22px; pointer-events:none; }
+  html.wg-dragging #widgets::before { right:calc(var(--wa-r) + 8px); }
+  html.wg-dragging #widgets-l::before { left:calc(var(--wa-l) + 8px); }
+  html.wg-dragging .wg-zone.wg-over::before { border-color:rgba(var(--accent2-rgb),0.6); background:rgba(var(--accent-rgb),0.05); }
+  html.wg-dragging.wg-narrow #widgets-l { display:none !important; }
+  [data-theme="light"].wg-dragging .wg-zone::before { border-color:rgba(13,27,53,0.22); }
+  /* Gestionnaire : une ligne par widget, avec son rang, sa zone et son affichage */
+  .wg-row { cursor:default; }
+  .wg-ctl { display:flex; align-items:center; gap:4px; flex:0 0 auto; margin-right:6px; }
+  .wg-btn { display:grid; place-items:center; width:28px; height:28px; padding:0; border:1px solid var(--glass-border); border-radius:8px; background:rgba(255,255,255,0.04); color:var(--text-dim); cursor:pointer; transition:background .15s, color .15s, border-color .15s; }
+  .wg-btn:hover:not(:disabled) { background:rgba(var(--accent-rgb),0.16); border-color:rgba(var(--accent2-rgb),0.45); color:var(--accent2); }
+  .wg-btn:focus-visible { outline:2px solid var(--accent2); outline-offset:1px; }
+  .wg-btn:disabled { opacity:.3; cursor:default; }
+  .wg-btn svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  [data-theme="light"] .wg-btn { background:rgba(255,255,255,0.7); border-color:rgba(0,0,0,0.14); }
   .widget[hidden] { display:none; }
   .widget-title-side { margin-left:auto; font-weight:500; letter-spacing:0; text-transform:none; font-size:11.5px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
   .widget-link { cursor:pointer; }
@@ -6397,7 +6427,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "pic {0}": "peak {0}",
 "Les panneaux d'information affichés sur le bureau, à côté des icônes.": "The information panels shown on the desktop, next to the icons.",
 "Afficher les widgets": "Show widgets",
-"Toute la colonne, d'un seul geste. Le clic droit sur le bureau fait la même chose.": "The whole column at once. Right-clicking the desktop does the same.",
 "Widgets affichés": "Widgets shown",
 "Nom d'une ville": "City name",
 "Recherche...": "Searching...",
@@ -6663,7 +6692,19 @@ select option{ background:#101b2e; color:#e9eef7; }
 "La liaison et la liste des appareils sont gardées sur le NAS : elles valent pour tous les postes. L'affichage du widget, lui, se règle dans chaque navigateur.": "The connection and the device list are kept on the NAS: they apply to every device. Whether the widget is shown is set in each browser.",
 "{0} appareils": "{0} devices",
 "1 appareil": "1 device",
-"aucun appareil choisi": "no device chosen"
+"aucun appareil choisi": "no device chosen",
+"Les deux zones, d'un seul geste. Le clic droit sur le bureau fait la même chose.": "Both zones, in one go. A right-click on the desktop does the same.",
+"Monter {0}": "Move {0} up",
+"Descendre {0}": "Move {0} down",
+"Passer {0} dans la zone de droite": "Move {0} to the right zone",
+"Passer {0} dans la zone de gauche": "Move {0} to the left zone",
+"Afficher {0}": "Show {0}",
+"La zone de gauche et l'ordre des widgets se règlent dans une fenêtre plus large.": "The left zone and the widget order are set in a wider window.",
+"Zone de gauche": "Left zone",
+"Zone de droite": "Right zone",
+"Aucun widget dans cette zone. Passez-en un ici avec la flèche de sa ligne, ou faites-le glisser sur la gauche du bureau.": "No widget in this zone. Move one here with the arrow on its line, or drag it to the left of the desktop.",
+"Aucun widget dans cette zone.": "No widget in this zone.",
+"Sur le bureau, un widget se déplace aussi à la souris : d'une zone à l'autre, ou plus haut et plus bas dans sa pile.": "On the desktop, a widget can also be moved with the mouse: from one zone to the other, or up and down its stack."
 }
 </script>
 <script id="dk-i18n">
@@ -7024,7 +7065,8 @@ document.addEventListener('DOMContentLoaded', function () {
   <div class="desktop-icons" id="desktop-icons"></div>
 
 <!-- WIDGETS -->
-<div id="widgets" style="display:none;">
+<div id="widgets-l" class="wg-zone" style="display:none;"></div>
+<div id="widgets" class="wg-zone" style="display:none;">
   <!-- Horloge -->
   <div class="widget" data-w="clock">
     <div class="clock-display">
@@ -7436,8 +7478,7 @@ let darkMode = (localStorage.getItem('tn-theme') !== 'light');
   // Restaure l'affichage des widgets (préférence du menu contextuel)
   try {
     if (localStorage.getItem('tn-widgets') === 'hidden') {
-      var _w = document.getElementById('widgets');
-      if (_w) _w.style.display = 'none';
+      Array.prototype.forEach.call(document.querySelectorAll('.wg-zone'), function(_w) { _w.style.display = 'none'; });
     }
   } catch(e) {}
 })();
@@ -13877,7 +13918,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.35.0';
+var DK_PAGE_VERSION = '2.36.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -15131,8 +15172,9 @@ var _deskDrag = null;
 function deskPosGet() { try { var p = JSON.parse(localStorage.getItem('desktop_icon_pos') || 'null'); return p && typeof p === 'object' && !Array.isArray(p) ? p : null; } catch (_) { return null; } }
 function deskPosSave(p) { try { if (p) localStorage.setItem('desktop_icon_pos', JSON.stringify(p)); else localStorage.removeItem('desktop_icon_pos'); } catch (_) {} }
 function deskGrid() {
-  var wa = dkWorkArea();   // le bureau moins la barre système, moins ses marges
-  return { cols: Math.max(1, Math.floor((wa.r - wa.l - 32) / DESK_CW)), rows: Math.max(1, Math.floor((wa.b - wa.t - 32) / DESK_CH)) };
+  var wa = dkWorkArea();   // le bureau moins la barre système, moins ses marges, moins la zone de widgets de gauche
+  var lz = document.documentElement.hasAttribute('data-wg-left') ? 284 : 0;
+  return { cols: Math.max(1, Math.floor((wa.r - wa.l - 32 - lz) / DESK_CW)), rows: Math.max(1, Math.floor((wa.b - wa.t - 32) / DESK_CH)) };
 }
 // Place chaque icône : sa case gardée si elle est libre et visible, sinon la première case libre.
 function deskLayout() {
@@ -15554,7 +15596,8 @@ function logout() {
   ls.style.display = 'flex'; ls.style.opacity = '1';
   ls.classList.remove('fade-out');
   document.getElementById('desktop').classList.remove('visible');
-  document.getElementById('widgets').style.display = 'none';
+  Array.prototype.forEach.call(document.querySelectorAll('.wg-zone'), function(z) { z.style.display = 'none'; });
+  document.documentElement.removeAttribute('data-wg-left');
   document.getElementById('taskbar').style.display  = 'none';
 }
 
@@ -19276,7 +19319,8 @@ dkBarApply();
 
 // ===========================
 // WIDGETS — choix des widgets affichés, météo, débit réseau
-// Le choix est gardé dans ce navigateur : « dk-widgets » (un oui/non par widget), « tn-widgets » (toute la colonne),
+// Le choix est gardé dans ce navigateur : « dk-widgets » (un oui/non par widget), « tn-widgets » (toutes les zones),
+// « dk-widget-zones » (la zone et le rang de chaque widget),
 // « dk-weather » (la ville), « dk-net-if » (l'interface suivie ; vide : la plus active).
 // ===========================
 function dkWidgetList() {
@@ -19299,10 +19343,18 @@ function dkWidgetsGet() {
 function dkWidgetsShown() { try { return localStorage.getItem('tn-widgets') !== 'hidden'; } catch (e) { return true; } }
 function dkWidgetOn(id) { return dkWidgetsShown() && !!dkWidgetsGet()[id]; }
 function dkWidgetsApply() {
-  var w = document.getElementById('widgets'), desk = document.getElementById('desktop'), on = dkWidgetsGet();
-  if (!w) return;
-  Array.prototype.forEach.call(w.querySelectorAll('.widget[data-w]'), function(el) { el.hidden = !on[el.getAttribute('data-w')]; });
-  if (desk && desk.classList.contains('visible')) w.style.display = dkWidgetsShown() ? 'flex' : 'none';   // jamais sur l'écran de connexion
+  var zones = document.querySelectorAll('.wg-zone'), left = document.getElementById('widgets-l'), desk = document.getElementById('desktop'), on = dkWidgetsGet();
+  if (!zones.length) return;
+  dkWgApplyLayout();
+  Array.prototype.forEach.call(document.querySelectorAll('.widget[data-w]'), function(el) { el.hidden = !on[el.getAttribute('data-w')]; });
+  var visible = !!(desk && desk.classList.contains('visible')), shown = dkWidgetsShown(), root = document.documentElement;
+  if (visible) Array.prototype.forEach.call(zones, function(z) { z.style.display = shown ? 'flex' : 'none'; });   // jamais sur l'écran de connexion
+  // Zone de gauche occupée : les icônes du bureau se décalent pour ne pas passer dessous.
+  var leftOn = visible && shown && !!(left && left.querySelector('.widget:not([hidden])'));
+  if (leftOn !== root.hasAttribute('data-wg-left')) {
+    if (leftOn) root.setAttribute('data-wg-left', ''); else root.removeAttribute('data-wg-left');
+    deskLayout();
+  }
 }
 function dkWidgetsShow(on) {
   try { localStorage.setItem('tn-widgets', on ? 'shown' : 'hidden'); } catch (e) {}
@@ -19321,6 +19373,130 @@ function dkWidgetSet(id, on) {
   if (wmVisible('control') && (_cp.nav === 'widgets' || _cp.nav === 'ha')) loadControl();
 }
 function dkWidgetsManage() { openApp('control'); cpGo('widgets'); }
+
+// ── Deux zones de widgets : à droite (celle d'origine) et à gauche ──
+// « dk-widget-zones » garde, par zone, la liste ordonnée des widgets : { l: [...], r: [...] }. Un widget inconnu
+// du réglage (ajouté par une mise à jour) se range à droite, en fin de pile. Fenêtre étroite : tout s'affiche
+// à droite, sans rien changer au réglage.
+var DK_WG_NARROW = 1000;
+function dkWgNarrow() { return window.innerWidth < DK_WG_NARROW; }
+function dkWgLayoutGet() {
+  var ids = dkWidgetList().map(function(w) { return w.id; }), s = {}, seen = {}, out = { l: [], r: [] };
+  try { s = JSON.parse(localStorage.getItem('dk-widget-zones') || '{}') || {}; } catch (e) {}
+  ['l', 'r'].forEach(function(z) {
+    (Array.isArray(s[z]) ? s[z] : []).forEach(function(id) { if (ids.indexOf(id) >= 0 && !seen[id]) { seen[id] = true; out[z].push(id); } });
+  });
+  ids.forEach(function(id) { if (!seen[id]) out.r.push(id); });
+  return out;
+}
+function dkWgLayoutSave(l) { try { localStorage.setItem('dk-widget-zones', JSON.stringify({ l: l.l, r: l.r })); } catch (e) {} }
+function dkWgZoneOf(id) { return dkWgLayoutGet().l.indexOf(id) >= 0 ? 'l' : 'r'; }
+// Range les widgets dans leur zone, dans l'ordre choisi (les éléments sont déplacés, jamais recréés).
+function dkWgApplyLayout() {
+  var right = document.getElementById('widgets'), left = document.getElementById('widgets-l');
+  if (!right || !left || (_wgDrag && _wgDrag.moved)) return;
+  var L = dkWgLayoutGet(), narrow = dkWgNarrow();
+  var put = function(zone, id) { var el = document.querySelector('.widget[data-w="' + id + '"]'); if (el) zone.appendChild(el); };
+  L.r.forEach(function(id) { put(right, id); });
+  L.l.forEach(function(id) { put(narrow ? right : left, id); });
+}
+// Rang dans la pile (-1 : monter, +1 : descendre) et changement de zone, depuis le gestionnaire.
+function dkWgMove(id, dir) {
+  var L = dkWgLayoutGet(), z = L.l.indexOf(id) >= 0 ? 'l' : 'r', i = L[z].indexOf(id), j = i + dir;
+  if (i < 0 || j < 0 || j >= L[z].length) return;
+  L[z].splice(i, 1); L[z].splice(j, 0, id);
+  dkWgLayoutSave(L); dkWgChanged((dir < 0 ? 'up:' : 'down:') + id);
+}
+function dkWgZone(id, z) {
+  var L = dkWgLayoutGet();
+  L.l = L.l.filter(function(x) { return x !== id; }); L.r = L.r.filter(function(x) { return x !== id; });
+  L[z === 'l' ? 'l' : 'r'].push(id);
+  dkWgLayoutSave(L); dkWgChanged('zone:' + id);
+}
+function dkWgChanged(focusKey) {
+  dkWidgetsApply();
+  if (wmVisible('control') && _cp.nav === 'widgets') {
+    loadControl();
+    // le clavier reste sur la ligne du widget : son bouton s'il sert encore, sinon le premier bouton utilisable de la ligne
+    var b = focusKey && document.querySelector('#cp-body [data-wgk="' + focusKey + '"]');
+    if (b && b.disabled) b = b.parentNode.querySelector('.wg-btn:not(:disabled)');
+    if (b) b.focus();
+  }
+}
+// ── Déplacement à la souris, sur le bureau : d'une zone à l'autre, ou dans la pile ──
+var _wgDrag = null, _wgDragEndAt = 0;
+function wgDragZoneAt(x) {
+  var right = document.getElementById('widgets'), left = document.getElementById('widgets-l');
+  return !dkWgNarrow() && x < window.innerWidth / 2 ? left : right;
+}
+function wgDragMove(e) {
+  var d = _wgDrag;
+  if (!d) return;
+  var dx = e.clientX - d.x, dy = e.clientY - d.y;
+  if (!d.moved) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    var r = d.el.getBoundingClientRect();
+    d.moved = true; d.home = d.el.parentNode; d.next = d.el.nextSibling;
+    d.slot = document.createElement('div'); d.slot.className = 'wg-slot'; d.slot.style.height = r.height + 'px';
+    d.home.insertBefore(d.slot, d.el);
+    d.el.style.width = r.width + 'px'; d.el.style.left = r.left + 'px'; d.el.style.top = r.top + 'px';
+    d.el.classList.add('wg-drag');
+    document.body.appendChild(d.el);
+    document.documentElement.classList.add('wg-dragging');
+    document.documentElement.classList.toggle('wg-narrow', dkWgNarrow());
+  }
+  d.el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  var zone = wgDragZoneAt(e.clientX), zr = zone.getBoundingClientRect();
+  Array.prototype.forEach.call(document.querySelectorAll('.wg-zone'), function(z) { z.classList.toggle('wg-over', z === zone); });
+  // la pile défile quand on approche de son bord
+  if (e.clientY < zr.top + 44) zone.scrollTop -= 14; else if (e.clientY > zr.bottom - 44) zone.scrollTop += 14;
+  var before = null, list = zone.querySelectorAll('.widget:not([hidden])');
+  for (var i = 0; i < list.length; i++) { var wr = list[i].getBoundingClientRect(); if (e.clientY < wr.top + wr.height / 2) { before = list[i]; break; } }
+  if (d.slot.parentNode !== zone || d.slot.nextElementSibling !== before) {
+    if (before) zone.insertBefore(d.slot, before); else zone.appendChild(d.slot);
+  }
+}
+function wgDragEnd(e) {
+  var d = _wgDrag, cancel = e && (e.type === 'pointercancel' || e.type === 'keydown');
+  window.removeEventListener('pointermove', wgDragMove);
+  window.removeEventListener('pointerup', wgDragEnd);
+  window.removeEventListener('pointercancel', wgDragEnd);
+  window.removeEventListener('keydown', wgDragKey, true);
+  _wgDrag = null;
+  if (!d || !d.moved) return;
+  if (cancel) d.home.insertBefore(d.el, d.next && d.next.parentNode === d.home ? d.next : null);
+  else d.slot.parentNode.insertBefore(d.el, d.slot);
+  d.slot.remove();
+  d.el.classList.remove('wg-drag');
+  d.el.style.width = d.el.style.left = d.el.style.top = d.el.style.transform = '';
+  document.documentElement.classList.remove('wg-dragging', 'wg-narrow');
+  Array.prototype.forEach.call(document.querySelectorAll('.wg-zone'), function(z) { z.classList.remove('wg-over'); });
+  _wgDragEndAt = Date.now();   // le relâchement ne compte pas comme un clic sur le widget
+  if (!cancel) {
+    var ids = function(zone) { return Array.prototype.map.call(zone.querySelectorAll('.widget[data-w]'), function(w) { return w.getAttribute('data-w'); }); };
+    var r = ids(document.getElementById('widgets')), l = ids(document.getElementById('widgets-l'));
+    if (dkWgNarrow()) {   // tout est affiché à droite : l'ordre change, pas la zone de chacun
+      var was = dkWgLayoutGet().l;
+      l = r.filter(function(id) { return was.indexOf(id) >= 0; }); r = r.filter(function(id) { return was.indexOf(id) < 0; });
+    }
+    dkWgLayoutSave({ l: l, r: r });
+  }
+  dkWgChanged();
+}
+function wgDragKey(e) { if (e.key === 'Escape' && _wgDrag && _wgDrag.moved) { e.preventDefault(); e.stopPropagation(); wgDragEnd(e); } }
+document.addEventListener('pointerdown', function(e) {
+  if (e.button !== 0 || e.pointerType === 'touch' || _wgDrag) return;
+  var w = e.target && e.target.closest ? e.target.closest('.wg-zone > .widget') : null;
+  if (!w || e.target.closest('input, select, textarea')) return;
+  _wgDrag = { el: w, x: e.clientX, y: e.clientY, moved: false };
+  window.addEventListener('pointermove', wgDragMove);
+  window.addEventListener('pointerup', wgDragEnd);
+  window.addEventListener('pointercancel', wgDragEnd);
+  window.addEventListener('keydown', wgDragKey, true);
+});
+document.addEventListener('click', function(e) { if (Date.now() - _wgDragEndAt < 300) { e.stopPropagation(); e.preventDefault(); } }, true);
+window.addEventListener('resize', function() { clearTimeout(window._wgRz); window._wgRz = setTimeout(function() { if (!_wgDrag) dkWidgetsApply(); }, 150); });
+
 
 // ── Maison : lampes et prises de Home Assistant ──
 // Le bureau ne parle qu'au service de Desktroo ; c'est lui qui interroge Home Assistant, avec un jeton qu'il garde.
@@ -19735,10 +19911,32 @@ function cpWidgetsView() {
   wmHead('cp', 'Widgets', { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true, keepScroll: true,
     sub: T('Les panneaux d\'information affichés sur le bureau, à côté des icônes.') });
   var h = '<div class="web-group" style="margin-top:6px;">'
-    + wmSwitch('wg-all', T('Afficher les widgets'), T('Toute la colonne, d\'un seul geste. Le clic droit sur le bureau fait la même chose.'), shown, 'onchange="dkWidgetsShow(this.checked)"')
-    + '</div><div class="web-group-title">' + T('Widgets affichés') + '</div><div class="web-group">';
-  dkWidgetList().forEach(function(w) { h += wmSwitch('wg-' + w.id, webEsc(w.label), webEsc(w.desc), on[w.id], 'onchange="dkWidgetSet(\'' + w.id + '\', this.checked)"'); });
-  h += '</div>';
+    + wmSwitch('wg-all', T('Afficher les widgets'), T('Les deux zones, d\'un seul geste. Le clic droit sur le bureau fait la même chose.'), shown, 'onchange="dkWidgetsShow(this.checked)"')
+    ;
+  // Une ligne par widget : rang dans la pile, zone, affichage. Fenêtre étroite : une seule pile, sans zone de gauche.
+  var L = dkWgLayoutGet(), narrow = dkWgNarrow(), byId = {};
+  dkWidgetList().forEach(function(w) { byId[w.id] = w; });
+  var ico = { up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', l: 'M15 6l-6 6 6 6', r: 'M9 6l6 6-6 6' };
+  var btn = function(key, path, label, call, off) { return '<button class="wg-btn" data-wgk="' + key + '" onclick="' + call + '" title="' + webEsc(label) + '" aria-label="' + webEsc(label) + '"' + (off ? ' disabled' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + path + '"/></svg></button>'; };
+  var rows = function(list, z) {
+    return list.map(function(id, i) {
+      var w = byId[id];
+      return '<div class="web-row wg-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(w.label) + '</span><span class="web-row-desc">' + webEsc(w.desc) + '</span></span>'
+        + (narrow ? '' : '<span class="wg-ctl">' + btn('up:' + id, ico.up, Tf('Monter {0}', w.label), 'dkWgMove(\'' + id + '\',-1)', i === 0) + btn('down:' + id, ico.down, Tf('Descendre {0}', w.label), 'dkWgMove(\'' + id + '\',1)', i === list.length - 1)
+          + (z === 'l' ? btn('zone:' + id, ico.r, Tf('Passer {0} dans la zone de droite', w.label), 'dkWgZone(\'' + id + '\',\'r\')') : btn('zone:' + id, ico.l, Tf('Passer {0} dans la zone de gauche', w.label), 'dkWgZone(\'' + id + '\',\'l\')')) + '</span>')
+        + '<input type="checkbox" id="wg-' + id + '"' + (on[id] ? ' checked' : '') + ' aria-label="' + webEsc(Tf('Afficher {0}', w.label)) + '" onchange="dkWidgetSet(\'' + id + '\', this.checked)"></div>';
+    }).join('');
+  };
+  if (narrow) {
+    h += '</div><div class="web-group-title">' + T('Widgets affichés') + '</div><div class="web-group">' + rows(L.r.concat(L.l), 'r') + '</div>'
+      + '<p class="web-note">' + T('La zone de gauche et l\'ordre des widgets se règlent dans une fenêtre plus large.') + '</p>';
+  } else {
+    h += '</div><div class="web-group-title">' + T('Zone de gauche') + '</div>' + (L.l.length ? '<div class="web-group">' + rows(L.l, 'l') + '</div>'
+        : '<p class="web-note" style="margin-top:0;">' + T('Aucun widget dans cette zone. Passez-en un ici avec la flèche de sa ligne, ou faites-le glisser sur la gauche du bureau.') + '</p>')
+      + '<div class="web-group-title">' + T('Zone de droite') + '</div>' + (L.r.length ? '<div class="web-group">' + rows(L.r, 'r') + '</div>'
+        : '<p class="web-note" style="margin-top:0;">' + T('Aucun widget dans cette zone.') + '</p>')
+      + '<p class="web-note">' + T('Sur le bureau, un widget se déplace aussi à la souris : d\'une zone à l\'autre, ou plus haut et plus bas dans sa pile.') + '</p>';
+  }
   // Météo : la ville
   h += '<div class="web-group-title">' + T('Météo') + '</div><div class="wg-city"><span>' + (place
       ? '<b>' + webEsc(place.name) + '</b>' + (place.region ? ' <span>' + webEsc(place.region) + '</span>' : '')
