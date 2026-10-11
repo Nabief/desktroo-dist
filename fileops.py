@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.40.0'
+APP_VERSION = '2.41.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -280,9 +280,12 @@ def _login_note_failure():
         _login_failures.append(_login_time.time())
 
 
-async def _truenas_verify_async(username, password, apikey):
+async def _truenas_verify_async(username, password, apikey, session_token=''):
     """Ouvre une session JSON-RPC sur TrueNAS avec ces identifiants.
-    Rend (identifiants_valides, résultat de auth.me ou None)."""
+    Rend (identifiants_valides, résultat de auth.me ou None).
+    « session_token » : jeton à usage unique que TrueNAS a délivré à la session déjà ouverte du bureau. C'est la voie
+    des comptes à double authentification, dont le mot de passe seul ne suffit plus : le code a été donné au bureau,
+    et TrueNAS atteste ici que ce jeton vient bien de cette session."""
     import ssl
     ctx = ssl.create_default_context()
     ctx.check_hostname = False          # certificat auto-signé du NAS, comme côté nginx
@@ -295,7 +298,9 @@ async def _truenas_verify_async(username, password, apikey):
                 msg = json.loads(await asyncio.wait_for(ws.recv(), 12))
                 if isinstance(msg, dict) and msg.get('id') == ident:
                     return msg
-        if apikey:
+        if session_token:
+            r = await call(1, 'auth.login_with_token', [session_token])
+        elif apikey:
             r = await call(1, 'auth.login_with_api_key', [apikey])
         else:
             r = await call(1, 'auth.login', [username, password, None])
@@ -305,8 +310,8 @@ async def _truenas_verify_async(username, password, apikey):
         return True, (None if me.get('error') else me.get('result'))
 
 
-def _truenas_verify(username, password, apikey):
-    return asyncio.run(asyncio.wait_for(_truenas_verify_async(username, password, apikey), 30))
+def _truenas_verify(username, password, apikey, session_token=''):
+    return asyncio.run(asyncio.wait_for(_truenas_verify_async(username, password, apikey, session_token), 30))
 
 
 def _truenas_is_full_admin(me):
@@ -335,17 +340,20 @@ def auth_login(body):
     apikey = str(body.get('apikey') or '').strip()
     username = str(body.get('username') or '').strip()
     password = str(body.get('password') or '')
-    if not apikey and not (username and password):
+    session_token = str(body.get('session_token') or '').strip()
+    if session_token and not re.match(r'^[A-Za-z0-9_-]{16,256}$', session_token):
+        return 400, {'error': 'Jeton de session invalide.'}
+    if not apikey and not session_token and not (username and password):
         return 400, {'error': 'Identifiants manquants.'}
     try:
-        ok, me = _truenas_verify(username, password, apikey)
+        ok, me = _truenas_verify(username, password, apikey, session_token)
     except Exception as exc:
         log.warning('Connexion : TrueNAS injoignable (%s) : %s', TRUENAS_API_HOST, exc)
         return 502, {'error': 'TrueNAS injoignable : vérification des identifiants impossible.'}
     if not ok:
         _login_note_failure()
-        log.warning('Connexion refusée : identifiants TrueNAS incorrects')
-        return 401, {'error': 'Identifiants TrueNAS incorrects.'}
+        log.warning('Connexion refusée : %s', 'jeton de session TrueNAS refusé' if session_token else 'identifiants TrueNAS incorrects')
+        return 401, {'error': 'Session TrueNAS refusée : reconnecte-toi.' if session_token else 'Identifiants TrueNAS incorrects.'}
     if not _truenas_is_full_admin(me):
         log.warning('Connexion refusée : compte sans les pleins droits (%s)',
                     (me or {}).get('pw_name') or username or 'clé API')
@@ -4138,6 +4146,94 @@ def _ct_restart(cid):
     cid = _ct_id(cid)
     ssh_ok(_ct_sh('$D restart -t 20 %s' % cid), timeout=90)
     return True
+
+
+# ── MDM-CT-UPDATE-V1 : mettre à jour l'image d'un conteneur hors applications TrueNAS ────────
+# Un conteneur créé par « docker compose » porte, en étiquettes, son projet, son service et ses fichiers. On s'en sert
+# pour relancer exactement ce que son auteur a écrit : « pull » puis « up -d » de ses services, rien d'autre.
+# Les conteneurs des applications TrueNAS (projets « ix-… ») ne passent pas par ici : c'est TrueNAS qui les met à jour.
+# La commande est détachée sur l'hôte : elle doit survivre au redémarrage de fileops si c'est lui qu'on met à jour.
+_CT_UPD_NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$')
+
+
+def _ct_update_log_path(project):
+    return '/tmp/desktroo-maj-%s.log' % project
+
+
+def _ct_update_plan(cids):
+    """Conteneurs → un plan par projet compose. Rend (plans, conteneurs laissés de côté avec la raison)."""
+    ids = []
+    for c in (cids or [])[:60]:
+        cid = _ct_id(c)
+        if cid not in ids:
+            ids.append(cid)
+    if not ids:
+        raise ValueError('aucun conteneur indiqué')
+    raw = json.loads(ssh_ok(_ct_sh('$D inspect ' + ' '.join(ids)), timeout=45) or '[]')
+    plans, skipped = {}, []
+    for c in raw:
+        if not isinstance(c, dict):
+            continue
+        labels = ((c.get('Config') or {}).get('Labels') or {})
+        name = str(c.get('Name') or '').lstrip('/')
+        project = str(labels.get('com.docker.compose.project') or '')
+        service = str(labels.get('com.docker.compose.service') or '')
+        files = [f for f in str(labels.get('com.docker.compose.project.config_files') or '').split(',') if f]
+        wd = str(labels.get('com.docker.compose.project.working_dir') or '')
+        if not project or not service or not files:
+            skipped.append({'name': name, 'why': 'nocompose'})
+            continue
+        if project.startswith('ix-'):
+            skipped.append({'name': name, 'why': 'truenas'})
+            continue
+        if (not _CT_UPD_NAME.match(project) or not _CT_UPD_NAME.match(service) or len(files) > 8
+                or any((not f.startswith('/')) or '\n' in f or '\x00' in f for f in files)
+                or (wd and ((not wd.startswith('/')) or '\n' in wd or '\x00' in wd))):
+            skipped.append({'name': name, 'why': 'invalid'})
+            continue
+        key = (project, wd, tuple(files))
+        p = plans.setdefault(key, {'project': project, 'services': [], 'containers': []})
+        if service not in p['services']:
+            p['services'].append(service)
+        p['containers'].append(name)
+    return plans, skipped
+
+
+def _ct_update(cids):
+    plans, skipped = _ct_update_plan(cids)
+    started = []
+    for (project, wd, files), p in plans.items():
+        base = ('$D compose -p ' + shq(project) + ((' --project-directory ' + shq(wd)) if wd else '')
+                + ''.join(' -f ' + shq(f) for f in files))
+        svc = ' '.join(shq(s) for s in p['services'])
+        log_path = _ct_update_log_path(project)
+        inner = (_CT_DOCKER + '{ ' + base + ' pull ' + svc + ' && ' + base + ' up -d ' + svc + '; rc=$?; echo "DK_EXIT=$rc"; } > '
+                 + shq(log_path) + ' 2>&1')
+        # un fichier compose déplacé ou effacé : on laisse ces conteneurs de côté plutôt que d'échouer au milieu
+        _o, _e, missing = ssh_exec('sh -c ' + shq(' && '.join('[ -f ' + shq(f) + ' ]' for f in files)), timeout=20)
+        if missing != 0:
+            skipped.extend({'name': n, 'why': 'missing'} for n in p['containers'])
+            continue
+        outer = ': > ' + shq(log_path) + '; nohup setsid sh -c ' + shq(inner) + ' </dev/null >/dev/null 2>&1 &'
+        ssh_ok('sh -c ' + shq(outer), timeout=30)
+        started.append({'project': project, 'services': p['services'], 'containers': p['containers']})
+    return {'ok': True, 'started': started, 'skipped': skipped}
+
+
+def _ct_update_status(project):
+    """Où en est la mise à jour d'un projet : en cours, terminée (code de sortie), et la fin de son journal."""
+    project = str(project or '')
+    if not _CT_UPD_NAME.match(project) or project.startswith('ix-'):
+        raise ValueError('projet invalide')
+    lp = shq(_ct_update_log_path(project))
+    out, _err, _code = ssh_exec('sh -c ' + shq('[ -f ' + lp + ' ] && tail -c 6000 ' + lp + ' || echo DK_AUCUN'), timeout=20)
+    text = out or ''
+    if text.strip() == 'DK_AUCUN':
+        return {'ok': True, 'project': project, 'running': False, 'exit_code': None, 'log': ''}
+    m = re.search(r'DK_EXIT=(\d+)\s*$', text)
+    return {'ok': True, 'project': project, 'running': m is None, 'exit_code': int(m.group(1)) if m else None,
+            'log': re.sub(r'DK_EXIT=\d+\s*$', '', text)[-3000:]}
+# ── MDM-CT-UPDATE-V1 (fin) ────────────────────────────────────────────────────
 
 
 def _npm_status():
@@ -8369,6 +8465,16 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        # MDM-CT-UPDATE-V1 : suivi d'une mise à jour de conteneurs lancée par POST /containers/update
+        if path == '/containers/update/status':
+            try:
+                self._json(200, _ct_update_status(qs.get('project', '')))
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         if path == '/containers/logs':
             try:
                 try:
@@ -8858,6 +8964,17 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         if path == '/branding':
             try:
                 self._json(200, dict(_branding_set(str(self._body().get('accent') or '')), ok=True))
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        # MDM-CT-UPDATE-V1 : télécharger la nouvelle image et recréer des conteneurs gérés par docker compose
+        if path == '/containers/update':
+            try:
+                b = self._body()
+                self._json(200, _ct_update(b.get('ids') if isinstance(b.get('ids'), list) else []))
             except ValueError as e:
                 self._json(400, {'error': str(e)})
             except Exception as e:
