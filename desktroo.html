@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <meta name="author" content="Mdm-services.fr">
 <meta name="copyright" content="© 2026 Mdm-services.fr. Tous droits réservés.">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Desktroo</title>
 <link rel="manifest" href="/fileops/manifest.webmanifest" crossorigin="use-credentials">
 <meta name="theme-color" content="#0a1220">
@@ -9023,7 +9023,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Quelqu'un": "Someone",
 "Sous-dossiers": "Subfolders",
 "choisir": "select",
-"ouvrir": "open"
+"ouvrir": "open",
+"Accueil": "Home",
+"Menu de la fenêtre": "Window menu"
 }
 </script>
 <script id="dk-i18n">
@@ -9346,6 +9348,222 @@ document.addEventListener('DOMContentLoaded', function () {
   dkInstallLangSwitch();
 });
 </script>
+<style id="dk-phone-css">
+/* ══════════ Desktroo sur téléphone ══════════
+   La classe « dk-phone » est posée sur <html> par phApply() quand l'écran est étroit. Rien ici ne s'applique sans
+   elle : sur un ordinateur, le bureau ne change pas. Trois idées : une fenêtre = un écran ; la colonne de gauche
+   devient un tiroir ; la barre système laisse la place à une barre en bas, à portée de pouce. */
+html.dk-phone { --ph-bar:58px; --ph-safe-b:env(safe-area-inset-bottom, 0px); --ph-safe-t:env(safe-area-inset-top, 0px);
+  --wa-t:0px !important; --wa-l:0px !important; --wa-r:0px !important; --wa-b:calc(var(--ph-bar) + var(--ph-safe-b)) !important; }
+html.dk-phone, html.dk-phone body { overscroll-behavior:none; -webkit-text-size-adjust:100%; }
+html.dk-phone #taskbar { display:none !important; }
+html.dk-phone input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), html.dk-phone select, html.dk-phone textarea { font-size:16px !important; }   /* en dessous, iOS zoome à la saisie */
+
+/* ── Barre du bas ── */
+#ph-bar { display:none; }
+html.dk-phone #desktop.visible ~ #ph-bar {
+  position:fixed; left:0; right:0; bottom:0; z-index:2900; display:grid; grid-template-columns:repeat(5, 1fr);
+  height:calc(var(--ph-bar) + var(--ph-safe-b)); padding:0 4px var(--ph-safe-b);
+  background:rgba(var(--bar-rgb), 0.94); border-top:1px solid var(--bar-line); backdrop-filter:blur(24px);
+}
+.ph-tab { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-width:0; border:0; background:none; color:var(--text-dim); font:inherit; font-size:10.5px; font-weight:500; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.ph-tab svg { width:22px; height:22px; }
+.ph-tab span { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ph-tab.on { color:var(--accent2); }
+.ph-tab:active { color:var(--text); }
+.ph-tab:focus-visible { outline:2px solid var(--accent2); outline-offset:-4px; border-radius:12px; }
+.ph-badge { position:absolute; top:6px; left:calc(50% + 6px); min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:var(--danger); color:#fff; font-size:10.5px; font-weight:700; line-height:17px; text-align:center; }
+.ph-badge:empty { display:none; }
+
+/* ── Accueil : les widgets empilés, puis les raccourcis en grille ; la page défile ── */
+html.dk-phone body { overflow:hidden auto; height:100%; padding-bottom:calc(var(--ph-bar) + var(--ph-safe-b) + 12px); }
+html.dk-phone .wg-zone { position:static !important; order:1; width:auto !important; max-height:none !important; overflow:visible !important; padding:calc(14px + var(--ph-safe-t)) 14px 0 !important; pointer-events:auto; z-index:1; flex-shrink:0; }
+html.dk-phone #widgets-l { order:2; padding-top:12px !important; }
+html.dk-phone .wg-zone:empty { display:none !important; }
+html.dk-phone .wg-zone > .widget { width:auto !important; }
+html.dk-phone .wg-zone > .widget > .widget-title, html.dk-phone .wg-zone > .widget > .clock-display { cursor:default; }
+html.dk-phone #desktop { position:static !important; padding:0 !important; }
+html.dk-phone #desktop.visible { display:flex; flex-direction:column; }
+html.dk-phone .desktop-icons { order:3; height:auto; padding:18px 10px 8px; display:grid; grid-template-columns:repeat(auto-fill, minmax(78px, 1fr)); gap:10px 4px; }
+html.dk-phone .desk-icon { position:static !important; width:auto; touch-action:manipulation; transition:background .15s; }
+html.dk-phone .desk-drop { display:none !important; }
+
+/* ── Une fenêtre = un écran ── */
+html.dk-phone .window {
+  top:0 !important; left:0 !important; width:100% !important; height:calc(100% - var(--ph-bar) - var(--ph-safe-b)) !important;
+  min-width:0 !important; min-height:0 !important; max-width:none !important; border:0; border-radius:0; box-shadow:none; backdrop-filter:none;
+  background:var(--ph-win, #0d1728); animation:ph-in .2s ease-out;
+}
+[data-theme="light"].dk-phone .window, html.dk-phone[data-theme="light"] .window { --ph-win:#eef4fd; }
+@keyframes ph-in { from { opacity:0; transform:translateY(14px); } }
+@media (prefers-reduced-motion:reduce) { html.dk-phone .window { animation:none; } }
+html.dk-phone .window-titlebar { padding:calc(6px + var(--ph-safe-t)) 6px 6px 6px; min-height:calc(52px + var(--ph-safe-t)); border-radius:0; cursor:default; gap:4px; }
+html.dk-phone .window-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:16px; font-weight:600; }
+html.dk-phone .window-icon { margin-left:8px; }
+html.dk-phone .ph-nav-btn ~ .window-icon { display:none; }
+html.dk-phone .win-btn.min, html.dk-phone .win-btn.max, html.dk-phone .resize-handle, html.dk-phone .win-edge { display:none !important; }
+html.dk-phone .win-btn.cls { width:40px; height:40px; border-radius:10px; background:transparent; box-shadow:none; overflow:visible; color:var(--text-dim); }
+html.dk-phone .win-btn.cls::before, html.dk-phone .win-btn.cls::after { content:''; position:absolute; left:50%; top:50%; width:17px; height:2px; margin:-1px 0 0 -8.5px; border-radius:1px; background:currentColor; transform:rotate(45deg); }
+html.dk-phone .win-btn.cls::after { transform:rotate(-45deg); }
+html.dk-phone .win-btn.cls:active { background:rgba(128,140,160,0.2); }
+.ph-nav-btn { display:none; }
+html.dk-phone .ph-nav-btn { display:grid; place-items:center; width:40px; height:40px; flex-shrink:0; border:0; border-radius:10px; background:transparent; color:var(--text); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+html.dk-phone .ph-nav-btn svg { width:20px; height:20px; }
+html.dk-phone .ph-nav-btn:active { background:rgba(128,140,160,0.2); }
+html.dk-phone .window-body, html.dk-phone .web-body, html.dk-phone .web-side, html.dk-phone .fs-files, html.dk-phone .dk-sheet-body { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+html.dk-phone .panel-win .window-body { padding:12px; }
+
+/* ── Gabarit des gestionnaires : la colonne devient un tiroir ── */
+html.dk-phone .web-shell { flex-direction:row; position:relative; overflow:hidden; }
+html.dk-phone .web-side, html.dk-phone .fs-sidebar {
+  position:absolute; z-index:30; left:0; top:0; bottom:0; width:min(82%, 320px); max-height:none; height:auto;
+  padding:10px 10px calc(16px + var(--ph-safe-b)); border-right:1px solid var(--glass-border); border-bottom:0;
+  background:var(--ph-side, #0b1424); transform:translateX(-104%); transition:transform .22s ease, box-shadow .22s; visibility:hidden;
+}
+html.dk-phone[data-theme="light"] .web-side, html.dk-phone[data-theme="light"] .fs-sidebar { --ph-side:#e3ecf8; }
+html.dk-phone .window.ph-nav-open .web-side, html.dk-phone .window.ph-nav-open .fs-sidebar { transform:none; visibility:visible; box-shadow:0 0 0 100vmax rgba(3,8,16,0.5); }
+@media (prefers-reduced-motion:reduce) { html.dk-phone .web-side, html.dk-phone .fs-sidebar { transition:none; } }
+html.dk-phone .web-nav { min-height:44px; }
+html.dk-phone .web-main { min-width:0; width:100%; }
+html.dk-phone .web-head { flex-wrap:wrap; gap:10px 12px; padding:14px 14px 10px; }
+html.dk-phone .web-head-text { flex:1 1 100%; min-width:0; }
+html.dk-phone .web-title { font-size:20px; overflow-wrap:anywhere; }
+html.dk-phone .web-head-actions { flex:1 1 100%; flex-wrap:wrap; justify-content:flex-start; gap:8px; }
+html.dk-phone .web-head-actions > * { flex-shrink:0; }
+html.dk-phone .web-tabs { overflow-x:auto; scrollbar-width:none; flex-wrap:nowrap; padding-left:14px; padding-right:14px; }
+html.dk-phone .web-tabs::-webkit-scrollbar { display:none; }
+html.dk-phone .web-tab { flex-shrink:0; }
+html.dk-phone .web-body, html.dk-phone .web-body.narrow { padding:4px 14px calc(24px + var(--ph-safe-b)); max-width:none; }
+html.dk-phone .web-facts { grid-template-columns:1fr; gap:2px 0; }
+html.dk-phone .web-facts dd { margin:0 0 10px; }
+html.dk-phone .web-row.line { align-items:flex-start; }
+html.dk-phone .web-row.line .web-row-text { display:block; }
+html.dk-phone .web-row-desc { display:block; margin-top:2px; white-space:normal; }
+html.dk-phone .web-foot { flex-wrap:wrap; }
+html.dk-phone .fs-btn, html.dk-phone .web-open { min-height:38px; }
+html.dk-phone .web-mini { min-height:30px; padding:5px 12px; font-size:12px; }
+
+/* Tableaux : chaque ligne devient une fiche — le nom, puis le reste à la suite, les actions au bout */
+html.dk-phone .web-tr.head { display:none; }
+html.dk-phone .web-tr { display:flex; flex-wrap:wrap; align-items:center; gap:3px 12px; min-height:48px; padding:9px 8px; }
+html.dk-phone .web-tr > * { white-space:normal; overflow:visible; min-width:0; max-width:100%; }
+html.dk-phone .web-tr > :first-child { flex:1 1 100%; }
+html.dk-phone .web-tr > :not(:first-child) { color:var(--text-dim); font-size:12px; }
+html.dk-phone .web-tr > :not(:first-child):empty { display:none; }
+html.dk-phone .web-tr > :last-child:not(:first-child) { margin-left:auto; }
+html.dk-phone .web-tr .num { text-align:left; }
+html.dk-phone .web-tr .cron-two > * { white-space:normal; overflow-wrap:anywhere; }
+html.dk-phone .cp-grid { grid-template-columns:1fr; }
+html.dk-phone .wm-inline { flex-wrap:wrap; }
+html.dk-phone .wm-form { max-width:none; }
+
+/* ── Fichiers ── */
+html.dk-phone .filestation { position:relative; overflow:hidden; }
+html.dk-phone .fs-preview { display:none !important; }
+html.dk-phone .fs-address-bar { flex-wrap:wrap; padding:8px 10px 0; gap:6px; }
+html.dk-phone .fs-pathbox { order:5; flex:1 1 100%; min-width:0; }
+html.dk-phone .fs-searchbox { flex:1; min-width:0; }
+html.dk-phone .fs-nav-btn { width:38px; height:38px; flex-shrink:0; }
+html.dk-phone .fs-toolbar { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding:8px 10px; gap:8px; }
+html.dk-phone .fs-toolbar::-webkit-scrollbar { display:none; }
+html.dk-phone .fs-toolbar > *, html.dk-phone .fs-sel-acts > * { flex-shrink:0; }
+html.dk-phone .fstb-spacer, html.dk-phone [id$="-fs-preview-btn"] { display:none; }
+html.dk-phone .fstb-btn { min-height:36px; }
+html.dk-phone .fs-view-list .fs-file { min-height:50px; padding:6px 10px; gap:12px; }
+html.dk-phone .fs-view-list .fs-file-type { display:none; }
+html.dk-phone .fs-view-list .fs-head { display:none; }
+html.dk-phone .fs-view-list .fs-file-name { font-size:14px; }
+html.dk-phone .fs-file-date, html.dk-phone .fs-file.is-dir .fs-file-size { display:none; }
+html.dk-phone .fs-view-list .fs-file.is-dir::after { content:'›'; margin-left:auto; color:var(--text-dim); font-size:18px; }
+html.dk-phone .fs-tab-bar { overflow-x:auto; scrollbar-width:none; }
+html.dk-phone .fs-statusbar { padding-bottom:calc(4px + var(--ph-safe-b)); }
+html.dk-phone [id$="-fs-ctx"], html.dk-phone .ctx-menu, html.dk-phone #desk-ctx, html.dk-phone #bar-ctx {
+  left:8px !important; right:8px !important; top:auto !important; bottom:calc(var(--ph-bar) + var(--ph-safe-b) + 8px) !important; width:auto !important; min-width:0 !important;
+  max-height:min(70vh, 560px); overflow:auto; padding:8px !important; border-radius:16px !important; box-shadow:0 0 0 100vmax rgba(3,8,16,0.45), var(--shadow) !important;
+}
+html.dk-phone [id$="-fs-ctx"] .ctx-item, html.dk-phone .ctx-item { padding:12px 14px !important; font-size:14.5px !important; border-radius:10px; }
+
+/* ── Menus, feuilles, dialogues ── */
+html.dk-phone #user-dropdown, html.dk-phone #jobs-popover {
+  position:fixed !important; left:8px !important; right:8px !important; top:auto !important; bottom:calc(var(--ph-bar) + var(--ph-safe-b) + 8px) !important;
+  width:auto !important; max-height:70vh; overflow:auto; z-index:2950 !important; border-radius:16px; box-shadow:0 0 0 100vmax rgba(3,8,16,0.45), var(--shadow);
+}
+html.dk-phone .user-drop-item { min-height:46px; font-size:14.5px; }
+html.dk-phone .ph-only { display:flex; }
+.ph-only { display:none; }
+html.dk-phone .dk-sheet-back { padding:0; align-items:flex-end; }
+html.dk-phone .dk-sheet, html.dk-phone .dk-sheet.wide { width:100%; max-height:92%; border-radius:18px 18px 0 0; border-width:1px 0 0; }
+html.dk-phone .dk-sheet-head { padding:16px 12px 12px 16px; }
+html.dk-phone .dk-sheet-body { padding:4px 14px 14px; }
+html.dk-phone .dk-sheet-foot { padding:10px 14px calc(12px + var(--ph-safe-b)); }
+html.dk-phone .dk-sheet-x { width:40px; height:40px; }
+html.dk-phone .fsx-acts { justify-content:flex-start; flex-wrap:wrap; }
+html.dk-phone #confirm-modal > div, html.dk-phone #prompt-modal > div, html.dk-phone #modal-create-app > div {
+  min-width:0 !important; width:calc(100% - 24px) !important; max-width:520px !important; max-height:86vh; overflow:auto; padding:20px !important;
+}
+html.dk-phone .gs-back { padding:calc(8px + var(--ph-safe-t)) 8px 8px; }
+html.dk-phone .gs-box { max-height:min(76vh, 100%); }
+html.dk-phone .gs-item { min-height:46px; }
+html.dk-phone .gs-text { flex-direction:column; align-items:flex-start; gap:1px; }
+html.dk-phone .gs-label { max-width:100%; }
+html.dk-phone .gs-top kbd, html.dk-phone .gs-keys { display:none; }
+html.dk-phone .mv-bar { padding:calc(8px + var(--ph-safe-t)) 8px 8px 16px; }
+html.dk-phone .mv-btn { width:42px; height:42px; }
+html.dk-phone #toasts { top:auto; bottom:calc(var(--ph-bar) + var(--ph-safe-b) + 10px); left:50%; width:calc(100% - 20px); flex-direction:column-reverse; }
+html.dk-phone .toast { white-space:normal; padding:11px 14px; font-size:13.5px; max-width:100%; text-align:center; }
+html.dk-phone .lic-banner { left:8px !important; right:8px !important; bottom:calc(var(--ph-bar) + var(--ph-safe-b) + 8px) !important; transform:none !important; width:auto !important; max-width:none !important; z-index:2890 !important; font-size:12.5px; }
+html.dk-phone #fs-op { left:10px !important; right:10px !important; bottom:calc(var(--ph-bar) + var(--ph-safe-b) + 10px) !important; min-width:0 !important; max-width:none !important; }
+html.dk-phone #app-drawer { padding-bottom:calc(var(--ph-bar) + var(--ph-safe-b)); }
+
+/* ── Pages ajoutées récemment ── */
+html.dk-phone .hl-verdict { flex-direction:row; text-align:left; gap:16px; padding:16px; }
+html.dk-phone .hl-verdict .dk-hero { width:56px; height:56px; }
+html.dk-phone .hl-verdict-title { font-size:20px; }
+html.dk-phone .hl-row { grid-template-columns:10px minmax(0, 1fr); padding:12px; }
+html.dk-phone .hl-act { grid-column:2; align-self:start; margin-top:2px; }
+html.dk-phone .ac-row { grid-template-columns:48px 26px minmax(0, 1fr); padding:9px 2px; }
+html.dk-phone .ac-row .web-mini { grid-column:3; justify-self:start; opacity:1; }
+html.dk-phone .sp-leg { grid-template-columns:12px minmax(0, 1fr) auto 44px; }
+html.dk-phone .sp-leg-hint { display:none; }
+html.dk-phone .sp-row { grid-template-columns:minmax(0, 1fr) 76px 12px; grid-template-areas:"n v c" "b b b"; gap:6px 10px; min-height:48px; padding:8px 4px; }
+html.dk-phone .sp-row-name { grid-area:n; } html.dk-phone .sp-row-val { grid-area:v; } html.dk-phone .sp-row-chev { grid-area:c; } html.dk-phone .sp-bar { grid-area:b; }
+
+/* ── Grilles à colonnes fixes : deux colonnes au plus, une seule pour les graphiques ── */
+html.dk-phone .si-tiles, html.dk-phone .pool-grid, html.dk-phone .bar-pos,
+html.dk-phone [style*="grid-template-columns:repeat(4"], html.dk-phone [style*="grid-template-columns:repeat(3"],
+html.dk-phone [style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns:repeat(2, minmax(0, 1fr)) !important; }
+html.dk-phone .rp-grid, html.dk-phone .rp-grid.two, html.dk-phone .sysinfo-grid { grid-template-columns:minmax(0, 1fr); }
+html.dk-phone .si-tiles { gap:10px; }
+html.dk-phone .ac-matrix-wrap { margin:4px -14px 0; padding:0 14px; -webkit-overflow-scrolling:touch; }
+html.dk-phone .ac-matrix { min-width:560px; }
+html.dk-phone .ac-matrix th:first-child, html.dk-phone .ac-matrix td:first-child { position:sticky; left:0; z-index:1; background:var(--ph-win, #0d1728); border-radius:0; }
+html.dk-phone[data-theme="light"] .ac-matrix th:first-child, html.dk-phone[data-theme="light"] .ac-matrix td:first-child { background:#eef4fd; }
+html.dk-phone .ac-matrix td:first-child { max-width:190px; white-space:normal; overflow-wrap:anywhere; }
+
+/* ── Éditeur de texte : plein écran, le nom du fichier sur sa propre ligne ── */
+html.dk-phone #fs-editor-modal > div { width:100% !important; max-width:none !important; height:100% !important; border:0 !important; border-radius:0 !important; background:var(--ph-win, #0d1728) !important; }
+html.dk-phone[data-theme="light"] #fs-editor-modal > div { background:#eef4fd !important; }
+html.dk-phone #fs-editor-modal > div > div:first-child { flex-wrap:wrap; gap:8px !important; padding:calc(10px + var(--ph-safe-t)) 12px 10px !important; }
+html.dk-phone #fs-editor-name { flex:1 1 calc(100% - 40px) !important; font-size:15px !important; word-break:normal !important; overflow-wrap:anywhere; }
+html.dk-phone #fs-editor-status { flex:1; }
+html.dk-phone #ed-find, html.dk-phone #ed-replace { flex:1 1 120px; width:auto !important; min-width:0; }
+
+/* ── Bandeau d'essai : il reste sur l'accueil, sans recouvrir le bas d'une fenêtre ── */
+html.dk-phone body:has(.window.visible) .lic-banner:not(.lic-expired) { display:none !important; }
+html.dk-phone body:has(.lic-banner) { padding-bottom:calc(var(--ph-bar) + var(--ph-safe-b) + 76px); }
+html.dk-phone .lic-banner { justify-content:space-between; border-radius:16px !important; }
+@media (max-width:350px) { html.dk-phone .ph-tab { font-size:9.5px; } html.dk-phone .ph-tab svg { width:20px; height:20px; } }
+/* Les grilles « autant de colonnes que possible » ne doivent jamais dépasser la largeur de l'écran. */
+html.dk-phone .sto-pools { grid-template-columns:repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+html.dk-phone .dp-cards, html.dk-phone .mem-legend, html.dk-phone .cat-grid, html.dk-phone .cp-grid { grid-template-columns:repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
+html.dk-phone .rp-grid { grid-template-columns:repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+/* Ce qui n'apparaît qu'au survol de la souris reste visible sous le doigt. */
+html.dk-phone .wp-del, html.dk-phone .ds-actions { opacity:1; }
+/* Le nom de la colonne devant chaque valeur (posé par phLabels) */
+html.dk-phone .web-tr > [data-l] { display:flex; flex-direction:row; flex-wrap:wrap; align-items:baseline; gap:0 5px; color:var(--text); }
+html.dk-phone .web-tr > [data-l]::before { content:attr(data-l) '\00a0:'; color:var(--text-dim); font-family:var(--font-body); font-weight:400; font-size:12px; letter-spacing:0; flex-shrink:0; }
+html[lang="en"].dk-phone .web-tr > [data-l]::before { content:attr(data-l) ':'; }
+</style>
 </head>
 <body>
 
@@ -10820,8 +11038,7 @@ function closeFsWin(wid) {
   var win = document.getElementById('win-' + wid);
   if (win) {
     var sizes = {}; try { sizes = JSON.parse(localStorage.getItem('win_sizes')||'{}'); } catch(_) {}
-    sizes[wid] = { w: win.offsetWidth, h: win.offsetHeight };
-    localStorage.setItem('win_sizes', JSON.stringify(sizes));
+    if (!dkIsPhone()) { sizes[wid] = { w: win.offsetWidth, h: win.offsetHeight }; localStorage.setItem('win_sizes', JSON.stringify(sizes)); }
     if (wid !== 'fs1') {
     var orphanCtx = document.getElementById(wid+'-fs-ctx');
     if (orphanCtx) orphanCtx.remove();
@@ -11429,7 +11646,7 @@ function fsRenderEntries(el, items) {
       + '<div class="fs-file-type">' + webEsc(kind === 'pool' ? 'Pool' : fsKindLabel(item.name, isDir)) + '</div>'
       + '<div class="fs-file-size">' + (isDir ? '—' : fmtBytes(item.size || 0)) + '</div>'
       + '<div class="fs-file-date" title="' + webEsc(fsFmtDate(item.mtime)) + '">' + webEsc(fsFmtWhen(item.mtime) || '—') + '</div>';
-    div.onclick      = function(e){ e.stopPropagation(); fsCtxHide(); setActiveFsWin(wid); fsTileClick(e, entry, idx); try { el.focus({ preventScroll:true }); } catch (_) {} };
+    div.onclick      = function(e){ e.stopPropagation(); fsCtxHide(); setActiveFsWin(wid); if (dkIsPhone() && !e.shiftKey && !e.ctrlKey && !e.metaKey) { fsOpenEntry(entry); return; } fsTileClick(e, entry, idx); try { el.focus({ preventScroll:true }); } catch (_) {} };
     div.ondblclick   = function(){ setActiveFsWin(wid); fsOpenEntry(entry); };
     div.oncontextmenu = function(e){ setActiveFsWin(wid); fsShowCtx(e, entry); };
     if (S) {
@@ -16021,7 +16238,7 @@ function closeApp(id) {
   const win = document.getElementById('win-' + id);
   if (win) {
     // Mémoriser la taille si non maximisée
-    if (!win._saved) {
+    if (!win._saved && !dkIsPhone()) {
       var sizes = {};
       try { sizes = JSON.parse(localStorage.getItem('win_sizes') || '{}'); } catch(_) {}
       sizes[id] = { w: win.offsetWidth, h: win.offsetHeight };
@@ -16035,6 +16252,7 @@ function closeApp(id) {
 function bringToFront(win) {
   topZ++;
   win.style.zIndex = topZ;
+  if (dkIsPhone()) { phDecorate(win); setTimeout(phSync, 0); }
   tbSync();
   setupWinEdges(win);  // fenêtres créées à la volée comprises
   dkWinPlace(win);
@@ -16174,6 +16392,7 @@ function setupDragWin(bar) {
     if (e.target.closest('.win-btn')) return;
     var win = bar.closest('.window');
     bringToFront(win);
+    if (dkIsPhone()) return;
     var ox = e.clientX - win.offsetLeft;
     var oy = e.clientY - win.offsetTop;
     var wa = dkWorkArea();   // la barre de titre reste hors de la barre système
@@ -16760,7 +16979,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.43.0';
+var DK_PAGE_VERSION = '2.44.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -17995,7 +18214,8 @@ function renderDesktopIcons() {
     div.className = 'desk-icon';
     div.dataset.id = id;
     div.ondblclick = function() { if (div._dragged && Date.now() - div._dragged < 500) return; app.action(); };
-    div.onpointerdown = function(e) { deskDragStart(e, div); };
+    div.onpointerdown = function(e) { if (!dkIsPhone()) deskDragStart(e, div); };
+    div.onclick = function() { if (dkIsPhone()) app.action(); };
     div.ondragstart = function() { return false; };
     div.oncontextmenu = function(e) {
       e.preventDefault(); e.stopPropagation();
@@ -21584,6 +21804,255 @@ async function secSesCloseOthers() {
   catch (e) { wmToastErr(e); }
   secSesLoad(true);
 }
+
+// ============================================================
+// DESKTROO SUR TÉLÉPHONE
+// ============================================================
+// Sur un écran étroit, <html> reçoit la classe « dk-phone » : les styles font le gros du travail (une fenêtre par
+// écran, colonne en tiroir, barre en bas). Ce bloc ajoute ce que les styles ne savent pas faire : la barre du bas,
+// le bouton du tiroir, le geste « retour », l'appui long, et l'ouverture d'un seul toucher.
+var _ph = { on: false, mq: null, ddHome: null, jobsHome: null, lastCtx: 0, press: null };
+function dkIsPhone() { return _ph.on; }
+function phWants() {
+  try { return window.matchMedia('(max-width: 700px), (pointer: coarse) and (max-height: 500px)').matches; } catch (e) { return window.innerWidth <= 700; }
+}
+function phIcon(k) {
+  var P = { home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/>', apps: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
+    search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    menu: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>', nav: '<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/>' };
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + P[k] + '</svg>';
+}
+function phBarBuild() {
+  var bar = document.getElementById('ph-bar');
+  if (bar) return bar;
+  bar = document.createElement('nav');
+  bar.id = 'ph-bar'; bar.setAttribute('aria-label', T('Navigation'));
+  var tab = function(id, icon, label, extra) { return '<button class="ph-tab" id="ph-tab-' + id + '" onclick="phTab(\'' + id + '\')">' + phIcon(icon) + '<span>' + webEsc(label) + '</span>' + (extra || '') + '</button>'; };
+  bar.innerHTML = tab('home', 'home', T('Accueil')) + tab('apps', 'apps', T('Applications')) + tab('search', 'search', T('Rechercher'))
+    + tab('alerts', 'bell', T('Alertes'), '<span class="ph-badge" id="ph-badge"></span>') + tab('menu', 'menu', T('Menu'));
+  document.body.appendChild(bar);
+  // La pastille des alertes suit celle de la barre système.
+  var src = document.getElementById('badge-count'), dst = document.getElementById('ph-badge');
+  if (src && dst) {
+    var copy = function() { var n = parseInt(src.textContent, 10) || 0; dst.textContent = n && src.style.display !== 'none' ? String(n) : ''; };
+    copy();
+    try { new MutationObserver(copy).observe(src, { childList: true, characterData: true, subtree: true, attributes: true }); } catch (e) {}
+  }
+  return bar;
+}
+function phCloseMenus() {
+  ['user-dropdown', 'jobs-popover'].forEach(function(id) { var e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  document.querySelectorAll('[id$="-fs-ctx"]').forEach(function(c) { c.style.display = 'none'; });
+}
+function phTab(id) {
+  var drawer = document.getElementById('app-drawer'), open = !!drawer && drawer.classList.contains('open');
+  if (id !== 'menu') phCloseMenus();
+  if (id !== 'apps' && open) closeDrawer();
+  if (id !== 'search' && typeof gsClose === 'function' && _gs.open) gsClose();
+  if (id === 'home') { phHome(); }
+  else if (id === 'apps') { toggleDrawer(); }
+  else if (id === 'search') { gsOpen(); }
+  else if (id === 'alerts') { openApp('notifs'); }
+  else if (id === 'menu') {
+    var jp = document.getElementById('jobs-popover'), dd = document.getElementById('user-dropdown'), shown = (dd && dd.style.display === 'block') || (jp && jp.style.display === 'block');
+    if (jp) jp.style.display = 'none';
+    // « Tâches en cours » n'apparaît que s'il y en a, comme le bouton de la barre système.
+    var mj = document.getElementById('ph-m-jobs'); if (mj) mj.style.display = (typeof _jobsList !== 'undefined' && _jobsList.length) ? '' : 'none';
+    if (shown) { if (dd) dd.style.display = 'none'; } else toggleUserMenu();
+  }
+  phSync();
+}
+// Accueil : toutes les fenêtres se replient ; elles restent ouvertes, on y revient par leur icône.
+function phHome() {
+  document.querySelectorAll('.window.visible').forEach(function(w) { w.classList.remove('visible', 'ph-nav-open'); });
+  try { dkSheetClose(); } catch (e) {}
+  try { document.body.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { document.body.scrollTop = 0; }
+}
+function phTopWin() {
+  var best = null, z = -1;
+  document.querySelectorAll('.window.visible').forEach(function(w) { var n = parseInt(w.style.zIndex, 10) || 0; if (n > z) { z = n; best = w; } });
+  return best;
+}
+// La barre de titre reçoit le bouton du tiroir quand la fenêtre a une colonne.
+function phDecorate(win) {
+  if (!win || win._phDone) return;
+  var bar = win.querySelector('.window-titlebar');
+  if (!bar) return;
+  if (!win.querySelector('.web-side, .fs-sidebar')) return;   // pas (encore) de colonne : on réessaiera
+  win._phDone = true;
+  var b = document.createElement('button');
+  b.className = 'ph-nav-btn'; b.type = 'button';
+  b.title = T('Menu de la fenêtre'); b.setAttribute('aria-label', b.title); b.setAttribute('aria-expanded', 'false');
+  b.innerHTML = phIcon('nav');
+  b.onclick = function(e) { e.stopPropagation(); phNav(win); };
+  b.onmousedown = function(e) { e.stopPropagation(); };
+  bar.insertBefore(b, bar.firstChild);
+}
+function phNav(win, open) {
+  if (!win) return;
+  var want = open == null ? !win.classList.contains('ph-nav-open') : !!open;
+  win.classList.toggle('ph-nav-open', want);
+  var b = win.querySelector('.ph-nav-btn');
+  if (b) b.setAttribute('aria-expanded', String(want));
+  if (want) { var first = win.querySelector('.web-side .web-nav, .fs-sidebar .fs-item'); if (first) { try { first.focus({ preventScroll: true }); } catch (e) {} } }
+}
+// Un toucher hors du tiroir le referme ; un toucher sur une de ses lignes aussi, une fois la page choisie.
+document.addEventListener('click', function(e) {
+  if (!_ph.on) return;
+  var win = document.querySelector('.window.ph-nav-open');
+  if (win) {
+    var side = win.querySelector('.web-side, .fs-sidebar'), t = e.target;
+    if (t.closest && t.closest('.ph-nav-btn')) return;
+    if (side && side.contains(t)) { if (t.closest('button, .fs-item, a')) setTimeout(function() { phNav(win, false); }, 60); return; }
+    e.preventDefault(); e.stopPropagation();
+    phNav(win, false);
+    return;
+  }
+  setTimeout(phSync, 60);
+}, true);
+
+// ── Appui long = clic droit (iOS n'envoie pas l'événement « contextmenu ») ──
+document.addEventListener('touchstart', function(e) {
+  if (!_ph.on || e.touches.length !== 1) { phPressEnd(); return; }
+  var t = e.touches[0], target = e.target;
+  if (!target.closest || !target.closest('.fs-file, .fs-files, .desk-icon, .drawer-icon')) return;
+  phPressEnd();
+  _ph.press = { x: t.clientX, y: t.clientY, timer: setTimeout(function() {
+    var p = _ph.press; _ph.press = null;
+    if (!p || Date.now() - _ph.lastCtx < 700) return;   // le navigateur a déjà envoyé le sien
+    _ph.lastCtx = Date.now(); _ph.swallow = Date.now();
+    target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: p.x, clientY: p.y, view: window }));
+  }, 520) };
+}, { passive: true });
+function phPressEnd() { if (_ph.press) { clearTimeout(_ph.press.timer); _ph.press = null; } }
+document.addEventListener('touchmove', function(e) { var p = _ph.press, t = e.touches[0]; if (p && t && (Math.abs(t.clientX - p.x) > 9 || Math.abs(t.clientY - p.y) > 9)) phPressEnd(); }, { passive: true });
+document.addEventListener('touchend', phPressEnd, { passive: true });
+document.addEventListener('touchcancel', phPressEnd, { passive: true });
+document.addEventListener('contextmenu', function(e) {
+  if (!_ph.on || !e.isTrusted) return;
+  if (Date.now() - _ph.lastCtx < 900) { e.preventDefault(); e.stopPropagation(); return; }   // doublon de notre appui long
+  _ph.lastCtx = Date.now(); _ph.swallow = Date.now(); phPressEnd();
+}, true);
+// Le doigt qui se lève après un appui long ne doit pas compter pour un toucher.
+document.addEventListener('click', function(e) { if (_ph.on && _ph.swallow && Date.now() - _ph.swallow < 450 && e.isTrusted) { e.preventDefault(); e.stopPropagation(); } _ph.swallow = 0; }, true);
+
+// ── Retour (bouton ou geste du téléphone) : referme ce qui est au-dessus, un niveau à la fois ──
+function phLayers() {
+  var L = [], vis = function(id) { var e = document.getElementById(id); return e && e.style.display !== 'none' && e.style.display !== '' ? e : null; };
+  var open = function(id) { var e = document.getElementById(id); return e && e.classList.contains('open') ? e : null; };
+  if (typeof _gs !== 'undefined' && _gs.open) L.push(gsClose);
+  if (document.getElementById('dk-viewer')) L.push(function() { mvClose(); });
+  if (open('confirm-modal')) L.push(function() { var b = document.getElementById('confirm-cancel'); if (b) b.click(); });
+  if (open('prompt-modal')) L.push(function() { var b = document.getElementById('prompt-cancel'); if (b) b.click(); });
+  if (typeof _sheet !== 'undefined' && _sheet.open) L.push(function() {
+    var c = document.querySelector('#dk-sheet-crumb .web-crumb'); if (c) c.click(); else dkSheetClose(); });
+  if (vis('modal-create-app')) L.push(function() { try { closeCreateApp(); } catch (e) { document.getElementById('modal-create-app').style.display = 'none'; } });
+  if (vis('fs-editor-modal')) L.push(function() { try { fsEditClose(); } catch (e) {} });
+  var ctx = Array.prototype.find.call(document.querySelectorAll('[id$="-fs-ctx"]'), function(c) { return c.style.display && c.style.display !== 'none'; });
+  if (ctx) L.push(function() { ctx.style.display = 'none'; });
+  if (vis('user-dropdown') || vis('jobs-popover')) L.push(phCloseMenus);
+  if (open('app-drawer')) L.push(closeDrawer);
+  var w = phTopWin();
+  if (w) L.push(function() {
+    if (w.classList.contains('ph-nav-open')) { phNav(w, false); return; }
+    var crumb = w.querySelector('.web-head .web-crumb');
+    if (crumb) { crumb.click(); return; }
+    if (/^win-fs\d+$/.test(w.id)) { try { setActiveFsWin(w.id.slice(4)); var t = fsCurTab(); if (t && t.hi > 0) { fsHistGo(-1); return; } } catch (e) {} }
+    w.classList.remove('visible');
+  });
+  return L;
+}
+function phBack() { var L = phLayers(); if (!L.length) return false; try { L[0](); } catch (e) {} return true; }
+function phSync() {
+  if (!_ph.on) return;
+  var top = phTopWin(), drawer = document.getElementById('app-drawer'), apps = !!drawer && drawer.classList.contains('open');
+  if (top) phDecorate(top);
+  var on = apps ? 'apps' : (top ? (top.id === 'win-notifs' ? 'alerts' : '') : 'home');
+  ['home', 'apps', 'search', 'alerts', 'menu'].forEach(function(k) { var b = document.getElementById('ph-tab-' + k); if (b) { b.classList.toggle('on', k === on); if (k === on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); } });
+  // Tant qu'il y a quelque chose à refermer, une entrée d'historique attend le geste « retour ».
+  try { if (phLayers().length && !(history.state && history.state.dkph)) history.pushState({ dkph: 1 }, ''); } catch (e) {}
+}
+window.addEventListener('popstate', function() {
+  if (!_ph.on) return;
+  if (phBack()) setTimeout(phSync, 80);
+});
+
+// ── Tableaux en fiches : chaque valeur reprend le nom de sa colonne, lu dans la ligne d'en-tête (masquée ici) ──
+function phLabels(root) {
+  if (!root) return;
+  root.querySelectorAll('.web-tr.head').forEach(function(head) {
+    var names = Array.prototype.map.call(head.children, function(c) { return c.textContent.replace(/\s+/g, ' ').trim(); });
+    if (names.length < 2) return;
+    var rows = Array.prototype.filter.call(head.parentNode.children, function(r) { return r !== head && r.classList.contains('web-tr'); });
+    if (!rows.length && head.nextElementSibling) rows = Array.prototype.filter.call(head.nextElementSibling.children, function(r) { return r.classList.contains('web-tr'); });
+    rows.forEach(function(row) {
+      if (row._phL || row.classList.contains('head') || row.children.length !== names.length) return;
+      row._phL = true;
+      for (var i = 1; i < names.length; i++) {
+        var c = row.children[i];
+        if (names[i] && !c.querySelector('button, a, input, select')) c.setAttribute('data-l', names[i]);
+      }
+    });
+  });
+}
+function phLabelsSoon() {
+  if (!_ph.on || _ph.lq) return;
+  _ph.lq = requestAnimationFrame(function() { _ph.lq = 0; phLabels(phTopWin()); phLabels(document.getElementById('dk-sheet')); });
+}
+
+// ── Entrée et sortie du mode téléphone ──
+function phApply() {
+  var want = phWants() && !!document.getElementById('taskbar');
+  if (want === _ph.on) return;
+  _ph.on = want;
+  document.documentElement.classList.toggle('dk-phone', want);
+  var dd = document.getElementById('user-dropdown'), jp = document.getElementById('jobs-popover');
+  if (want) {
+    phBarBuild();
+    // Les menus de la barre système sortent de la barre (masquée) pour s'ouvrir au-dessus de celle du bas.
+    if (dd && dd.parentNode !== document.body) { _ph.ddHome = dd.parentNode; document.body.appendChild(dd); }
+    if (jp && jp.parentNode !== document.body) { _ph.jobsHome = [jp.parentNode, jp.nextSibling]; document.body.appendChild(jp); }
+    phMenuExtras();
+    if (!_ph.obs) { try { _ph.obs = new MutationObserver(phLabelsSoon); } catch (e) {} }
+    if (_ph.obs) _ph.obs.observe(document.body, { childList: true, subtree: true });
+    document.querySelectorAll('.window.maximized').forEach(function(w) { w.classList.remove('maximized'); });
+  } else {
+    if (_ph.obs) _ph.obs.disconnect();
+    if (dd && _ph.ddHome) _ph.ddHome.appendChild(dd);
+    if (jp && _ph.jobsHome) _ph.jobsHome[0].insertBefore(jp, _ph.jobsHome[1]);
+    document.querySelectorAll('.window.ph-nav-open').forEach(function(w) { w.classList.remove('ph-nav-open'); });
+  }
+  try { deskLayout(); } catch (e) {}
+  try { dkWidgetsApply(); } catch (e) {}
+  phSync();
+}
+// Dans le menu du compte : ce que la barre système portait et qui n'a plus de bouton.
+function phMenuExtras() {
+  var dd = document.getElementById('user-dropdown');
+  if (!dd || dd.querySelector('.ph-only')) return;
+  var sep = dd.querySelector('.user-drop-sep');
+  var mk = function(id, icon, label, fn) {
+    var d = document.createElement('div');
+    d.className = 'user-drop-item ph-only'; d.id = id;
+    d.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + icon + '</svg><span></span>';
+    d.querySelector('span').textContent = label;
+    d.onclick = function() { dd.style.display = 'none'; fn(); };
+    return d;
+  };
+  var items = [
+    mk('ph-m-theme', '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', T('Thème clair ou sombre'), function() { toggleTheme(); }),
+    mk('ph-m-jobs', '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>', T('Tâches en cours'), function() {
+      // Après le toucher : le bureau referme cette liste sur tout clic fait ailleurs, celui-ci compris.
+      setTimeout(function() { var jp = document.getElementById('jobs-popover'); if (!jp) return; try { jobsRenderPopover(); } catch (e) {} jp.style.display = 'block'; phSync(); }, 0); })
+  ];
+  var ref = sep ? sep.nextSibling : dd.firstChild;
+  items.forEach(function(it) { dd.insertBefore(it, ref); });
+}
+(function() {
+  try { _ph.mq = window.matchMedia('(max-width: 700px), (pointer: coarse) and (max-height: 500px)'); if (_ph.mq.addEventListener) _ph.mq.addEventListener('change', phApply); else _ph.mq.addListener(phApply); } catch (e) {}
+  window.addEventListener('resize', function() { clearTimeout(_ph.rz); _ph.rz = setTimeout(phApply, 120); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', phApply); else phApply();
+})();
 
 // ============================================================
 // RECHERCHE GLOBALE (Ctrl+K) — une fenêtre, un réglage, une application, un compte, un partage, un fichier
