@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.41.0'
+APP_VERSION = '2.41.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -4234,6 +4234,50 @@ def _ct_update_status(project):
     return {'ok': True, 'project': project, 'running': m is None, 'exit_code': int(m.group(1)) if m else None,
             'log': re.sub(r'DK_EXIT=\d+\s*$', '', text)[-3000:]}
 # ── MDM-CT-UPDATE-V1 (fin) ────────────────────────────────────────────────────
+
+
+# ── MDM-CT-FRESH-V1 : images que Desktroo vient de mettre à jour ───────────
+# TrueNAS ne compare les images au registre qu'une fois par jour. Après une mise à jour faite hors de ses applications
+# (docker compose), il annonce donc encore « mise à jour disponible » jusqu'au lendemain. On retient ici, pour tous les
+# navigateurs, quelle image porte chaque étiquette depuis la mise à jour : tant que c'est la même, l'annonce est périmée.
+import time as _fresh_time
+CT_FRESH_FILE = os.path.join(ACCESS_DATA_DIR, 'images-fresh.json')
+_CT_FRESH_TTL = 26 * 3600
+_CT_FRESH_TAG = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._/:@-]{0,299}$')
+_CT_FRESH_ID = re.compile(r'^(sha256:)?[0-9a-f]{12,64}$')
+
+
+def _ct_fresh_read():
+    data = _access_read_json(CT_FRESH_FILE, {})
+    now, out = _fresh_time.time(), {}
+    if isinstance(data, dict):
+        for tag, v in data.items():
+            if (isinstance(tag, str) and isinstance(v, dict) and _CT_FRESH_TAG.match(tag)
+                    and isinstance(v.get('id'), str) and _CT_FRESH_ID.match(v['id'])
+                    and isinstance(v.get('at'), (int, float)) and 0 <= now - v['at'] < _CT_FRESH_TTL):
+                out[tag] = {'id': v['id'], 'at': v['at']}
+    return out
+
+
+def _ct_fresh_get():
+    return {'ok': True, 'fresh': {tag: v['id'] for tag, v in _ct_fresh_read().items()}}
+
+
+def _ct_fresh_add(items):
+    if not isinstance(items, list) or not items or len(items) > 100:
+        raise ValueError('liste invalide')
+    cur, now = _ct_fresh_read(), _fresh_time.time()
+    for it in items:
+        tag = str((it or {}).get('tag') or '') if isinstance(it, dict) else ''
+        iid = str((it or {}).get('id') or '') if isinstance(it, dict) else ''
+        if not _CT_FRESH_TAG.match(tag) or not _CT_FRESH_ID.match(iid):
+            raise ValueError('image invalide')
+        cur[tag] = {'id': iid, 'at': now}
+    if len(cur) > 300:      # garde-fou : les plus récentes seulement
+        cur = dict(sorted(cur.items(), key=lambda kv: kv[1]['at'], reverse=True)[:300])
+    _access_write_json(CT_FRESH_FILE, cur)
+    return _ct_fresh_get()
+# ── MDM-CT-FRESH-V1 (fin) ──────────────────────────────────────────
 
 
 def _npm_status():
@@ -8465,6 +8509,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        # MDM-CT-FRESH-V1 : images mises à jour depuis moins d'un jour, que TrueNAS annonce encore à tort
+        if path == '/containers/images/fresh':
+            try:
+                self._json(200, _ct_fresh_get())
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         # MDM-CT-UPDATE-V1 : suivi d'une mise à jour de conteneurs lancée par POST /containers/update
         if path == '/containers/update/status':
             try:
@@ -8964,6 +9016,17 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         if path == '/branding':
             try:
                 self._json(200, dict(_branding_set(str(self._body().get('accent') or '')), ok=True))
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        # MDM-CT-FRESH-V1 : retenir les images qui viennent d'être mises à jour
+        if path == '/containers/images/fresh':
+            try:
+                b = self._body()
+                self._json(200, _ct_fresh_add(b.get('items')))
             except ValueError as e:
                 self._json(400, {'error': str(e)})
             except Exception as e:

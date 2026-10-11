@@ -7296,7 +7296,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Le code fonctionne. Il sera demandé à la prochaine connexion.": "The code works. It will be asked at the next sign-in.",
 "Retirer le téléphone du compte": "Remove the phone from the account",
 "Ce compte se connectera avec son seul mot de passe.": "This account will sign in with its password alone.",
-"Téléphone retiré du compte {0}": "Phone removed from the {0} account"
+"Téléphone retiré du compte {0}": "Phone removed from the {0} account",
+"{0} : le registre n'avait rien de plus récent, l'image en place est la bonne.": "{0}: the registry had nothing newer, the image in place is the right one."
 }
 </script>
 <script id="dk-i18n">
@@ -13327,7 +13328,37 @@ var _ct = { list: [], apps: [], docker: null, why: '', stats: null, loaded: fals
 // ── Images Docker : ce que le NAS garde sur disque pour ses conteneurs (app.image.query, app.image.delete) ──
 // Une image « inutilisée » n'est rattachée à aucun conteneur, même arrêté. Docker refuse de toute façon de supprimer
 // une image dont un conteneur dépend : la suppression n'est jamais forcée.
-_ct.img = { list: null, busy: '', seq: 0 };
+_ct.img = { list: null, busy: '', seq: 0, fresh: {} };
+// TrueNAS ne compare les images au registre qu'une fois par jour. Après une mise à jour faite hors de ses applications
+// (docker compose), il annonce donc encore « mise à jour disponible » jusqu'au lendemain, alors que l'image est la bonne.
+// Desktroo retient quelle image porte chaque étiquette depuis sa mise à jour : tant que c'est la même, l'annonce est périmée.
+// La mémoire est tenue par le service, pour tous les navigateurs ; à défaut, par celui-ci.
+var CT_FRESH_TTL = 26 * 3600e3;
+function ctImgFreshLocal() {
+  var out = {};
+  try { var d = JSON.parse(localStorage.getItem('dk-img-fresh') || '{}'), now = Date.now();
+    Object.keys(d || {}).forEach(function(k) { var v = d[k]; if (v && typeof v.id === 'string' && now - Number(v.at) < CT_FRESH_TTL && now >= Number(v.at)) out[k] = v; }); } catch (_) {}
+  return out;
+}
+async function ctImgFreshLoad() {
+  var loc = ctImgFreshLocal(), map = {};
+  Object.keys(loc).forEach(function(k) { map[k] = loc[k].id; });
+  try { var r = await fileops('GET', 'containers/images/fresh'); if (r && r.fresh && typeof r.fresh === 'object') Object.keys(r.fresh).forEach(function(k) { map[k] = String(r.fresh[k]); }); } catch (_) {}
+  _ct.img.fresh = map;
+}
+async function ctImgFreshAdd(items) {
+  if (!items.length) return;
+  var loc = ctImgFreshLocal(), now = Date.now();
+  items.forEach(function(it) { loc[it.tag] = { id: it.id, at: now }; _ct.img.fresh[it.tag] = it.id; });
+  try { localStorage.setItem('dk-img-fresh', JSON.stringify(loc)); } catch (_) {}
+  try { await fileops('POST', 'containers/images/fresh', { items: items }); } catch (_) {}   // un service plus ancien : ce navigateur s'en souvient seul
+}
+// Une mise à jour est-elle vraiment à faire ? Oui si TrueNAS l'annonce et que l'image n'a pas été renouvelée depuis.
+function ctImgUp(img) {
+  if (!img || !img.update_available) return false;
+  var id = String(img.id || ''), fresh = _ct.img.fresh || {};
+  return !ensureArray(img.repo_tags).some(function(t) { return t && fresh[ctImgRef(t)] === id; });
+}
 function ctImgRef(s) {
   s = String(s || '').trim();
   if (!s || /^sha256:/.test(s)) return s;
@@ -13356,7 +13387,7 @@ async function ctImagesLoad(soft) {
   var seq = ++_ct.img.seq;
   if (!soft || !_ct.img.list) { wmHead('ct', 'Images', { back: [T('Conteneurs'), 'ctGo(\'group\',null)'] }); ctSide(); wmLoading('ct'); }
   try {
-    var list = ensureArray(await wsCall('app.image.query', [], 60000));
+    var got = await Promise.all([wsCall('app.image.query', [], 60000), ctImgFreshLoad()]), list = ensureArray(got[0]);
     if (seq !== _ct.img.seq) return;
     _ct.img.list = list.sort(function(a, b) { return (Number(b.size) || 0) - (Number(a.size) || 0); });
     if (_ct.nav === 'images') ctRender(soft === true);
@@ -13388,8 +13419,8 @@ function ctImagesView(soft) {
     h += '<div class="web-tr"><span class="cron-two"><strong class="mono">' + (name ? webEsc(name) : T('Image sans nom')) + '</strong><span class="dim mono">' + webEsc(ctImgShort(img.id)) + '</span></span>'
       + '<span class="num">' + webEsc(mntFmtSize(Number(img.size) || 0)) + '</span>'
       + '<span class="cron-two"><span>' + (users.length ? webEsc(apps.slice(0, 2).join(', ') + (apps.length > 2 ? '…' : '')) : '<span class="dim">' + (img.dangling || !name ? T('Reste d\'une ancienne version') : T('Inutilisée')) + '</span>') + '</span>'
-        + (img.update_available ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
-      + '<span class="ct-img-act">' + (users.length ? (img.update_available ? '<button class="web-mini" data-imgup="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Mettre à jour') + '</button>' : '')
+        + (ctImgUp(img) ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
+      + '<span class="ct-img-act">' + (users.length ? (ctImgUp(img) ? '<button class="web-mini" data-imgup="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Mettre à jour') + '</button>' : '')
           : '<button class="web-mini" data-img="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Supprimer') + '</button>') + '</span></div>';
   });
   el.innerHTML = h + '</div><p class="web-note">' + T('Une image supprimée est téléchargée de nouveau si une application en a besoin, par exemple au démarrage d\'une application arrêtée.') + '</p>';
@@ -13400,7 +13431,7 @@ function ctImagesView(soft) {
 // Par TrueNAS pour ses applications (il télécharge la nouvelle image et redéploie). Pour les autres conteneurs, par
 // le service Desktroo : il relance « docker compose » tel que leur auteur l'a écrit. Un conteneur créé à la main n'a
 // pas de recette à rejouer : on télécharge sa nouvelle image et on le dit.
-function ctImgUpdatable() { return ensureArray(_ct.img.list).filter(function(i) { return i.update_available && ctImgUsers(i).length; }); }
+function ctImgUpdatable() { return ensureArray(_ct.img.list).filter(function(i) { return ctImgUp(i) && ctImgUsers(i).length; }); }
 async function ctImgWait(project) {
   for (var n = 0; n < 150; n++) {
     await new Promise(function(r) { setTimeout(r, 4000); });
@@ -13423,10 +13454,14 @@ async function ctImgUpdate(one) {
     + '<br><span style="font-size:12px;color:var(--text-dim);">' + what + T('Ils redémarrent pendant l\'opération.')
     + (self ? ' <span style="color:var(--warning);">' + T('Desktroo lui-même redémarre : la page se rétablit toute seule en une minute.') + '</span>' : '') + '</span>', { ok: T('Mettre à jour') })) return;
   var done = [], failed = [], manual = [], step = function(t) { _ct.img.busy = t; if (_ct.nav === 'images') ctRender(true); };
+  var badApps = [], badNames = [];   // ce qui a échoué : leurs images ne seront pas tenues pour renouvelées
+  var before = imgs.map(function(img) { var us = ctImgUsers(img);
+    return { id: String(img.id || ''), name: ctImgName(img) || ctImgShort(img.id), refs: ensureArray(img.repo_tags).filter(Boolean).map(ctImgRef),
+             apps: us.filter(function(c) { return c.app; }).map(function(c) { return c.app; }), names: us.filter(function(c) { return !c.app; }).map(cname) }; });
   for (var a = 0; a < apps.length; a++) {
     step(Tf('Mise à jour de {0}...', ctGroupLabel(apps[a])));
     try { await appsJob('app.pull_images', [apps[a], { redeploy: true }], 1200000); done.push(ctGroupLabel(apps[a])); }
-    catch (e) { if (e && e.message === 'LICENSE_READONLY') { _ct.img.busy = ''; ctRender(true); return; } failed.push(ctGroupLabel(apps[a]) + ' : ' + wmErr(e)); }
+    catch (e) { if (e && e.message === 'LICENSE_READONLY') { _ct.img.busy = ''; ctRender(true); return; } badApps.push(apps[a]); failed.push(ctGroupLabel(apps[a]) + ' : ' + wmErr(e)); }
   }
   if (others.length) {
     step(T('Mise à jour des conteneurs...'));
@@ -13434,26 +13469,41 @@ async function ctImgUpdate(one) {
       var r = await fileops('POST', 'containers/update', { ids: others.map(function(c) { return c.id; }) });
       ensureArray(r.skipped).forEach(function(s) {
         if (s.why === 'nocompose') manual.push(others.find(function(c) { return c.name === s.name; }) || { name: s.name });
-        else failed.push(s.name + ' : ' + (s.why === 'missing' ? T('son fichier docker compose n\'est plus à sa place sur le NAS') : T('non géré par Desktroo')));
+        else { badNames.push(s.name); failed.push(s.name + ' : ' + (s.why === 'missing' ? T('son fichier docker compose n\'est plus à sa place sur le NAS') : T('non géré par Desktroo'))); }
       });
       for (var k = 0; k < ensureArray(r.started).length; k++) {
         var p = r.started[k], st = await ctImgWait(p.project);
         if (st && st.exit_code === 0) done.push(ensureArray(p.containers).join(', '));
-        else failed.push(ensureArray(p.containers).join(', ') + ' : ' + (st ? String(st.log || '').trim().split('\n').slice(-2).join(' ') || Tf('code {0}', st.exit_code) : T('toujours en cours après dix minutes')));
+        else { badNames = badNames.concat(ensureArray(p.containers)); failed.push(ensureArray(p.containers).join(', ') + ' : ' + (st ? String(st.log || '').trim().split('\n').slice(-2).join(' ') || Tf('code {0}', st.exit_code) : T('toujours en cours après dix minutes'))); }
       }
-    } catch (e2) { failed.push(others.map(cname).join(', ') + ' : ' + (/not found|404/i.test(wmErr(e2)) ? T('le service Desktroo n\'est pas à jour, mettez d\'abord Desktroo à jour') : wmErr(e2))); }
+    } catch (e2) { badNames = badNames.concat(others.map(cname)); failed.push(others.map(cname).join(', ') + ' : ' + (/not found|404/i.test(wmErr(e2)) ? T('le service Desktroo n\'est pas à jour, mettez d\'abord Desktroo à jour') : wmErr(e2))); }
   }
   for (var m = 0; m < manual.length; m++) {   // au moins la nouvelle image, prête pour quand le conteneur sera recréé
     if (!manual[m].image) continue;
     step(Tf('Téléchargement de {0}...', manual[m].image));
-    try { var j = await wsCall('app.image.pull', [{ image: String(manual[m].image) }], 300000); if (typeof j === 'number') await waitJob(j, 1200000); } catch (_) {}
+    try { var j = await wsCall('app.image.pull', [{ image: String(manual[m].image) }], 300000); if (typeof j === 'number') await waitJob(j, 1200000); } catch (_) { badNames.push(cname(manual[m])); }
   }
-  _ct.img.busy = '';
-  if (done.length) toast('✅ ' + Tf('À jour : {0}', done.join(', ')), 8000);
-  if (manual.length) toast(Tf('{0} : créé à la main, sans recette à rejouer. Sa nouvelle image est téléchargée ; recréez-le pour qu\'il s\'en serve.', manual.map(cname).join(', ')), 14000);
-  if (failed.length) toast('❌ ' + failed.join(' | ').slice(0, 500), 14000);
+  // Le résultat se lit dans la liste des images, pas dans le seul code de retour : l'étiquette porte-t-elle une autre image ?
+  step(T('Vérification...'));
   _appUp.at = 0; try { appUpdatesCheck(true); } catch (_) {}
   await Promise.allSettled([loadContainers(true), ctImagesLoad(true)]);
+  var fresh = [], same = [], now = ensureArray(_ct.img.list);
+  before.forEach(function(b) {
+    if (b.apps.some(function(x) { return badApps.indexOf(x) >= 0; }) || b.names.some(function(x) { return badNames.indexOf(x) >= 0; })) return;
+    b.refs.forEach(function(ref) {
+      var cur = now.find(function(i) { return ensureArray(i.repo_tags).some(function(t) { return t && ctImgRef(t) === ref; }); });
+      if (!cur) return;
+      fresh.push({ tag: ref, id: String(cur.id || '') });
+      if (String(cur.id || '') === b.id && same.indexOf(b.name) < 0) same.push(b.name);
+    });
+  });
+  await ctImgFreshAdd(fresh);
+  _ct.img.busy = '';
+  if (_ct.nav === 'images') ctRender(true);
+  if (done.length) toast('✅ ' + Tf('À jour : {0}', done.join(', ')), 8000);
+  if (same.length) toast(Tf('{0} : le registre n\'avait rien de plus récent, l\'image en place est la bonne.', same.join(', ')), 12000);
+  if (manual.length) toast(Tf('{0} : créé à la main, sans recette à rejouer. Sa nouvelle image est téléchargée ; recréez-le pour qu\'il s\'en serve.', manual.map(cname).join(', ')), 14000);
+  if (failed.length) toast('❌ ' + failed.join(' | ').slice(0, 500), 14000);
 }
 async function ctImgRemove(img) { await wsCall('app.image.delete', [String(img.id), { force: false }], 300000); }
 async function ctImgDelete(img) {
@@ -14748,7 +14798,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.41.0';
+var DK_PAGE_VERSION = '2.41.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
