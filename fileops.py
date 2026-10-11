@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.42.0'
+APP_VERSION = '2.42.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -4080,7 +4080,7 @@ def _ct_trim(c):
             for n, v in sorted((ns.get('Networks') or {}).items())]
     return {
         'id': c.get('Id') or '', 'name': str(c.get('Name') or '').lstrip('/'),
-        'image': cfg.get('Image') or '', 'state': st.get('Status') or '',
+        'image': cfg.get('Image') or '', 'image_id': str(c.get('Image') or ''), 'state': st.get('Status') or '',
         'health': ((st.get('Health') or {}).get('Status')) or '',
         'started_at': st.get('StartedAt') or '', 'finished_at': st.get('FinishedAt') or '',
         'exit_code': st.get('ExitCode'), 'restart_count': c.get('RestartCount') or 0,

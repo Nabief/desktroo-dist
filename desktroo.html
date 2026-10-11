@@ -6814,9 +6814,6 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Suppression {0} sur {1}...": "Deleting {0} of {1}...",
 "{0} images supprimées": "{0} images deleted",
 "1 image supprimée": "1 image deleted",
-"{0} gardées car encore utilisées": "{0} kept because still in use",
-"1 gardée car encore utilisée": "1 kept because still in use",
-"Aucune image supprimée : Docker les dit encore utilisées.": "No image deleted: Docker says they are still in use.",
 "Mot de passe et code": "Password and code",
 "Mot de passe à usage unique": "One-time password",
 "Clé d'API": "API key",
@@ -8474,7 +8471,15 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Données d'applications": "App data",
 "Déverrouiller aussi ses sous-datasets": "Also unlock its child datasets",
 "Pool des applications": "Apps pool",
-"Pour confier une carte graphique NVIDIA aux applications": "To hand an NVIDIA graphics card to the apps"
+"Pour confier une carte graphique NVIDIA aux applications": "To hand an NVIDIA graphics card to the apps",
+"Ancienne version en service": "Old version still in use",
+"le conteneur {0} tourne dessus": "container {0} is running on it",
+"le conteneur arrêté {0} la garde ; supprimez-le d'abord": "stopped container {0} holds it; delete that container first",
+"une autre image du NAS est construite dessus": "another image on the NAS is built on it",
+"elle porte plusieurs noms et Docker demande de confirmer": "it has several names and Docker asks for confirmation",
+"{0} n'a pas été supprimée : {1}.": "{0} was not deleted: {1}.",
+"{0} images gardées": "{0} images kept",
+"1 image gardée": "1 image kept"
 }
 </script>
 <script id="dk-i18n">
@@ -14545,14 +14550,25 @@ function ctImgName(img) {
   var d = ensureArray(img.repo_digests).filter(Boolean)[0];
   return d ? ctImgRef(String(d).split('@')[0]).replace(/:latest$/, '') : '';
 }
-function ctImgUsers(img) {
-  var refs = {}, id = String(img.id || '').replace(/^sha256:/, '');
+// Qui se sert d'une image : le conteneur qui la fait tourner en ce moment (son identifiant réel, donné par le service),
+// et celui dont le nom la désigne — il la prendra dès qu'il sera recréé. Les deux comptent : on ne propose de
+// supprimer ni l'une ni l'autre.
+function ctImgRealId(c) { return String((c && c.image_id) || '').replace(/^sha256:/, ''); }
+function ctImgIdsKnown() { return !!_ct.docker && _ct.list.length > 0 && _ct.list.every(function(c) { return !!ctImgRealId(c); }); }
+function ctImgByName(img, c) {
+  var refs = {}, id = String(img.id || '').replace(/^sha256:/, ''), ci = String(c.image || '');
   ensureArray(img.repo_tags).concat(ensureArray(img.repo_digests)).forEach(function(t) { if (t) refs[ctImgRef(t)] = true; });
-  return _ct.list.filter(function(c) {
-    var ci = String(c.image || '');
-    if (/^sha256:/.test(ci) || /^[0-9a-f]{12,64}$/.test(ci)) { var h = ci.replace(/^sha256:/, ''); return !!id && (id.indexOf(h) === 0 || h.indexOf(id) === 0); }
-    return !!refs[ctImgRef(ci)];
-  });
+  if (/^sha256:/.test(ci) || /^[0-9a-f]{12,64}$/.test(ci)) { var h = ci.replace(/^sha256:/, ''); return !!id && (id.indexOf(h) === 0 || h.indexOf(id) === 0); }
+  return !!refs[ctImgRef(ci)];
+}
+function ctImgUsers(img) {
+  var id = String(img.id || '').replace(/^sha256:/, '');
+  return _ct.list.filter(function(c) { return (!!id && ctImgRealId(c) === id) || ctImgByName(img, c); });
+}
+// Une ancienne version encore en service : des conteneurs tournent dessus alors que leur nom désigne une autre image.
+function ctImgOldInUse(img) {
+  var id = String(img.id || '').replace(/^sha256:/, ''), us = ctImgUsers(img);
+  return us.length > 0 && us.every(function(c) { return ctImgRealId(c) === id && !ctImgByName(img, c); });
 }
 function ctImgUnused() { return ensureArray(_ct.img.list).filter(function(i) { return !ctImgUsers(i).length; }); }
 async function ctImagesLoad(soft) {
@@ -14591,7 +14607,7 @@ function ctImagesView(soft) {
     h += '<div class="web-tr"><span class="cron-two"><strong class="mono">' + (name ? webEsc(name) : T('Image sans nom')) + '</strong><span class="dim mono">' + webEsc(ctImgShort(img.id)) + '</span></span>'
       + '<span class="num">' + webEsc(mntFmtSize(Number(img.size) || 0)) + '</span>'
       + '<span class="cron-two"><span>' + (users.length ? webEsc(apps.slice(0, 2).join(', ') + (apps.length > 2 ? '…' : '')) : '<span class="dim">' + (img.dangling || !name ? T('Reste d\'une ancienne version') : T('Inutilisée')) + '</span>') + '</span>'
-        + (ctImgUp(img) ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
+        + (ctImgUp(img) ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : (ctImgOldInUse(img) ? '<span class="dim">' + T('Ancienne version en service') + '</span>' : '')) + '</span>'
       + '<span class="ct-img-act">' + (users.length ? (ctImgUp(img) ? '<button class="web-mini" data-imgup="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Mettre à jour') + '</button>' : '')
           : '<button class="web-mini" data-img="' + i + '"' + (busy ? ' disabled' : '') + '>' + T('Supprimer') + '</button>') + '</span></div>';
   });
@@ -14677,7 +14693,35 @@ async function ctImgUpdate(one) {
   if (manual.length) toast(Tf('{0} : créé à la main, sans recette à rejouer. Sa nouvelle image est téléchargée ; recréez-le pour qu\'il s\'en serve.', manual.map(cname).join(', ')), 14000);
   if (failed.length) toast('❌ ' + failed.join(' | ').slice(0, 500), 14000);
 }
-async function ctImgRemove(img) { await wsCall('app.image.delete', [String(img.id), { force: false }], 300000); }
+// Docker supprime une image désignée par son identifiant seulement si elle n'a qu'un nom ; sinon il demande de
+// « forcer ». Forcer ne touche jamais un conteneur en marche (Docker le refuse toujours), mais retirerait l'image d'un
+// conteneur arrêté : on ne confirme donc que lorsque le service a donné l'image réelle de chaque conteneur et
+// qu'aucun ne se sert de celle-ci.
+async function ctImgRemove(img) {
+  var id = String(img.id);
+  try { await wsCall('app.image.delete', [id, { force: false }], 300000); }
+  catch (e) {
+    var m = wmErr(e);
+    if (e && e.message === 'LICENSE_READONLY') throw e;
+    if (/no such image|image not found|Image \S+ does not exist/i.test(m)) return;   // déjà partie
+    if (/must be forced/i.test(m) && /referenced in (multiple|one or more) repositories/i.test(m) && ctImgIdsKnown() && !ctImgUsers(img).length) {
+      await wsCall('app.image.delete', [id, { force: true }], 300000); return;
+    }
+    throw e;
+  }
+}
+// La raison donnée par Docker, en clair.
+function ctImgWhy(e) {
+  var m = wmErr(e), r = /being used by (running|stopped) container ([0-9a-f]{6,64})/i.exec(m);
+  if (r) {
+    var c = _ct.list.find(function(x) { return String(x.id || '').indexOf(r[2]) === 0; }), n = c ? (c.name || ctShort(c.id)) : r[2].slice(0, 12);
+    return /running/i.test(r[1]) ? Tf('le conteneur {0} tourne dessus', n) : Tf('le conteneur arrêté {0} la garde ; supprimez-le d\'abord', n);
+  }
+  if (/dependent child images/i.test(m)) return T('une autre image du NAS est construite dessus');
+  if (/referenced in (multiple|one or more) repositories/i.test(m)) return T('elle porte plusieurs noms et Docker demande de confirmer');
+  r = /Conflict \(\"?(.*?)\"?\)\s*$/.exec(m);
+  return String(r ? r[1] : m).replace(/^\[E[A-Z]+\]\s*/, '').slice(0, 220);
+}
 async function ctImgDelete(img) {
   if (!img || _ct.img.busy) return;
   var name = ctImgName(img) || ctImgShort(img.id);
@@ -14685,9 +14729,9 @@ async function ctImgDelete(img) {
     + webEsc(Tf('{0} seront libérés sur le NAS.', mntFmtSize(Number(img.size) || 0))) + '</span>', { danger: true, ok: T('Supprimer') })) return;
   _ct.img.busy = T('Suppression...'); ctRender(true);
   try { await ctImgRemove(img); toast('✅ ' + Tf('Image supprimée : {0}', name)); }
-  catch (e) { wmToastErr(e); }
+  catch (e) { if (!(e && e.message === 'LICENSE_READONLY')) toast('❌ ' + Tf('{0} n\'a pas été supprimée : {1}.', name, ctImgWhy(e)), 14000); }
   _ct.img.busy = '';
-  await ctImagesLoad(true);
+  await Promise.allSettled([loadContainers(true), ctImagesLoad(true)]);
 }
 async function ctImgPurge() {
   if (_ct.img.busy) return;
@@ -14696,15 +14740,17 @@ async function ctImgPurge() {
   unused.forEach(function(i) { total += Number(i.size) || 0; });
   if (!await showConfirm((unused.length > 1 ? webEsc(Tf('Supprimer les {0} images inutilisées ?', unused.length)) : T('Supprimer l\'image inutilisée ?')) + '<br><span style="font-size:12px;color:var(--text-dim);">'
     + webEsc(Tf('Jusqu\'à {0} seront libérés : les images partagent parfois une partie de leur contenu.', mntFmtSize(total))) + '</span>', { danger: true, ok: T('Supprimer') })) return;
-  var done = 0, failed = 0;
+  var done = 0, kept = [];
   for (var k = 0; k < unused.length; k++) {
     _ct.img.busy = Tf('Suppression {0} sur {1}...', k + 1, unused.length); ctRender(true);
-    try { await ctImgRemove(unused[k]); done++; } catch (e) { if (e && e.message === 'LICENSE_READONLY') break; failed++; }
+    try { await ctImgRemove(unused[k]); done++; }
+    catch (e) { if (e && e.message === 'LICENSE_READONLY') break; kept.push(Tf('{0} : {1}', ctImgName(unused[k]) || ctImgShort(unused[k].id), ctImgWhy(e))); }
   }
   _ct.img.busy = '';
-  if (done) toast('✅ ' + (done > 1 ? Tf('{0} images supprimées', done) : T('1 image supprimée')) + (failed ? ', ' + (failed > 1 ? Tf('{0} gardées car encore utilisées', failed) : T('1 gardée car encore utilisée')) : ''), 8000);
-  else if (failed) toast('❌ ' + T('Aucune image supprimée : Docker les dit encore utilisées.'), 9000);
-  await ctImagesLoad(true);
+  if (done) toast('✅ ' + (done > 1 ? Tf('{0} images supprimées', done) : T('1 image supprimée')), 8000);
+  // Ce qui reste, avec la raison donnée par Docker pour chacune.
+  if (kept.length) toast((done ? '' : '❌ ') + (kept.length > 1 ? Tf('{0} images gardées', kept.length) : T('1 image gardée')) + ' — ' + kept.slice(0, 3).join(' | ') + (kept.length > 3 ? ' …' : ''), 16000);
+  await Promise.allSettled([loadContainers(true), ctImagesLoad(true)]);
 }
 function ctGet(id) { return _ct.list.find(function(c) { return c.id === id; }) || null; }
 function ctShort(id) { return String(id || '').slice(0, 12); }
@@ -15970,7 +16016,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.42.0';
+var DK_PAGE_VERSION = '2.42.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
