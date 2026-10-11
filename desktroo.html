@@ -6751,7 +6751,19 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Serveur de temps ajouté": "Time server added",
 "Le NAS n'arrive pas à joindre ce serveur de temps. Vérifiez l'adresse.": "The NAS cannot reach this time server. Check the address.",
 "Retirer le serveur de temps « {0} » ?": "Remove the time server “{0}”?",
-"Serveur de temps retiré": "Time server removed"
+"Serveur de temps retiré": "Time server removed",
+"Sauvegarde de la configuration": "Configuration backup",
+"Un seul fichier avec tous les réglages du NAS, à garder ailleurs que sur le NAS.": "A single file with all the NAS settings, to keep somewhere other than on the NAS.",
+"Comptes, partages, réseau, services et tâches planifiées y sont. Vos fichiers et vos applications n'en font pas partie.": "Accounts, shares, network, services and scheduled tasks are in it. Your files and your apps are not.",
+"Inclure la clé des mots de passe": "Include the password key",
+"Pour restaurer sur une installation neuve. Sans elle, les mots de passe enregistrés dans TrueNAS (comptes cloud, messagerie) seront à saisir de nouveau. Avec elle, le fichier permet de les lire : rangez-le en lieu sûr.": "To restore on a fresh installation. Without it, the passwords stored in TrueNAS (cloud accounts, mail) will have to be typed again. With it, the file lets someone read them: keep it in a safe place.",
+"Préparation...": "Preparing...",
+"Télécharger la sauvegarde": "Download the backup",
+"Dernière sauvegarde téléchargée depuis ce navigateur : {0}.": "Last backup downloaded from this browser: {0}.",
+"Aucune sauvegarde téléchargée depuis ce navigateur.": "No backup downloaded from this browser yet.",
+"Pour remettre un fichier en place, passez par l'interface d'origine de TrueNAS : le NAS redémarre pendant l'opération.": "To put a file back in place, use the original TrueNAS interface: the NAS restarts during the operation.",
+"TrueNAS a rendu un fichier vide.": "TrueNAS returned an empty file.",
+"Sauvegarde téléchargée : {0}": "Backup downloaded: {0}"
 }
 </script>
 <script id="dk-i18n">
@@ -13965,7 +13977,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.38.0';
+var DK_PAGE_VERSION = '2.39.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -18167,12 +18179,13 @@ async function mntScrubSave() {
 }
 
 // ============================================================
-// CONFIGURATION SYSTÈME — nom du NAS, langue et fuseau horaire, serveurs de temps
+// CONFIGURATION SYSTÈME — nom du NAS, langue et fuseau horaire, serveurs de temps, sauvegarde de la configuration
 // Chaque réglage est lu là où TrueNAS le garde : le nom dans la configuration réseau, la langue et le fuseau
 // dans les réglages généraux, les serveurs de temps dans leur propre liste. La langue du bureau, elle, est
 // celle de Desktroo : gardée dans le navigateur.
 // ============================================================
-var _sc = { nav: 'gen', gen: null, net: null, langs: null, tzs: null, ntp: null, loaded: false, seq: 0, busy: false, add: '' };
+var _sc = { nav: 'gen', gen: null, net: null, langs: null, tzs: null, ntp: null, loaded: false, seq: 0, busy: false, add: '', seed: false };
+WEB_ICONS.save = WEB_ICONS.save || '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19h14"/>';
 WEB_ICONS.globe = WEB_ICONS.globe || '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>';
 function scGo(nav) { _sc.nav = nav; scView(); }
 async function loadSysConfig(soft) {
@@ -18200,7 +18213,7 @@ async function loadSysConfig(soft) {
 }
 function scSide() {
   var nav = function(k, icon, name) { return wmNav({ active: _sc.nav === k, call: 'scGo(\'' + k + '\')', icon: icon, name: name }); };
-  wmSide('sc', wmSideTitle(T('Réglages')) + nav('gen', 'settings', T('Nom du NAS')) + nav('loc', 'globe', T('Langue et fuseau horaire')) + nav('ntp', 'clock', T('Serveurs de temps'))
+  wmSide('sc', wmSideTitle(T('Réglages')) + nav('gen', 'settings', T('Nom du NAS')) + nav('loc', 'globe', T('Langue et fuseau horaire')) + nav('ntp', 'clock', T('Serveurs de temps')) + nav('bak', 'save', T('Sauvegarde'))
     + wmSep() + wmSideTitle(T('Voir aussi'))
     + wmNav({ call: 'openApp(\'sysinfo\')', icon: 'list', name: T('Informations système') })
     + wmNav({ call: 'openApp(\'network\')', icon: 'proxy', name: T('Réseau') })
@@ -18247,6 +18260,16 @@ function scView(soft) {
         + '<button class="fs-btn" onclick="scNtpAdd()"' + (_sc.busy ? ' disabled' : '') + '>' + (_sc.busy ? T('Vérification...') : T('Ajouter')) + '</button></div>'
         + '<p class="web-note">' + T('TrueNAS vérifie que le serveur répond avant de l\'ajouter : le NAS a besoin de le joindre.') + '</p>';
     }
+  } else if (_sc.nav === 'bak') {
+    wmHead('sc', T('Sauvegarde de la configuration'), { keepScroll: soft, narrow: true, sub: T('Un seul fichier avec tous les réglages du NAS, à garder ailleurs que sur le NAS.') });
+    var last = scBackupLast();
+    h += '<p class="web-note" style="margin-top:6px;">' + T('Comptes, partages, réseau, services et tâches planifiées y sont. Vos fichiers et vos applications n\'en font pas partie.') + '</p>'
+      + '<div class="web-group" style="margin-top:14px;">' + wmSwitch('sc-bak-seed', T('Inclure la clé des mots de passe'),
+          T('Pour restaurer sur une installation neuve. Sans elle, les mots de passe enregistrés dans TrueNAS (comptes cloud, messagerie) seront à saisir de nouveau. Avec elle, le fichier permet de les lire : rangez-le en lieu sûr.'),
+          _sc.seed, 'onchange="_sc.seed=this.checked"' + (_sc.busy ? ' disabled' : '')) + '</div>'
+      + '<div class="web-foot" style="justify-content:flex-start;margin-top:16px;"><button class="web-open" onclick="scBackup()"' + (_sc.busy ? ' disabled' : '') + '>' + (_sc.busy ? T('Préparation...') : T('Télécharger la sauvegarde')) + '</button></div>'
+      + '<p class="web-note">' + (last ? Tf('Dernière sauvegarde téléchargée depuis ce navigateur : {0}.', webEsc(last)) : T('Aucune sauvegarde téléchargée depuis ce navigateur.')) + '</p>'
+      + '<p class="web-note">' + T('Pour remettre un fichier en place, passez par l\'interface d\'origine de TrueNAS : le NAS redémarre pendant l\'opération.') + '</p>';
   } else {
     wmHead('sc', T('Nom du NAS'), { keepScroll: soft, narrow: true });
     h += '<div style="display:flex;flex-direction:column;gap:14px;margin-top:6px;">'
@@ -18292,6 +18315,32 @@ function scNtpAdd() {
     catch (e) { if (/could not be reached/i.test(String(e && e.message || e))) throw new Error(T('Le NAS n\'arrive pas à joindre ce serveur de temps. Vérifiez l\'adresse.')); throw e; }
     _sc.add = '';
   }, T('Serveur de temps ajouté'));
+}
+// Sauvegarde de la configuration : TrueNAS prépare le fichier (config.save) et donne une adresse temporaire ; on le lit
+// en entier avant de le remettre au navigateur, pour n'annoncer un téléchargement que s'il a vraiment abouti.
+function scBackupLast() {
+  try { var t = Number(localStorage.getItem('dk-cfg-backup')); return t ? new Date(t).toLocaleString(DK_LOCALE, { dateStyle: 'long', timeStyle: 'short' }) : ''; } catch (_) { return ''; }
+}
+async function scBackup() {
+  if (_sc.busy) return;
+  var seed = !!_sc.seed, d = new Date(), p2 = function(n) { return (n < 10 ? '0' : '') + n; };
+  var name = String(_sc.net.hostname || 'truenas').replace(/[^A-Za-z0-9-]/g, '') + '-config-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + (seed ? '.tar' : '.db');
+  _sc.busy = true; scView(true);
+  try {
+    var r = await wsCall('core.download', ['config.save', [{ secretseed: seed, root_authorized_keys: false }], name, true], 120000);
+    var url = Array.isArray(r) ? r[1] : null;
+    if (!url) throw new Error(T('TrueNAS n’a pas fourni d’URL de téléchargement.'));
+    var resp = await fetch(NAS_URL + url);
+    if (!resp.ok) throw new Error(T('Téléchargement HTTP ') + resp.status);
+    var blob = await resp.blob();
+    if (!blob.size) throw new Error(T('TrueNAS a rendu un fichier vide.'));
+    var a = document.createElement('a'), href = URL.createObjectURL(blob);
+    a.href = href; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(href); }, 60000);
+    try { localStorage.setItem('dk-cfg-backup', String(Date.now())); } catch (_) {}
+    toast(Tf('Sauvegarde téléchargée : {0}', name), 7000);
+  } catch (e) { wmToastErr(e); }
+  _sc.busy = false; scView(true);
 }
 async function scNtpRemove(id) {
   var s = (_sc.ntp || []).find(function(x) { return x.id === id; });
