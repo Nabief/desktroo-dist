@@ -2343,6 +2343,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #widgets-l::-webkit-scrollbar { display:none; }
   #widgets-l > .widget { pointer-events:auto; flex-shrink:0; }
   html[data-wg-left] #desktop { padding-left:300px; }
+  html[data-wg-right] #desktop { padding-right:300px; }
   /* Déplacement à la souris : le widget suit le curseur, un emplacement en pointillés marque où il se posera,
      et les deux zones se dessinent sur toute la hauteur, même vides. */
   .wg-zone > .widget > .widget-title, .wg-zone > .widget > .clock-display { cursor:grab; }
@@ -6693,18 +6694,19 @@ select option{ background:#101b2e; color:#e9eef7; }
 "{0} appareils": "{0} devices",
 "1 appareil": "1 device",
 "aucun appareil choisi": "no device chosen",
-"Les deux zones, d'un seul geste. Le clic droit sur le bureau fait la même chose.": "Both zones, in one go. A right-click on the desktop does the same.",
 "Monter {0}": "Move {0} up",
 "Descendre {0}": "Move {0} down",
 "Passer {0} dans la zone de droite": "Move {0} to the right zone",
 "Passer {0} dans la zone de gauche": "Move {0} to the left zone",
 "Afficher {0}": "Show {0}",
-"La zone de gauche et l'ordre des widgets se règlent dans une fenêtre plus large.": "The left zone and the widget order are set in a wider window.",
 "Zone de gauche": "Left zone",
 "Zone de droite": "Right zone",
 "Aucun widget dans cette zone. Passez-en un ici avec la flèche de sa ligne, ou faites-le glisser sur la gauche du bureau.": "No widget in this zone. Move one here with the arrow on its line, or drag it to the left of the desktop.",
 "Aucun widget dans cette zone.": "No widget in this zone.",
-"Sur le bureau, un widget se déplace aussi à la souris : d'une zone à l'autre, ou plus haut et plus bas dans sa pile.": "On the desktop, a widget can also be moved with the mouse: from one zone to the other, or up and down its stack."
+"Sur le bureau, un widget se déplace aussi à la souris : d'une zone à l'autre, ou plus haut et plus bas dans sa pile.": "On the desktop, a widget can also be moved with the mouse: from one zone to the other, or up and down its stack.",
+"Tous les widgets, d'un seul geste. Le clic droit sur le bureau fait la même chose.": "All widgets, in one go. A right-click on the desktop does the same.",
+"Une deuxième zone, à gauche du bureau, est proposée quand la fenêtre fait au moins 1920 pixels de large.": "A second zone, on the left of the desktop, is offered when the window is at least 1920 pixels wide.",
+"Sur le bureau, un widget se déplace aussi à la souris, plus haut ou plus bas dans la pile.": "On the desktop, a widget can also be moved with the mouse, up or down the stack."
 }
 </script>
 <script id="dk-i18n">
@@ -13918,7 +13920,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.36.0';
+var DK_PAGE_VERSION = '2.36.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -15172,8 +15174,8 @@ var _deskDrag = null;
 function deskPosGet() { try { var p = JSON.parse(localStorage.getItem('desktop_icon_pos') || 'null'); return p && typeof p === 'object' && !Array.isArray(p) ? p : null; } catch (_) { return null; } }
 function deskPosSave(p) { try { if (p) localStorage.setItem('desktop_icon_pos', JSON.stringify(p)); else localStorage.removeItem('desktop_icon_pos'); } catch (_) {} }
 function deskGrid() {
-  var wa = dkWorkArea();   // le bureau moins la barre système, moins ses marges, moins la zone de widgets de gauche
-  var lz = document.documentElement.hasAttribute('data-wg-left') ? 284 : 0;
+  var wa = dkWorkArea();   // le bureau moins la barre système, moins ses marges, moins les zones de widgets occupées
+  var root = document.documentElement, lz = (root.hasAttribute('data-wg-left') ? 284 : 0) + (root.hasAttribute('data-wg-right') ? 284 : 0);
   return { cols: Math.max(1, Math.floor((wa.r - wa.l - 32 - lz) / DESK_CW)), rows: Math.max(1, Math.floor((wa.b - wa.t - 32) / DESK_CH)) };
 }
 // Place chaque icône : sa case gardée si elle est libre et visible, sinon la première case libre.
@@ -15598,6 +15600,7 @@ function logout() {
   document.getElementById('desktop').classList.remove('visible');
   Array.prototype.forEach.call(document.querySelectorAll('.wg-zone'), function(z) { z.style.display = 'none'; });
   document.documentElement.removeAttribute('data-wg-left');
+  document.documentElement.removeAttribute('data-wg-right');
   document.getElementById('taskbar').style.display  = 'none';
 }
 
@@ -19349,12 +19352,15 @@ function dkWidgetsApply() {
   Array.prototype.forEach.call(document.querySelectorAll('.widget[data-w]'), function(el) { el.hidden = !on[el.getAttribute('data-w')]; });
   var visible = !!(desk && desk.classList.contains('visible')), shown = dkWidgetsShown(), root = document.documentElement;
   if (visible) Array.prototype.forEach.call(zones, function(z) { z.style.display = shown ? 'flex' : 'none'; });   // jamais sur l'écran de connexion
-  // Zone de gauche occupée : les icônes du bureau se décalent pour ne pas passer dessous.
-  var leftOn = visible && shown && !!(left && left.querySelector('.widget:not([hidden])'));
-  if (leftOn !== root.hasAttribute('data-wg-left')) {
-    if (leftOn) root.setAttribute('data-wg-left', ''); else root.removeAttribute('data-wg-left');
-    deskLayout();
-  }
+  // Zone occupée : les icônes du bureau lui laissent sa largeur, à gauche comme à droite, pour ne jamais passer dessous.
+  var right = document.getElementById('widgets'), changed = false;
+  [['data-wg-left', left], ['data-wg-right', right]].forEach(function(p) {
+    var onNow = visible && shown && !!(p[1] && p[1].querySelector('.widget:not([hidden])'));
+    if (onNow === root.hasAttribute(p[0])) return;
+    if (onNow) root.setAttribute(p[0], ''); else root.removeAttribute(p[0]);
+    changed = true;
+  });
+  if (changed) deskLayout();
 }
 function dkWidgetsShow(on) {
   try { localStorage.setItem('tn-widgets', on ? 'shown' : 'hidden'); } catch (e) {}
@@ -19378,7 +19384,7 @@ function dkWidgetsManage() { openApp('control'); cpGo('widgets'); }
 // « dk-widget-zones » garde, par zone, la liste ordonnée des widgets : { l: [...], r: [...] }. Un widget inconnu
 // du réglage (ajouté par une mise à jour) se range à droite, en fin de pile. Fenêtre étroite : tout s'affiche
 // à droite, sans rien changer au réglage.
-var DK_WG_NARROW = 1000;
+var DK_WG_NARROW = 1920;   // en dessous, une seule zone : deux piles et les icônes ne tiennent pas à l'aise
 function dkWgNarrow() { return window.innerWidth < DK_WG_NARROW; }
 function dkWgLayoutGet() {
   var ids = dkWidgetList().map(function(w) { return w.id; }), s = {}, seen = {}, out = { l: [], r: [] };
@@ -19911,9 +19917,9 @@ function cpWidgetsView() {
   wmHead('cp', 'Widgets', { back: [T('Bureau Desktroo'), 'cpGo(\'desk\')'], narrow: true, keepScroll: true,
     sub: T('Les panneaux d\'information affichés sur le bureau, à côté des icônes.') });
   var h = '<div class="web-group" style="margin-top:6px;">'
-    + wmSwitch('wg-all', T('Afficher les widgets'), T('Les deux zones, d\'un seul geste. Le clic droit sur le bureau fait la même chose.'), shown, 'onchange="dkWidgetsShow(this.checked)"')
+    + wmSwitch('wg-all', T('Afficher les widgets'), T('Tous les widgets, d\'un seul geste. Le clic droit sur le bureau fait la même chose.'), shown, 'onchange="dkWidgetsShow(this.checked)"')
     ;
-  // Une ligne par widget : rang dans la pile, zone, affichage. Fenêtre étroite : une seule pile, sans zone de gauche.
+  // Une ligne par widget : rang dans la pile, zone, affichage. Fenêtre de moins de 1920 pixels : une seule pile, sans zone de gauche.
   var L = dkWgLayoutGet(), narrow = dkWgNarrow(), byId = {};
   dkWidgetList().forEach(function(w) { byId[w.id] = w; });
   var ico = { up: 'M6 15l6-6 6 6', down: 'M6 9l6 6 6-6', l: 'M15 6l-6 6 6 6', r: 'M9 6l6 6-6 6' };
@@ -19922,14 +19928,15 @@ function cpWidgetsView() {
     return list.map(function(id, i) {
       var w = byId[id];
       return '<div class="web-row wg-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(w.label) + '</span><span class="web-row-desc">' + webEsc(w.desc) + '</span></span>'
-        + (narrow ? '' : '<span class="wg-ctl">' + btn('up:' + id, ico.up, Tf('Monter {0}', w.label), 'dkWgMove(\'' + id + '\',-1)', i === 0) + btn('down:' + id, ico.down, Tf('Descendre {0}', w.label), 'dkWgMove(\'' + id + '\',1)', i === list.length - 1)
-          + (z === 'l' ? btn('zone:' + id, ico.r, Tf('Passer {0} dans la zone de droite', w.label), 'dkWgZone(\'' + id + '\',\'r\')') : btn('zone:' + id, ico.l, Tf('Passer {0} dans la zone de gauche', w.label), 'dkWgZone(\'' + id + '\',\'l\')')) + '</span>')
+        + '<span class="wg-ctl">' + btn('up:' + id, ico.up, Tf('Monter {0}', w.label), 'dkWgMove(\'' + id + '\',-1)', i === 0) + btn('down:' + id, ico.down, Tf('Descendre {0}', w.label), 'dkWgMove(\'' + id + '\',1)', i === list.length - 1)
+          + (narrow ? '' : z === 'l' ? btn('zone:' + id, ico.r, Tf('Passer {0} dans la zone de droite', w.label), 'dkWgZone(\'' + id + '\',\'r\')') : btn('zone:' + id, ico.l, Tf('Passer {0} dans la zone de gauche', w.label), 'dkWgZone(\'' + id + '\',\'l\')')) + '</span>'
         + '<input type="checkbox" id="wg-' + id + '"' + (on[id] ? ' checked' : '') + ' aria-label="' + webEsc(Tf('Afficher {0}', w.label)) + '" onchange="dkWidgetSet(\'' + id + '\', this.checked)"></div>';
     }).join('');
   };
   if (narrow) {
-    h += '</div><div class="web-group-title">' + T('Widgets affichés') + '</div><div class="web-group">' + rows(L.r.concat(L.l), 'r') + '</div>'
-      + '<p class="web-note">' + T('La zone de gauche et l\'ordre des widgets se règlent dans une fenêtre plus large.') + '</p>';
+    h += '</div><div class="web-group-title">' + T('Widgets affichés') + '</div><div class="web-group">' + rows(L.r, 'r') + rows(L.l, 'l') + '</div>'
+      + '<p class="web-note">' + T('Une deuxième zone, à gauche du bureau, est proposée quand la fenêtre fait au moins 1920 pixels de large.') + ' '
+      + T('Sur le bureau, un widget se déplace aussi à la souris, plus haut ou plus bas dans la pile.') + '</p>';
   } else {
     h += '</div><div class="web-group-title">' + T('Zone de gauche') + '</div>' + (L.l.length ? '<div class="web-group">' + rows(L.l, 'l') + '</div>'
         : '<p class="web-note" style="margin-top:0;">' + T('Aucun widget dans cette zone. Passez-en un ici avec la flèche de sa ligne, ou faites-le glisser sur la gauche du bureau.') + '</p>')
