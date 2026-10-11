@@ -2547,57 +2547,72 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
 
 
 
-  /* ===== APP DRAWER ===== */
+  /* ===== TIROIR D'APPLICATIONS =====
+     Un voile givré sur le bureau, la recherche en tête, puis une étagère par domaine : les mêmes
+     domaines que le Panneau de configuration, dans le même ordre. Le voile suit le thème. */
   #app-drawer {
-    display:none; position:fixed; inset:0; z-index:2500;
-    background:rgba(8,15,30,0.85); backdrop-filter:blur(24px);
-    flex-direction:column; align-items:center;
-    padding:calc(var(--wa-t) + 20px) calc(var(--wa-r) + 40px) calc(var(--wa-b) + 40px) calc(var(--wa-l) + 40px);
-    overflow-y:auto;
+    --dr-veil:rgba(7,13,24,0.74); --dr-shelf:rgba(255,255,255,0.045); --dr-line:rgba(255,255,255,0.09); --dr-hover:rgba(255,255,255,0.075);
+    display:none; position:fixed; inset:0; z-index:2500; flex-direction:column; align-items:center;
+    padding:calc(var(--wa-t) + 34px) calc(var(--wa-r) + 36px) calc(var(--wa-b) + 84px) calc(var(--wa-l) + 36px);   /* en bas : la place du bandeau d'essai, pour que la dernière étagère défile au-dessus */
+    background:var(--dr-veil); backdrop-filter:blur(28px) saturate(1.25); -webkit-backdrop-filter:blur(28px) saturate(1.25);
+    overflow-y:auto; scrollbar-width:thin;
   }
-  #app-drawer.open { display:flex; }
+  [data-theme="light"] #app-drawer { --dr-veil:rgba(214,226,241,0.76); --dr-shelf:rgba(255,255,255,0.7); --dr-line:rgba(13,27,53,0.11); --dr-hover:rgba(13,27,53,0.07); }
+  #app-drawer.open { display:flex; animation:drawer-veil .18s ease-out; }
+  #app-drawer.open > * { animation:drawer-rise .24s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes drawer-veil { from { opacity:0; } to { opacity:1; } }
+  @keyframes drawer-rise { from { opacity:0; transform:translateY(10px) scale(.985); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) { #app-drawer.open, #app-drawer.open > * { animation:none; } }
+
   .drawer-search-wrap {
-    width:100%; max-width:420px; margin-bottom:32px; position:relative;
+    display:flex; align-items:center; gap:12px; flex-shrink:0; width:100%; max-width:560px; margin-bottom:10px; padding:0 14px 0 18px; height:52px; box-sizing:border-box;
+    border:1px solid var(--dr-line); border-radius:16px; background:var(--dr-shelf); box-shadow:0 14px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.07);
+    cursor:text; transition:border-color .2s, box-shadow .2s;
   }
-  .drawer-search {
-    width:100%; background:rgba(255,255,255,0.09);
-    border:1px solid rgba(255,255,255,0.15); border-radius:12px;
-    padding:10px 16px; color:var(--text); font-size:14px; outline:none;
-    box-sizing:border-box; transition:border-color 0.2s;
-  }
-  .drawer-search:focus { border-color:rgba(var(--accent-rgb),0.6); }
-  .drawer-grid {
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
-    gap:16px; width:100%; max-width:900px;
-  }
+  .drawer-search-wrap:focus-within { border-color:rgba(var(--accent2-rgb),0.6); box-shadow:0 14px 34px rgba(0,0,0,0.22), 0 0 0 4px rgba(var(--accent-rgb),0.14); }
+  .drawer-search-wrap > svg { flex:0 0 auto; width:19px; height:19px; fill:none; stroke:var(--text-dim); stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+  .drawer-search { flex:1; min-width:0; height:100%; padding:0; border:0; outline:none; background:none; color:var(--text); font:inherit; font-size:16px; }
+  .drawer-search::placeholder { color:var(--text-dim); }
+  .drawer-search::-webkit-search-cancel-button { display:none; }
+  .drawer-kbd { flex:0 0 auto; padding:3px 8px; border:1px solid var(--dr-line); border-radius:7px; background:var(--dr-hover); color:var(--text-dim); font-family:var(--font-mono); font-size:10.5px; line-height:1.4; }
+  [data-theme="light"] .drawer-search-wrap { box-shadow:0 12px 30px rgba(13,27,53,0.12); }
+
+  /* Étagères : colonnes équilibrées, une étagère ne se coupe jamais entre deux colonnes */
+  .drawer-body { width:100%; max-width:1320px; columns:3 380px; column-gap:18px; }
+  .drawer-sec { break-inside:avoid; margin:0 0 18px; padding:14px 14px 12px; border:1px solid var(--dr-line); border-radius:20px; background:var(--dr-shelf); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); }
+  [data-theme="light"] .drawer-sec { box-shadow:0 8px 24px rgba(13,27,53,0.07); }
+  .drawer-sec-head { display:flex; align-items:center; gap:10px; margin:0 6px 8px; }
+  .drawer-sec-head h3 { margin:0; font-family:var(--font-display); font-size:14.5px; font-weight:700; letter-spacing:-0.01em; color:var(--text); }
+  .drawer-sec-head::after { content:''; flex:1; height:1px; background:var(--dr-line); }
+  .drawer-sec-head .web-count { order:2; }
+  .drawer-apps { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:2px; }
   .drawer-icon {
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    cursor:pointer; padding:14px 8px; border-radius:14px;
-    transition:background 0.15s; position:relative;
-    user-select:none;
+    position:relative; display:flex; flex-direction:column; align-items:center; gap:9px; min-width:0; padding:12px 2px 10px;
+    border:0; border-radius:14px; background:none; color:var(--text); font:inherit; cursor:pointer; user-select:none; transition:background .15s;
   }
-  .drawer-icon:hover { background:rgba(255,255,255,0.08); }
-  .drawer-icon:active { background:rgba(255,255,255,0.14); }
+  .drawer-icon:hover { background:var(--dr-hover); }
+  .drawer-icon:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; background:var(--dr-hover); }
   .drawer-icon-img {
-    width:58px; height:58px; border-radius:16px;
-    display:flex; align-items:center; justify-content:center; font-size:28px; padding:13px;
-    border:1px solid rgba(255,255,255,0.08);
-    box-shadow:0 10px 24px rgba(0,0,0,0.42), 0 4px 8px rgba(0,0,0,0.28), inset 0 1.5px 0 rgba(255,255,255,0.32), inset 0 -10px 16px rgba(0,0,0,0.22);
-    transition:transform 0.15s, box-shadow 0.15s;
+    position:relative; display:grid; place-items:center; width:54px; height:54px; padding:13px; box-sizing:border-box; border-radius:15px;
+    border:1px solid rgba(255,255,255,0.1);
+    box-shadow:0 10px 22px rgba(0,0,0,0.34), 0 3px 7px rgba(0,0,0,0.22), inset 0 1.5px 0 rgba(255,255,255,0.3), inset 0 -9px 14px rgba(0,0,0,0.2);
+    transition:transform .18s cubic-bezier(.2,.7,.2,1), box-shadow .18s;
   }
-  .drawer-icon:hover .drawer-icon-img { transform:scale(1.08) translateY(-3px); box-shadow:0 16px 32px rgba(0,0,0,0.5), 0 6px 12px rgba(0,0,0,0.32), inset 0 1.5px 0 rgba(255,255,255,0.40), inset 0 -10px 16px rgba(0,0,0,0.22); }
-  .drawer-icon-img svg { width:100%; height:100%; }
-  .drawer-icon-label {
-    font-size:11px; text-align:center; line-height:1.3;
-    color:rgba(255,255,255,0.9); text-shadow:0 1px 4px rgba(0,0,0,0.8);
-    max-width:90px; word-break:break-word;
-  }
-  .drawer-pinned-badge {
-    position:absolute; top:8px; right:8px; width:8px; height:8px;
-    background:var(--accent); border-radius:50%;
-    box-shadow:0 0 5px var(--accent);
-  }
+  .drawer-icon:hover .drawer-icon-img, .drawer-icon:focus-visible .drawer-icon-img { transform:translateY(-3px) scale(1.06); box-shadow:0 16px 30px rgba(0,0,0,0.42), 0 5px 10px rgba(0,0,0,0.26), inset 0 1.5px 0 rgba(255,255,255,0.38), inset 0 -9px 14px rgba(0,0,0,0.2); }
+  .drawer-icon:active .drawer-icon-img { transform:scale(.97); }
+  .drawer-icon-img > svg { width:100%; height:100%; }
+  [data-theme="light"] .drawer-icon-img { box-shadow:0 8px 18px rgba(13,27,53,0.2), inset 0 1.5px 0 rgba(255,255,255,0.3), inset 0 -9px 14px rgba(0,0,0,0.16); }
+  @media (prefers-reduced-motion: reduce) { .drawer-icon-img { transition:none; } .drawer-icon:hover .drawer-icon-img, .drawer-icon:focus-visible .drawer-icon-img { transform:none; } }
+  .drawer-icon-label { max-width:100%; font-size:11.5px; line-height:1.3; text-align:center; color:var(--text); overflow-wrap:break-word; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  /* Pastille « sur le bureau » */
+  .drawer-pin { position:absolute; top:-5px; right:-5px; display:grid; place-items:center; width:17px; height:17px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px rgba(7,13,24,0.55); }
+  .drawer-pin svg { width:10px; height:10px; fill:none; stroke:var(--accent-ink, #06281a); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+  [data-theme="light"] .drawer-pin { box-shadow:0 0 0 2px rgba(255,255,255,0.9); }
+  .drawer-empty { column-span:all; display:flex; flex-direction:column; align-items:center; gap:6px; padding:56px 20px; color:var(--text-dim); font-size:13px; text-align:center; }
+  .drawer-empty svg { width:34px; height:34px; margin-bottom:6px; opacity:.6; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .drawer-empty b { font-family:var(--font-display); font-size:16px; color:var(--text); }
+  .drawer-hint { flex-shrink:0; margin-bottom:24px; font-size:11.5px; color:var(--text-dim); text-align:center; }
+  @media (max-width:820px) { #app-drawer { padding-left:calc(var(--wa-l) + 14px); padding-right:calc(var(--wa-r) + 14px); } .drawer-body { columns:1; } }
   /* Bouton tiroir dans la taskbar */
   .drawer-btn {
     width:36px; height:36px; border:0; border-radius:var(--radius-sm); cursor:pointer;
@@ -6706,7 +6721,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Sur le bureau, un widget se déplace aussi à la souris : d'une zone à l'autre, ou plus haut et plus bas dans sa pile.": "On the desktop, a widget can also be moved with the mouse: from one zone to the other, or up and down its stack.",
 "Tous les widgets, d'un seul geste. Le clic droit sur le bureau fait la même chose.": "All widgets, in one go. A right-click on the desktop does the same.",
 "Une deuxième zone, à gauche du bureau, est proposée quand la fenêtre fait au moins 1920 pixels de large.": "A second zone, on the left of the desktop, is offered when the window is at least 1920 pixels wide.",
-"Sur le bureau, un widget se déplace aussi à la souris, plus haut ou plus bas dans la pile.": "On the desktop, a widget can also be moved with the mouse, up or down the stack."
+"Sur le bureau, un widget se déplace aussi à la souris, plus haut ou plus bas dans la pile.": "On the desktop, a widget can also be moved with the mouse, up or down the stack.",
+"Échap": "Esc",
+"Un clic droit sur une application l'ajoute au bureau, ou l'en retire.": "A right-click on an application adds it to the desktop, or removes it."
 }
 </script>
 <script id="dk-i18n">
@@ -13920,7 +13937,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.36.1';
+var DK_PAGE_VERSION = '2.37.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -15301,53 +15318,106 @@ function pinToDesktop(id) {
 }
 
 // ── Tiroir ──
+// Les applications y sont rangées par domaine, ceux du Panneau de configuration, dans le même ordre.
 function toggleDrawer() {
   var d = document.getElementById('app-drawer');
   if (d.classList.contains('open')) closeDrawer();
   else openDrawer();
 }
 function openDrawer() {
+  var d = document.getElementById('app-drawer'), search = document.getElementById('drawer-search');
+  var kbd = document.getElementById('drawer-kbd'), foot = document.getElementById('drawer-foot');
+  if (search) { search.value = ''; search.placeholder = T('Rechercher une application'); search.setAttribute('aria-label', T('Rechercher une application')); }
+  if (kbd) kbd.textContent = T('Échap');
+  if (foot) foot.textContent = T('Un clic droit sur une application l\'ajoute au bureau, ou l\'en retire.');
   renderDrawer('');
-  var d = document.getElementById('app-drawer');
   d.classList.add('open');
-  var search = document.getElementById('drawer-search');
-  if (search) { search.value = ''; search.focus(); }
-  // Fermer au clic sur fond (pas sur icon)
-  d.onclick = function(e) { if (e.target === d) closeDrawer(); };
-  document.addEventListener('keydown', drawerKeyClose);
+  d.scrollTop = 0;
+  if (search) search.focus();
+  // Un clic hors des étagères et de la recherche referme le tiroir.
+  d.onclick = function(e) {
+    var tile = e.target.closest('[data-app]');
+    if (tile) { var app = drawerApp(tile.getAttribute('data-app')); if (app) { closeDrawer(); app.action(); } return; }
+    if (!e.target.closest('.drawer-sec, .drawer-search-wrap, .drawer-hint')) closeDrawer();
+  };
+  d.oncontextmenu = function(e) {
+    var tile = e.target.closest('[data-app]'), app = tile && drawerApp(tile.getAttribute('data-app'));
+    if (!app) return;
+    e.preventDefault(); e.stopPropagation();
+    _drawerCtxApp = app;
+    showDrawerCtx(e, app);
+  };
+  document.addEventListener('keydown', drawerKey);
 }
 function closeDrawer() {
   document.getElementById('app-drawer').classList.remove('open');
   document.getElementById('drawer-ctx').classList.remove('open');
-  document.removeEventListener('keydown', drawerKeyClose);
+  document.removeEventListener('keydown', drawerKey);
 }
-function drawerKeyClose(e) { if (e.key === 'Escape') closeDrawer(); }
+function drawerApp(id) { return ALL_APPS.find(function(a) { return a.id === id; }) || null; }
+// Clavier : Échap referme ; Entrée dans la recherche ouvre le premier résultat ; les flèches passent d'une application à l'autre.
+function drawerKey(e) {
+  var d = document.getElementById('app-drawer'), search = document.getElementById('drawer-search');
+  if (!d || !d.classList.contains('open')) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeDrawer(); return; }
+  var tiles = Array.prototype.slice.call(d.querySelectorAll('[data-app]')), cur = document.activeElement, i = tiles.indexOf(cur);
+  if (cur === search) {
+    if (e.key === 'Enter' && tiles.length) { e.preventDefault(); tiles[0].click(); }
+    else if (e.key === 'ArrowDown' && tiles.length) { e.preventDefault(); tiles[0].focus(); }
+    return;
+  }
+  if (i < 0) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    var next = tiles[i + (e.key === 'ArrowRight' ? 1 : -1)];
+    if (next) { e.preventDefault(); next.focus(); }
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    // la plus proche dans la rangée du dessous (ou du dessus), étagère suivante comprise
+    var r = cur.getBoundingClientRect(), down = e.key === 'ArrowDown', best = null, bestRow = Infinity, bestDx = Infinity;
+    tiles.forEach(function(t) {
+      var q = t.getBoundingClientRect(), dy = down ? q.top - r.top : r.top - q.top, dx = Math.abs(q.left - r.left);
+      if (dy < 20 || dx > r.width * 2.5) return;
+      if (dy < bestRow - 12 || (Math.abs(dy - bestRow) <= 12 && dx < bestDx)) { best = t; bestRow = dy; bestDx = dx; }
+    });
+    e.preventDefault();
+    if (best) best.focus(); else if (!down && search) search.focus();
+  } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== ' ' && search) search.focus();   // on se remet à écrire : la frappe va à la recherche
+}
 
 function drawerFilter(q) { renderDrawer(q); }
 
-function renderDrawer(q) {
-  var grid = document.getElementById('drawer-grid');
-  if (!grid) return;
-  var lq = (q || '').toLowerCase().trim();
-  var list = lq ? ALL_APPS.filter(function(a){ return a.label.toLowerCase().indexOf(lq) >= 0; }) : ALL_APPS;
-  grid.innerHTML = '';
-  list.forEach(function(app) {
-    var pinned = isPinned(app.id);
-    var div = document.createElement('div');
-    div.className = 'drawer-icon';
-    var imgStyle = app.imgStyle || '';
-    var imgClass = app.imgClass || '';
-    div.innerHTML = '<div class="drawer-icon-img ' + imgClass + '" style="' + imgStyle + '">' + app.svg + '</div>'
-      + '<span class="drawer-icon-label">' + app.label + '</span>'
-      + (pinned ? T('<div class="drawer-pinned-badge" title="Sur le bureau"></div>') : '');
-    div.onclick = function() { app.action(); closeDrawer(); };
-    div.oncontextmenu = function(e) {
-      e.preventDefault(); e.stopPropagation();
-      _drawerCtxApp = app;
-      showDrawerCtx(e, app);
-    };
-    grid.appendChild(div);
+// Applications par domaine. Celles que le Panneau de configuration ne range nulle part trouvent leur place ici.
+function drawerGroups() {
+  var desc = {}, placed = {};
+  var groups = cpGroups().map(function(g) {
+    var ids = g.items.map(function(it) { desc[it[0]] = it[1]; return it[0]; });
+    if (g.key === 'apps') ids.push('vms');
+    if (g.key === 'desk') ids.unshift('control');
+    return { key: g.key, label: g.label, apps: ids.map(drawerApp).filter(function(a) { if (!a || placed[a.id]) return false; placed[a.id] = true; return true; }) };
   });
+  var rest = ALL_APPS.filter(function(a) { return !placed[a.id]; });
+  if (rest.length) groups.push({ key: 'more', label: T('Autres'), apps: rest });
+  return { groups: groups, desc: desc };
+}
+function renderDrawer(q) {
+  var body = document.getElementById('drawer-grid');
+  if (!body) return;
+  var lq = (q || '').toLowerCase().trim(), G = drawerGroups(), n = 0, h = '';
+  var pin = '<i class="drawer-pin" title="' + webEsc(T('Sur le bureau')) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></i>';
+  G.groups.forEach(function(g) {
+    var whole = lq && g.label.toLowerCase().indexOf(lq) >= 0;   // le nom du domaine suffit à garder toute son étagère
+    var apps = g.apps.filter(function(a) { return !lq || whole || String(a.label).toLowerCase().indexOf(lq) >= 0 || String(G.desc[a.id] || '').toLowerCase().indexOf(lq) >= 0; });
+    if (!apps.length) return;
+    n += apps.length;
+    h += '<section class="drawer-sec"><header class="drawer-sec-head"><h3>' + webEsc(g.label) + '</h3><span class="web-count">' + apps.length + '</span></header><div class="drawer-apps">'
+      + apps.map(function(a) {
+          return '<button type="button" class="drawer-icon" data-app="' + webEsc(a.id) + '"' + (G.desc[a.id] ? ' title="' + webEsc(G.desc[a.id]) + '"' : '') + '>'
+            + '<span class="drawer-icon-img ' + (a.imgClass || '') + '" style="' + (a.imgStyle || '') + '">' + a.svg + (isPinned(a.id) ? pin : '') + '</span>'
+            + '<span class="drawer-icon-label">' + webEsc(a.label) + '</span></button>';
+        }).join('') + '</div></section>';
+  });
+  if (!n) h = '<div class="drawer-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><b>' + T('Aucune application ne correspond') + '</b><span>'
+    + webEsc(Tf('Rien ne contient « {0} ».', (q || '').trim())) + '</span></div>';
+  body.innerHTML = h;
 }
 
 function showDrawerCtx(e, app) {
@@ -25256,11 +25326,14 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
 </div>
 
 <!-- APP DRAWER -->
-<div id="app-drawer">
-  <div class="drawer-search-wrap">
-    <input id="drawer-search" class="drawer-search" type="text" placeholder="&#x1F50D; Rechercher une application..." oninput="drawerFilter(this.value)" autocomplete="off">
-  </div>
-  <div id="drawer-grid" class="drawer-grid"></div>
+<div id="app-drawer" role="dialog" aria-modal="true" aria-label="Applications">
+  <label class="drawer-search-wrap">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="drawer-search" class="drawer-search" type="search" oninput="drawerFilter(this.value)" autocomplete="off" spellcheck="false">
+    <kbd class="drawer-kbd" id="drawer-kbd"></kbd>
+  </label>
+  <div class="drawer-hint" id="drawer-foot"></div>
+  <div id="drawer-grid" class="drawer-body"></div>
 </div>
 
 <!-- DRAWER CONTEXT MENU -->
