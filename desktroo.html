@@ -6873,7 +6873,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Afficher les {0} suivants": "Show the next {0}",
 "Courbes de mémoire": "Memory charts",
 "et {0} autres, pour {1}": "and {0} more, for {1}",
-"{0} et {1} de cache ZFS": "{0} and {1} of ZFS cache",
+"{0} + {1} cache ZFS": "{0} + {1} ZFS cache",
 "Cette VM tourne encore avec ses réglages de démarrage ({0}). Les réglages enregistrés depuis ({1}) s'appliqueront quand elle aura été arrêtée, puis démarrée : un redémarrage depuis la VM ne suffit pas.": "This VM is still running with the settings it started with ({0}). The settings saved since then ({1}) will apply once it has been shut down, then started: a reboot from inside the VM is not enough.",
 "{0} au prochain démarrage": "{0} at next start",
 "en cours d'utilisation": "in use now",
@@ -11038,7 +11038,8 @@ function closeFsWin(wid) {
   var win = document.getElementById('win-' + wid);
   if (win) {
     var sizes = {}; try { sizes = JSON.parse(localStorage.getItem('win_sizes')||'{}'); } catch(_) {}
-    if (!dkIsPhone()) { sizes[wid] = { w: win.offsetWidth, h: win.offsetHeight }; localStorage.setItem('win_sizes', JSON.stringify(sizes)); }
+    // Une fenêtre non rendue mesure 0 : mémoriser cette taille la rendrait inutilisable à la réouverture.
+    if (!dkIsPhone() && win.offsetWidth > 0 && win.offsetHeight > 0) { sizes[wid] = { w: win.offsetWidth, h: win.offsetHeight }; localStorage.setItem('win_sizes', JSON.stringify(sizes)); }
     if (wid !== 'fs1') {
     var orphanCtx = document.getElementById(wid+'-fs-ctx');
     if (orphanCtx) orphanCtx.remove();
@@ -14981,7 +14982,9 @@ function wmSide(id, html) {
 }
 // Une entrée de colonne : { active, call, icon | dot | lead, name, meta }
 function wmNav(o) {
-  return '<button class="web-nav' + (o.active ? ' active' : '') + '" onclick="' + o.call + '"' + (o.title ? ' title="' + webEsc(o.title) + '"' : '') + '>'
+  // Les étiquettes de navigation sont tronquées par ellipsis : sans infobulle, une étiquette
+  // trop longue devient illisible (« Environnements de démar… »). On retombe sur le nom.
+  return '<button class="web-nav' + (o.active ? ' active' : '') + '" onclick="' + o.call + '"' + ((o.title || o.name) ? ' title="' + webEsc(o.title || o.name) + '"' : '') + '>'
     + (o.icon ? webIcon(o.icon) : '') + (o.lead || '')
     + (o.dot != null ? '<span class="web-dot' + (o.dot ? ' ' + o.dot : '') + '"></span>' : '')
     + (o.meta != null ? '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(o.name) + '</span><span class="web-nav-meta">' + webEsc(o.meta) + '</span></span>'
@@ -16190,7 +16193,7 @@ function openApp(id) {
   // Restaurer la taille mémorisée
   try {
     var sizes = JSON.parse(localStorage.getItem('win_sizes') || '{}');
-    if (sizes[id] && !win._saved) {
+    if (sizes[id] && sizes[id].w > 0 && sizes[id].h > 0 && !win._saved) {
       win.style.width  = sizes[id].w + 'px';
       win.style.height = sizes[id].h + 'px';
     }
@@ -16238,7 +16241,8 @@ function closeApp(id) {
   const win = document.getElementById('win-' + id);
   if (win) {
     // Mémoriser la taille si non maximisée
-    if (!win._saved && !dkIsPhone()) {
+    // Une fenêtre non rendue mesure 0 : mémoriser cette taille la rendrait inutilisable à la réouverture.
+    if (!win._saved && !dkIsPhone() && win.offsetWidth > 0 && win.offsetHeight > 0) {
       var sizes = {};
       try { sizes = JSON.parse(localStorage.getItem('win_sizes') || '{}'); } catch(_) {}
       sizes[id] = { w: win.offsetWidth, h: win.offsetHeight };
@@ -21097,7 +21101,7 @@ function dirForm(kind) {
     cfOpen({ key: 'dir:ad', api: 'directoryservices', title: joined ? T('Liaison Active Directory') : T('Rejoindre un domaine Active Directory'), full: true, job: 600000, saveLabel: joined ? T('Enregistrer') : T('Rejoindre le domaine'), saved: T('Le NAS est relié au domaine'),
       s: [ { f: [
         { k: 'domain', l: T('Nom du domaine'), t: 'text', mono: 1, always: 1, req: 1, ph: 'entreprise.lan' },
-        { k: 'username', l: T('Compte autorisé à ajouter une machine au domaine'), t: 'text', mono: 1, always: 1, req: 1, ph: 'Administrateur' },
+        { k: 'username', l: T('Compte autorisé à ajouter une machine au domaine'), t: 'text', mono: 1, always: 1, req: 1, ph: T('Administrateur') },
         { k: 'password', l: T('Son mot de passe'), t: 'secret', always: 1, ph: ' ', h: T('Il ne sert qu\'à inscrire le NAS dans le domaine : TrueNAS garde ensuite une clé de machine, pas ce mot de passe.') },
         { k: 'hostname', l: T('Nom du NAS dans le domaine'), t: 'text', mono: 1, always: 1, req: 1, ok: function(v) { return /^[A-Za-z0-9][A-Za-z0-9-]{0,14}$/.test(v) ? '' : T('quinze caractères au plus, lettres, chiffres et tirets.'); } } ] },
         { t: T('Avancé'), adv: 1, f: [
@@ -21146,7 +21150,7 @@ function dirForm(kind) {
 function dirLeaveForm() {
   cfOpen({ key: 'dir:leave', api: 'directoryservices', title: T('Quitter le domaine'), full: true, job: 600000, saveLabel: T('Quitter le domaine'), saved: T('Le NAS a quitté le domaine'),
     lede: T('Le NAS est retiré du domaine. Les comptes du domaine n\'ouvrent plus ses partages ; les droits qui leur étaient donnés sur les dossiers restent en place, sans effet.'), s: [ { f: [
-      { k: 'username', l: T('Compte autorisé à retirer une machine du domaine'), t: 'text', mono: 1, always: 1, req: 1, ph: 'Administrateur' },
+      { k: 'username', l: T('Compte autorisé à retirer une machine du domaine'), t: 'text', mono: 1, always: 1, req: 1, ph: T('Administrateur') },
       { k: 'password', l: T('Son mot de passe'), t: 'secret', always: 1, ph: ' ' } ] } ],
     check: function(v) { return v.password ? '' : T('Indiquez le mot de passe du compte.'); },
     run: async function(b, v) {
@@ -23907,7 +23911,7 @@ function shAdvOpen(s) {
     cfOpen({ key: 'adv:nfs:' + s.id, api: 'sharing.nfs', title: T('Options avancées'), write: 'sharing.nfs.update', args: function(b) { return [s.id, b]; }, s: [
       { t: T('Qui peut le monter'), f: [
         { k: 'networks', l: T('Réseaux autorisés'), t: 'list', ph: '192.168.0.0/24', h: T('Séparés par des virgules. Vide : tous les réseaux.') },
-        { k: 'hosts', l: T('Machines autorisées'), t: 'list', ph: '192.168.0.12, serveur.lan', h: T('Adresses ou noms, séparés par des virgules. Vide : toutes les machines.') },
+        { k: 'hosts', l: T('Machines autorisées'), t: 'list', ph: T('192.168.0.12, serveur.lan'), h: T('Adresses ou noms, séparés par des virgules. Vide : toutes les machines.') },
         { k: 'security', l: T('Sécurité'), t: 'multi', mono: 1, opts: [['SYS', 'SYS'], ['KRB5', 'KRB5'], ['KRB5I', 'KRB5I'], ['KRB5P', 'KRB5P']], h: T('Aucune case cochée : réglage habituel (SYS). Kerberos demande un annuaire.') } ] },
       { t: T('Sous quelle identité'), f: [
         { k: 'maproot_user', l: T('L\'administrateur (root) du poste devient'), t: 'text', mono: 1, nullable: 1, dl: 'user.query', dlArgs: [[], {}], dlPick: shNames('username'), h: T('Vide : il est ramené à un compte sans droits. « root » lui laisse tous les droits sur le partage.') },
@@ -24023,7 +24027,7 @@ function iscSpec(page) {
         { k: 'comment', l: T('Commentaire'), t: 'text' } ] },
         { t: T('Avancé'), adv: 1, f: [
         { k: 'blocksize', l: T('Taille de bloc annoncée'), t: 'sel', opts: ['512', '1024', '2048', '4096'].map(function(x) { return [x, x]; }), h: T('512 convient presque toujours.') },
-        { k: 'rpm', l: T('Type de disque annoncé'), t: 'sel', opts: [['SSD', 'SSD'], ['5400', '5400 tr/min'], ['7200', '7200 tr/min'], ['10000', '10000 tr/min'], ['15000', '15000 tr/min'], ['UNKNOWN', T('Inconnu')]] } ] } ]; },
+        { k: 'rpm', l: T('Type de disque annoncé'), t: 'sel', opts: [['SSD', 'SSD'], ['5400', T('5400 tr/min')], ['7200', T('7200 tr/min')], ['10000', T('10000 tr/min')], ['15000', T('15000 tr/min')], ['UNKNOWN', T('Inconnu')]] } ] } ]; },
     check: function(v) { return v.type === 'FILE' ? (/^\/mnt\/.+/.test(v.path) ? '' : T('Indiquez le chemin du fichier, sous /mnt.')) : (v.disk ? '' : T('Choisissez le zvol à partager.')); },
     body: function(b, v) { var o = { name: v.name, type: v.type, blocksize: Number(v.blocksize), rpm: v.rpm, ro: !!v.ro, enabled: !!v.enabled, comment: v.comment };
       if (v.type === 'FILE') { o.path = v.path; o.filesize = dsxBytes(v.filesize_g); } else o.disk = v.disk; return o; },
@@ -26021,7 +26025,7 @@ async function tnUpload(method, params, file) {
   var tok = await wsCall('auth.generate_token', [300, {}, false, true], 30000);
   if (typeof tok !== 'string' || !tok) throw new Error(T('TrueNAS n\'a pas donné de jeton pour cet envoi.'));
   var resp = await fetch('/fileops/truenas/upload', { method: 'POST', body: file, headers: { 'X-Fileops-Token': getFileopsToken(), 'Content-Type': 'application/octet-stream',
-    'X-TN-Method': method, 'X-TN-Token': tok, 'X-TN-Params': encodeURIComponent(JSON.stringify(params || [])), 'X-File-Name': encodeURIComponent(file.name || 'fichier') } });
+    'X-TN-Method': method, 'X-TN-Token': tok, 'X-TN-Params': encodeURIComponent(JSON.stringify(params || [])), 'X-File-Name': encodeURIComponent(file.name || '') } });
   var data = await resp.json().catch(function() { return {}; });
   if (!resp.ok) throw new Error(resp.status === 404 ? T('Le service Desktroo n\'est pas à jour : mettez d\'abord Desktroo à jour.') : (data.error || 'HTTP ' + resp.status));
   if (typeof data.job_id !== 'number') throw new Error(T('TrueNAS n\'a pas ouvert de tâche pour ce fichier.'));
@@ -27032,7 +27036,7 @@ function ceAcme(csrId) {
     lede: T('Un certificat reconnu par tous les navigateurs, gratuit, renouvelé tout seul. Let\'s Encrypt vérifie que le domaine est à vous en demandant au NAS d\'écrire une ligne chez votre fournisseur DNS.'), s: [
     { f: [
       { k: 'name', l: T('Nom du certificat'), t: 'text', mono: 1, always: 1, req: 1, ok: ceNameOk, ph: 'nas_exemple_fr' },
-      { k: 'domains', l: T('Noms de domaine'), t: 'list', always: 1, ok: ceDomainsOk, ph: 'nas.exemple.fr, *.exemple.fr', h: T('Séparés par des virgules. Une étoile couvre tous les sous-domaines.'), when: function() { return !csr; } },
+      { k: 'domains', l: T('Noms de domaine'), t: 'list', always: 1, ok: ceDomainsOk, ph: T('nas.exemple.fr, *.exemple.fr'), h: T('Séparés par des virgules. Une étoile couvre tous les sous-domaines.'), when: function() { return !csr; } },
       { k: 'dns', l: T('Fournisseur DNS'), t: 'sel', always: 1, from: 'acme.dns.authenticator.query', fromArgs: [[], {}], pick: function(l) { return ensureArray(l).map(function(a) { return [String(a.id), a.name]; }); },
         h: T('Le compte chez qui ces domaines sont gérés. Il se déclare dans « Fournisseurs DNS ».') },
       { k: 'renew_days', l: T('Renouveler avant l\'échéance (jours)'), t: 'num', always: 1, min: 1, max: 30 },
@@ -27364,11 +27368,19 @@ function rpFormatter(label) {
   if (l === 'seconds') return { kind: 'time', fmt: function(v) { return fmtUptime(v); } };
   return { kind: 'num', fmt: function(v) { return rpNum(v, v < 10 ? 2 : 1); } };
 }
+// TrueNAS nomme ses courbes de température « sdb | Type: HDD | Model: … | Serial: … ».
+// Tel quel, c'est illisible dans une légende, ça laisse de l'anglais dans l'interface
+// française et ça expose un numéro de série. On n'en garde que le périphérique :
+// le modèle et le série figurent déjà dans « Disques & Scrub ».
+function rpDiskName(k) {
+  var m = /^\s*([A-Za-z0-9_.-]+)\s*\|\s*(?:Type|Model|Serial)\s*:/.exec(String(k || ''));
+  return m ? m[1] : String(k || '');
+}
 function rpSeriesLabel(k) {
   var m = { received: T('Reçu'), sent: T('Envoyé'), reads: T('Lecture'), writes: T('Écriture'), read: T('Lecture'), write: T('Écriture'), shortterm: T('1 minute'), midterm: T('5 minutes'), longterm: T('15 minutes'),
     temperature_value: T('Température'), available: T('Disponible'), used: T('Utilisée'), cpu: T('Utilisation'), size: T('Taille'), mean: T('Moyenne'), max: T('Maximum'), user: T('Programmes'), system: T('Système'),
     iowait: T('Attente des disques'), nice: T('Tâches de fond'), running: T('Actifs'), blocked: T('Bloqués') };
-  return m[k] || k;
+  return m[k] || rpDiskName(k);
 }
 // Une réponse de reporting.get_data → { times, series:[{ key, values }] }
 function rpParse(r) {
@@ -27411,8 +27423,8 @@ function rpBuild(name, id, raw, meta, ctx) {
   else if (name === 'processes') c.title = T('Processus');
   else if (name === 'arcsize') { c.title = T('Cache ZFS (ARC)'); c.unit = 'Bytes'; }
   else if (name === 'interface') c.title = Tf('Trafic réseau, {0}', id);
-  else if (name === 'disk') c.title = Tf('Activité du disque {0}', id);
-  else if (name === 'disktemp') c.title = Tf('Température du disque {0}', id);
+  else if (name === 'disk') c.title = Tf('Activité du disque {0}', rpDiskName(id));
+  else if (name === 'disktemp') c.title = Tf('Température du disque {0}', rpDiskName(id));
   else if (name === 'uptime') c.title = T('Durée de fonctionnement');
   c.series = c.series.slice(0, 6);
   return c;
@@ -27808,7 +27820,7 @@ function siView(soft) {
   var cpu = _si.cpu && _si.cpu.series[0] ? rpLast(_si.cpu.series[0].values) : null, used = _si.mem && _si.mem.series[0] && _si.mem.series[0].key === 'used' ? rpLast(_si.mem.series[0].values) : null;
   var temp = _si.temp && _si.temp.series[0] ? rpLast(_si.temp.series[0].values) : null, mp = used != null && i.physmem ? used / i.physmem * 100 : null;
   var sum = _si.sum, memSub = i.physmem ? webEsc(used != null ? Tf('{0} sur {1}', mntFmtSize(used), mntFmtSize(i.physmem)) : mntFmtSize(i.physmem)) : '';
-  if (sum) { mp = sum.used / sum.total * 100; memSub = webEsc(Tf('{0} et {1} de cache ZFS', mntFmtSize(sum.used), mntFmtSize(sum.arc))); }
+  if (sum) { mp = sum.used / sum.total * 100; memSub = webEsc(Tf('{0} + {1} cache ZFS', mntFmtSize(sum.used), mntFmtSize(sum.arc))); }
   var cap = 0, alloc = 0;
   _si.pools.forEach(function(p) { cap += Number(p.size) || 0; alloc += Number(p.allocated) || 0; });
   var ho = '<div class="si-tiles">'
@@ -37290,7 +37302,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     if (win.classList.contains('visible')) { bringToFront(win); return; }
     try {
       var sizes = JSON.parse(localStorage.getItem('win_sizes') || '{}');
-      if (sizes.access && !win._saved) {
+      if (sizes.access && sizes.access.w > 0 && sizes.access.h > 0 && !win._saved) {
         win.style.width = sizes.access.w + 'px';
         win.style.height = sizes.access.h + 'px';
       }
