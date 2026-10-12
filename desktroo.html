@@ -10017,7 +10017,7 @@ const TRUENAS_UI = 'http://TRUENAS_IP'; // placeholder : dérivé de l'hôte si 
 let authToken = null;
 let apiKey = null;
 let basicAuth = null;  // base64(user:pass), utilisé pour auth.login sur le socket
-let currentUser = sessionStorage.getItem('tn_user') || 'root';
+let currentUser = sessionStorage.getItem('tn_user') || localStorage.getItem('tn_saved_user') || '';
 let widgetsVisible = true;
 let zCounter = 51;
 let refreshInterval = null;
@@ -10328,8 +10328,7 @@ async function doLogin() {
       throw new Error(T('Réponse TrueNAS invalide.'));
     }
 
-    currentUser = user || info.hostname || 'admin';
-    sessionStorage.setItem('tn_user', currentUser);
+    await dkResolveUser(user);
 
     // fileops vérifie à son tour ces identifiants auprès de TrueNAS et remet son jeton.
     // S'il refuse ou ne répond pas, le bureau s'ouvre quand même (les modules TrueNAS
@@ -10450,11 +10449,33 @@ function tndOpenDeepLinkApp() {
   } catch (_) {}
 }
 
+// Qui est reellement connecte. Trois sources, par ordre de fiabilite : TrueNAS lui-meme
+// (auth.me vaut aussi pour une cle d'API, ou aucun nom n'est saisi), puis le compte porte
+// par les identifiants de la session, puis le dernier compte retenu par ce navigateur.
+// Sans cette resolution, une session rouverte dans un nouvel onglet n'a aucun nom :
+// sessionStorage est propre a l'onglet, alors que la reconnexion vient de localStorage.
+async function dkResolveUser(typed) {
+  var name = '';
+  try {
+    var me = await wsCall('auth.me', [], 15000);
+    if (me && typeof me === 'object') name = String(me.pw_name || me.username || '').trim();
+  } catch (_) {}
+  if (!name && basicAuth) {
+    try { var c = atob(basicAuth), k = c.indexOf(':'); if (k > 0) name = c.slice(0, k); } catch (_) {}
+  }
+  if (!name) name = String(typed || localStorage.getItem('tn_saved_user') || '').trim();
+  currentUser = name;
+  if (name) sessionStorage.setItem('tn_user', name);
+  else sessionStorage.removeItem('tn_user');
+  return name;
+}
+
 function updateUserUI() {
   const avatar = document.getElementById('user-avatar');
   const name   = document.getElementById('user-name-display');
-  avatar.textContent = currentUser.charAt(0).toUpperCase();
-  name.textContent   = currentUser;
+  // Tant que le compte n'est pas connu, ne rien affirmer plutot qu'afficher un nom faux.
+  avatar.textContent = currentUser ? currentUser.charAt(0).toUpperCase() : '?';
+  name.textContent   = currentUser || '';
 }
 
 // ===========================
@@ -16479,6 +16500,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (getFileopsToken()) return info;
       return fileopsLogin().then(function() { return info; }, function() { return info; });
     }).then(function(info) {
+      // La session restauree ne porte aucun nom de compte : on le redemande a TrueNAS.
+      return dkResolveUser().then(function() { return info; }, function() { return info; });
+    }).then(function(info) {
       enterDesktop(info);
     }).catch(function(e) {
       var held = basicAuth;
@@ -16987,7 +17011,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.44.0';
+var DK_PAGE_VERSION = '2.44.3';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
