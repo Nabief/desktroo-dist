@@ -1636,7 +1636,11 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .si-tile { display:flex; flex-direction:column; gap:6px; min-width:0; padding:14px 16px; border:1px solid var(--glass-border); border-radius:14px; background:rgba(255,255,255,0.03); }
   .si-tile-label { font-size:12px; color:var(--text-dim); }
   .si-tile-value { font-family:var(--font-display); font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
-  .si-tile-sub { margin-top:auto; font-size:11.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* Le sous-titre porte des chiffres dont la longueur n'est pas connue d'avance : la tuile fait 154 px,
+     soit 120 px de texte, et « 123,4 Go + 100,6 Go cache ZFS » en demande 185. On le laisse se replier
+     plutôt que de le tronquer : la grille étire les quatre tuiles à la même hauteur, donc une ligne de
+     plus ne décale rien, et plus rien n'est jamais coupé (pire cas mesuré : 3 lignes, tuile à 142 px). */
+  .si-tile-sub { margin-top:auto; font-size:11.5px; line-height:1.35; color:var(--text-dim); overflow-wrap:anywhere; }
   .web-table.si-disks { --wt-cols:86px minmax(0,1fr) 100px minmax(0,0.7fr); }
   /* Mémoire : sur la jauge du bureau, le cache ZFS prolonge l'arc en retrait ; la page « Mémoire » d'Informations
      système détaille la répartition. En couleur, ce qui est réellement pris ; en gris, les caches ; en creux, le libre. */
