@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.44.4'
+APP_VERSION = '2.44.5'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -8671,13 +8671,27 @@ def _ha_test(cfg):
 
 
 def _ha_connect(body):
-    """Enregistre l'adresse et le jeton, une fois la liaison vérifiée. Sans jeton fourni, celui déjà gardé sert."""
+    """Enregistre l'adresse et le jeton, une fois la liaison vérifiée.
+
+    Sans jeton saisi, celui déjà gardé sert — y compris quand l'adresse change.
+    C'est le cas courant : le même Home Assistant passe d'une IP locale à un nom de
+    domaine derrière un reverse proxy, et le jeton, lui, ne bouge pas. L'ancienne
+    version refusait ce changement et obligeait à recréer un jeton sans raison.
+    Reconduire le jeton n'ouvre rien : seul l'administrateur du NAS modifie cette
+    adresse, et c'est lui qui a créé ce jeton. Si l'adresse désigne un autre Home
+    Assistant, _ha_test échoue en 401 et l'erreur le dit.
+    """
     cur = _ha_read()
     url = _ha_clean_url(body.get('url'))
-    token = str(body.get('token') or '').strip() or (cur['token'] if url == cur['url'] else '')
-    if not token or len(token) > 2000 or any(ch.isspace() for ch in token):
+    typed = str(body.get('token') or '').strip()
+    token = typed or cur['token']
+    if not token:
         raise ValueError("Jeton d'accès attendu.")
-    cfg = {'url': url, 'token': token, 'entities': cur['entities'] if url == cur['url'] else []}
+    if len(token) > 2000 or any(ch.isspace() for ch in token):
+        raise ValueError("Jeton d'accès invalide : il ne doit contenir ni espace ni retour à la ligne.")
+    # Jeton reconduit, ou adresse inchangée : c'est le même Home Assistant, les favoris restent.
+    same_ha = (not typed) or url == cur['url']
+    cfg = {'url': url, 'token': token, 'entities': cur['entities'] if same_ha else []}
     _ha_test(cfg)
     _ha_save(cfg)
     return _ha_public(cfg)

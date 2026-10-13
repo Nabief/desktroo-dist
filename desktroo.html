@@ -769,6 +769,18 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .ci-folders-title { margin-bottom:8px; font-size:12px; font-weight:500; color:var(--text-dim); }
   [data-theme="light"] .ci-folders .dkf-row { background:rgba(0,0,0,0.025); }
   [data-theme="light"] .ci-folders .dkf input[type=text] { background:#fff; border-color:rgba(0,0,0,0.16); }
+  /* Où une application range ses données : volume géré par TrueNAS ou dossier du NAS */
+  .ci-storage { margin-top:14px; display:flex; flex-direction:column; gap:8px; }
+  .ci-st-row { display:grid; grid-template-columns:minmax(0,1fr); gap:8px 10px; padding:10px 12px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(255,255,255,0.03); }
+  .ci-st-cell { min-width:0; }
+  .ci-st-cell label { display:block; margin-bottom:5px; font-size:11px; color:var(--text-dim); }
+  .ci-st-cell select { width:100%; box-sizing:border-box; padding:8px 10px; border-radius:8px; background:rgba(255,255,255,0.07); border:1px solid var(--glass-border); color:var(--text); font-size:12.5px; outline:none; }
+  .ci-st-line { display:flex; gap:6px; }
+  .ci-st-line input { width:100%; min-width:0; box-sizing:border-box; padding:8px 10px; border-radius:8px; background:rgba(0,0,0,0.24); border:1px solid rgba(255,255,255,0.12); color:var(--text); font-family:var(--font-mono); font-size:11.5px; outline:none; }
+  .ci-st-line input:focus { border-color:var(--accent); background:rgba(var(--accent-rgb),0.07); }
+  .ci-st-note { font-size:11px; color:var(--text-dim); line-height:1.5; }
+  [data-theme="light"] .ci-storage .ci-st-row { background:rgba(0,0,0,0.025); }
+  [data-theme="light"] .ci-storage .ci-st-line input { background:#fff; border-color:rgba(0,0,0,0.16); }
   /* La fenêtre « Modifier » d'une application garde son fond sombre dans les deux thèmes : en thème clair, son
      texte reprend donc les teintes du thème sombre (il était écrit en foncé sur foncé). */
   [data-theme="light"] #modal-create-app.mdm-app-edit-open > div { --text:#e9eef7; --text-dim:#9db0d0; --glass-border:rgba(255,255,255,0.12); color:#e9eef7; }
@@ -4492,6 +4504,21 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Il change de pool : la copie peut prendre un long moment.": "It changes pool: copying may take a long while.",
 "📦 Déplacement vers le dataset Web…": "📦 Moving into the Web dataset…",
 "Dossier déplacé : {0}": "Folder moved: {0}",
+"Jeton d'accès attendu.": "An access token is required.",
+"Jeton d'accès invalide : il ne doit contenir ni espace ni retour à la ligne.": "Invalid access token: it must contain no space and no line break.",
+"Adresse attendue sous la forme http://adresse:8123": "Expected an address like http://address:8123",
+"L'adresse ne doit contenir ni identifiant ni paramètre.": "The address must contain no credentials and no parameters.",
+"Où l'application range ses données": "Where the application stores its data",
+"Volume géré par TrueNAS (par défaut)": "Volume managed by TrueNAS (default)",
+"Un dossier du NAS": "A folder on the NAS",
+"Dossier temporaire (effacé au redémarrage)": "Temporary folder (cleared on restart)",
+"Volume géré par TrueNAS : un dataset créé sous ix-apps, que TrueNAS sauvegarde avec l'application. Dossier du NAS : tu choisis l'emplacement sur ton pool, pratique pour les gros volumes, mais la sauvegarde est à ta charge.": "Volume managed by TrueNAS: a dataset created under ix-apps, which TrueNAS backs up along with the application. Folder on the NAS: you pick where it sits on your pool, handy for large volumes, but backing it up is up to you.",
+"{0} : choisis le dossier du NAS, ou reviens au volume géré par TrueNAS.": "{0}: pick the folder on the NAS, or switch back to the volume managed by TrueNAS.",
+"Ouvre d'abord un pool sous /mnt.": "Open a pool under /mnt first.",
+"❌ Nom de dossier invalide.": "❌ Invalid folder name.",
+"📁 Dossier créé : ": "📁 Folder created: ",
+"❌ Erreur création dossier : ": "❌ Could not create the folder: ",
+"+ Dossier": "+ Folder",
 "arrêté": "stopped",
 "Redémarrer le serveur \u003cstrong>TrueNAS\u003c/strong> ?": "Restart the \u003cstrong>TrueNAS\u003c/strong> server?",
 "Le NAS sera indisponible quelques minutes.": "The NAS will be unavailable for a few minutes.",
@@ -10416,7 +10443,8 @@ function initDesktop(sysInfo) {
   startClock();
   _appUp.at = 0; appLabelsLoad();
   loadWidgetData();
-  refreshInterval = setInterval(loadWidgetData, 60000); // toutes les 60s pour éviter le spam
+  // Onglet masqué : personne ne regarde, on ne relit rien. La relecture reprend au retour (visibilitychange).
+  refreshInterval = setInterval(function() { if (!document.hidden) loadWidgetData(); }, 60000);
   nwStart();
   haStart();
   dlBadgeStart();
@@ -10788,14 +10816,34 @@ function fsFreeSpace() {
   el.textContent = (u && u.total) ? Tf('{0} libres sur {1}', fmtBytes(Math.max(0, u.total - u.used)), fmtBytes(u.total)) : '';
 }
 
+// Les datasets racines des pools, en un seul appel et avec les deux seules propriétés qui servent.
+// Avant : un pool.dataset par pool, quatre fois par minute, chacun renvoyant tout le jeu de propriétés
+// du dataset — un des appels les plus lourds du middleware. Repli sur la lecture pool par pool si le
+// NAS refuse le filtre ou ne renvoie rien : mieux vaut quatre appels qu'une capacité vide.
+async function poolRoots(names) {
+  var out = {};
+  if (!names || !names.length) return out;
+  try {
+    var l = ensureArray(await wsCall('pool.dataset.query',
+      [[['id', 'in', names]], { extra: { flat: true, retrieve_children: false, properties: ['used', 'available'] } }], 60000));
+    l.forEach(function(d) { if (d && d.name) out[d.name] = d; });
+  } catch (_) {}
+  var missing = names.filter(function(n) { return !out[n]; });
+  if (missing.length) {
+    var r = await Promise.allSettled(missing.map(function(n) { return socketCall('/pool/dataset/id/' + encodeURIComponent(n)); }));
+    r.forEach(function(x, i) { if (x.status === 'fulfilled' && x.value && typeof x.value === 'object') out[missing[i]] = x.value; });
+  }
+  return out;
+}
+// Le minuteur et l'événement peuvent tomber ensemble : deux parcours concurrents se marcheraient dessus
+// (la liste est vidée puis remplie au fil des pools). Un seul à la fois.
+var _poolsBusy = false;
 async function loadPools() {
+  if (_poolsBusy) return;
+  _poolsBusy = true;
   try {
     const raw   = await socketCall('/pool');
     const pools = ensureArray(raw);
-    console.log('Pools raw:', JSON.stringify(pools.map(p => ({
-      name: p.name, size: p.size, allocated: p.allocated, free: p.free,
-      capacity: p.capacity, used: p.used, avail: p.avail, health: p.health
-    }))));
     const el    = document.getElementById('widget-pools');
     // Toutes les fenêtres Fichiers ouvertes reçoivent l'arbre des pools.
     const sidebars = Array.prototype.slice.call(document.querySelectorAll('[id$="-fs-pools-sidebar"]')).filter(function(s){ return !s.querySelector('.fs-tree-row') && !(s._poolsAt && Date.now() - s._poolsAt < 15000); });
@@ -10806,17 +10854,18 @@ async function loadPools() {
     }
     el.innerHTML = '';
     sidebars.forEach(function(s){ s.innerHTML = '<div class="fs-sidebar-title">Pools</div>'; });
-    for (const pool of pools.slice(0, 4)) {
-      // Capacité réelle via le dataset racine (ZFS utile, pas la taille brute des disques)
+    const shownPools = pools.slice(0, 4);
+    const roots = await poolRoots(shownPools.map(function(p) { return p.name; }));
+    for (const pool of shownPools) {
+      // Capacité réelle via le dataset racine (ZFS utile, pas la taille brute des disques), lue plus haut
+      // pour tous les pools d'un coup.
       let total = 0, used = 0;
-      try {
-        const ds = await socketCall('/pool/dataset/id/' + encodeURIComponent(pool.name));
-        if (ds && typeof ds === 'object') {
-          const avail = (ds.available && ds.available.parsed) ? ds.available.parsed : 0;
-          const usedV = (ds.used && ds.used.parsed)           ? ds.used.parsed      : 0;
-          if (avail || usedV) { total = avail + usedV; used = usedV; }
-        }
-      } catch(_) {}
+      const ds = roots[pool.name];
+      if (ds && typeof ds === 'object') {
+        const avail = (ds.available && ds.available.parsed) ? ds.available.parsed : 0;
+        const usedV = (ds.used && ds.used.parsed)           ? ds.used.parsed      : 0;
+        if (avail || usedV) { total = avail + usedV; used = usedV; }
+      }
       // Fallback sur pool.allocated / pool.size si dataset indisponible
       if (!total) {
         total = pool.size      || 0;
@@ -10852,6 +10901,7 @@ async function loadPools() {
     fsPoolMeters();
     if (sidebars.length) fsTreeSync();
   } catch(e) { console.warn('loadPools', e); }
+  finally { _poolsBusy = false; }
 }
 
 async function loadNotifs() {
@@ -17054,7 +17104,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.44.4';
+var DK_PAGE_VERSION = '2.44.5';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -18742,8 +18792,8 @@ function dctxUnpin() { if (_drawerCtxApp) { unpinFromDesktop(_drawerCtxApp.id); 
 // flux est là, les jauges le suivent et les relectures périodiques s'espacent ; s'il manque (compte sans ce droit,
 // version qui ne le propose pas, flux interrompu), tout continue comme avant, par relecture.
 // ===========================
-var _rt = { ids: {}, pending: {}, failed: {}, at: 0, ifs: null, apps: null, appsAt: 0, soon: {}, jobsTick: 0 };
-var RT_ALWAYS = ['alert.list', 'core.get_jobs', 'app.query'];   // des événements rares : gardés même onglet masqué
+var _rt = { ids: {}, pending: {}, failed: {}, at: 0, ifs: null, apps: null, appsAt: 0, soon: {}, jobsTick: 0, poolsAt: 0 };
+var RT_ALWAYS = ['alert.list', 'core.get_jobs', 'app.query', 'pool.query'];   // des événements rares : gardés même onglet masqué
 function rtHas(name) { return !!_rt.ids[name]; }
 function rtAlive() { return Date.now() - _rt.at < 8000; }
 async function rtSub(name) {
@@ -18791,6 +18841,16 @@ function rtEvent(p) {
   else if (c === 'app.query') rtSoon('apps', function() {
     if (wmVisible('apps') && !Object.keys(_appsBusy).length) loadApps(true);
     if (wmVisible('docker')) loadContainers(true);
+  }, 1500);
+  // TrueNAS pousse un événement quand l'enregistrement d'un pool change, donc quand sa santé change.
+  // C'est la partie qui doit être immédiate : un pool qui passe en DEGRADED restait vert jusqu'à 60 s.
+  // La capacité, elle, bouge lentement et se contente du relevé à la minute.
+  else if (c === 'pool.query') rtSoon('pools', function() {
+    if (document.hidden) return;
+    // Certaines versions poussent cet événement en rafale pendant un scrub : au plus une relecture par 10 s.
+    if (Date.now() - (_rt.poolsAt || 0) < 10000) return;
+    _rt.poolsAt = Date.now();
+    loadPools();
   }, 1500);
 }
 function rtUnsubscribed(p) { var c = String((p && p.collection) || '').split(':')[0]; if (c) delete _rt.ids[c]; }
@@ -18846,7 +18906,13 @@ function rtAppPaint() {
     if (!long) n.title = s ? rtAppText(s, true) : '';
   });
 }
-document.addEventListener('visibilitychange', function() { try { rtSync(); } catch (_) {} });
+document.addEventListener('visibilitychange', function() {
+  try { rtSync(); } catch (_) {}
+  // Retour sur l'onglet : les widgets peuvent dater d'une heure, on les relit tout de suite.
+  if (!document.hidden && typeof refreshInterval !== 'undefined' && refreshInterval) {
+    try { rtSoon('widgets', loadWidgetData, 250); } catch (_) {}
+  }
+});
 
 // ===========================
 // WEBSOCKET TEMPS RÉEL
@@ -28838,7 +28904,7 @@ function cpHaView() {
           T('Dans Home Assistant : votre profil, onglet Sécurité, « Jetons d\'accès de longue durée », puis « Créer un jeton ». Le jeton reste sur le NAS : il n\'est jamais renvoyé au navigateur.'))
       + '<div class="web-foot" style="justify-content:flex-start;margin-top:0;"><button class="web-open" onclick="haConnect()"' + (_ha.saving ? ' disabled' : '') + '>' + (_ha.saving ? T('Vérification...') : T('Vérifier et enregistrer')) + '</button>'
       + (linked ? '<button class="fs-btn" onclick="_ha.edit=false;_ha.formErr=\'\';_ha.keepUrl=\'\';_ha.keepTok=\'\';loadControl()">' + T('Annuler') + '</button>' : '') + '</div>'
-      + (_ha.formErr ? '<p class="web-note" style="margin:0;color:var(--warning);">' + webEsc(_ha.formErr) + '</p>' : '') + '</div>';
+      + (_ha.formErr ? '<p class="web-note" style="margin:0;color:var(--warning);">' + webEsc(T(_ha.formErr)) + '</p>' : '') + '</div>';
   }
   if (linked) {
     h += '<div class="web-group-title">' + T('Appareils affichés') + '<span class="web-count" id="ha-count" style="margin-left:8px;"></span></div>';
@@ -31167,6 +31233,24 @@ function dkFolders(host, api, o) {
 }
 
 var _fpCallback = null;
+// Créer un dossier sans quitter le sélecteur. On désigne souvent un dossier qui n'existe pas encore
+// (installer une application ailleurs que dans ix-apps, par exemple) : aller le créer dans le gestionnaire
+// de fichiers oblige à abandonner le formulaire en cours. Le nouveau dossier devient la sélection courante.
+async function _fpMkdir() {
+  var parent = String(_fpCurPath || '/mnt').replace(/\/+$/, '');
+  if (!parent || parent === '') { toast(T('Ouvre d\'abord un pool sous /mnt.')); return; }
+  var name = await showPrompt(T('Nom du nouveau dossier :'));
+  name = String(name || '').trim();
+  if (!name) return;
+  if (name === '.' || name === '..' || /[\/\\]/.test(name) || name.length > 255) { toast(T('❌ Nom de dossier invalide.')); return; }
+  var path = parent + '/' + name;
+  try {
+    await socketCall('/filesystem/mkdir', 'POST', { path: path });
+    fileops('POST', 'activity/note', { kind: 'file.mkdir', path: path }).catch(function() {});
+    toast(T('📁 Dossier créé : ') + name);
+    _fpLoad(path);
+  } catch (e) { toast(T('❌ Erreur création dossier : ') + ((e && e.message) || e)); }
+}
 function fsPickFolder(startPath, cb) {
   _fpTargetId = null; _fpFilter = null; _fpCallback = cb;
   _fpCurPath = startPath || '/mnt'; _fpSelected = _fpCurPath;
@@ -34600,6 +34684,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     <div style="padding:12px 20px;border-top:1px solid var(--glass-border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;">
       <span id="fp-selected" style="font-size:11px;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Aucun fichier sélectionné</span>
       <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button class="fs-btn" onclick="_fpMkdir()" title="Nouveau dossier">+ Dossier</button>
         <button class="fs-btn" onclick="document.getElementById('modal-filepicker').style.display='none'">Annuler</button>
         <button class="fs-btn" style="background:rgba(var(--accent-rgb),0.2);border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);" onclick="_fpConfirm()">&#x2713; Sélectionner</button>
       </div>
@@ -35466,6 +35551,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
         '</div>' +
       '</div>' +
       '<div id="ci-required"></div>' +
+      '<div id="ci-storage"></div>' +
       '<div id="ci-folders"></div>' +
       '<div class="form-group" style="margin-top:14px;margin-bottom:0;">' +
         T('<label>Valeurs de configuration JSON</label>') +
@@ -35486,7 +35572,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     // Le JSON retouché à la main peut faire apparaître d'autres champs obligatoires (un dossier, par exemple).
     document.getElementById('ci-values').addEventListener('input', function () {
       clearTimeout(currentCatalogInstall && currentCatalogInstall.reqTimer);
-      if (currentCatalogInstall) currentCatalogInstall.reqTimer = setTimeout(function () { ciRenderRequired(); ciRenderFolders(); }, 350);
+      if (currentCatalogInstall) currentCatalogInstall.reqTimer = setTimeout(function () { ciRenderRequired(); ciRenderStorage(); ciRenderFolders(); }, 350);
     });
     document.getElementById('ci-train').addEventListener('change', refreshCatalogVersionV3);
     refreshCatalogVersionV3();
@@ -35720,6 +35806,126 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     if (!el || typeof fsPickFolder !== 'function') return;
     fsPickFolder(el.value.trim() || '/mnt', function (path) { el.value = path; ciReqWrite(i, path); });
   };
+  // ── Où l'application range ses données ──
+  // Dans le catalogue TrueNAS, chaque jeu de données d'une application est une entrée de « storage » : un
+  // dict dont le champ « type » vaut ix_volume (un dataset que TrueNAS crée et gère seul, sous ix-apps) ou
+  // host_path (un dossier du NAS que l'on désigne). Le défaut est toujours ix_volume, et ce choix n'apparaîssait
+  // nulle part : installer une application sur son propre pool obligeait à écrire le JSON à la main. Les autres
+  // types (SMB, NFS, temporaire) restent au JSON : ils demandent des réglages qui leur sont propres.
+  function ciStorageLabel(v) {
+    if (v === 'ix_volume') return T('Volume géré par TrueNAS (par défaut)');
+    if (v === 'host_path') return T('Un dossier du NAS');
+    if (v === 'cifs') return T('Partage SMB');
+    if (v === 'nfs') return T('Partage NFS');
+    if (v === 'tmpfs' || v === 'temporary') return T('Dossier temporaire (effacé au redémarrage)');
+    return String(v);
+  }
+  function ciStorageEntries(questions) {
+    var st = (questions || []).filter(function (q) { return q && q.variable === 'storage'; })[0];
+    var attrs = (st && st.schema && st.schema.attrs) || [], out = [];
+    attrs.forEach(function (q) {
+      var sc = q && q.schema;
+      if (!q || !sc || sc.type !== 'dict' || q.variable === 'additional_storage') return;
+      var ty = (sc.attrs || []).filter(function (a) { return a && a.variable === 'type'; })[0];
+      var en = (ty && ty.schema && ty.schema['enum']) || [];
+      var vals = en.map(function (o) { return (o && typeof o === 'object') ? o.value : o; });
+      // Sans host_path dans les choix du catalogue, il n'y a rien à proposer : ce stockage ne vise pas un dossier.
+      if (vals.indexOf('host_path') < 0) return;
+      out.push({ key: q.variable, label: String(q.label || q.variable), values: vals });
+    });
+    return out;
+  }
+  function ciStEntry(i) { return ((currentCatalogInstall || {}).storage || [])[i] || null; }
+  function ciStWrite(mut) {
+    var values = ciValues(), ta = document.getElementById('ci-values');
+    if (!values || !ta) { catalogStatus(T('Le JSON n\'est plus lisible : corrige-le avant de remplir ce champ.'), true); return false; }
+    mut(values);
+    ta.value = JSON.stringify(values, null, 2);
+    if (ta._jhUpdate) ta._jhUpdate();
+    catalogStatus('', false);
+    return true;
+  }
+  window.ciStType = function (i, type) {
+    var e = ciStEntry(i);
+    if (!e) return;
+    var ok = ciStWrite(function (v) {
+      ciSet(v, ['storage', e.key, 'type'], type);
+      // TrueNAS refuse un host_path sans sa configuration : on la crée vide plutôt que d'échouer à l'installation.
+      if (type === 'host_path') {
+        var cfg = ciGet(v, ['storage', e.key, 'host_path_config']);
+        if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) ciSet(v, ['storage', e.key, 'host_path_config'], { acl_enable: false, path: '' });
+      }
+    });
+    if (ok) ciRenderStorage();
+  };
+  window.ciStPath = function (i, path) {
+    var e = ciStEntry(i);
+    if (!e) return;
+    ciStWrite(function (v) {
+      var cfg = ciGet(v, ['storage', e.key, 'host_path_config']);
+      if (!cfg || typeof cfg !== 'object' || Array.isArray(cfg)) { cfg = { acl_enable: false }; ciSet(v, ['storage', e.key, 'host_path_config'], cfg); }
+      cfg.path = path;
+    });
+  };
+  window.ciStPick = function (i) {
+    var el = document.getElementById('ci-st-p-' + i);
+    if (!el || typeof fsPickFolder !== 'function') return;
+    fsPickFolder(el.value.trim() || '/mnt', function (path) { el.value = path; ciStPath(i, path); });
+  };
+  // Ce qui empêche d'installer, en clair ; chaîne vide si tout va bien.
+  function ciStorageCheck(values, questions) {
+    var err = '';
+    ciStorageEntries(questions).forEach(function (e) {
+      if (err) return;
+      if (String(ciGet(values, ['storage', e.key, 'type']) || '') !== 'host_path') return;
+      var p = String(ciGet(values, ['storage', e.key, 'host_path_config', 'path']) || '').trim();
+      if (p.charAt(0) !== '/') err = Tf('{0} : choisis le dossier du NAS, ou reviens au volume géré par TrueNAS.', e.label);
+    });
+    return err;
+  }
+  // La liste n'est redessinée que si un type change, pour ne pas voler le curseur dans le champ de chemin.
+  function ciRenderStorage() {
+    var box = document.getElementById('ci-storage');
+    if (!box || !currentCatalogInstall) return;
+    var values = ciValues();
+    if (!values) return;
+    var list = ciStorageEntries(currentCatalogInstall.questions);
+    currentCatalogInstall.storage = list;
+    if (!list.length) { box.innerHTML = ''; box.removeAttribute('data-sig'); return; }
+    var cur = list.map(function (e) { return String(ciGet(values, ['storage', e.key, 'type']) || 'ix_volume'); });
+    var sig = list.map(function (e, i) { return e.key + ':' + cur[i]; }).join('|');
+    if (box.getAttribute('data-sig') !== sig) {
+      box.setAttribute('data-sig', sig);
+      box.innerHTML = '<div class="ci-storage"><div class="ci-folders-title">' + T('Où l\'application range ses données') + '</div>'
+        + list.map(function (e, i) {
+          var t = cur[i];
+          var opts = e.values.map(function (v) {
+            return '<option value="' + htmlEscape(v) + '"' + (v === t ? ' selected' : '') + '>' + htmlEscape(ciStorageLabel(v)) + '</option>';
+          }).join('');
+          return '<div class="ci-st-row">'
+            + '<div class="ci-st-cell"><label for="ci-st-' + i + '">' + htmlEscape(e.label) + '</label>'
+            + '<select id="ci-st-' + i + '">' + opts + '</select></div>'
+            + (t === 'host_path' ? '<div class="ci-st-cell"><label for="ci-st-p-' + i + '">' + T('Dossier du NAS') + '</label>'
+                + '<div class="ci-st-line"><input id="ci-st-p-' + i + '" type="text" placeholder="/mnt/…" autocomplete="off" spellcheck="false" value="'
+                + htmlEscape(String(ciGet(values, ['storage', e.key, 'host_path_config', 'path']) || '')) + '">'
+                + '<button class="fs-btn" type="button" onclick="ciStPick(' + i + ')">' + T('Choisir…') + '</button></div></div>' : '')
+            + '</div>';
+        }).join('')
+        + '<div class="ci-st-note">' + T('Volume géré par TrueNAS : un dataset créé sous ix-apps, que TrueNAS sauvegarde avec l\'application. Dossier du NAS : tu choisis l\'emplacement sur ton pool, pratique pour les gros volumes, mais la sauvegarde est à ta charge.') + '</div></div>';
+      list.forEach(function (e, i) {
+        var sel = document.getElementById('ci-st-' + i);
+        if (sel) sel.addEventListener('change', function () { ciStType(i, sel.value); });
+        var p = document.getElementById('ci-st-p-' + i);
+        if (p) p.addEventListener('input', function () { ciStPath(i, p.value.trim()); });
+      });
+      return;
+    }
+    list.forEach(function (e, i) {
+      var p = document.getElementById('ci-st-p-' + i);
+      if (!p || p === document.activeElement) return;
+      p.value = String(ciGet(values, ['storage', e.key, 'host_path_config', 'path']) || '');
+    });
+  }
   // Le catalogue prévoit-il des dossiers du NAS pour cette application (storage.additional_storage) ?
   function ciHasFolders(questions) {
     var st = (questions || []).filter(function (q) { return q && q.variable === 'storage'; })[0];
@@ -35823,6 +36029,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       currentCatalogInstall.questions = _q || [];
       currentCatalogInstall.asked = {};
       ciRenderRequired();
+      ciRenderStorage();
       ciRenderFolders();
     } catch (e) {}
 
@@ -35928,6 +36135,8 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     }
     var foldersErr = dkFoldersCheck(ciGet(values, ['storage', 'additional_storage']));
     if (foldersErr) { catalogStatus(foldersErr, true); return; }
+    var storageErr = ciStorageCheck(values, (currentCatalogInstall && currentCatalogInstall.questions) || []);
+    if (storageErr) { catalogStatus(storageErr, true); return; }
 
     var payload = {
       app_name: appName,
