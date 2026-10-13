@@ -649,29 +649,41 @@ def _version_status():
 # Notes de version. Lues dans le dépôt de distribution, car elles doivent décrire aussi les versions
 # PLUS RÉCENTES que celle installée — c'est là tout l'intérêt avant de mettre à jour. Repli sur la copie
 # locale déposée par la dernière mise à jour, pour un NAS sans accès à Internet.
-_RELEASES = {'t': 0.0, 'v': '', 'src': ''}
+_RELEASES = {}          # langue -> {'t', 'v', 'src'}
 _RELEASES_TTL = 900.0
+_RELEASES_FILES = {'fr': 'RELEASES.md', 'en': 'RELEASES.en.md'}
 
 
-def _releases_text(force=False):
+def _releases_text(force=False, lang='fr'):
+    lang = 'en' if str(lang or '').lower().startswith('en') else 'fr'
     now = _login_time.time()
-    if not force and _RELEASES['v'] and now - _RELEASES['t'] < _RELEASES_TTL:
-        return _RELEASES['v'], _RELEASES['src']
+    hit = _RELEASES.get(lang)
+    if not force and hit and hit['v'] and now - hit['t'] < _RELEASES_TTL:
+        return hit['v'], hit['src']
+    # Les notes anglaises peuvent manquer (NAS resté sur une distribution plus ancienne) :
+    # mieux vaut les notes françaises que rien du tout, et la source le dit.
+    noms = [_RELEASES_FILES[lang]] + ([_RELEASES_FILES['fr']] if lang != 'fr' else [])
     text, src = '', ''
-    try:
-        text = _fetch_text(GITHUB_RAW + '/RELEASES.md', timeout=20)[:200000]
-        src = 'remote'
-    except Exception:
-        text = ''
-    if not text and APP_DIR:
+    for nom in noms:
+        suffixe = '' if nom == _RELEASES_FILES[lang] else ':fr'
         try:
-            with open(os.path.join(APP_DIR, 'RELEASES.md'), 'r', encoding='utf-8', errors='replace') as fh:
-                text = fh.read()[:200000].strip()
-            src = 'local'
+            text = _fetch_text(GITHUB_RAW + '/' + nom, timeout=20)[:200000]
         except Exception:
             text = ''
+        if text:
+            src = 'remote' + suffixe
+            break
+        if APP_DIR:
+            try:
+                with open(os.path.join(APP_DIR, nom), 'r', encoding='utf-8', errors='replace') as fh:
+                    text = fh.read()[:200000].strip()
+            except Exception:
+                text = ''
+            if text:
+                src = 'local' + suffixe
+                break
     if text:
-        _RELEASES['t'] = now; _RELEASES['v'] = text; _RELEASES['src'] = src
+        _RELEASES[lang] = {'t': now, 'v': text, 'src': src}
     return text, src
 
 
@@ -694,7 +706,7 @@ def _do_update():
         updated.append(f)
     # La licence d'utilisation et les notes de version accompagnent les fichiers ; leur absence ne fait pas
     # échouer la mise à jour. La copie locale des notes sert aux NAS sans accès à Internet.
-    for extra in ('LICENSE.md', 'RELEASES.md'):
+    for extra in ('LICENSE.md', 'RELEASES.md', 'RELEASES.en.md'):
         try:
             req = urllib.request.Request(GITHUB_RAW + '/' + extra, headers={'User-Agent': 'Desktroo'})
             with urllib.request.urlopen(req, timeout=30) as r:
@@ -703,7 +715,7 @@ def _do_update():
                 fh.write(data)
         except Exception:
             pass
-    _RELEASES['t'] = 0.0   # la prochaine lecture ira rechercher les notes
+    _RELEASES.clear()   # la prochaine lecture ira rechercher les notes
     return updated
 
 
@@ -9435,7 +9447,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         # Notes de version (Markdown brut ; la page les met en forme).
         if path == '/releases':
             try:
-                text, src = _releases_text(qs.get('force') in ('1', 'true'))
+                text, src = _releases_text(qs.get('force') in ('1', 'true'), qs.get('lang') or 'fr')
                 self._json(200, {'ok': True, 'markdown': text, 'source': src, 'version': APP_VERSION})
             except Exception as e:
                 self._json(200, {'ok': False, 'markdown': '', 'source': '', 'version': APP_VERSION, 'error': str(e)})

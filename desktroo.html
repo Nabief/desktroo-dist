@@ -16994,7 +16994,7 @@ async function termsAccept() {
 // Écrites en Markdown dans RELEASES.md, au même endroit que les fichiers publiés. On n'en lit qu'un
 // sous-ensemble — « ## version — date », « ### section », « - point » et « > détail » — plutôt que
 // d'embarquer un analyseur complet pour un fichier qu'on écrit soi-même.
-var _rel = { md: null, err: '' };
+var _rel = { lang: '', md: null, err: '' };
 function relInline(t) {
   return webEsc(String(t || '')).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
@@ -17051,10 +17051,12 @@ async function aboutNotesView() {
     + '<h4 class="about-title">' + T('Nouveautés') + '</h4><div id="rel-body"></div></div>';
   box.scrollTop = 0;
   var el = document.getElementById('rel-body');
-  if (_rel.md === null) {
+  // Les notes existent dans les deux langues : on relit si l'utilisateur a changé de langue.
+  if (_rel.md === null || _rel.lang !== DK_LANG) {
     el.innerHTML = '<div class="fs-empty"><div class="spinner"></div></div>';
+    _rel.lang = DK_LANG;
     try {
-      var r = await fileops('GET', 'releases');
+      var r = await fileops('GET', 'releases?lang=' + encodeURIComponent(DK_LANG));
       _rel.md = (r && r.markdown) || '';
       _rel.err = (!_rel.md && r && r.error) ? String(r.error) : '';
     } catch (e) { _rel.md = ''; _rel.err = (e && e.message) || String(e); }
