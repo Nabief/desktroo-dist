@@ -843,6 +843,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .taskbar-notif-badge:hover { background:rgba(255,255,255,0.08); }
   @keyframes jobspin { to { transform: rotate(360deg); } }
   .jobs-spin { display:inline-block; animation: jobspin 2.4s linear infinite; font-size:14px; }
+  .jobs-spin.is-still { animation:none; }
   .badge-count {
     position:absolute; top:2px; right:2px; min-width:16px; height:16px;
     background:var(--danger); border-radius:8px; font-size:9px; font-weight:700;
@@ -4470,6 +4471,27 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Modifier la configuration": "Edit configuration",
 "démarré": "started",
 "Arrêter": "Stop",
+"Arrêter la tâche": "Stop the task",
+"Arrêter \u003cstrong>{0}\u003c/strong> ?": "Stop \u003cstrong>{0}\u003c/strong>?",
+"La tâche sera interrompue. Ce qui a déjà été traité reste en place.": "The task will be interrupted. Whatever has already been processed stays in place.",
+"Arrêt demandé, la tâche se termine.": "Stop requested, the task is finishing.",
+"En attente": "Waiting",
+"Réussies": "Succeeded",
+"Aucune tâche dans cette liste": "No task in this list",
+"et {0} de plus": "and {0} more",
+"Les {0} dernières tâches connues du NAS.": "The last {0} tasks the NAS still knows about.",
+"1 tâche en cours": "1 task running",
+"{0} tâches en cours": "{0} tasks running",
+"1 tâche en échec": "1 failed task",
+"Lancée par {0}": "Started by {0}",
+"Aucune exécution en cours à arrêter.": "No run in progress to stop.",
+"{0} : toujours en cours, à suivre dans les tâches de la barre système.": "{0}: still running, follow it in the tasks on the system bar.",
+"{0} : interrompue.": "{0}: interrupted.",
+"Déplacer \u003cstrong>{0}\u003c/strong> dans le dataset Web ?": "Move \u003cstrong>{0}\u003c/strong> into the Web dataset?",
+"Le dossier quitte son emplacement actuel : un partage, un script ou une tâche qui le désigne devra être corrigé.": "The folder leaves its current location: a share, a script or a task pointing at it will have to be fixed.",
+"Il change de pool : la copie peut prendre un long moment.": "It changes pool: copying may take a long while.",
+"📦 Déplacement vers le dataset Web…": "📦 Moving into the Web dataset…",
+"Dossier déplacé : {0}": "Folder moved: {0}",
 "arrêté": "stopped",
 "Redémarrer le serveur \u003cstrong>TrueNAS\u003c/strong> ?": "Restart the \u003cstrong>TrueNAS\u003c/strong> server?",
 "Le NAS sera indisponible quelques minutes.": "The NAS will be unavailable for a few minutes.",
@@ -9710,11 +9732,11 @@ html[lang="en"].dk-phone .web-tr > [data-l]::before { content:attr(data-l) ':'; 
       <div class="ws-dot" id="ws-dot" title="WebSocket temps réel"></div>
       <span class="taskbar-status-label">WS</span>
     </div>
-    <div class="taskbar-notif-badge" id="jobs-taskbar" onclick="jobsTogglePopover(event)" title="Tâches en cours" style="display:none;gap:5px;">
-      <span class="jobs-spin">⚙️</span><span id="jobs-taskbar-count" style="font-size:11px;font-weight:600;">0</span>
+    <div class="taskbar-notif-badge" id="jobs-taskbar" onclick="jobsTogglePopover(event)" title="Tâches" style="display:none;gap:5px;">
+      <span class="jobs-spin" id="jobs-taskbar-icon">⚙️</span><span id="jobs-taskbar-count" style="font-size:11px;font-weight:600;">0</span>
     </div>
     <div id="jobs-popover" style="display:none;width:360px;max-height:60vh;overflow:auto;z-index:5000;background:linear-gradient(180deg,rgba(18,34,60,0.99),rgba(12,22,40,0.99));border:1px solid rgba(255,255,255,0.13);border-radius:12px;box-shadow:0 24px 64px rgba(0,0,0,0.7);padding:12px;">
-      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text);">Tâches en cours</div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--text);">Tâches</div>
       <div id="jobs-popover-list"></div>
     </div>
     <div class="taskbar-notif-badge" id="dl-taskbar" onclick="openDownloads()" title="Téléchargements en cours" style="display:none;gap:5px;">
@@ -13481,9 +13503,30 @@ async function webDeleteConfirm(id) {
     webRenderList();
   } catch(e) { toast('❌ ' + e.message); }
 }
-function fsServeSelected() {
+// Un site vit dans le dataset Web : c'est la seule zone que le serveur sait retrouver
+// (voir _web_reimport) et la seule dont les droits nginx / php-fpm sont garantis. Le
+// dossier choisi dans le gestionnaire de fichiers y est donc déplacé, pas servi sur
+// place. On demande d'abord au backend où il atterrirait, sans rien bouger, pour
+// pouvoir annoncer la destination exacte et prévenir d'un changement de pool.
+async function fsServeSelected() {
   if (!fsSelected || fsSelected.type !== 'DIRECTORY') { toast(T('Sélectionnez un dossier')); return; }
-  webNewForm({ name: fsSelected.name, type:'static', root: fsSelected.path });
+  var name = fsSelected.name, src = fsSelected.path, plan;
+  try { plan = await fileops('POST', 'websites/adopt', { path: src, dry_run: true }); }
+  catch (e) { toast('❌ ' + ((e && e.message) ? e.message : e)); return; }
+  if (plan && plan.already) { webNewForm({ name: name, type: 'static', root: plan.path }); return; }
+  var warn = T('Le dossier quitte son emplacement actuel : un partage, un script ou une tâche qui le désigne devra être corrigé.');
+  if (plan && plan.cross) warn += '<br>' + T('Il change de pool : la copie peut prendre un long moment.');
+  if (!await showConfirm(Tf('Déplacer <strong>{0}</strong> dans le dataset Web ?', webEsc(name))
+      + '<br><span style="font-size:12px;color:var(--text-dim);">' + webEsc(src) + ' → ' + webEsc(plan.path) + '</span>'
+      + '<br><span style="font-size:12px;color:var(--text-dim);">' + warn + '</span>',
+      { ok: T('Déplacer'), danger: !!(plan && plan.cross) })) return;
+  toast(T('📦 Déplacement vers le dataset Web…'));
+  var r;
+  try { r = await fileops('POST', 'websites/adopt', { path: src }); }
+  catch (e) { toast('❌ ' + ((e && e.message) ? e.message : e)); return; }
+  toast('✅ ' + Tf('Dossier déplacé : {0}', r.path));
+  try { fsRefresh(); } catch (_) {}
+  webNewForm({ name: name, type: 'static', root: r.path });
 }
 async function webMkdir() {
   const name = await showPrompt(T('Nom du dossier de site (créé dans le dataset Web, avec les bons droits) :'), 'mon-site');
@@ -17443,7 +17486,18 @@ function dlBadgeStart() {
 
 // ── Tâches en cours (jobs middleware) dans la barre système ──
 var _jobsBadgeTimer = null;
+// Le panneau des tâches reprend les quatre listes du panneau natif de TrueNAS :
+// en cours, en attente, échecs, réussies. Les tâches vivantes sont relues à chaque
+// tour (c'est peu de données), l'historique beaucoup plus rarement : un job en échec
+// traine sa trace d'appel complète, inutile de la retelecharger toutes les 20 s.
+var JOBS_HISTORY = 80;
+var JOBS_PAST_TTL = 150000;
+var _jobsLive = [];
+var _jobsPast = [];
+var _jobsPastAt = 0;
 var _jobsList = [];
+var _jobsTab = 'run';
+var _jobsAborting = {};
 var JOBS_LABELS = {
   'pool.scrub.scrub':T('Scrub de pool'), 'pool.scrub.run':T('Scrub de pool'),
   'replication.run':T('Réplication'), 'replication.run_onetime':T('Réplication'),
@@ -17459,19 +17513,81 @@ var JOBS_LABELS = {
 };
 function jobsEsc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function jobsFriendly(m) { return JOBS_LABELS[m] || m || T('Tâche'); }
-async function jobsBadgeUpdate() {
+var JOBS_TABS = [
+  { k: 'run',  ic: '⚙',  lab: T('En cours') },
+  { k: 'wait', ic: '⏳',  lab: T('En attente') },
+  { k: 'bad',  ic: '⚠',  lab: T('Échecs') },
+  { k: 'ok',   ic: '✓',  lab: T('Réussies') }
+];
+function jobsMerged() {
+  var out = _jobsLive.slice(), seen = {};
+  out.forEach(function(j) { seen[j.id] = 1; });
+  _jobsPast.forEach(function(j) { if (!seen[j.id]) out.push(j); });
+  return out;
+}
+function jobsBuckets() {
+  var b = { run: [], wait: [], bad: [], ok: [] };
+  jobsMerged().forEach(function(j) {
+    var st = String(j.state || '').toUpperCase();
+    if (st === 'RUNNING') b.run.push(j);
+    else if (st === 'WAITING' || st === 'PENDING') b.wait.push(j);
+    else if (st === 'FAILED' || st === 'ABORTED' || st === 'CANCELED') b.bad.push(j);
+    else if (st === 'SUCCESS') b.ok.push(j);
+  });
+  return b;
+}
+// Les échecs déjà vus ne réclament plus l'attention : on retient le numéro du
+// plus récent consulté, et on ignore ce qui date de plus d'une semaine.
+function jobsSeenBad() { try { return Number(localStorage.getItem('dk-jobs-seen') || 0) || 0; } catch (_) { return 0; } }
+function jobsUnseenBad(bad) {
+  var seen = jobsSeenBad(), cut = Date.now() - 7 * 864e5;
+  return bad.filter(function(j) {
+    if (Number(j.id) <= seen) return false;
+    var d = mntDate(j.time_finished || j.time_started);
+    return !d || d.getTime() >= cut;
+  });
+}
+function jobsMarkBadSeen() {
+  var mx = jobsSeenBad();
+  jobsBuckets().bad.forEach(function(j) { if (Number(j.id) > mx) mx = Number(j.id); });
+  try { localStorage.setItem('dk-jobs-seen', String(mx)); } catch (_) {}
+}
+function jobsAttention() { var b = jobsBuckets(); return b.run.length + b.wait.length + jobsUnseenBad(b.bad).length; }
+async function jobsLiveLoad() {
+  // « in » est l'opérateur normal des filtres TrueNAS ; si un NAS le refuse on
+  // retombe sur le seul état RUNNING plutôt que de perdre l'indicateur.
+  try { _jobsLive = ensureArray(await wsCall('core.get_jobs', [[['state', 'in', ['RUNNING', 'WAITING']]], { order_by: ['-id'] }], 20000)); }
+  catch (_) { _jobsLive = ensureArray(await wsCall('core.get_jobs', [[['state', '=', 'RUNNING']], { order_by: ['-id'] }], 20000)); }
+  return _jobsLive;
+}
+async function jobsPastLoad(force) {
+  if (!force && Date.now() - _jobsPastAt < JOBS_PAST_TTL) return;
+  _jobsPastAt = Date.now();
+  try { _jobsPast = ensureArray(await wsCall('core.get_jobs', [[], { order_by: ['-id'], limit: JOBS_HISTORY }], 25000)); } catch (_) {}
+}
+async function jobsBadgeUpdate(freshPast) {
   try {
-    var jobs = ensureArray(await wsCall('core.get_jobs', [[['state', '=', 'RUNNING']], { order_by: ['-id'] }], 20000));
-    _jobsList = jobs;
-    var el  = document.getElementById('jobs-taskbar');
-    var cnt = document.getElementById('jobs-taskbar-count');
-    if (cnt) cnt.textContent = jobs.length;
-    if (el)  el.style.display = jobs.length ? 'flex' : 'none';
-    var pop = document.getElementById('jobs-popover');
-    if (pop && pop.style.display === 'block') {
-      if (!jobs.length) pop.style.display = 'none';
-      else jobsRenderPopover();
+    await jobsLiveLoad();
+    await jobsPastLoad(!!freshPast);
+    var b = jobsBuckets();
+    _jobsList = b.run;
+    // Une tâche qui n'est plus vivante ne peut plus être arrêtée : on oublie son état.
+    var live = {}; b.run.concat(b.wait).forEach(function(j) { live[j.id] = 1; });
+    Object.keys(_jobsAborting).forEach(function(k) { if (!live[k]) delete _jobsAborting[k]; });
+    var active = b.run.length + b.wait.length, unseen = jobsUnseenBad(b.bad).length;
+    var pop  = document.getElementById('jobs-popover');
+    var open = !!(pop && pop.style.display === 'block');
+    var el   = document.getElementById('jobs-taskbar');
+    var cnt  = document.getElementById('jobs-taskbar-count');
+    var ic   = document.getElementById('jobs-taskbar-icon');
+    if (cnt) cnt.textContent = active || unseen;
+    if (ic) { ic.textContent = active ? '⚙️' : '⚠️'; ic.classList.toggle('is-still', !active); }
+    if (el) {
+      el.style.display = (active || unseen || open) ? 'flex' : 'none';
+      el.title = active ? (active > 1 ? Tf('{0} tâches en cours', active) : T('1 tâche en cours'))
+        : (unseen ? (unseen > 1 ? Tf('{0} tâches en échec', unseen) : T('1 tâche en échec')) : T('Tâches'));
     }
+    if (open) jobsRenderPopover();
   } catch (_) {}
 }
 function jobsBadgeStart() {
@@ -17479,38 +17595,140 @@ function jobsBadgeStart() {
   jobsBadgeUpdate();
   _jobsBadgeTimer = setInterval(function() { if (rtHas('core.get_jobs') && (++_rt.jobsTick % 5)) return; jobsBadgeUpdate(); }, 4000);
 }
+// Arrêt d'une tâche en cours, comme le panneau natif de TrueNAS : un bouton par tâche.
+// core.job_abort est l'arrêt générique du middleware ; il ne vaut que pour les jobs
+// marqués abortable, les autres n'ont pas de point d'interruption propre.
+var _jobsAborting = {};
+function jobsCanAbort(j) { return !j ? false : (j.abortable === undefined || j.abortable === null) ? true : !!j.abortable; }
+async function jobsAbort(id) {
+  var jid = Number(id);
+  if (!isFinite(jid) || _jobsAborting[jid]) return;
+  var j = null, i;
+  for (i = 0; i < _jobsList.length; i++) { if (Number(_jobsList[i].id) === jid) { j = _jobsList[i]; break; } }
+  var label = j ? jobsFriendly(j.method) : T('Tâche');
+  var warn  = T('La tâche sera interrompue. Ce qui a déjà été traité reste en place.');
+  // Marqué avant la confirmation : un deuxième clic ne doit ni rouvrir la fenêtre
+  // ni envoyer un second core.job_abort, qui échouerait en affichant une fausse erreur.
+  _jobsAborting[jid] = true;
+  try { jobsRenderPopover(); } catch (_) {}
+  if (!await showConfirm(Tf('Arrêter <strong>{0}</strong> ?', jobsEsc(label))
+      + '<br><small style="opacity:0.8;">' + warn + '</small>', { danger: true, ok: T('Arrêter') })) {
+    delete _jobsAborting[jid];
+    try { jobsRenderPopover(); } catch (_) {}
+    return;
+  }
+  try {
+    await wsCall('core.job_abort', [jid], 30000);
+    toast(T('Arrêt demandé, la tâche se termine.'));
+  } catch (e) {
+    delete _jobsAborting[jid];
+    wmToastErr(e);
+  }
+  try { jobsRenderPopover(); } catch (_) {}
+  setTimeout(jobsBadgeUpdate, 1000);
+}
+function jobsSetTab(k) { _jobsTab = k; if (k === 'bad') jobsMarkBadSeen(); jobsRenderPopover(); jobsBadgeUpdate(); }
+function jobsAgo(j) { var d = mntDate(j.time_finished || j.time_started); return d ? dpWhen(d) : ''; }
+// Qui a lancé la tâche, quand le middleware le dit (pas toutes les versions).
+function jobsWho(j) {
+  var c = j && j.credentials;
+  if (!c || typeof c !== 'object') return '';
+  var d = c.data || {};
+  var w = d.username || d.api_key_name || d.user || d.name || '';
+  return typeof w === 'string' ? w.trim() : '';
+}
+function jobsStopBtn(j) {
+  if (!jobsCanAbort(j)) return '';
+  var abn = !!_jobsAborting[j.id];
+  var abl = abn ? T('Arrêt en cours…') : T('Arrêter la tâche');
+  return '<button onclick="jobsAbort(' + Number(j.id) + ')"' + (abn ? ' disabled' : '')
+    + ' title="' + jobsEsc(abl) + '" aria-label="' + jobsEsc(abl) + '"'
+    + ' style="flex:0 0 auto;width:22px;height:22px;display:flex;align-items:center;justify-content:center;'
+    + 'padding:0;border:1px solid rgba(255,255,255,0.18);border-radius:5px;background:rgba(255,255,255,0.06);'
+    + 'color:var(--danger);font-size:9px;line-height:1;cursor:' + (abn ? 'default' : 'pointer') + ';'
+    + 'opacity:' + (abn ? '0.45' : '1') + ';">&#9632;</button>';
+}
+function jobsRow(j, tab) {
+  var pr  = j.progress || {};
+  var pct = (typeof pr.percent === 'number') ? Math.max(0, Math.min(100, Math.round(pr.percent))) : null;
+  var st  = String(j.state || '').toUpperCase();
+  var live = (tab === 'run' || tab === 'wait');
+  var desc = (pr.description != null ? String(pr.description) : '');
+  if (desc.length > 90) desc = desc.slice(0, 90) + '…';
+  var who  = jobsWho(j);
+  var sub  = live ? desc : [desc, who ? Tf('Lancée par {0}', who) : ''].filter(Boolean).join(' — ');
+  if (!live && !sub && who) sub = Tf('Lancée par {0}', who);
+  var right = tab === 'wait' ? T('En attente')
+    : tab === 'run' ? (pct != null ? pct + ' %' : '')
+    : jobsAgo(j);
+  var tone = tab === 'bad' ? 'var(--danger)' : 'var(--text-dim)';
+  var h = '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;">'
+    + '<span style="font-weight:600;color:var(--text);flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + jobsEsc(jobsFriendly(j.method)) + '</span>'
+    + '<span style="color:' + tone + ';flex:0 0 auto;">' + jobsEsc(right) + '</span>'
+    + (live ? jobsStopBtn(j) : '')
+    + '</div>';
+  if (sub) h += '<div style="font-size:11px;color:var(--text-dim);margin:2px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + jobsEsc(sub) + '</div>';
+  if (tab === 'bad') {
+    var err = String(j.error || '').split('\n').filter(function(x) { return x.trim(); })[0] || '';
+    var lab = (st === 'ABORTED' || st === 'CANCELED') ? T('Interrompue') : T('En échec');
+    h += '<div style="font-size:11px;color:var(--danger);margin:3px 0 0;">' + jobsEsc(lab)
+      + (err ? ' — <span style="color:var(--text-dim);">' + jobsEsc(err.slice(0, 160)) + '</span>' : '') + '</div>';
+  } else if (tab === 'ok') {
+    h += '<div style="font-size:11px;color:var(--text-dim);margin:3px 0 0;">' + T('Réussie') + '</div>';
+  } else if (tab === 'run') {
+    h += (desc ? '' : '<div style="height:4px;"></div>')
+      + '<div style="height:6px;margin-top:5px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">'
+      + '<div style="height:100%;width:' + (pct != null ? pct : 100) + '%;background:linear-gradient(90deg,var(--accent),var(--info));' + (pct == null ? 'opacity:0.35;' : '') + '"></div>'
+      + '</div>';
+  }
+  return h + '</div>';
+}
+// L'onglet demandé s'il a du contenu, sinon le premier qui en a : ouvrir le panneau
+// sur une liste vide n'apprend rien.
+function jobsPickTab(b) {
+  if (b[_jobsTab] && b[_jobsTab].length) return _jobsTab;
+  for (var i = 0; i < JOBS_TABS.length; i++) if (b[JOBS_TABS[i].k].length) return JOBS_TABS[i].k;
+  return _jobsTab || 'run';
+}
 function jobsRenderPopover() {
   var box = document.getElementById('jobs-popover-list');
   if (!box) return;
-  if (!_jobsList.length) {
-    box.innerHTML = T('<div style="font-size:12px;color:var(--text-dim);padding:6px 0;">Aucune tâche en cours</div>');
-    return;
-  }
-  var h = '';
-  _jobsList.forEach(function(j) {
-    var pr  = j.progress || {};
-    var pct = (typeof pr.percent === 'number') ? Math.max(0, Math.min(100, Math.round(pr.percent))) : null;
-    var title = jobsFriendly(j.method);
-    var desc  = (pr.description != null ? String(pr.description) : '');
-    if (desc.length > 90) desc = desc.slice(0, 90) + '…';
-    h += '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
-      + '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;">'
-      + '<span style="font-weight:600;color:var(--text);">' + jobsEsc(title) + '</span>'
-      + '<span style="color:var(--text-dim);">' + (pct != null ? pct + ' %' : '') + '</span>'
-      + '</div>'
-      + (desc ? '<div style="font-size:11px;color:var(--text-dim);margin:2px 0 5px;">' + jobsEsc(desc) + '</div>' : '<div style="height:4px;"></div>')
-      + '<div style="height:6px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">'
-      + '<div style="height:100%;width:' + (pct != null ? pct : 100) + '%;background:linear-gradient(90deg,var(--accent),var(--info));' + (pct == null ? 'opacity:0.35;' : '') + '"></div>'
-      + '</div></div>';
+  var b = jobsBuckets(), tab = jobsPickTab(b), unseen = jobsUnseenBad(b.bad).length;
+  var h = '<div style="display:flex;gap:4px;margin:0 0 9px;">';
+  JOBS_TABS.forEach(function(x) {
+    var n = b[x.k].length, sel = x.k === tab, mark = x.k === 'bad' && unseen;
+    h += '<button onclick="jobsSetTab(\'' + x.k + '\')" title="' + jobsEsc(x.lab) + '" aria-label="' + jobsEsc(x.lab) + '"'
+      + ' style="flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:5px 2px;'
+      + 'border:1px solid ' + (sel ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.10)') + ';border-radius:7px;'
+      + 'background:' + (sel ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.04)') + ';'
+      + 'color:' + (mark ? 'var(--danger)' : (n ? 'var(--text)' : 'var(--text-dim)')) + ';'
+      + 'font-size:11px;font-weight:600;cursor:pointer;">'
+      + '<span aria-hidden="true">' + x.ic + '</span><span>' + n + '</span></button>';
   });
+  h += '</div>';
+  var list = b[tab];
+  if (!list.length) { box.innerHTML = h + '<div style="font-size:12px;color:var(--text-dim);padding:6px 0;">' + T('Aucune tâche dans cette liste') + '</div>'; return; }
+  list.slice(0, 40).forEach(function(j) { h += jobsRow(j, tab); });
+  if (list.length > 40) h += '<div style="font-size:11px;color:var(--text-dim);padding:7px 0 0;">' + Tf('et {0} de plus', list.length - 40) + '</div>';
+  if (tab === 'bad' || tab === 'ok') h += '<div style="font-size:10px;color:var(--text-dim);padding:7px 0 0;">' + Tf('Les {0} dernières tâches connues du NAS.', JOBS_HISTORY) + '</div>';
   box.innerHTML = h;
+}
+function jobsOpenPopover(pop) {
+  var b = jobsBuckets();
+  // Rien ne tourne mais des échecs n'ont pas été vus : c'est ce qu'il faut montrer.
+  if (!b.run.length && !b.wait.length && jobsUnseenBad(b.bad).length) _jobsTab = 'bad';
+  jobsRenderPopover();
+  pop.style.display = 'block';
+  if (jobsPickTab(jobsBuckets()) === 'bad') jobsMarkBadSeen();
+  jobsBadgeUpdate(true);
 }
 function jobsTogglePopover(ev) {
   if (ev) ev.stopPropagation();
   var pop = document.getElementById('jobs-popover');
   if (!pop) return;
-  if (pop.style.display === 'block') { pop.style.display = 'none'; }
-  else { jobsRenderPopover(); pop.style.display = 'block'; }
+  if (pop.style.display === 'block') { pop.style.display = 'none'; jobsBadgeUpdate(); }
+  else jobsOpenPopover(pop);
 }
 document.addEventListener('click', function(e) {
   var pop = document.getElementById('jobs-popover');
@@ -21889,7 +22107,7 @@ function phTab(id) {
     var jp = document.getElementById('jobs-popover'), dd = document.getElementById('user-dropdown'), shown = (dd && dd.style.display === 'block') || (jp && jp.style.display === 'block');
     if (jp) jp.style.display = 'none';
     // « Tâches en cours » n'apparaît que s'il y en a, comme le bouton de la barre système.
-    var mj = document.getElementById('ph-m-jobs'); if (mj) mj.style.display = (typeof _jobsList !== 'undefined' && _jobsList.length) ? '' : 'none';
+    var mj = document.getElementById('ph-m-jobs'); if (mj) mj.style.display = (typeof _jobsLive !== 'undefined' && jobsAttention()) ? '' : 'none';
     if (shown) { if (dd) dd.style.display = 'none'; } else toggleUserMenu();
   }
   phSync();
@@ -22075,7 +22293,7 @@ function phMenuExtras() {
     mk('ph-m-theme', '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', T('Thème clair ou sombre'), function() { toggleTheme(); }),
     mk('ph-m-jobs', '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>', T('Tâches en cours'), function() {
       // Après le toucher : le bureau referme cette liste sur tout clic fait ailleurs, celui-ci compris.
-      setTimeout(function() { var jp = document.getElementById('jobs-popover'); if (!jp) return; try { jobsRenderPopover(); } catch (e) {} jp.style.display = 'block'; phSync(); }, 0); })
+      setTimeout(function() { var jp = document.getElementById('jobs-popover'); if (!jp) return; try { jobsOpenPopover(jp); } catch (e) {} jp.style.display = 'block'; phSync(); }, 0); })
   ];
   var ref = sep ? sep.nextSibling : dd.firstChild;
   items.forEach(function(it) { dd.insertBefore(it, ref); });
@@ -26132,7 +26350,7 @@ async function scDebug() {
 // DATA PROTECTION — ce qui protège les données : snapshots, réplication, sauvegardes, vérifications
 // Tableau de bord : chaque tâche de TrueNAS, son dernier résultat, et de quoi la lancer ou la suspendre.
 // ============================================================
-var _dp = { nav: 'all', sel: null, data: {}, err: {}, pools: [], loaded: false, seq: 0, busy: {} };
+var _dp = { nav: 'all', sel: null, data: {}, err: {}, pools: [], loaded: false, seq: 0, busy: {}, jobs: {} };
 WEB_ICONS.shield = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
 WEB_ICONS.cloud = '<path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>';
 // Familles de tâches : méthode TrueNAS, lancement immédiat, page TrueNAS.
@@ -26974,7 +27192,9 @@ function dpOneView(f, soft) {
   var t = dpTask(f.key, _dp.sel), id = Number(t.id), last = dpLast(f.key, t), busy = _dp.busy[f.key + ':' + t.id], on = t.enabled !== false;
   wmHead('dp', dpName(f.key, t) || f.one, { keepScroll: soft, back: [f.label, 'dpGo(\'' + f.key + '\')'], mono: f.key === 'snap',
     sub: '<span class="apps-state"><span class="web-dot ' + dpDot(busy ? { key: 'run' } : last, t.enabled) + '"></span>' + webEsc(on ? (busy || last.label) : T('Suspendue')) + '</span>',
-    actions: f.run && !busy ? '<button class="web-open" onclick="dpRun(\'' + f.key + '\',' + id + ')">' + T('Lancer maintenant') + '</button>' : '' });
+    actions: !f.run ? '' : (dpJobId(f.key, t) != null
+      ? '<button class="fs-btn" onclick="dpAbort(\'' + f.key + '\',' + id + ')">' + T('Arrêter') + '</button>'
+      : (busy ? '' : '<button class="web-open" onclick="dpRun(\'' + f.key + '\',' + id + ')">' + T('Lancer maintenant') + '</button>')) });
   var facts = [[T('Type'), webEsc(f.one)], [T('Quoi'), '<span class="mono">' + webEsc(dpWhere(f.key, t) || dpName(f.key, t)) + '</span>'],
     [T('Planification'), webEsc(t.schedule ? cronHuman(t.schedule) : (t.auto === false ? T('À la main') : ''))],
     [T('Dernière exécution'), webEsc(last.label) + (last.when ? '<span class="dim">' + webEsc(dpWhen(last.when) + ', ' + last.when.toLocaleString(DK_LOCALE, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })) + '</span>' : '')]];
@@ -26988,6 +27208,30 @@ function dpOneView(f, soft) {
       + wmRow('dpDelete(\'' + f.key + '\',' + id + ')', T('Supprimer la tâche'), f.key === 'cloud' ? T('Ce qui a déjà été envoyé reste dans le cloud') : T('Ce qui a déjà été copié reste sur la destination'), 'danger')
     : wmRow('dpManage(\'' + f.key + '\')', T('Modifier la tâche'), webEsc(dpManageLabel(f.key)))) + '</div>';
   wmBody('dp').innerHTML = h;
+}
+// Le numéro du job en cours pour cette tâche : celui retenu au lancement depuis
+// Desktroo, sinon celui que le middleware rattache à la tâche. Sans numéro, il n'y
+// a rien à arrêter : TrueNAS n'arrête pas une tâche, il arrête un job.
+function dpJobId(key, t) {
+  if (!t) return null;
+  var mine = _dp.jobs[key + ':' + t.id];
+  if (mine != null) return Number(mine);
+  var job = t.job || null;
+  if (job && job.id != null && String(job.state || '').toUpperCase() === 'RUNNING') return Number(job.id);
+  return null;
+}
+async function dpAbort(key, id) {
+  var f = dpFam(key), t = dpTask(key, id);
+  if (!f || !t) return;
+  var jid = dpJobId(key, t);
+  if (jid == null) { toast(T('Aucune exécution en cours à arrêter.')); loadDataprotect(true); return; }
+  if (!await showConfirm(Tf('Arrêter <strong>{0}</strong> ?', webEsc(dpName(key, t) || f.one))
+      + '<br><small style="opacity:0.8;">' + T('La tâche sera interrompue. Ce qui a déjà été traité reste en place.') + '</small>',
+      { danger: true, ok: T('Arrêter') })) return;
+  try { await wsCall('core.job_abort', [jid], 30000); toast(T('Arrêt demandé, la tâche se termine.')); }
+  catch (e) { wmToastErr(e); }
+  try { jobsBadgeUpdate(); } catch (_) {}
+  setTimeout(function() { loadDataprotect(true); }, 1500);
 }
 async function dpToggle(key, id, on) {
   var f = dpFam(key), t = dpTask(key, id);
@@ -27005,10 +27249,34 @@ async function dpRun(key, id) {
   toast(T('Tâche lancée, elle continue en arrière-plan'));
   try {
     var r = await wsCall(f.run, key === 'cloud' ? [t.id, { dry_run: false }] : [t.id], 300000);
-    if (typeof r === 'number') await waitJob(r, 3600000);
+    if (typeof r === 'number') {
+      // Le numéro de job est retenu : « Arrêter » reste possible pendant toute l'attente.
+      _dp.jobs[k] = r;
+      dpRender(true);
+      try { jobsBadgeUpdate(); } catch (_) {}
+      await waitJob(r, 3600000);
+      // waitJob rend null quand son délai est écoulé, mais aussi quand la tâche a
+      // réussi sans résultat : seul l'état du job distingue les deux. Sans cette
+      // relecture, une sauvegarde encore en cours au bout d'une heure était annoncée
+      // « terminée ».
+      var fin = ensureArray(await wsCall('core.get_jobs', [[['id', '=', Number(r)]], {}], 30000))[0];
+      var fst = String((fin && fin.state) || '').toUpperCase();
+      if (fst && fst !== 'SUCCESS') {
+        toast(Tf('{0} : toujours en cours, à suivre dans les tâches de la barre système.', dpName(key, t)), 9000);
+        delete _dp.busy[k];
+        delete _dp.jobs[k];
+        loadDataprotect(true);
+        return;
+      }
+    }
     toast('✅ ' + Tf('{0} : terminée', dpName(key, t)));
-  } catch (e) { wmToastErr(e); }
+  } catch (e) {
+    // Une tâche que l'utilisateur vient d'arrêter n'est pas une erreur à signaler.
+    if (/ABORT|CANCEL/i.test(String((e && e.message) || e || ''))) toast(Tf('{0} : interrompue.', dpName(key, t)));
+    else wmToastErr(e);
+  }
   delete _dp.busy[k];
+  delete _dp.jobs[k];
   loadDataprotect(true);
 }
 

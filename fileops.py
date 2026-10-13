@@ -5276,6 +5276,58 @@ def _web_mkdir(parent, name):
     return {'path': target, 'existed': existed}
 
 
+def _web_adopt(src, dry_run=False):
+    """Deplace un dossier existant dans le dataset Web et lui donne les droits
+    des sites. Sert au « Servir sur le web » du gestionnaire de fichiers : un site
+    vit dans le dataset Web, pas ailleurs — c'est la seule zone que _web_reimport()
+    sait retrouver, et la seule ou les droits sont garantis.
+
+    Deplacement et non copie : pas de doublon, et c'est instantane dans le meme
+    pool. Vers un autre pool, os.rename echoue et shutil.move recopie : long, d'ou
+    le 'cross' renvoye en dry_run pour prevenir avant de lancer.
+    """
+    src_real = os.path.realpath(str(src or '').strip())
+    base = WEB_ROOT_ALLOWED.rstrip('/')
+    if not src_real.startswith(base + '/'):
+        raise PermissionError('Le dossier doit etre sous %s/.' % WEB_ROOT_ALLOWED)
+    if not os.path.isdir(src_real):
+        raise ValueError('Dossier introuvable : %s' % src)
+    ds = os.path.realpath(_web_dataset_path())
+    if not os.path.isdir(ds):
+        raise ValueError('Dataset Web introuvable (%s). Cree-le depuis Sites web.' % ds)
+    # Deja a sa place : rien a deplacer, on rend le chemin tel quel.
+    if src_real == ds or os.path.dirname(src_real) == ds:
+        return {'path': src_real, 'moved': False, 'already': True, 'cross': False}
+    if ds == src_real or ds.startswith(src_real + '/'):
+        raise ValueError('Ce dossier contient le dataset Web : il ne peut pas y etre deplace.')
+    name = os.path.basename(src_real)
+    if not re.match(r'^[A-Za-z0-9_.-]{1,64}$', name):
+        raise ValueError('Nom de dossier invalide pour un site (lettres, chiffres, . _ - ).')
+    if os.path.ismount(src_real):
+        raise ValueError('Ce dossier est un dataset ZFS monte : il ne se deplace pas comme un dossier. '
+                         'Cree un site vide puis copie son contenu, ou deplace le dataset depuis Stockage.')
+    dst = os.path.join(ds, name)
+    if os.path.exists(dst):
+        raise ValueError('Un dossier « %s » existe deja dans le dataset Web.' % name)
+    try:
+        cross = os.stat(src_real).st_dev != os.stat(ds).st_dev
+    except OSError:
+        cross = True
+    if dry_run:
+        return {'path': dst, 'moved': False, 'already': False, 'cross': bool(cross)}
+    _sh_shutil.move(src_real, dst)
+    gid = int(WEB_WWW_GID) if str(WEB_WWW_GID).isdigit() else 82
+    try:
+        os.chown(dst, 0, gid)
+    except OSError:
+        pass
+    try:
+        os.chmod(dst, 0o2775)
+    except OSError:
+        pass
+    return {'path': dst, 'moved': True, 'already': False, 'cross': bool(cross), 'from': src_real}
+
+
 def _web_write_user_ini(root, ini):
     """Écrit un .user.ini dans le dossier du site : réglages php.ini propres au
     site (priment sur le profil de la version). Directives 'par répertoire'."""
@@ -10088,6 +10140,21 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 b = self._body()
                 res = _web_mkdir(b.get('parent'), b.get('name'))
                 res['ok'] = True
+                self._json(200, res)
+            except (ValueError, PermissionError) as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
+        # MDM-WEBSITES-V1 : adopter un dossier existant (le deplacer dans le dataset Web)
+        if path == '/websites/adopt':
+            try:
+                b = self._body()
+                res = _web_adopt(b.get('path'), bool(b.get('dry_run')))
+                res['ok'] = True
+                if res.get('moved'):
+                    _px_log('web.adopt', _px_by(self), src=str(res.get('from') or ''), path=str(res.get('path') or ''))
                 self._json(200, res)
             except (ValueError, PermissionError) as e:
                 self._json(400, {'error': str(e)})
