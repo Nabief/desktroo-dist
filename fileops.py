@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.44.5'
+APP_VERSION = '2.44.6'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -646,6 +646,35 @@ def _version_status():
             'truenas_host': SSH_HOST, 'truenas_ip': _truenas_ip()}
 
 
+# Notes de version. Lues dans le dépôt de distribution, car elles doivent décrire aussi les versions
+# PLUS RÉCENTES que celle installée — c'est là tout l'intérêt avant de mettre à jour. Repli sur la copie
+# locale déposée par la dernière mise à jour, pour un NAS sans accès à Internet.
+_RELEASES = {'t': 0.0, 'v': '', 'src': ''}
+_RELEASES_TTL = 900.0
+
+
+def _releases_text(force=False):
+    now = _login_time.time()
+    if not force and _RELEASES['v'] and now - _RELEASES['t'] < _RELEASES_TTL:
+        return _RELEASES['v'], _RELEASES['src']
+    text, src = '', ''
+    try:
+        text = _fetch_text(GITHUB_RAW + '/RELEASES.md', timeout=20)[:200000]
+        src = 'remote'
+    except Exception:
+        text = ''
+    if not text and APP_DIR:
+        try:
+            with open(os.path.join(APP_DIR, 'RELEASES.md'), 'r', encoding='utf-8', errors='replace') as fh:
+                text = fh.read()[:200000].strip()
+            src = 'local'
+        except Exception:
+            text = ''
+    if text:
+        _RELEASES['t'] = now; _RELEASES['v'] = text; _RELEASES['src'] = src
+    return text, src
+
+
 def _do_update():
     """Télécharge la dernière version des fichiers dans APP_DIR.
     Le HTML est servi à chaud ; fileops.py nécessite un redémarrage."""
@@ -663,15 +692,18 @@ def _do_update():
         with open(dst, 'wb') as fh:
             fh.write(data)
         updated.append(f)
-    # La licence d'utilisation accompagne les fichiers ; son absence ne fait pas échouer la mise à jour.
-    try:
-        req = urllib.request.Request(GITHUB_RAW + '/LICENSE.md', headers={'User-Agent': 'Desktroo'})
-        with urllib.request.urlopen(req, timeout=30) as r:
-            data = r.read()
-        with open(os.path.join(APP_DIR, 'LICENSE.md'), 'wb') as fh:
-            fh.write(data)
-    except Exception:
-        pass
+    # La licence d'utilisation et les notes de version accompagnent les fichiers ; leur absence ne fait pas
+    # échouer la mise à jour. La copie locale des notes sert aux NAS sans accès à Internet.
+    for extra in ('LICENSE.md', 'RELEASES.md'):
+        try:
+            req = urllib.request.Request(GITHUB_RAW + '/' + extra, headers={'User-Agent': 'Desktroo'})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                data = r.read()
+            with open(os.path.join(APP_DIR, extra), 'wb') as fh:
+                fh.write(data)
+        except Exception:
+            pass
+    _RELEASES['t'] = 0.0   # la prochaine lecture ira rechercher les notes
     return updated
 
 
@@ -9398,6 +9430,15 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, _version_status())
             except Exception as e:
                 self._json(200, {'version': APP_VERSION, 'latest': '', 'update_available': False, 'boot': _BOOT_ID, 'error': str(e)})
+            return
+
+        # Notes de version (Markdown brut ; la page les met en forme).
+        if path == '/releases':
+            try:
+                text, src = _releases_text(qs.get('force') in ('1', 'true'))
+                self._json(200, {'ok': True, 'markdown': text, 'source': src, 'version': APP_VERSION})
+            except Exception as e:
+                self._json(200, {'ok': False, 'markdown': '', 'source': '', 'version': APP_VERSION, 'error': str(e)})
             return
 
         # MDM-DOWNLOADS-V1 : liste des téléchargements

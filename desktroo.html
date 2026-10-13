@@ -1332,6 +1332,19 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .about-quiet:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
   .about-title { margin:10px 0 16px; font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--text); }
   .about-page > .web-crumb { align-self:flex-start; }
+  /* Notes de version */
+  .rel-v { margin:0 0 18px; }
+  .rel-v:last-child { margin-bottom:4px; }
+  .rel-h { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 8px; font-size:13px; font-weight:600; color:var(--text); }
+  .rel-num { font-family:var(--font-mono); }
+  .rel-when { font-size:11.5px; font-weight:400; color:var(--text-dim); }
+  .rel-sec { margin:10px 0 5px; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); }
+  .rel-list { margin:0; padding-left:18px; }
+  .rel-list li { margin:0 0 7px; font-size:12.5px; line-height:1.55; color:var(--text); }
+  .rel-list li::marker { color:var(--text-dim); }
+  .rel-list code { font-family:var(--font-mono); font-size:11px; padding:1px 4px; border-radius:4px; background:rgba(128,140,160,0.16); }
+  .rel-note { display:block; margin-top:3px; font-size:11px; line-height:1.5; color:var(--text-dim); border-left:2px solid var(--glass-border); padding-left:8px; }
+  .rel-v.is-new .rel-num { color:var(--accent); }
   .about-up { padding:16px 18px; }
   /* « À propos » : droits et licence */
   .about-legal-lead { margin:0 0 8px; font-size:14px; line-height:1.5; color:var(--text); }
@@ -4504,6 +4517,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Il change de pool : la copie peut prendre un long moment.": "It changes pool: copying may take a long while.",
 "📦 Déplacement vers le dataset Web…": "📦 Moving into the Web dataset…",
 "Dossier déplacé : {0}": "Folder moved: {0}",
+"Notes de version": "Release notes",
+"Voir ce qu'apporte la mise à jour": "See what the update brings",
+"Les notes de version ne sont pas accessibles pour le moment.": "The release notes are not reachable right now.",
 "Jeton d'accès attendu.": "An access token is required.",
 "Jeton d'accès invalide : il ne doit contenir ni espace ni retour à la ligne.": "Invalid access token: it must contain no space and no line break.",
 "Adresse attendue sous la forme http://adresse:8123": "Expected an address like http://address:8123",
@@ -16762,7 +16778,7 @@ function aboutGo(k) {
 }
 function loadAbout() {
   if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la fenêtre
-  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'report') aboutReportView(); else if (_about.nav === 'rights') aboutRightsView(); else aboutDeskView();
+  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'report') aboutReportView(); else if (_about.nav === 'rights') aboutRightsView(); else if (_about.nav === 'notes') aboutNotesView(); else aboutDeskView();
 }
 function aboutBody() { return document.getElementById('about-body'); }
 // ── Signaler un problème : une page de la fenêtre « À propos ». Le message part au service, qui le relaie à desktroo.fr ──
@@ -16974,6 +16990,82 @@ async function termsAccept() {
     if (msg) msg.textContent = T('L\'accord n\'a pas pu être enregistré :') + ' ' + dkErrText(e);
   }
 }
+// ── Notes de version ──
+// Écrites en Markdown dans RELEASES.md, au même endroit que les fichiers publiés. On n'en lit qu'un
+// sous-ensemble — « ## version — date », « ### section », « - point » et « > détail » — plutôt que
+// d'embarquer un analyseur complet pour un fichier qu'on écrit soi-même.
+var _rel = { md: null, err: '' };
+function relInline(t) {
+  return webEsc(String(t || '')).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+function relParse(md) {
+  var out = [], cur = null, sec = null;
+  String(md || '').split(/\r?\n/).forEach(function(line) {
+    var l = line.replace(/\s+$/, ''), m;
+    if ((m = /^##\s+(.+)$/.exec(l))) {
+      var t = m[1].split(/\s+[\u2014\u2013-]\s+/);
+      cur = { version: String(t[0] || '').trim(), when: String(t[1] || '').trim(), secs: [] };
+      out.push(cur); sec = null; return;
+    }
+    if ((m = /^###\s+(.+)$/.exec(l))) { if (cur) { sec = { title: m[1].trim(), items: [] }; cur.secs.push(sec); } return; }
+    if ((m = /^\s*>\s?(.*)$/.exec(l))) {
+      if (!sec || !sec.items.length) return;
+      var it = sec.items[sec.items.length - 1];
+      it.note = (it.note ? it.note + ' ' : '') + m[1].trim();
+      return;
+    }
+    if ((m = /^[-*]\s+(.+)$/.exec(l.replace(/^\s+/, '')))) {
+      if (!cur) return;
+      if (!sec) { sec = { title: '', items: [] }; cur.secs.push(sec); }
+      sec.items.push({ text: m[1].trim(), note: '' });
+      return;
+    }
+    // ligne indentée qui prolonge le point précédent
+    if (l && /^\s+\S/.test(line) && sec && sec.items.length) {
+      var last = sec.items[sec.items.length - 1];
+      last.text += ' ' + l.trim();
+    }
+  });
+  return out;
+}
+function relRender(list, installed) {
+  if (!list.length) return '<p class="about-legal">' + T('Les notes de version ne sont pas accessibles pour le moment.') + '</p>';
+  return list.map(function(v) {
+    var newer = !!(installed && v.version && dkVerCmp(v.version, installed) > 0);
+    var chip = newer ? '<span class="about-chip warn">' + T('Disponible') + '</span>'
+      : (installed && v.version === installed ? '<span class="about-chip ok">' + T('Installée') + '</span>' : '');
+    return '<section class="rel-v' + (newer ? ' is-new' : '') + '">'
+      + '<h5 class="rel-h"><span class="rel-num">' + webEsc(v.version) + '</span>'
+      + (v.when ? '<span class="rel-when">' + webEsc(v.when) + '</span>' : '') + chip + '</h5>'
+      + v.secs.map(function(sc) {
+          return (sc.title ? '<div class="rel-sec">' + webEsc(sc.title) + '</div>' : '')
+            + '<ul class="rel-list">' + sc.items.map(function(it) {
+                return '<li>' + relInline(it.text) + (it.note ? '<span class="rel-note">' + relInline(it.note) + '</span>' : '') + '</li>';
+              }).join('') + '</ul>';
+        }).join('') + '</section>';
+  }).join('');
+}
+async function aboutNotesView() {
+  var box = aboutBody();
+  box.innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
+    + '<h4 class="about-title">' + T('Nouveautés') + '</h4><div id="rel-body"></div></div>';
+  box.scrollTop = 0;
+  var el = document.getElementById('rel-body');
+  if (_rel.md === null) {
+    el.innerHTML = '<div class="fs-empty"><div class="spinner"></div></div>';
+    try {
+      var r = await fileops('GET', 'releases');
+      _rel.md = (r && r.markdown) || '';
+      _rel.err = (!_rel.md && r && r.error) ? String(r.error) : '';
+    } catch (e) { _rel.md = ''; _rel.err = (e && e.message) || String(e); }
+    if (_about.nav !== 'notes') return;
+    el = document.getElementById('rel-body');
+    if (!el) return;
+  }
+  var installed = (_tndUpdate && _tndUpdate.version) || DK_PAGE_VERSION;
+  el.innerHTML = relRender(relParse(_rel.md), installed)
+    + (_rel.err ? '<p class="about-legal-note">' + webEsc(_rel.err) + '</p>' : '');
+}
 function aboutRightsView() {
   aboutBody().innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
     + '<h4 class="about-title">' + T('Droits et licence') + '</h4>'
@@ -17002,6 +17094,8 @@ async function aboutDeskView() {
   var rows = '<div class="about-row"><span>' + T('Version installée') + '</span><span class="about-val">' + webEsc(v.lag ? DK_PAGE_VERSION : (v.version || '?'))
       + (v.lag ? '<span class="about-chip warn">' + T('Le service redémarre') + '</span>' : (up || !v.latest ? '' : '<span class="about-chip ok">' + T('À jour') + '</span>')) + '</span></div>'
     + (up ? '<div class="about-row"><span>' + T('Dernière version') + '</span><span class="about-val">' + webEsc(v.latest) + '<span class="about-chip warn">' + T('Disponible') + '</span></span></div>' : '')
+    + '<button class="about-row" onclick="aboutGo(\'notes\')"><span>' + T('Nouveautés') + '</span><span class="about-val">'
+      + (up ? T('Voir ce qu\'apporte la mise à jour') : T('Notes de version')) + chev + '</span></button>'
     + '<button class="about-row" onclick="aboutGo(\'lic\')"><span>' + T('Licence') + '</span><span class="about-val">'
       + (lic ? '<span class="about-chip' + (lic[1] ? ' ' + lic[1] : '') + '">' + lic[0] + '</span>' : '') + chev + '</span></button>'
     + '<a class="about-row" href="https://desktroo.fr" target="_blank" rel="noopener"><span>' + T('Site web') + '</span><span class="about-val">desktroo.fr' + out + '</span></a>'
@@ -17017,7 +17111,7 @@ async function aboutDeskView() {
 async function tndDoUpdate() {
   if (!await showConfirm(T('Lancer la mise à jour ? Le service va redémarrer (~30 s).'))) return;
   // Le suivi s'affiche dans la fenêtre « À propos », qu'on ouvre au besoin.
-  _about.busy = true; _about.nav = 'desk';
+  _about.busy = true; _about.nav = 'desk'; _rel.md = null;   // la nouvelle version apporte ses propres notes
   var aw = document.getElementById('win-about');
   if (aw && aw.classList.contains('visible')) bringToFront(aw); else openApp('about');
   var box = aboutBody();
@@ -17104,7 +17198,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.44.5';
+var DK_PAGE_VERSION = '2.44.6';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
