@@ -4518,6 +4518,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "📦 Déplacement vers le dataset Web…": "📦 Moving into the Web dataset…",
 "Dossier déplacé : {0}": "Folder moved: {0}",
 "Notes de version": "Release notes",
+"Ne pas copier": "Do not copy",
+"Un motif par ligne ; ce qui correspond est ignoré. Exemples : *.tmp, .DS_Store, ou *=* si la destination refuse le signe égal dans les noms de fichiers, ce qui arrive avec certains Nextcloud.": "One pattern per line; anything matching is skipped. Examples: *.tmp, .DS_Store, or *=* when the destination rejects the equals sign in file names, which happens with some Nextcloud servers.",
+"50 motifs au plus dans « Ne pas copier ».": "At most 50 patterns under \u201cDo not copy\u201d.",
 "Voir ce qu'apporte la mise à jour": "See what the update brings",
 "Les notes de version ne sont pas accessibles pour le moment.": "The release notes are not reachable right now.",
 "Jeton d'accès attendu.": "An access token is required.",
@@ -17200,7 +17203,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.44.6';
+var DK_PAGE_VERSION = '2.44.7';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -26603,7 +26606,7 @@ var _dpn = { kind: '', edit: null, loading: false, err: null, seq: 0, busy: fals
 var DPN_DAYS = function() { return [['1', T('lundi')], ['2', T('mardi')], ['3', T('mercredi')], ['4', T('jeudi')], ['5', T('vendredi')], ['6', T('samedi')], ['7', T('dimanche')]]; };
 var DPN_IDS = {
   repl: ['rp-name', 'rp-src', 'rp-rec', 'rp-where', 'rp-dst', 'rp-keep', 'rp-lifeval', 'rp-lifeunit'],
-  cloud: ['cs-desc', 'cs-cred', 'cs-path', 'cs-bucket', 'cs-folder', 'cs-dir', 'cs-mode'],
+  cloud: ['cs-desc', 'cs-cred', 'cs-path', 'cs-bucket', 'cs-folder', 'cs-dir', 'cs-mode', 'cs-exclude'],
   rsync: ['rs-desc', 'rs-mode', 'rs-path', 'rs-user', 'rs-dir', 'rs-rpath', 'rs-host', 'rs-module', 'rs-rec', 'rs-times', 'rs-compress', 'rs-archive', 'rs-delete', 'rs-check']
 };
 function dpnCanNew(key) { return key === 'repl' || key === 'cloud' || key === 'rsync'; }
@@ -26639,7 +26642,7 @@ function dpnOpen(kind, editId) {
 }
 function dpnPrefill(kind, t) {
   if (kind === 'repl') return { 'rp-name': t.name || '', 'rp-dst': t.target_dataset || '', 'rp-rec': !!t.recursive, 'rp-keep': t.retention_policy || 'SOURCE' };
-  if (kind === 'cloud') { var a = t.attributes || {}, c = t.credentials || {}; return { 'cs-desc': t.description || '', 'cs-cred': c.id != null ? c.id : t.credentials, 'cs-path': t.path || '', 'cs-bucket': a.bucket || '', 'cs-folder': a.folder || '', 'cs-dir': t.direction || 'PUSH', 'cs-mode': t.transfer_mode || 'COPY' }; }
+  if (kind === 'cloud') { var a = t.attributes || {}, c = t.credentials || {}; return { 'cs-desc': t.description || '', 'cs-cred': c.id != null ? c.id : t.credentials, 'cs-path': t.path || '', 'cs-bucket': a.bucket || '', 'cs-folder': a.folder || '', 'cs-dir': t.direction || 'PUSH', 'cs-mode': t.transfer_mode || 'COPY', 'cs-exclude': ensureArray(t.exclude).join('\n') }; }
   var sc = t.ssh_credentials && typeof t.ssh_credentials === 'object' ? t.ssh_credentials.id : t.ssh_credentials;
   return { 'rs-desc': t.desc || '', 'rs-mode': t.mode === 'MODULE' ? 'module' : (sc != null ? 'ssh:' + sc : 'legacy'), 'rs-path': t.path || '', 'rs-user': t.user || 'root', 'rs-dir': t.direction || 'PUSH', 'rs-rpath': t.remotepath || '',
     'rs-host': t.remotehost || '', 'rs-module': t.remotemodule || '', 'rs-rec': !!t.recursive, 'rs-times': !!t.times, 'rs-compress': !!t.compress, 'rs-archive': !!t.archive, 'rs-delete': !!t.delete, 'rs-check': false };
@@ -26846,6 +26849,8 @@ function dpnCloudForm(fam) {
     + wmField(T('Sens'), dpnSel('cs-dir', [['PUSH', T('Envoyer le dossier du NAS vers le cloud')], ['PULL', T('Récupérer le dossier du cloud sur le NAS')]], dir, 'onchange="dpnChange()"'))
     + wmField(T('Mode'), dpnSel('cs-mode', modes, mode, 'onchange="dpnChange()"'),
         mode === 'SYNC' ? '<span style="color:#fbbf24;">' + (dir === 'PULL' ? T('Attention : les fichiers du NAS absents du cloud seront effacés du NAS.') : T('Attention : un fichier effacé par erreur sur le NAS le sera aussi dans le cloud au passage suivant.')) + '</span>' : '')
+    + wmField(T('Ne pas copier'), '<textarea class="wm-input" id="cs-exclude" rows="3" spellcheck="false" style="font-family:var(--font-mono);resize:vertical;" placeholder="*.tmp">' + webEsc(f['cs-exclude'] || '') + '</textarea>',
+        T('Un motif par ligne ; ce qui correspond est ignoré. Exemples : *.tmp, .DS_Store, ou *=* si la destination refuse le signe égal dans les noms de fichiers, ce qui arrive avec certains Nextcloud.'))
     + dpnWhenFields('')
     + wmField(T('Nom de la tâche'), wmInput('cs-desc', f['cs-desc'] || '', 'maxlength="120" placeholder="' + webEsc(T('Documents vers le cloud')) + '"'))
     + dpnFoot(fam, 'dpnCloudSave()', T('Créer la sauvegarde')) + '</div>';
@@ -26861,7 +26866,11 @@ async function dpnCloudSave() {
   if (folder && folder.charAt(0) !== '/') folder = '/' + folder;
   var attrs = Object.assign({}, e ? e.attributes : {}, { folder: folder.replace(/\/+$/, '') }), sched = dpnSchedule();
   if (f['cs-bucket'] && (!prov || prov.buckets)) attrs.bucket = f['cs-bucket']; else delete attrs.bucket;
-  var body = { description: f['cs-desc'] || Tf('{0} vers {1}', path.split('/').pop(), c.name || dpnCredType(c)), path: path, credentials: c.id, attributes: attrs,
+  // Motifs rclone, un par ligne. On envoie toujours la liste, même vide : le champ est désormais
+  // montré à l'utilisateur et rempli avec ce qui existe, donc la vider est un geste volontaire.
+  var excl = String(f['cs-exclude'] || '').split(/\r?\n/).map(function(x) { return x.trim(); }).filter(Boolean);
+  if (excl.length > 50) { toast('❌ ' + T('50 motifs au plus dans « Ne pas copier ».'), 7000); return; }
+  var body = { description: f['cs-desc'] || Tf('{0} vers {1}', path.split('/').pop(), c.name || dpnCredType(c)), path: path, credentials: c.id, attributes: attrs, exclude: excl,
     direction: f['cs-dir'] === 'PULL' ? 'PULL' : 'PUSH', transfer_mode: f['cs-mode'] === 'SYNC' ? 'SYNC' : (f['cs-mode'] === 'MOVE' ? 'MOVE' : 'COPY') };
   if (sched) body.schedule = sched;
   if (!e) body.enabled = true;

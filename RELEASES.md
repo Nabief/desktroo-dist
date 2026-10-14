@@ -3,7 +3,13 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.44.6 — à paraître
+## 2.44.7 — à paraître
+
+### Nouveau
+- **Exclure des fichiers d'une sauvegarde cloud.** Un champ « Ne pas copier » dans le formulaire : un motif par ligne, et ce qui correspond n'est pas copié.
+  > Alimente le champ `exclude` de TrueNAS, que Desktroo n'envoyait pas : il fallait passer par l'interface de TrueNAS. Utile quand la destination refuse certains noms de fichiers — un Nextcloud qui rejette le signe égal, par exemple.
+
+## 2.44.6 — 13 octobre 2026
 
 ### Nouveau
 - **Les notes de version sont dans l'application.** À propos → Nouveautés : vous voyez ce qu'apporte la version installée, et ce que vous gagnerez en mettant à jour.

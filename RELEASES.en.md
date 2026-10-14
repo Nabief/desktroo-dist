@@ -3,7 +3,13 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.44.6 — unreleased
+## 2.44.7 — unreleased
+
+### New
+- **Exclude files from a cloud backup.** A “Do not copy” field in the form: one pattern per line, and anything matching is skipped.
+  > Feeds the TrueNAS `exclude` field, which Desktroo never sent — you had to go through the TrueNAS interface. Useful when the destination rejects certain file names, such as a Nextcloud rejecting the equals sign.
+
+## 2.44.6 — 13 October 2026
 
 ### New
 - **Release notes are in the application.** About → What's new: see what the installed version brings, and what you would gain by updating.
@@ -14,7 +20,7 @@ the grey line underneath gives the technical detail, when there is one.
 ### New
 - **Choose where an application stores its data.** At install time, for each storage entry: the volume managed by TrueNAS, or a folder of your choice on the NAS.
   > Exposes the `storage.*.type` field of the TrueNAS catalogue, which the application used to force. An empty or relative folder is refused before the install rather than during it.
-- **Create a folder from the folder picker**, without leaving the form you are filling in. A « + Folder » button, everywhere the picker opens.
+- **Create a folder from the folder picker**, without leaving the form you are filling in. A “+ Folder” button, everywhere the picker opens.
 
 ### Fixed
 - **Change the Home Assistant address without re-entering the token.** Leave the field empty: the stored token is reused, and your device selection is kept.
@@ -32,18 +38,18 @@ the grey line underneath gives the technical detail, when there is one.
   > Stopping is only offered when TrueNAS marks the job as abortable. Live tasks are refreshed on every tick, history at most every 150 seconds.
 - **The indicator also reports failures.** A task that failed less than seven days ago and that you have not seen yet lights up the indicator, even when nothing is running.
 - **Stop a backup or a replication** from its page, in Data protection.
-- **« Serve on the web » moves the folder into the Web dataset**, with a confirmation naming the exact destination and warning you if the folder changes pool.
+- **“Serve on the web” moves the folder into the Web dataset**, with a confirmation naming the exact destination and warning you if the folder changes pool.
   > A site has to live in the Web dataset: it is the only area Desktroo knows how to find again, and the only one where permissions are guaranteed.
 
 ### Fixed
-- **A cloud backup still running is no longer reported as finished.** After an hour of waiting, Desktroo used to display « finished » without checking.
+- **A cloud backup still running is no longer reported as finished.** After an hour of waiting, Desktroo used to display “finished” without checking.
   > Waiting on a job returns the same empty value on timeout and on success without a result. The job state is now read back to tell them apart.
 - A task you have just stopped is no longer reported as an error.
 
 ## 2.44.3 — 12 October 2026
 
 ### Fixed
-- **The account shown in the system bar is really yours.** Desktroo could display « root », in particular when reopening a tab or the browser.
+- **The account shown in the system bar is really yours.** Desktroo could display “root”, in particular when reopening a tab or the browser.
   > The name now comes from TrueNAS itself. It fed the activity log, the trash, the account preselected for an API key, and the acceptance of the terms.
 - **The update is no longer offered when it is already installed.**
 
