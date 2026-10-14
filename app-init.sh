@@ -69,6 +69,8 @@ for f in fileops.py desktroo.html vnc-viewer.html; do
 done
 # La licence d'utilisation accompagne les fichiers ; son absence ne bloque pas le démarrage.
 fetch "$GITHUB_RAW/LICENSE.md" "$D/LICENSE.md" && echo "  + LICENSE.md" || true
+# Le script de désinstallation, utilisable même si l'interface ne s'ouvre plus.
+fetch "$GITHUB_RAW/uninstall.sh" "$D/uninstall.sh" && echo "  + uninstall.sh" || true
 
 echo "▸ Injection de la configuration locale"
 sed -i "s|const NAS_URL *= *'[^']*';|const NAS_URL = '';|" "$D/desktroo.html"

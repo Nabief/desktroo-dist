@@ -421,6 +421,15 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                 _u.urlretrieve(f'{github_raw}/LICENSE.md', _lic_dst)
         except Exception:
             pass
+        # Le script de désinstallation, utilisable même si l'interface ne s'ouvre plus.
+        try:
+            _un_src = os.path.join(script_dir, 'uninstall.sh'); _un_dst = os.path.join(install_dir, 'uninstall.sh')
+            if os.path.exists(_un_src) and _un_src != _un_dst:
+                shutil.copy2(_un_src, _un_dst)
+            else:
+                _u.urlretrieve(f'{github_raw}/uninstall.sh', _un_dst)
+        except Exception:
+            pass
 
         # (4. Le jeton n'est plus inscrit dans la page : fileops le remet au navigateur
         #     après avoir vérifié les identifiants TrueNAS — voir SECURITE.md.)

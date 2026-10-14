@@ -3,7 +3,17 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.44.7 — unreleased
+## 2.45.0 — unreleased
+
+### New
+- **Uninstall Desktroo from the app.** About → Uninstall Desktroo: the window shows what will be removed, what stays, and how much space you get back. You type the name of the NAS to confirm.
+  > Removes the containers, their Docker images (except those another app uses), the autostart task and the application files. Website databases, settings and the bin only go if you tick their box. Virtual machines, website files and everything Desktroo created in TrueNAS stay in place.
+- **The licence is released when you uninstall**: you can activate it on another NAS without writing to us.
+  > The subscription itself carries on: manage it from the customer portal.
+- **The same uninstaller on the command line**, if the interface no longer opens: `sudo bash uninstall.sh`, in the install folder.
+  > `--plan` checks what is there without changing anything. Also works for a Custom App install.
+
+## 2.44.7 — 14 October 2026
 
 ### New
 - **Exclude files from a cloud backup.** A “Do not copy” field in the form: one pattern per line, and anything matching is skipped.

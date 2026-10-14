@@ -1332,6 +1332,44 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .about-quiet:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
   .about-title { margin:10px 0 16px; font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--text); }
   .about-page > .web-crumb { align-self:flex-start; }
+  /* Désinstaller Desktroo */
+  .unin-lead { margin:0 0 16px; font-size:13px; line-height:1.55; color:var(--text); }
+  .unin-h { margin:20px 0 8px; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); }
+  .unin-note { margin:7px 2px 0; font-size:12px; line-height:1.5; color:var(--text-dim); }
+  .unin-opt { display:flex; align-items:flex-start; gap:11px; padding:11px 16px; border-top:1px solid var(--glass-border); cursor:pointer; }
+  .unin-opt:first-child { border-top:0; }
+  .unin-opt:hover { background:rgba(128,140,160,0.08); }
+  .unin-opt input { flex-shrink:0; width:16px; height:16px; margin:2px 0 0; accent-color:var(--danger); cursor:pointer; }
+  .unin-opt-txt { display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .unin-opt-h { display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:13.5px; color:var(--text); }
+  .unin-size { flex-shrink:0; font-weight:600; font-variant-numeric:tabular-nums; }
+  .unin-opt-hint { font-size:12px; line-height:1.45; color:var(--text-dim); }
+  .unin-path { font-family:var(--font-mono); font-size:12px; word-break:break-all; color:var(--text); }
+  .unin-total { display:flex; justify-content:space-between; gap:12px; margin:14px 2px 0; font-size:13px; color:var(--text-dim); }
+  .unin-total b { color:var(--text); font-variant-numeric:tabular-nums; }
+  .unin-confirm { margin-top:22px; padding:16px; border:1px solid rgba(224,82,82,0.35); border-radius:14px; background:rgba(224,82,82,0.06); }
+  .unin-confirm label { display:block; margin-bottom:9px; font-size:13px; line-height:1.5; color:var(--text); }
+  .unin-confirm input { width:100%; box-sizing:border-box; padding:9px 12px; border:1px solid var(--glass-border); border-radius:10px; background:rgba(0,0,0,0.18);
+    color:var(--text); font-family:var(--font-mono); font-size:13px; }
+  [data-theme="light"] .unin-confirm input { background:#ffffff; }
+  .unin-confirm input:focus-visible { outline:2px solid var(--danger); outline-offset:1px; }
+  .unin-go { margin-top:12px; background:var(--danger) !important; color:#ffffff !important; }
+  .unin-go:hover { background:#ea6a6a !important; }
+  .unin-go:disabled { opacity:.45; cursor:not-allowed; }
+  .unin-msg { min-height:18px; margin-top:9px; font-size:12.5px; color:#f87171; }
+  .unin-cmd { margin:8px 0; padding:10px 12px; border-radius:10px; background:rgba(0,0,0,0.25); font-family:var(--font-mono); font-size:12px; color:var(--text); white-space:pre-wrap; word-break:break-all; user-select:all; }
+  [data-theme="light"] .unin-cmd { background:rgba(0,0,0,0.06); }
+  .unin-final { position:fixed; inset:0; z-index:2147483000; display:flex; align-items:center; justify-content:center; padding:24px; overflow-y:auto;
+    background:radial-gradient(120% 90% at 50% 0%, #15233c 0%, #0a1220 70%); color:#e9eef7; }
+  .unin-final-box { width:100%; max-width:470px; display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .unin-final .dk-hero { width:104px; height:104px; }
+  .unin-final h2 { margin:24px 0 10px; font-family:var(--font-display); font-size:26px; font-weight:800; letter-spacing:-0.02em; }
+  .unin-final p { margin:0 0 10px; font-size:13.5px; line-height:1.6; color:#b8c4d8; }
+  .unin-final ul { margin:6px 0 14px; padding:0; list-style:none; font-size:13px; line-height:1.7; color:#d5dde7; }
+  .unin-final .unin-path { color:#d5dde7; }
+  .unin-final .about-actions { margin-top:18px; }
+  .unin-final .about-quiet { color:#b8c4d8; }
+  .unin-final small { margin-top:18px; font-size:11.5px; color:#8696ae; }
   /* Notes de version */
   .rel-v { margin:0 0 18px; }
   .rel-v:last-child { margin-bottom:4px; }
@@ -9097,7 +9135,54 @@ select option{ background:#101b2e; color:#e9eef7; }
 "choisir": "select",
 "ouvrir": "open",
 "Accueil": "Home",
-"Menu de la fenêtre": "Window menu"
+"Menu de la fenêtre": "Window menu",
+"Désinstaller Desktroo…": "Uninstall Desktroo…",
+"Désinstaller Desktroo": "Uninstall Desktroo",
+"L'état des lieux n'a pas abouti : la désinstallation depuis cette fenêtre n'est pas possible pour l'instant.": "The check did not complete: uninstalling from this window is not possible for now.",
+"Elle reste possible depuis le shell de TrueNAS, dans le dossier d'installation de Desktroo :": "You can still do it from the TrueNAS shell, in the Desktroo install folder:",
+"Application TrueNAS": "TrueNAS app",
+"Services de Desktroo": "Desktroo services",
+"Images Docker": "Docker images",
+"Démarrage automatique": "Autostart",
+"1 tâche": "1 task",
+"Fichiers de l'application": "Application files",
+"Bases de données et réglages des sites web": "Website databases and settings",
+"Les fichiers des sites eux-mêmes restent en place.": "The website files themselves stay in place.",
+"Réglages de Desktroo": "Desktroo settings",
+"Comptes, préférences, double authentification. Gardés, ils reviennent tels quels si vous réinstallez.": "Accounts, preferences, two-factor authentication. If kept, they come back as they were when you reinstall.",
+"Vider la corbeille Desktroo": "Empty the Desktroo bin",
+"Les fichiers supprimés depuis Desktroo. Une fois la corbeille vidée, ils ne sont plus récupérables.": "Files deleted from Desktroo. Once the bin is emptied, they can no longer be recovered.",
+"Desktroo sera retiré de ce NAS. Vos fichiers, vos machines virtuelles et tout ce que vous avez créé dans TrueNAS restent en place.": "Desktroo will be removed from this NAS. Your files, your virtual machines and everything you created in TrueNAS stay in place.",
+"{0} image(s) Docker gardée(s) : une autre application s'en sert.": "{0} Docker image(s) kept: another app uses them.",
+"À vous de choisir": "Your choice",
+"Espace libéré, environ": "Space freed, roughly",
+"Si des snapshots contiennent ces fichiers, l'espace ne revient qu'à leur expiration.": "If snapshots hold these files, the space only comes back when they expire.",
+"Restent en place": "Stays in place",
+"Ce que Desktroo a créé dans TrueNAS : sauvegardes, snapshots, partages, applications. Tout continue de fonctionner.": "What Desktroo created in TrueNAS: backups, snapshots, shares, apps. Everything keeps working.",
+"Votre licence sera libérée : vous pourrez l'activer sur un autre NAS.": "Your licence will be released: you can activate it on another NAS.",
+"La désinstallation n'arrête pas l'abonnement.": "Uninstalling does not cancel the subscription.",
+"Pour confirmer, tapez le nom de ce NAS : {0}": "To confirm, type the name of this NAS: {0}",
+"Désinstaller": "Uninstall",
+"Désinstallation…": "Uninstalling…",
+"La désinstallation n'a pas pu être lancée.": "The uninstall could not be started.",
+"Licence libérée : vous pouvez l'activer sur un autre NAS.": "Licence released: you can activate it on another NAS.",
+"La licence n'a pas pu être libérée : le serveur n'a pas répondu. Écrivez à support@desktroo.fr, nous le ferons pour vous.": "The licence could not be released: the server did not answer. Write to support@desktroo.fr and we will do it for you.",
+"les bases de données des sites web": "the website databases",
+"les réglages de Desktroo, repris si vous réinstallez": "the Desktroo settings, picked up again if you reinstall",
+"la corbeille Desktroo": "the Desktroo bin",
+"Désinstallation en cours…": "Uninstalling…",
+"Le NAS termine seul dans la minute qui suit : cette page n'a pas besoin de rester ouverte.": "The NAS finishes on its own within a minute: this page does not need to stay open.",
+"Restent sur le NAS :": "Left on the NAS:",
+"Ouvrir l'interface TrueNAS": "Open the TrueNAS interface",
+"Réinstaller Desktroo plus tard": "Reinstall Desktroo later",
+"Journal sur le NAS : {0}": "Log on the NAS: {0}",
+"Desktroo est désinstallé": "Desktroo is uninstalled",
+"La désinstallation prend plus de temps que prévu": "The uninstall is taking longer than expected",
+"Merci de l'avoir essayé. Vous pouvez fermer cette page.": "Thank you for trying it. You can close this page.",
+"Elle continue sur le NAS. Le journal indique où elle en est.": "It is still running on the NAS. The log shows how far it got.",
+"Le nom saisi ne correspond pas au nom du NAS.": "The name you typed does not match the name of the NAS.",
+"La désinstallation est déjà lancée.": "The uninstall has already started.",
+"sudo bash uninstall.sh": "sudo bash uninstall.sh"
 }
 </script>
 <script id="dk-i18n">
@@ -12204,9 +12289,12 @@ function dkShowPortalExpired() {
   document.body.appendChild(box);
 }
 
+var DK_UNINSTALLED = false;   // passe à vrai quand la désinstallation est lancée
 async function fileops(method, endpoint, body, _retried) {
-  // En lecture seule, trois envois restent permis : activer une licence, signaler un problème, accepter la licence d'utilisation.
-  if (_licReadonly && method !== 'GET' && ['license/activate', 'report', 'terms/accept'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
+  if (DK_UNINSTALLED) return new Promise(function() {});   // le service s'en va : plus aucun appel, plus aucune erreur affichée
+  // En lecture seule, quatre envois restent permis : activer une licence, signaler un problème, accepter la licence d'utilisation,
+  // et désinstaller (un abonnement expiré ne doit pas empêcher de partir).
+  if (_licReadonly && method !== 'GET' && ['license/activate', 'report', 'terms/accept', 'uninstall/run'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
     licBlockToast();
     throw new Error('LICENSE_READONLY');
   }
@@ -16781,7 +16869,7 @@ function aboutGo(k) {
 }
 function loadAbout() {
   if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la fenêtre
-  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'report') aboutReportView(); else if (_about.nav === 'rights') aboutRightsView(); else if (_about.nav === 'notes') aboutNotesView(); else aboutDeskView();
+  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'uninstall') aboutUninstallView(); else if (_about.nav === 'report') aboutReportView(); else if (_about.nav === 'rights') aboutRightsView(); else if (_about.nav === 'notes') aboutNotesView(); else aboutDeskView();
 }
 function aboutBody() { return document.getElementById('about-body'); }
 // ── Signaler un problème : une page de la fenêtre « À propos ». Le message part au service, qui le relaie à desktroo.fr ──
@@ -17087,6 +17175,149 @@ function aboutLicView() {
   aboutBody().scrollTop = 0;
   loadLicense();
 }
+// ── Désinstaller Desktroo : une page de la fenêtre « À propos » ──
+// L'état des lieux vient de uninstall.sh --plan, le script qui sert aussi en ligne de commande. Au-delà de
+// l'application elle-même, rien n'est coché : ce que l'utilisateur a créé reste, sauf demande explicite.
+var _unin = { plan: null, err: '', busy: false, done: null, opts: { db: false, settings: false, trash: false } };
+async function aboutUninstallView() {
+  if (_unin.done) { uninFinal(); return; }
+  var box = aboutBody();
+  box.innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
+    + '<h4 class="about-title">' + T('Désinstaller Desktroo') + '</h4><div id="unin-body"><div class="fs-empty"><div class="spinner"></div></div></div></div>';
+  box.scrollTop = 0;
+  _unin.plan = null; _unin.err = '';
+  try {
+    var r = await fileops('GET', 'uninstall/plan');
+    _unin.plan = (r && r.plan) || null;
+    if (!_unin.plan) _unin.err = (r && r.error) || 'plan';
+  } catch (e) { _unin.err = dkErrText(e); }
+  if (_about.nav !== 'uninstall') return;
+  uninRender();
+}
+function uninHost(p) { return String((p && p.hostname) || '').trim(); }
+function uninHostOk(typed) {
+  var h = uninHost(_unin.plan);
+  typed = String(typed || '').trim();
+  return !!h && !!typed && (typed === h || typed === h.split('.')[0]);
+}
+function uninFreed() {
+  var p = _unin.plan || {}, o = _unin.opts;
+  return (p.images_bytes || 0) + (p.appfiles_bytes || 0) + (o.db ? p.db_bytes || 0 : 0)
+    + (o.settings ? p.settings_bytes || 0 : 0) + (o.trash ? p.trash_bytes || 0 : 0);
+}
+function uninOpt(key, title, size, hint) {
+  return '<label class="unin-opt"><input type="checkbox"' + (_unin.opts[key] ? ' checked' : '') + ' onchange="uninToggle(\'' + key + '\', this.checked)">'
+    + '<span class="unin-opt-txt"><span class="unin-opt-h"><span>' + title + '</span><span class="unin-size">' + mntFmtSize(size) + '</span></span>'
+    + '<span class="unin-opt-hint">' + hint + '</span></span></label>';
+}
+function uninToggle(key, on) {
+  _unin.opts[key] = !!on;
+  var t = document.getElementById('unin-total');
+  if (t) t.textContent = mntFmtSize(uninFreed());
+}
+function uninRender() {
+  var el = document.getElementById('unin-body');
+  if (!el) return;
+  var p = _unin.plan;
+  if (!p) {
+    el.innerHTML = '<p class="unin-lead">' + T('L\'état des lieux n\'a pas abouti : la désinstallation depuis cette fenêtre n\'est pas possible pour l\'instant.') + '</p>'
+      + '<p class="unin-note">' + T('Elle reste possible depuis le shell de TrueNAS, dans le dossier d\'installation de Desktroo :') + '</p>'
+      + '<div class="unin-cmd">' + T('sudo bash uninstall.sh') + '</div>' + dkDetail(_unin.err)
+      + '<div class="about-actions"><button class="web-open" onclick="aboutGo(\'uninstall\')">' + T('Réessayer') + '</button></div>';
+    return;
+  }
+  var row = function(k, v) { return '<div class="about-row"><span>' + k + '</span><span class="about-val">' + v + '</span></div>'; };
+  var imgs = p.images || [], shared = imgs.filter(function(i) { return i.shared; }).length;
+  var always = (p.mode === 'app' ? row(T('Application TrueNAS'), webEsc(p.app || '')) : '')
+    + ((p.containers || []).length ? row(T('Services de Desktroo'), Tf('{0} conteneurs', p.containers.length)) : '')
+    + (imgs.length ? row(T('Images Docker'), mntFmtSize(p.images_bytes)) : '')
+    + (p.autostart ? row(T('Démarrage automatique'), T('1 tâche')) : '')
+    + (p.dir_ok ? row(T('Fichiers de l\'application'), mntFmtSize(p.appfiles_bytes)) : '');
+  var opts = (p.dir_ok && p.db_bytes ? uninOpt('db', T('Bases de données et réglages des sites web'), p.db_bytes,
+        T('Les fichiers des sites eux-mêmes restent en place.')) : '')
+    + (p.dir_ok && p.settings_bytes ? uninOpt('settings', T('Réglages de Desktroo'), p.settings_bytes,
+        T('Comptes, préférences, double authentification. Gardés, ils reviennent tels quels si vous réinstallez.')) : '')
+    + (p.trash_bytes ? uninOpt('trash', T('Vider la corbeille Desktroo'), p.trash_bytes,
+        T('Les fichiers supprimés depuis Desktroo. Une fois la corbeille vidée, ils ne sont plus récupérables.')) : '');
+  var kept = (p.kept || []).map(function(k) { return '<div class="about-row"><span class="unin-path">' + webEsc(k) + '</span></div>'; }).join('');
+  var lic = _licInfo || {}, paid = lic.state === 'active' || lic.state === 'grace';
+  var host = uninHost(p);
+  el.innerHTML = '<p class="unin-lead">' + T('Desktroo sera retiré de ce NAS. Vos fichiers, vos machines virtuelles et tout ce que vous avez créé dans TrueNAS restent en place.') + '</p>'
+    + '<div class="unin-h">' + T('Supprimé') + '</div><div class="about-list">' + always + '</div>'
+    + (shared ? '<p class="unin-note">' + Tf('{0} image(s) Docker gardée(s) : une autre application s\'en sert.', shared) + '</p>' : '')
+    + (opts ? '<div class="unin-h">' + T('À vous de choisir') + '</div><div class="about-list">' + opts + '</div>' : '')
+    + '<div class="unin-total"><span>' + T('Espace libéré, environ') + '</span><b id="unin-total">' + mntFmtSize(uninFreed()) + '</b></div>'
+    + '<p class="unin-note">' + T('Si des snapshots contiennent ces fichiers, l\'espace ne revient qu\'à leur expiration.') + '</p>'
+    + '<div class="unin-h">' + T('Restent en place') + '</div><div class="about-list">' + kept
+    + '<div class="about-row"><span>' + T('Ce que Desktroo a créé dans TrueNAS : sauvegardes, snapshots, partages, applications. Tout continue de fonctionner.') + '</span></div></div>'
+    + (p.activation ? '<p class="unin-note">' + T('Votre licence sera libérée : vous pourrez l\'activer sur un autre NAS.') + '</p>' : '')
+    + (paid ? '<p class="unin-note">' + T('La désinstallation n\'arrête pas l\'abonnement.') + ' <button class="about-quiet" onclick="licManage()">' + T('Gérer mon abonnement') + '</button></p>' : '')
+    + '<div class="unin-confirm"><label for="unin-host">' + Tf('Pour confirmer, tapez le nom de ce NAS : {0}', '<b class="unin-path">' + webEsc(host) + '</b>') + '</label>'
+    + '<input id="unin-host" type="text" autocomplete="off" spellcheck="false" oninput="document.getElementById(\'unin-go\').disabled = !uninHostOk(this.value)" onkeydown="if (event.key === \'Enter\') uninGo()">'
+    + '<button class="web-open unin-go" id="unin-go" disabled onclick="uninGo()">' + T('Désinstaller') + '</button>'
+    + '<div class="unin-msg" id="unin-msg" role="alert"></div></div>';
+}
+async function uninGo() {
+  var inp = document.getElementById('unin-host'), btn = document.getElementById('unin-go'), msg = document.getElementById('unin-msg');
+  var typed = ((inp && inp.value) || '').trim();
+  if (!_unin.plan || _unin.busy || !uninHostOk(typed)) return;
+  _unin.busy = true;
+  if (btn) { btn.disabled = true; btn.textContent = T('Désinstallation…'); }
+  if (msg) msg.textContent = '';
+  try {
+    var r = await fileops('POST', 'uninstall/run', { confirm: typed, purge_db: !!_unin.opts.db, purge_settings: !!_unin.opts.settings,
+      purge_trash: !!_unin.opts.trash, lang: DK_LANG });
+    _unin.done = r || { ok: true };
+    DK_UNINSTALLED = true;
+    uninFinal();
+  } catch (e) {
+    _unin.busy = false;
+    if (btn) { btn.disabled = !uninHostOk(typed); btn.textContent = T('Désinstaller'); }
+    if (msg) msg.textContent = T(dkErrText(e)) || T('La désinstallation n\'a pas pu être lancée.');
+  }
+}
+// Écran final, par-dessus tout le bureau : le service va disparaître, la page ne doit plus dépendre de lui.
+function uninFinal() {
+  var r = _unin.done || {}, p = r.plan || _unin.plan || {}, pu = r.purge || {};
+  var lic = _licInfo || {}, paid = lic.state === 'active' || lic.state === 'grace';
+  var rel = r.release === 'released' ? T('Licence libérée : vous pouvez l\'activer sur un autre NAS.')
+    : r.release === 'failed' ? T('La licence n\'a pas pu être libérée : le serveur n\'a pas répondu. Écrivez à support@desktroo.fr, nous le ferons pour vous.') : '';
+  var kept = (p.kept || []).map(function(k) { return '<li class="unin-path">' + webEsc(k) + '</li>'; });
+  if (!pu.db && p.db_bytes) kept.push('<li>' + T('les bases de données des sites web') + '</li>');
+  if (!pu.settings && p.settings_bytes) kept.push('<li>' + T('les réglages de Desktroo, repris si vous réinstallez') + '</li>');
+  if (!pu.trash && p.trash_bytes) kept.push('<li>' + T('la corbeille Desktroo') + '</li>');
+  var old = document.getElementById('unin-final');
+  if (old) old.remove();
+  var d = document.createElement('div');
+  d.id = 'unin-final'; d.className = 'unin-final';
+  d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'unin-final-t');
+  d.innerHTML = '<div class="unin-final-box">' + dkHero('busy', 'unin-final-logo')
+    + '<h2 id="unin-final-t">' + T('Désinstallation en cours…') + '</h2>'
+    + '<p id="unin-final-sub">' + T('Le NAS termine seul dans la minute qui suit : cette page n\'a pas besoin de rester ouverte.') + '</p>'
+    + (rel ? '<p>' + rel + '</p>' : '')
+    + (kept.length ? '<p>' + T('Restent sur le NAS :') + '</p><ul>' + kept.join('') + '</ul>' : '')
+    + (paid ? '<p>' + T('La désinstallation n\'arrête pas l\'abonnement.') + ' <button class="about-quiet" onclick="licManage()">' + T('Gérer mon abonnement') + '</button></p>' : '')
+    + '<div class="about-actions"><a class="web-open" href="' + webEsc(truenasUiBase()) + '" rel="noopener">' + T('Ouvrir l\'interface TrueNAS') + '</a>'
+    + '<a class="about-quiet" href="https://desktroo.fr" target="_blank" rel="noopener">' + T('Réinstaller Desktroo plus tard') + '</a></div>'
+    + '<small>' + Tf('Journal sur le NAS : {0}', webEsc(r.log || '/tmp/desktroo-uninstall.log')) + '</small></div>';
+  document.body.appendChild(d);
+  // Le service répond tant que la désinstallation n'a pas commencé : quand la page ne répond plus, c'est fait.
+  var t0 = Date.now(), wait = ((r.delay || 6) + 4) * 1000;
+  function settle(ok) {
+    var logo = document.getElementById('unin-final-logo'), h = document.getElementById('unin-final-t'), sub = document.getElementById('unin-final-sub');
+    if (logo) logo.classList.remove('is-busy');
+    if (h) h.textContent = ok ? T('Desktroo est désinstallé') : T('La désinstallation prend plus de temps que prévu');
+    if (sub) sub.textContent = ok ? T('Merci de l\'avoir essayé. Vous pouvez fermer cette page.')
+      : T('Elle continue sur le NAS. Le journal indique où elle en est.');
+  }
+  function probe() {
+    if (Date.now() - t0 > 180000) { settle(false); return; }
+    fetch(location.pathname + '?gone=' + Date.now(), { cache: 'no-store' })
+      .then(function(resp) { if (resp.status >= 500) settle(true); else setTimeout(probe, 3000); })
+      .catch(function() { settle(true); });
+  }
+  setTimeout(probe, wait);
+}
 async function aboutDeskView() {
   var box = aboutBody(), tag = T('Le bureau web pour votre TrueNAS');
   // Le temps de la vérification, le logo tourne ; les lignes arrivent ensuite.
@@ -17111,6 +17342,7 @@ async function aboutDeskView() {
     + '<div class="about-actions">' + (up
         ? '<button class="web-open" onclick="tndDoUpdate()">' + Tf('Mettre à jour vers la {0}', webEsc(v.latest)) + '</button>'
         : '<button class="about-quiet" onclick="tndDoUpdate()">' + T('Forcer la mise à jour') + '</button>')
+    + '<button class="about-quiet" onclick="aboutGo(\'uninstall\')">' + T('Désinstaller Desktroo…') + '</button>'
     + '</div></div>';
 }
 async function tndDoUpdate() {
@@ -17203,7 +17435,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.44.7';
+var DK_PAGE_VERSION = '2.45.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

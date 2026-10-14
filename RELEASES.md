@@ -3,7 +3,17 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.44.7 — à paraître
+## 2.45.0 — à paraître
+
+### Nouveau
+- **Désinstaller Desktroo depuis l'application.** À propos → Désinstaller Desktroo : la fenêtre montre ce qui sera supprimé, ce qui reste, et la place que vous récupérez. Il faut taper le nom du NAS pour confirmer.
+  > Supprime les conteneurs, leurs images Docker (sauf celles qu'une autre application utilise), la tâche de démarrage automatique et les fichiers de l'application. Les bases des sites, les réglages et la corbeille ne partent que si vous cochez leur case. Les machines virtuelles, les fichiers des sites et tout ce que Desktroo a créé dans TrueNAS restent en place.
+- **La licence est libérée à la désinstallation** : vous pouvez l'activer sur un autre NAS sans nous écrire.
+  > L'abonnement, lui, continue : il se gère depuis le portail client.
+- **Le même désinstalleur en ligne de commande**, si l'interface ne s'ouvre plus : `sudo bash uninstall.sh`, dans le dossier d'installation.
+  > `--plan` fait l'état des lieux sans rien modifier. Fonctionne aussi pour une installation en Custom App.
+
+## 2.44.7 — 14 octobre 2026
 
 ### Nouveau
 - **Exclure des fichiers d'une sauvegarde cloud.** Un champ « Ne pas copier » dans le formulaire : un motif par ligne, et ce qui correspond n'est pas copié.

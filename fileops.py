@@ -42,7 +42,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.44.7'
+APP_VERSION = '2.45.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -706,7 +706,7 @@ def _do_update():
         updated.append(f)
     # La licence d'utilisation et les notes de version accompagnent les fichiers ; leur absence ne fait pas
     # échouer la mise à jour. La copie locale des notes sert aux NAS sans accès à Internet.
-    for extra in ('LICENSE.md', 'RELEASES.md', 'RELEASES.en.md'):
+    for extra in ('LICENSE.md', 'RELEASES.md', 'RELEASES.en.md', 'uninstall.sh'):
         try:
             req = urllib.request.Request(GITHUB_RAW + '/' + extra, headers={'User-Agent': 'Desktroo'})
             with urllib.request.urlopen(req, timeout=30) as r:
@@ -730,6 +730,162 @@ def _schedule_self_restart():
         except Exception:
             pass
     _threading.Thread(target=_r, daemon=True).start()
+
+
+# ── Désinstallation ───────────────────────────────────────────────────────────
+# Le travail est fait par uninstall.sh, le script publié dans le dépôt pour la ligne de commande : une seule
+# logique, que l'interface s'ouvre encore ou non. Desktroo ne peut pas arrêter son propre conteneur pendant qu'il
+# répond : le script est copié dans /tmp du NAS (il survit ainsi à la suppression du dossier d'installation) et
+# lancé détaché, quelques secondes après la réponse. La licence est libérée ici, avant, pour que la page puisse
+# dire si cela a marché.
+_UNINSTALL_HOST_SCRIPT = '/tmp/desktroo-uninstall.sh'
+_UNINSTALL_HOST_LOG = '/tmp/desktroo-uninstall.log'
+_UNINSTALL_DELAY = 6
+_uninstall_lock = _threading.Lock()
+_uninstall_started = False
+
+
+def _uninstall_script_src():
+    """Chemin de uninstall.sh dans le dossier d'installation, le même pour le NAS et pour ce conteneur.
+    Une installation qui ne l'a pas encore reçu le télécharge depuis le dépôt de distribution."""
+    if not APP_DIR or not os.path.isdir(APP_DIR):
+        raise RuntimeError("Dossier d'installation introuvable.")
+    p = os.path.join(APP_DIR, 'uninstall.sh')
+    try:
+        with open(p, 'rb') as fh:
+            head = fh.read(4096)
+        if head.startswith(b'#!/bin/bash') and b'Desktroo' in head:
+            return p
+    except OSError:
+        pass
+    import urllib.request
+    req = urllib.request.Request(GITHUB_RAW + '/uninstall.sh', headers={'User-Agent': 'Desktroo'})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = r.read()
+    except Exception as e:
+        raise RuntimeError('Script de désinstallation introuvable, et téléchargement impossible : ' + str(e))
+    if not data.startswith(b'#!/bin/bash') or b'Desktroo' not in data[:4096]:
+        raise RuntimeError('Script de désinstallation téléchargé illisible.')
+    with open(p, 'wb') as fh:
+        fh.write(data)
+    return p
+
+
+def _uninstall_parse_plan(out):
+    """Lit la sortie de « uninstall.sh --plan » : une valeur par ligne, CLE=valeur."""
+    plan = {'containers': [], 'images': [], 'autostart': 0, 'etc': [], 'trash': []}
+    ints = {'APPFILES_BYTES': 'appfiles_bytes', 'DB_BYTES': 'db_bytes', 'SETTINGS_BYTES': 'settings_bytes'}
+    texts = {'VERSION': 'version', 'MODE': 'mode', 'APP': 'app', 'PROJECT': 'project', 'DIR': 'dir',
+             'DATASET': 'dataset', 'VM_DIR': 'vm_dir', 'HOSTNAME': 'hostname'}
+
+    def _int(x):
+        try:
+            return max(0, int(str(x).strip() or 0))
+        except ValueError:
+            return 0
+    for ln in str(out or '').splitlines():
+        if '=' not in ln:
+            continue
+        k, v = ln.split('=', 1)
+        k = k.strip()
+        if k in texts:
+            plan[texts[k]] = v.strip()
+        elif k in ints:
+            plan[ints[k]] = _int(v)
+        elif k in ('DIR_OK', 'ACTIVATION', 'END'):
+            plan[k.lower()] = v.strip() == '1'
+        elif k == 'CONTAINER':
+            name, _, state = v.partition('|')
+            plan['containers'].append({'name': name, 'state': state})
+        elif k == 'IMAGE':
+            parts = v.split('|', 3)
+            if len(parts) == 4:
+                plan['images'].append({'id': parts[0], 'bytes': _int(parts[1]), 'shared': parts[2] == '1',
+                                       'tag': parts[3]})
+        elif k == 'AUTOSTART':
+            plan['autostart'] += 1
+        elif k == 'ETC':
+            plan['etc'].append(v.strip())
+        elif k == 'TRASH':
+            size, _, path = v.partition('|')
+            plan['trash'].append({'path': path, 'bytes': _int(size)})
+    plan['images_bytes'] = sum(i['bytes'] for i in plan['images'] if not i['shared'])
+    plan['trash_bytes'] = sum(t['bytes'] for t in plan['trash'])
+    return plan
+
+
+def _uninstall_plan():
+    src = _uninstall_script_src()
+    out, err, code = ssh_exec('sudo -n bash ' + shq(src) + ' --plan', timeout=180)
+    plan = _uninstall_parse_plan(out)
+    if code != 0 or not plan.get('end'):
+        raise RuntimeError('État des lieux impossible : ' + ((err or out or 'exit %s' % code).strip()[:300]))
+    plan.pop('end', None)
+    # Ce que la désinstallation laisse en place, pour que la fenêtre le dise.
+    kept = []
+    for p in (plan.get('vm_dir') or VM_DIR, _web_dataset_path(), DOWNLOAD_DIR):
+        if p and os.path.isdir(p) and p not in kept:
+            kept.append(p)
+    plan['kept'] = kept
+    plan['started'] = _uninstall_started
+    return plan
+
+
+def _uninstall_release_licence():
+    """Libère le poste sur le serveur. Renvoie 'released', 'none' (rien à libérer) ou 'failed'."""
+    key = _lic_read_activation_key()
+    if not key:
+        return 'none'
+    resp = _lic_server_post('deactivate', {'activation_key': key, 'install_id': _lic_install_id()})
+    if isinstance(resp, dict) and resp.get('ok'):
+        for f in (LICENSE_FILE, LIC_REFRESH_FILE, ACTIVATION_KEY_FILE):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+        return 'released'
+    return 'failed'
+
+
+def _uninstall_run(body, by=''):
+    global _uninstall_started
+    body = body if isinstance(body, dict) else {}
+    with _uninstall_lock:
+        if _uninstall_started:
+            raise ValueError('La désinstallation est déjà lancée.')
+        plan = _uninstall_plan()
+        typed = str(body.get('confirm') or '').strip()
+        host = str(plan.get('hostname') or '').strip()
+        if not host or not typed or typed not in (host, host.split('.')[0]):
+            raise ValueError('Le nom saisi ne correspond pas au nom du NAS.')
+        purge = {'db': bool(body.get('purge_db')), 'settings': bool(body.get('purge_settings')),
+                 'trash': bool(body.get('purge_trash'))}
+        lang = 'en' if str(body.get('lang') or '').lower().startswith('en') else 'fr'
+        args = ['--yes', '--no-release', '--delay', str(_UNINSTALL_DELAY), '--lang', lang]
+        if plan.get('dir'):
+            args += ['--dir', plan['dir']]
+        for k in ('db', 'settings', 'trash'):
+            if purge[k]:
+                args.append('--purge-' + k)
+        # Le script est mis en place AVANT de libérer la licence : si la copie échoue, rien n'a bougé.
+        src = _uninstall_script_src()
+        out, err, code = ssh_exec('sudo -n install -m 700 ' + shq(src) + ' ' + _UNINSTALL_HOST_SCRIPT, timeout=30)
+        if code != 0:
+            raise RuntimeError('Lancement impossible : ' + ((err or out or 'exit %s' % code).strip()[:300]))
+        release = _uninstall_release_licence() if body.get('release', True) else 'skipped'
+        cmd = ('{ sudo -n setsid nohup bash ' + _UNINSTALL_HOST_SCRIPT + ' ' + ' '.join(shq(a) for a in args)
+               + ' > ' + _UNINSTALL_HOST_LOG + ' 2>&1 < /dev/null & } && echo STARTED')
+        out, err, code = ssh_exec(cmd, timeout=30)
+        if 'STARTED' not in (out or ''):
+            raise RuntimeError('Lancement impossible : ' + ((err or out or 'exit %s' % code).strip()[:300]))
+        _uninstall_started = True
+    try:
+        _px_log('desktroo.uninstall', by, purge=[k for k in purge if purge[k]] or None, licence=release)
+    except Exception:
+        pass
+    return {'ok': True, 'release': release, 'purge': purge, 'plan': plan, 'delay': _UNINSTALL_DELAY,
+            'log': _UNINSTALL_HOST_LOG}
 
 
 def _libvirt_path_requires_daemon(path):
@@ -8459,7 +8615,8 @@ def _lic_is_readonly():
 
 
 # Routes POST dont l'écriture reste autorisée même en lecture seule (on doit pouvoir signaler un problème sans abonnement).
-_LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report', '/terms/accept'}
+_LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report', '/terms/accept',
+                            '/uninstall/run'}
 
 
 # ── Licence d'utilisation (LICENSE.md) : l'accord de l'installation ─────────────────────────────
@@ -9297,6 +9454,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             self._json(200, _terms_status())
             return
 
+        # Désinstallation : état des lieux, rien n'est modifié
+        if path == '/uninstall/plan':
+            try:
+                self._json(200, {'ok': True, 'plan': _uninstall_plan()})
+            except Exception as e:
+                self._json(502, {'ok': False, 'error': str(e)})
+            return
+
         # MDM-LICENSE-V1 : état de la licence / essai
         if path == '/license/status':
             try:
@@ -9980,6 +10145,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(400, {'error': str(e)})
             except Exception as e:
                 self._json(502, {'error': str(e)})
+            return
+        if path == '/uninstall/run':
+            try:
+                self._json(200, _uninstall_run(self._body(), _px_by(self)))
+            except ValueError as e:
+                self._json(400, {'ok': False, 'error': str(e)})
+            except Exception as e:
+                self._json(502, {'ok': False, 'error': str(e)})
             return
         if path not in _LIC_READONLY_ALLOW_POST and _lic_is_readonly():
             self._json(402, {'error': 'license_readonly',
