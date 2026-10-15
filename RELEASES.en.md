@@ -3,7 +3,7 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.46.0 — unreleased
+## 2.46.0 — 15 October 2026
 
 ### New
 - **Desktroo Apps: apps for your NAS, included in the subscription.** A new window lists the Mdm-services.fr apps. They install in one click, with no configuration or port to choose, open in a desktop window with your session, and update from Desktroo. You choose which accounts can use them.
