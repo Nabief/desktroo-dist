@@ -3,6 +3,15 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.46.1 — 15 octobre 2026
+
+### Nouveau
+- **Tout mettre à jour.** Dans Alertes, un bouton met à jour d'un coup toutes les applications qui l'attendent, l'une après l'autre, avec l'avancement affiché.
+  > Nouvelle version du catalogue TrueNAS : `app.upgrade` ; nouvelles images d'une application personnalisée : récupération puis redéploiement.
+
+### Amélioré
+- **Les apps de Desktroo Apps portent leur vrai nom** dans les alertes et la liste des applications : « Serveur web » au lieu de « Dt-webserver ».
+
 ## 2.46.0 — 15 octobre 2026
 
 ### Nouveau
@@ -18,6 +27,8 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
   > Astuce : filtrez d'abord (par exemple `auto-2026-09`), puis « Tout cocher » ne prend que les lignes visibles. Un snapshot que TrueNAS refuse de supprimer (retenu, ou à l'origine d'un clone) reste coché, avec la raison. La place affichée est un minimum : ce que plusieurs snapshots partagent n'est libéré que quand ils partent tous.
 
 ### Amélioré
+- **L'état d'une app se lit en clair** dans Desktroo Apps : « Démarrage… », « En marche », « Arrêtée »…
+- **Installer une application dans Sites Web ne crée plus de doublon** : une fois le site prêt, le bouton « Installer » devient « Voir le site ».
 - **Désinstaller Desktroo retire aussi les apps de Desktroo Apps**, leurs données restant sur le NAS.
 - **Le bureau ne perd plus le contact avec son service** quand celui-ci redémarre avec une autre adresse sur le réseau de Docker.
   > nginx est rechargé à chaque démarrage de fileops : il relit l'adresse au lieu de répondre 502.

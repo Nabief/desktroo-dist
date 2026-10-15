@@ -9381,7 +9381,12 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Démarrage…": "Starting…",
 "Arrêt…": "Stopping…",
 "En panne": "Crashed",
-"État inconnu": "Unknown state"
+"État inconnu": "Unknown state",
+"Mettre à jour {0} application(s) ?": "Update {0} application(s)?",
+"Chacune redémarre pendant sa mise à jour.": "Each one restarts during its update.",
+"Tout mettre à jour": "Update all",
+"Mise à jour {0}/{1} : {2}…": "Updating {0}/{1}: {2}…",
+"Serveur web": "Web server"
 }
 </script>
 <script id="dk-i18n">
@@ -16246,6 +16251,9 @@ function appLabelsRefresh() {
 // Nom d'origine : le titre du catalogue, ou le nom technique pour une application personnalisée.
 function appTitleBase(a) {
   var m = (a && a.metadata) || {}, k = appKey(a), t = String(m.title || '');
+  // Apps de Desktroo Apps (« dt-<id> ») : leur vrai nom plutôt que « Dt-webserver ».
+  if (/^dt-/.test(k || '')) return ({ 'dt-webserver': T('Serveur web'), 'dt-npmplus': 'NPMplus', 'dt-authenticator': 'Authenticator' })[k]
+    || (k.charAt(3).toUpperCase() + k.slice(4));
   if (k && (!t || (a && a.custom_app) || /^custom app$/i.test(t))) return k.charAt(0).toUpperCase() + k.slice(1);
   return t || k;
 }
@@ -16332,6 +16340,37 @@ function appUpCardsHtml() {
       + '<button onclick="appUpHide(' + wmQ(appUpId(u)) + ')" style="background:rgba(255,255,255,0.07);border:none;color:var(--text-dim);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;">' + T('Effacer') + '</button>'
       + '</div><div style="font-size:13px;line-height:1.5;">' + webEsc(appUpText(u)) + '</div></div>';
   }).join('');
+}
+// Toutes les applications annoncées, l'une après l'autre : nouvelle version du catalogue (app.upgrade),
+// ou nouvelles images d'une app personnalisée (app.pull_images, puis redéploiement).
+async function appUpdateAll() {
+  var list = (_appUp.list || []).slice();
+  if (!list.length || _appUp.all_busy) return;
+  if (!await showConfirm(Tf('Mettre à jour {0} application(s) ?', list.length) + '<br><span style="font-size:12px;color:var(--text-dim);">'
+      + webEsc(list.map(function(u) { return u.title; }).join(', ')) + '. ' + T('Chacune redémarre pendant sa mise à jour.') + '</span>', { ok: T('Tout mettre à jour') })) return;
+  var done = [], failed = [];
+  for (var i = 0; i < list.length; i++) {
+    var u = list[i];
+    _appUp.all_busy = Tf('Mise à jour {0}/{1} : {2}…', i + 1, list.length, u.title);
+    _appsBusy[u.name] = T('Mise à jour en cours');
+    if (wmVisible('notifs')) { try { loadAlertsWindow(); } catch (e) {} }
+    try {
+      if (u.images) await appsJob('app.pull_images', [u.name, { redeploy: true }], 1200000);
+      else await appsJob('app.upgrade', [u.name, { app_version: 'latest' }], 1200000);
+      done.push(u.title);
+    } catch (e) {
+      if (e && e.message === 'LICENSE_READONLY') { delete _appsBusy[u.name]; break; }
+      failed.push(u.title + ' : ' + ((e && e.message) || e));
+    }
+    delete _appsBusy[u.name];
+  }
+  _appUp.all_busy = '';
+  if (done.length) toast('✅ ' + Tf('À jour : {0}', done.join(', ')), 7000);
+  if (failed.length) toast('❌ ' + failed.join(' · '), 12000);
+  _appUp.at = 0;
+  await appUpdatesCheck(true);
+  try { await loadApps(true); } catch (e) {}
+  if (wmVisible('notifs')) { try { loadAlertsWindow(); } catch (e) {} }
 }
 function appGet(name) { return _apps.find(function(a) { return appKey(a) === name; }) || null; }
 function appStateInfo(a) {
@@ -18381,7 +18420,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.46.0';
+var DK_PAGE_VERSION = '2.46.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -20760,9 +20799,12 @@ async function loadAlertsWindow() {
       return;
     }
     let html = '';
-    if (alerts.length) {
-      html += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'
-        + T('<button class="fs-btn" onclick="dismissAllAlerts()">Effacer toutes</button>')
+    var nUp = (_appUp.list || []).length;
+    if (alerts.length || nUp) {
+      html += '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">'
+        + (nUp ? '<button class="web-open" id="app-up-all"' + (_appUp.all_busy ? ' disabled' : '') + ' onclick="appUpdateAll()">'
+          + webEsc(_appUp.all_busy || (nUp > 1 ? Tf('Tout mettre à jour ({0})', nUp) : T('Mettre à jour'))) + '</button>' : '')
+        + (alerts.length ? T('<button class="fs-btn" onclick="dismissAllAlerts()">Effacer toutes</button>') : '')
         + '</div>';
     }
     html += '<div style="display:flex;flex-direction:column;gap:8px;">' + upCard;
