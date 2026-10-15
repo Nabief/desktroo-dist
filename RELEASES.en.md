@@ -3,11 +3,27 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.45.1 — unreleased
+## 2.46.0 — unreleased
 
 ### New
+- **Desktroo Apps: apps for your NAS, included in the subscription.** A new window lists the Mdm-services.fr apps. They install in one click, with no configuration or port to choose, open in a desktop window with your session, and update from Desktroo. You choose which accounts can use them.
+  > Signed catalog, checked by the NAS before any use. Each app runs in its own isolated container, with its data in `<pool>/desktroo-apps/<app>` and a ZFS snapshot before each update. Expired subscription: installed apps keep running; only installing and updating require a subscription.
+- **Some apps also open without the desktop**, in a tab or from the phone's home screen, at the Desktroo address followed by `/a/<app>/`. Sign in with your TrueNAS account, two-factor code included, and “Stay signed in” for 30 days.
+- **The web server becomes an optional module.** If you host nothing on the NAS, it no longer runs for nothing; otherwise, install it from Desktroo Apps and the Websites window appears.
+  > An existing installation is moved automatically, once, on the first start of this version: same containers, same sites, same databases. Sites are down for about ten seconds. If anything fails, everything is put back as it was. An installation made as a TrueNAS app (Custom App) is not moved.
+- **NPMplus as a module.** The reverse proxy that publishes your sites under your domains, over https, installs in one click (ports 8090, 8453 and 8181, leaving 80 and 443 to TrueNAS). An NPMplus installed by hand can be taken over, with its domains and certificates; an NPMplus installed as a TrueNAS app can be linked.
+- **Domains window.** Your published domains, the site each one leads to and the state of its certificate. Publishing a domain, requesting its Let's Encrypt certificate, renewing or removing it all happen without leaving Desktroo. Each site's page offers “Publish this site with NPMplus”.
+  > Desktroo drives NPMplus through its API, from the NAS; the NPMplus interface remains available for advanced settings.
 - **Delete several snapshots at once.** A checkbox on each row in Snapshots, “Select all” for what is shown, and Shift + click to select a range. A bar shows how many are selected and the space freed, with the delete button.
   > Tip: filter first (for example `auto-2026-09`), then “Select all” only takes the visible rows. A snapshot TrueNAS refuses to delete (held, or the origin of a clone) stays selected, with the reason. The space shown is a minimum: what several snapshots share is only freed when they all go.
+
+### Improved
+- **Uninstalling Desktroo also removes the Desktroo Apps apps**, their data staying on the NAS.
+- **The desktop no longer loses its service** when the service restarts with another address on the Docker network.
+  > nginx is reloaded on every fileops start: it reads the address again instead of answering 502.
+- **The mail test message goes to the address you choose.** Desktroo suggests the administrator account's address, and the test works even when no account has one. It then warns you that TrueNAS alerts have nowhere to go.
+  > Before, the test failed with “None of the local administrators has an e-mail address configured”. The most common sending errors (credentials rejected, encryption, server not answering) are now explained in plain words.
+- **Port and encryption kept in step.** Choosing an encryption suggests the matching port (587 for STARTTLS, 465 for direct SSL/TLS, 25 without encryption), and a combination that cannot work is flagged before you save.
 
 ## 2.45.0 — 14 October 2026
 

@@ -3,11 +3,27 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.45.1 — à paraître
+## 2.46.0 — à paraître
 
 ### Nouveau
+- **Desktroo Apps : des applications pour votre NAS, comprises dans l'abonnement.** Une nouvelle fenêtre liste les apps de Mdm-services.fr. Elles s'installent en un clic, sans configuration ni port à choisir, s'ouvrent dans une fenêtre du bureau avec votre session, et se mettent à jour depuis Desktroo. Vous choisissez quels comptes y ont accès.
+  > Catalogue signé, vérifié par le NAS avant tout usage. Chaque app tourne dans son propre conteneur, isolé, avec ses données dans `<pool>/desktroo-apps/<app>` et un instantané ZFS avant chaque mise à jour. Abonnement expiré : les apps installées continuent de fonctionner ; seules l'installation et la mise à jour demandent un abonnement.
+- **Certaines apps s'ouvrent aussi sans le bureau**, dans un onglet ou depuis l'écran d'accueil du téléphone, à l'adresse de Desktroo suivie de `/a/<app>/`. Connexion avec votre compte TrueNAS, code de double authentification compris, et « Rester connecté » pendant 30 jours.
+- **Le serveur web devient un module facultatif.** Si vous n'hébergez rien sur le NAS, il ne tourne plus pour rien ; sinon, il s'installe depuis Desktroo Apps et la fenêtre Sites Web apparaît.
+  > Une installation existante est déplacée automatiquement, une seule fois, au premier démarrage de cette version : mêmes conteneurs, mêmes sites, mêmes bases. Les sites sont coupés une dizaine de secondes. En cas d'échec, tout est remis comme avant. Une installation faite comme application TrueNAS (Custom App) n'est pas déplacée.
+- **NPMplus en module.** Le reverse-proxy qui publie vos sites sous vos domaines, en https, s'installe en un clic (ports 8090, 8453 et 8181, pour laisser 80 et 443 à TrueNAS). Un NPMplus installé à la main peut être repris, avec ses domaines et ses certificats ; un NPMplus installé comme app TrueNAS peut être relié.
+- **Fenêtre Domaines.** La liste de vos domaines publiés, vers quel site ils mènent et l'état de leur certificat. Publier un domaine, demander son certificat Let's Encrypt, le renouveler ou le retirer se fait sans quitter Desktroo. La page de chaque site propose « Publier ce site avec NPMplus ».
+  > Desktroo pilote NPMplus par son API, depuis le NAS ; l'interface de NPMplus reste accessible pour les réglages avancés.
 - **Supprimer plusieurs snapshots d'un coup.** Une case par ligne dans Snapshots, « Tout cocher » pour ce qui est affiché, et Maj + clic pour cocher une plage. Une barre indique combien sont cochés et la place libérée, avec le bouton de suppression.
   > Astuce : filtrez d'abord (par exemple `auto-2026-09`), puis « Tout cocher » ne prend que les lignes visibles. Un snapshot que TrueNAS refuse de supprimer (retenu, ou à l'origine d'un clone) reste coché, avec la raison. La place affichée est un minimum : ce que plusieurs snapshots partagent n'est libéré que quand ils partent tous.
+
+### Amélioré
+- **Désinstaller Desktroo retire aussi les apps de Desktroo Apps**, leurs données restant sur le NAS.
+- **Le bureau ne perd plus le contact avec son service** quand celui-ci redémarre avec une autre adresse sur le réseau de Docker.
+  > nginx est rechargé à chaque démarrage de fileops : il relit l'adresse au lieu de répondre 502.
+- **Le message d'essai de la messagerie part à l'adresse de votre choix.** Desktroo propose celle du compte administrateur, et le test marche même quand aucun compte n'en a. Il vous prévient alors que les alertes de TrueNAS n'ont nulle part où arriver.
+  > Avant, l'essai échouait avec « None of the local administrators has an e-mail address configured ». Les erreurs d'envoi les plus courantes (identifiants refusés, chiffrement, serveur muet) sont maintenant expliquées en clair.
+- **Port et chiffrement accordés.** Choisir un chiffrement propose le port qui va avec (587 pour STARTTLS, 465 pour SSL/TLS direct, 25 sans chiffrement), et une combinaison qui ne peut pas marcher est signalée avant d'enregistrer.
 
 ## 2.45.0 — 14 octobre 2026
 

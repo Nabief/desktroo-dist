@@ -28,7 +28,7 @@
 # ============================================================
 set -u
 
-UNINSTALL_VERSION="1.0"
+UNINSTALL_VERSION="1.1"
 
 L="fr"
 case "${DESKTROO_LANG:-${LANG:-}}" in en*) L="en" ;; esac
@@ -156,6 +156,15 @@ if [ "$HAVE_DOCKER" = 1 ]; then
 fi
 CONTAINERS="${CONTAINERS# }"
 
+# Apps et modules de Desktroo Apps : des apps TrueNAS « dt-* » (serveur web, NPMplus, Authenticator…).
+# TrueNAS les relancerait au démarrage suivant : on les supprime comme apps. Leurs données restent sur le NAS.
+STORE_APPS=""
+if command -v midclt >/dev/null 2>&1; then
+  STORE_APPS="$(midclt call app.query '[["name","^","dt-"]]' '{"select":["name"]}' 2>/dev/null \
+    | tr ',{}[]' '\n\n\n\n\n' | sed -n 's/.*"name": *"\(dt-[a-z0-9-]*\)".*/\1/p' | tr '\n' ' ')"
+  STORE_APPS="${STORE_APPS% }"
+fi
+
 # Images utilisées par ces conteneurs, et celles qu'un autre conteneur utilise aussi (gardées).
 IMAGES=""; SHARED_IMAGES=""
 if [ "$HAVE_DOCKER" = 1 ] && [ -n "$CONTAINERS" ]; then
@@ -237,6 +246,7 @@ if [ "$PLAN" = 1 ]; then
   echo "VM_DIR=$VM_DIR"
   echo "HOSTNAME=$(hostname 2>/dev/null)"
   for n in $CONTAINERS; do echo "CONTAINER=$n|$(docker inspect -f '{{.State.Status}}' "$n" 2>/dev/null)"; done
+  for a in $STORE_APPS; do echo "STOREAPP=$a"; done
   for id in $IMAGES; do
     s=0; has_word "$SHARED_IMAGES" "$id" && s=1
     echo "IMAGE=$id|$(image_size "$id")|$s|$(image_tag "$id")"
@@ -271,6 +281,7 @@ if [ "$YES" = 0 ]; then
   esac
   [ -n "$DIR" ] && say "  Dossier : $DIR" "  Folder: $DIR"
   [ -n "$CONTAINERS" ] && say "  Conteneurs : $CONTAINERS" "  Containers: $CONTAINERS"
+  [ -n "$STORE_APPS" ] && say "  Apps de Desktroo Apps : $STORE_APPS (leurs données restent)" "  Desktroo Apps apps: $STORE_APPS (their data stays)"
   echo ""
   ask_yn() { # $1 question FR, $2 question EN → 0 si oui
     local a
@@ -327,6 +338,17 @@ if [ "$RELEASE" = 1 ] && [ "$ACTIVATION" = 1 ]; then
 fi
 
 # ── 2. Conteneurs ────────────────────────────────────────────
+if [ -n "$STORE_APPS" ]; then
+  step "Apps de Desktroo Apps" "Desktroo Apps apps"
+  for a in $STORE_APPS; do
+    if timeout 900 midclt call -j app.delete "$a" '{"remove_images": false, "remove_ix_volumes": false}' >/dev/null 2>&1; then
+      ok "$a supprimée (données conservées)" "$a deleted (data kept)"
+    else
+      warn "$a : suppression par TrueNAS en échec" "$a: TrueNAS could not delete it"
+    fi
+  done
+  [ "$HAVE_DOCKER" = 1 ] && docker network rm desktroo-apps >/dev/null 2>&1 || true
+fi
 if [ "$MODE" = "app" ] && [ -n "$APP" ] && command -v midclt >/dev/null 2>&1; then
   step "Application TrueNAS « $APP »" "TrueNAS app “$APP”"
   if timeout 900 midclt call -j app.delete "$APP" '{"remove_images": false, "remove_ix_volumes": false}' >/dev/null 2>&1; then

@@ -17,6 +17,24 @@ TRUENAS_HOST="${TRUENAS_HOST:-$TRUENAS_IP}"
 TRUENAS_UI_URL="${TRUENAS_UI_URL:-http://$TRUENAS_IP}"
 D="${DATA_DIR:-/data}"
 
+# ── MDM-NAS-GATEWAY-V1 : l'adresse du NAS a changé (DHCP, VM) ? On passe par la passerelle Docker,
+# qui est le NAS lui-même. TRUENAS_IP: "auto" force ce mode.
+nas_up() {
+  _o=$(wget -q -T 3 --no-check-certificate -O /dev/null "https://$1/" 2>&1); _r=$?
+  [ $_r -eq 0 ] && return 0
+  echo "$_o" | grep -qiE "can't connect|timed out|refused|unreachable|bad address|resolve" && return 1
+  return 0
+}
+GW=$(ip route 2>/dev/null | awk '/^default/ {print $3; exit}')
+if [ "$TRUENAS_IP" = "auto" ] || ! nas_up "$TRUENAS_IP"; then
+  if [ -n "$GW" ] && nas_up "$GW"; then
+    echo "▸ NAS injoignable à $TRUENAS_IP : passage par la passerelle Docker $GW"
+    [ "$TRUENAS_UI_URL" = "http://$TRUENAS_IP" ] && TRUENAS_UI_URL=""
+    [ "$TRUENAS_HOST" = "$TRUENAS_IP" ] && TRUENAS_HOST="$GW"
+    TRUENAS_IP="$GW"
+  fi
+fi
+
 # ── Licence d'utilisation : pas de première installation sans accord ──
 # L'accord se donne dans le YAML de la Custom App : ACCEPT_LICENCE: "oui". Il est inscrit dans
 # data/licence-acceptee.json, que le bureau lit. TERMS_VERSION suit le numéro de LICENSE.md.

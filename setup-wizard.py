@@ -513,38 +513,7 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
       - "8765"
       - "8766"
 
-  websites:
-    image: nginx:alpine
-    container_name: desktroo-websites
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-      - "8100-8130:8100-8130"
-    volumes:
-      - /mnt:/mnt
-      - {install_dir}/websites/conf.d:/etc/nginx/conf.d
-    command: {json.dumps(["sh","-c",web_reload])}
-    depends_on:
-      - php83
-      - php82
-      - php81
-      - php74
-
-{php_service('8.3')}
-{php_service('8.2')}
-{php_service('8.1')}
-{php_service('7.4')}
-  mariadb:
-    image: mariadb:11
-    container_name: desktroo-mariadb
-    restart: unless-stopped
-    environment:
-      MARIADB_ROOT_PASSWORD: "{db_pass}"
-      MARIADB_AUTO_UPGRADE: "1"
-    expose:
-      - "3306"
-    volumes:
-      - {install_dir}/mariadb:/var/lib/mysql
+  # Serveur web (sites, PHP, MariaDB) : module facultatif de Desktroo Apps (app TrueNAS dt-webserver).
 {_authelia_service}"""
         with open(os.path.join(install_dir, 'docker-compose.yml'), 'w') as f:
             f.write(compose)

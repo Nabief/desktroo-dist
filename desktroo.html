@@ -1348,6 +1348,8 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .about-quiet:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
   .about-title { margin:10px 0 16px; font-family:var(--font-display); font-size:22px; font-weight:700; letter-spacing:-0.02em; color:var(--text); }
   .about-page > .web-crumb { align-self:flex-start; }
+  .web-note.cf-warn { color:#eab308; }
+  [data-theme="light"] .web-note.cf-warn { color:#8a5a00; }
   /* Désinstaller Desktroo */
   .unin-lead { margin:0 0 16px; font-size:13px; line-height:1.55; color:var(--text); }
   .unin-h { margin:20px 0 8px; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); }
@@ -9211,7 +9213,175 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Suppression {0} sur {1}…": "Deleting {0} of {1}…",
 "La suppression continue sur le NAS : la liste se mettra à jour d'elle-même.": "Deletion is still running on the NAS: the list will update by itself.",
 "{0} supprimés": "{0} deleted",
-"{0} supprimés, {1} refusés : {2}": "{0} deleted, {1} refused: {2}"
+"{0} supprimés, {1} refusés : {2}": "{0} deleted, {1} refused: {2}",
+"Enregistrez, puis envoyez un message d'essai : vous choisissez l'adresse qui le reçoit.": "Save, then send a test message: you choose the address that receives it.",
+"Le chiffrement SSL/TLS direct se fait en général sur le port 465 : avec le port {0}, l'envoi échouera sans doute.": "Direct SSL/TLS normally runs on port 465: with port {0}, sending will most likely fail.",
+"Le port 465 attend un chiffrement SSL/TLS direct, pas STARTTLS : choisissez SSL/TLS direct, ou le port 587.": "Port 465 expects direct SSL/TLS, not STARTTLS: choose direct SSL/TLS, or port 587.",
+"Le port 465 attend un chiffrement SSL/TLS direct : sans chiffrement, l'envoi échouera.": "Port 465 expects direct SSL/TLS: without encryption, sending will fail.",
+"Aucun compte administrateur n'a d'adresse e-mail : indiquez une adresse pour l'essai, et ajoutez-en une à votre compte dans Utilisateurs.": "No administrator account has an e-mail address: enter an address for the test, and add one to your account in Users.",
+"Le serveur d'envoi refuse le nom d'utilisateur ou le mot de passe.": "The mail server rejects the username or password.",
+"La connexion chiffrée a échoué : vérifiez que le port et le chiffrement vont ensemble (465 avec SSL/TLS direct, 587 avec STARTTLS).": "The encrypted connection failed: check that the port and encryption match (465 with direct SSL/TLS, 587 with STARTTLS).",
+"Le serveur d'envoi ne répond pas : vérifiez son adresse et le port.": "The mail server does not answer: check its address and port.",
+"Enregistrez d'abord vos changements : l'essai utilise les réglages enregistrés.": "Save your changes first: the test uses the saved settings.",
+"Envoyer le message d'essai à :": "Send the test message to:",
+"Aucun compte administrateur n'a d'adresse e-mail : les alertes de TrueNAS ne partiront nulle part tant que vous n'en ajoutez pas une dans Utilisateurs.": "No administrator account has an e-mail address: TrueNAS alerts will go nowhere until you add one in Users.",
+"Adresse e-mail invalide.": "Invalid e-mail address.",
+"Message d'essai envoyé à {0}": "Test message sent to {0}",
+"pensez à ajouter une adresse à votre compte administrateur pour recevoir les alertes.": "remember to add an address to your administrator account to receive alerts.",
+"Abonnement expiré : vos apps continuent de fonctionner. Installer et mettre à jour une app demandent un abonnement Desktroo.": "Subscription expired: your apps keep running. Installing and updating an app require a Desktroo subscription.",
+"Abonnement requis pour installer un module.": "A subscription is required to install a module.",
+"Abonnement requis pour installer une app.": "A subscription is required to install an app.",
+"Abonnement requis pour mettre à jour": "A subscription is required to update",
+"Abonnement requis pour reprendre un module.": "A subscription is required to take over a module.",
+"Accès enregistrés.": "Access saved.",
+"Adresse copiée :": "Address copied:",
+"Adresse de l’app :": "App address:",
+"Adresse directe": "Direct address",
+"Afficher": "Show",
+"App Desktroo, gérée par Desktroo Apps": "Desktroo app, managed by Desktroo Apps",
+"Apps de Desktroo Apps": "Desktroo Apps apps",
+"Arrête NPMplus. Ses certificats et réglages restent sur le NAS.": "Stops NPMplus. Its certificates and settings stay on the NAS.",
+"Arrête le serveur web. Vos sites et vos bases de données restent sur le NAS.": "Stops the web server. Your websites and databases stay on the NAS.",
+"Aucun domaine publié pour l’instant.": "No domain published yet.",
+"Aucune app installée": "No app installed",
+"Aucune app pour le moment": "No apps yet",
+"Aucune app": "No app",
+"Autre adresse…": "Other address…",
+"Catalogue injoignable": "Catalog unreachable",
+"Ce NPMplus a été installé hors de Desktroo Apps. Il est relié à la fenêtre Domaines : Desktroo gère vos domaines et certificats, sans toucher à son installation. Ses mises à jour se font là où il a été installé.": "This NPMplus was installed outside Desktroo Apps. It is linked to the Domains window: Desktroo manages your domains and certificates without touching its installation. It is updated wherever it was installed.",
+"Ce qui est accessible depuis Internet, et vers où": "What is reachable from the Internet, and where it leads",
+"Certificat expiré": "Certificate expired",
+"Certificat https (Let’s Encrypt), renouvelé automatiquement": "https certificate (Let’s Encrypt), renewed automatically",
+"Choisissez au moins un utilisateur.": "Choose at least one user.",
+"Conserver les données": "Keep the data",
+"Demande inconnue :": "Unknown request:",
+"Desktroo (ce bureau)": "Desktroo (this desktop)",
+"Desktroo Apps indisponible": "Desktroo Apps unavailable",
+"Desktroo Apps ne répond pas": "Desktroo Apps is not responding",
+"Desktroo Apps": "Desktroo Apps",
+"Desktroo n’arrive pas à lire le catalogue des apps. Vérifiez que le NAS a accès à Internet, puis réessayez.": "Desktroo cannot read the app catalog. Check that the NAS has Internet access, then try again.",
+"Desktroo à mettre à jour": "Desktroo needs an update",
+"Domaines indisponibles": "Domains unavailable",
+"Domaines publiés": "Published domains",
+"Délier NPMplus de Desktroo ?": "Unlink NPMplus from Desktroo?",
+"Délier": "Unlink",
+"En cours…": "In progress…",
+"En-têtes personnalisés, listes d’accès, redirections, flux TCP… se règlent dans l’interface de NPMplus, dans un onglet.": "Custom headers, access lists, redirections, TCP streams… are set in the NPMplus interface, in a tab.",
+"Enregistrer les accès": "Save access",
+"Gestion": "Management",
+"Gérer les domaines": "Manage domains",
+"Identifiant d'app invalide :": "Invalid app identifier:",
+"Il a été installé hors de Desktroo Apps : vous pouvez l'y reprendre, avec ses domaines et ses certificats.": "It was installed outside Desktroo Apps: you can take it over there, with its domains and certificates.",
+"Il continue de tourner, avec tous ses domaines. Seule la fenêtre Domaines ne le gère plus.": "It keeps running, with all its domains. Only the Domains window no longer manages it.",
+"Il est arrêté moins d’une minute, le temps de copier ses données.": "It stops for less than a minute, while its data is copied.",
+"Impossible d'ouvrir l'app :": "Cannot open the app:",
+"Indiquez l’adresse et le port.": "Enter the address and the port.",
+"Indiquez un nom de domaine.": "Enter a domain name.",
+"Installer depuis Desktroo Apps": "Install from Desktroo Apps",
+"Installez-le depuis Desktroo Apps pour publier vos domaines.": "Install it from Desktroo Apps to publish your domains.",
+"Installez-le en un clic depuis Desktroo Apps. Il écoute sur 8090 (http) et 8453 (https) : sur votre box, redirigez <b>80→8090</b> et <b>443→8453</b>.": "Install it in one click from Desktroo Apps. It listens on 8090 (http) and 8453 (https): on your router, forward <b>80→8090</b> and <b>443→8453</b>.",
+"La fenêtre Domaines ne gère plus ce NPMplus. Lui continue de tourner, avec tous ses domaines.": "The Domains window stops managing this NPMplus. It keeps running, with all its domains.",
+"La mise à jour a échoué :": "The update failed:",
+"Le choix de fichiers arrive dans une prochaine version.": "File picking is coming in a future version.",
+"Le domaine ne répondra plus. Le site lui-même n’est pas touché.": "The domain will stop answering. The website itself is not touched.",
+"Le module redémarre ; vos données ne bougent pas.": "The module restarts; your data stays put.",
+"Le serveur web tourne encore dans Desktroo : il sera déplacé automatiquement vers ce module, sans toucher à vos sites.": "The web server still runs inside Desktroo: it will be moved to this module automatically, without touching your websites.",
+"Le serveur web tourne encore dans Desktroo. Il n’a pas pu être migré automatiquement :": "The web server still runs inside Desktroo. It could not be migrated automatically:",
+"Lecture des domaines…": "Reading domains…",
+"Les apps Mdm-services.fr pour votre NAS, comprises dans l’abonnement Desktroo": "Mdm-services.fr apps for your NAS, included in the Desktroo subscription",
+"Les premières arrivent bientôt.": "The first ones are coming soon.",
+"Let’s Encrypt vérifie votre domaine : cela prend en général moins d’une minute.": "Let’s Encrypt is checking your domain: it usually takes less than a minute.",
+"L’installation a échoué :": "The installation failed:",
+"Mdm-services.fr ·": "Mdm-services.fr ·",
+"Mes apps": "My apps",
+"Mises à jour": "Updates",
+"NPMplus déjà présent sur ce NAS": "NPMplus already on this NAS",
+"NPMplus est relié : ouvrez Domaines pour gérer vos domaines.": "NPMplus is linked: open Domains to manage your domains.",
+"NPMplus est relié à Desktroo.": "NPMplus is linked to Desktroo.",
+"NPMplus n’est pas installé": "NPMplus is not installed",
+"Nom de domaine": "Domain name",
+"Ouvrir Desktroo Apps": "Open Desktroo Apps",
+"Ouvrir NPMplus": "Open NPMplus",
+"Ouvrir Sites Web": "Open Websites",
+"Parcourir Desktroo Apps": "Browse Desktroo Apps",
+"Plusieurs noms : séparez-les par une virgule (exemple.fr, www.exemple.fr).": "Several names: separate them with a comma (example.com, www.example.com).",
+"Ports publiés": "Published ports",
+"Publier ce site avec NPMplus": "Publish this site with NPMplus",
+"Publier un domaine": "Publish a domain",
+"Publier": "Publish",
+"Publiez vos sites sous vos domaines, avec un certificat https, depuis la fenêtre Domaines.": "Publish your websites under your domains, with an https certificate, from the Domains window.",
+"Qui peut l’utiliser": "Who can use it",
+"Qui pourra l’utiliser": "Who will be able to use it",
+"Recherche des apps…": "Looking for apps…",
+"Relier NPMplus à Desktroo": "Link NPMplus to Desktroo",
+"Relier à Desktroo": "Link to Desktroo",
+"Renouveler": "Renew",
+"Reprendre NPMplus dans Desktroo Apps ?": "Take over NPMplus in Desktroo Apps?",
+"Reprendre dans Desktroo Apps": "Take over in Desktroo Apps",
+"Retire l’app du NAS. Vous choisirez de garder ou non ses données.": "Removes the app from the NAS. You will choose whether to keep its data.",
+"Saisissez l’adresse e-mail et le mot de passe d’un administrateur NPMplus. Desktroo les garde sur le NAS pour gérer vos domaines ; vous n’aurez plus à les saisir.": "Enter the e-mail address and password of an NPMplus administrator. Desktroo keeps them on the NAS to manage your domains; you won't have to enter them again.",
+"Sans https": "No https",
+"Supprimer aussi ses données ? Sans elles, une réinstallation repartira de zéro.": "Also delete its data? Without it, a reinstall starts from scratch.",
+"Supprimer les données": "Delete the data",
+"Sur votre box, redirigez le port 80 vers": "On your router, forward port 80 to",
+"S’abonner": "Subscribe",
+"Test": "Test",
+"Tout est à jour": "Everything is up to date",
+"Toutes les apps": "All apps",
+"TrueNAS garde les ports 80 et 443 pour son interface : NPMplus écoutera sur 8090 (http), 8453 (https) et 8181 (administration). Sur votre box, il faudra rediriger 80 vers 8090 et 443 vers 8453.": "TrueNAS keeps ports 80 and 443 for its interface: NPMplus will listen on 8090 (http), 8453 (https) and 8181 (administration). On your router, forward 80 to 8090 and 443 to 8453.",
+"Un instantané des données est pris avant, pour pouvoir revenir en arrière.": "A snapshot of the data is taken first, so you can roll back.",
+"Un nom de domaine, vers un site ou une app de ce NAS": "A domain name, to a website or an app on this NAS",
+"Une seule fois, après la reprise d’un NPMplus existant": "Only once, after taking over an existing NPMplus",
+"Voir dans Desktroo Apps": "See in Desktroo Apps",
+"Vos domaines publics ne répondront plus. Les certificats et réglages restent sur le NAS.": "Your public domains will stop answering. Certificates and settings stay on the NAS.",
+"Vos sites et vos apps en https, sous vos propres noms de domaine": "Your websites and apps over https, under your own domain names",
+"Vos sites et vos bases de données restent sur le NAS.": "Your websites and databases stay on the NAS.",
+"ce NAS": "this NAS",
+"de ce NAS. Les domaines et certificats se règlent dans NPMplus ; la page de chaque site, dans Sites Web, donne les valeurs à saisir (« Fiche proxy »).": "on this NAS. Domains and certificates are set up in NPMplus; each site's page in Websites gives the values to enter (“Proxy sheet”).",
+"et le port 443 vers": "and port 443 to",
+"la box redirige le port 443 ici": "the router forwards port 443 here",
+"la box redirige le port 80 ici": "the router forwards port 80 here",
+"leurs données restent": "their data stays",
+"« Reprendre » le confie à Desktroo Apps : mêmes ports, mêmes domaines et certificats. Ses données sont copiées dans le dossier de Desktroo Apps ; l’original reste en place, en secours. Si quelque chose échoue, votre NPMplus repart comme avant.": "“Take over” hands it to Desktroo Apps: same ports, same domains and certificates. Its data is copied into the Desktroo Apps folder; the original stays in place as a fallback. If anything fails, your NPMplus starts again as before.",
+"✅ NPMplus est géré par Desktroo.": "✅ NPMplus is managed by Desktroo.",
+"Avant de publier : le domaine doit pointer vers l’adresse publique de votre box, et la box rediriger le port 80 vers {0} et le port 443 vers {1} de ce NAS.": "Before publishing: the domain must point to your router's public address, and the router must forward port 80 to {0} and port 443 to {1} on this NAS.",
+"Ce module demande Desktroo {0} ou plus récent.": "This module requires Desktroo {0} or later.",
+"Cette app demande Desktroo {0} ou plus récent.": "This app requires Desktroo {0} or later.",
+"Certificat de {0} renouvelé.": "Certificate for {0} renewed.",
+"Démarrage de {0}…": "Starting {0}…",
+"Désinstallation de {0}…": "Uninstalling {0}…",
+"Désinstaller {0} ?": "Uninstall {0}?",
+"Mettre à jour vers {0}": "Update to {0}",
+"Renouvellement du certificat de {0}…": "Renewing the certificate for {0}…",
+"Retirer {0} ?": "Remove {0}?",
+"Site « {0} »": "Site “{0}”",
+"Site « {0} » (port {1})": "Site “{0}” (port {1})",
+"certificat valable {0} jours": "certificate valid for {0} days",
+"{0} est désinstallée.": "{0} is uninstalled.",
+"{0} est prête.": "{0} is ready.",
+"{0} est publié.": "{0} is published.",
+"{0} est retiré.": "{0} is removed.",
+"Arrêt de l’ancien NPMplus": "Stopping the old NPMplus",
+"Copie des certificats et des réglages": "Copying certificates and settings",
+"Création des dossiers de données": "Creating data folders",
+"Création du dossier de données": "Creating the data folder",
+"Démarrage dans Desktroo Apps": "Starting in Desktroo Apps",
+"Installée, mais elle ne répond pas encore": "Installed, but not responding yet",
+"Instantané des données avant mise à jour": "Snapshot of the data before updating",
+"Migration du serveur web": "Migrating the web server",
+"Préparation du dossier de données": "Preparing the data folder",
+"Préparation du réseau des apps": "Preparing the apps network",
+"Téléchargement et démarrage": "Downloading and starting",
+"Téléchargement et redémarrage": "Downloading and restarting",
+"Vérification que l'app répond": "Checking that the app responds",
+"Repris par Desktroo Apps": "Taken over by Desktroo Apps",
+"Publié": "Published",
+"Une seule fois, pour que Desktroo puisse gérer vos domaines": "Only once, so that Desktroo can manage your domains",
+"Voir le site": "View the site",
+"Démarrage…": "Starting…",
+"Arrêt…": "Stopping…",
+"En panne": "Crashed",
+"État inconnu": "Unknown state"
 }
 </script>
 <script id="dk-i18n">
@@ -10585,6 +10755,7 @@ function initDesktop(sysInfo) {
   jobsBadgeStart();
   licStart();
   termsCheck();
+  try { dkStoreBoot(); } catch (_) {}   // MDM-STORE-V1 : icône du Magasin et apps installées
   tndLoadConfig();
   tndWatchStart();
   setupContextMenu();
@@ -12323,7 +12494,7 @@ async function fileops(method, endpoint, body, _retried) {
   if (DK_UNINSTALLED) return new Promise(function() {});   // le service s'en va : plus aucun appel, plus aucune erreur affichée
   // En lecture seule, quatre envois restent permis : activer une licence, signaler un problème, accepter la licence d'utilisation,
   // et désinstaller (un abonnement expiré ne doit pas empêcher de partir).
-  if (_licReadonly && method !== 'GET' && ['license/activate', 'report', 'terms/accept', 'uninstall/run'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
+  if (_licReadonly && method !== 'GET' && ['license/activate', 'report', 'terms/accept', 'uninstall/run', 'store/uninstall', 'store/start', 'store/access'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
     licBlockToast();
     throw new Error('LICENSE_READONLY');
   }
@@ -12357,6 +12528,736 @@ async function fileops(method, endpoint, body, _retried) {
     throw err;
   }
   return data;
+}
+
+// ── MDM-STORE-V1 : fenêtres des apps du Magasin (iframe /a/<id>/, session et thème du bureau) ──────────
+// Une app s'ouvre dans une fenêtre du bureau ; nginx la sert sous /a/<id>/ après avoir vérifié le cookie
+// de session des apps (posé à la connexion, renouvelé ici). Le kit /a/_sdk/desktroo-app.js parle au bureau
+// par postMessage, sur la même origine uniquement.
+var _dkStoreWins = {};
+var _dkStoreSessionAt = 0;
+async function dkStoreSession(force) {
+  if (!force && Date.now() - _dkStoreSessionAt < 6 * 3600 * 1000) return;
+  await fileops('GET', 'store/session');
+  _dkStoreSessionAt = Date.now();
+}
+function dkStoreTheme() {
+  var cs = getComputedStyle(document.documentElement), vars = {};
+  // Les fonds (--bg, --surface) ne suivent pas le thème clair du bureau, qui passe par --window-bg :
+  // l'app garde ses propres surfaces pour chaque thème et prend le fond des fenêtres.
+  ['--accent', '--accent-rgb', '--accent2', '--accent-ink', '--info',
+   '--text', '--text-dim', '--glass-border', '--danger', '--success', '--warning', '--radius', '--radius-sm',
+   '--font-body', '--font-display', '--font-mono'].forEach(function(k) {
+    var v = cs.getPropertyValue(k);
+    if (v && v.trim()) vars[k] = v.trim();
+  });
+  var wbg = cs.getPropertyValue('--window-bg');
+  if (wbg && wbg.trim()) vars['--bg'] = wbg.trim();
+  return { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark', vars: vars,
+           lang: document.documentElement.lang || 'fr' };
+}
+function dkStoreSend(frame, type, data) {
+  try { frame.contentWindow.postMessage({ dk: 1, type: type, data: data }, location.origin); } catch (_) {}
+}
+var _dkStoreObs = null;
+function dkStoreWatchTheme() {
+  if (_dkStoreObs || typeof MutationObserver !== 'function') return;
+  var t = null;
+  _dkStoreObs = new MutationObserver(function() {
+    clearTimeout(t);
+    t = setTimeout(function() {
+      var th = dkStoreTheme();
+      Object.keys(_dkStoreWins).forEach(function(wid) { dkStoreSend(_dkStoreWins[wid].frame, 'theme', th); });
+    }, 80);
+  });
+  _dkStoreObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style', 'class', 'lang'] });
+  // Un clic dans une app ne remonte pas jusqu'au bureau : la fenêtre passe devant quand son cadre prend le focus.
+  window.addEventListener('blur', function() {
+    setTimeout(function() {
+      var a = document.activeElement, w = a && a.closest ? a.closest('.dk-app-win') : null;
+      if (w) bringToFront(w);
+    }, 0);
+  });
+}
+async function dkStoreOpenApp(id, title, opts) {
+  id = String(id || '');
+  if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(id)) throw new Error(T('Identifiant d\'app invalide : ') + id);
+  opts = opts || {};
+  var wid = 'dkapp-' + id;
+  var win = document.getElementById('win-' + wid);
+  if (win) { win.classList.add('visible'); bringToFront(win); return win; }
+  try { await dkStoreSession(true); }
+  catch (e) { toast(T('Impossible d\'ouvrir l\'app : ') + (e.message || e)); return null; }
+  var w = Math.max(320, Math.min(opts.width || 900, window.innerWidth - 40));
+  var h = Math.max(240, Math.min(opts.height || 620, window.innerHeight - 120));
+  var div = document.createElement('div');
+  div.innerHTML = '<div class="window dk-app-win" id="win-' + wid + '" style="top:80px;left:' + Math.max(20, ((window.innerWidth - w) / 2) | 0) + 'px;width:' + w + 'px;height:' + h + 'px;">'
+    + '<div class="window-titlebar" data-win="' + wid + '"><span class="window-title"></span>'
+    + '<div class="window-controls">'
+    + '<button class="win-btn min" onclick="minimizeWin(\'' + wid + '\')"></button>'
+    + '<button class="win-btn max" onclick="toggleMaxWin(\'' + wid + '\')"></button>'
+    + '<button class="win-btn cls" onclick="dkStoreCloseApp(\'' + wid + '\')"></button>'
+    + '</div></div>'
+    + '<div class="window-body" style="overflow:hidden;padding:0;display:flex;">'
+    + '<iframe class="dk-app-frame" style="flex:1;border:0;width:100%;height:100%;background:transparent;" allow="clipboard-read; clipboard-write"></iframe>'
+    + '</div><div class="resize-handle" data-win="' + wid + '"></div></div>';
+  win = div.firstElementChild;
+  win.querySelector('.window-title').textContent = title || id;
+  (document.getElementById('desktop') || document.body).appendChild(win);
+  setupResizeHandle(win.querySelector('.resize-handle'));
+  setupDragWin(win.querySelector('.window-titlebar'));
+  var frame = win.querySelector('iframe');
+  _dkStoreWins[wid] = { id: id, frame: frame, win: win };
+  frame.addEventListener('load', function() { dkStoreSend(frame, 'theme', dkStoreTheme()); });
+  frame.src = '/a/' + id + '/';
+  win.classList.add('visible');
+  bringToFront(win);
+  addTaskbarBtn(wid, win, title || id);
+  dkStoreWatchTheme();
+  return win;
+}
+function dkStoreCloseApp(wid) {
+  var win = document.getElementById('win-' + wid);
+  if (win) win.remove();
+  delete _dkStoreWins[wid];
+  removeTaskbarBtn(wid);
+}
+window.addEventListener('message', function(e) {
+  if (e.origin !== location.origin) return;
+  var wid = null;
+  Object.keys(_dkStoreWins).some(function(k) { if (_dkStoreWins[k].frame.contentWindow === e.source) { wid = k; return true; } return false; });
+  if (!wid) return;
+  var m = e.data, rec = _dkStoreWins[wid];
+  if (!m || m.dk !== 1) return;
+  var d = m.data || {};
+  function reply(data, err) {
+    try { e.source.postMessage({ dk: 1, type: 'reply', id: m.id, data: data, error: err || '' }, location.origin); } catch (_) {}
+  }
+  if (m.type === 'ready') dkStoreSend(rec.frame, 'theme', dkStoreTheme());
+  else if (m.type === 'setTitle') {
+    var t = String(d.title || '').slice(0, 80) || rec.id;
+    rec.win.querySelector('.window-title').textContent = t;
+    var b = document.querySelector('#taskbar-apps [data-win="' + wid + '"]');
+    if (b) dkBarBtnFill(b, t, '');
+  }
+  else if (m.type === 'notify') toast(String(d.text || '').slice(0, 300));
+  else if (m.type === 'close') dkStoreCloseApp(wid);
+  else if (m.type === 'user') reply(currentUser || '');
+  else if (m.type === 'pickFile') reply(null, T('Le choix de fichiers arrive dans une prochaine version.'));
+  else if (m.id) reply(null, T('Demande inconnue : ') + m.type);
+});
+// Session des apps renouvelée tant que le bureau est ouvert (le cookie vit 12 h).
+setInterval(function() { if (Object.keys(_dkStoreWins).length) dkStoreSession(false).catch(function() {}); }, 30 * 60 * 1000);
+
+// ── MDM-STORE-V1 · phase 1 : la fenêtre Magasin, les icônes des apps installées ─────────────────────────
+var _dkStore = { view: null, sel: null, users: null, polls: {}, booted: false };
+var DK_STORE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/><path d="M9.5 13.5l1.8 1.8 3.2-3.6"/></svg>';
+function dkStoreName(n) {
+  if (n && typeof n === 'object') { var l = String(document.documentElement.lang || 'fr').slice(0, 2); return n[l] || n.fr || n.en || ''; }
+  return String(n || '');
+}
+function dkStoreIcon(id, size) {
+  return '<img src="/fileops/store/icon/' + encodeURIComponent(id) + '" alt="" width="' + size + '" height="' + size + '" style="width:' + size + 'px;height:' + size
+    + 'px;border-radius:' + Math.round(size / 4.5) + 'px;object-fit:cover;flex:none;background:rgba(var(--accent-rgb),0.12);" onerror="this.style.visibility=\'hidden\'">';
+}
+function dkStoreCss() {
+  if (document.getElementById('dks-css')) return;
+  var st = document.createElement('style');
+  st.id = 'dks-css';
+  st.textContent = '.dks{display:flex;flex-direction:column;height:100%;min-height:0}'
+    + '.dks-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--glass-border)}'
+    + '.dks-title{font-family:var(--font-display);font-size:17px;font-weight:700}.dks-sub{font-size:12px;color:var(--text-dim)}'
+    + '.dks-body{flex:1;min-height:0;overflow:auto;padding:16px 18px}'
+    + '.dks-banner{display:flex;align-items:center;gap:12px;padding:10px 14px;margin-bottom:14px;border-radius:var(--radius-sm);border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.08);font-size:13px}'
+    + '.dks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}'
+    + '.dks-card{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:var(--radius-sm);border:1px solid var(--glass-border);background:rgba(255,255,255,0.035);cursor:pointer;text-align:left;color:inherit;font:inherit;width:100%}'
+    + '.dks-card:hover,.dks-card:focus-visible{border-color:rgba(var(--accent-rgb),0.5);outline:none}'
+    + '.dks-name{font-weight:700;font-size:14px}.dks-tag{font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px}'
+    + '.dks-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}'
+    + '.dks-badge{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--glass-border);color:var(--text-dim)}'
+    + '.dks-badge.ok{color:var(--success);border-color:rgba(var(--success-rgb),0.45)}.dks-badge.up{color:var(--accent2);border-color:rgba(var(--accent-rgb),0.45)}'
+    + '.dks-badge.warn{color:var(--warning);border-color:rgba(245,158,11,.45)}'
+    + '.dks-empty{padding:40px 10px;text-align:center;color:var(--text-dim)}'
+    + '.dks-back{background:none;border:0;color:var(--accent2);cursor:pointer;font:inherit;font-size:13px;padding:0;margin-bottom:14px}'
+    + '.dks-dhead{display:flex;gap:16px;align-items:center;margin-bottom:14px}.dks-dname{font-family:var(--font-display);font-size:20px;font-weight:700}'
+    + '.dks-sec{margin-top:18px}.dks-sec h4{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim)}'
+    + '.dks-kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;font-size:13px}.dks-kv span:nth-child(odd){color:var(--text-dim)}'
+    + '.dks-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}'
+    + '.dks-users{display:flex;flex-direction:column;gap:6px;font-size:13px}.dks-users label{display:flex;gap:8px;align-items:center;cursor:pointer}'
+    + '.dks-job{display:flex;gap:10px;align-items:center;font-size:13px;padding:10px 12px;border-radius:var(--radius-sm);background:rgba(var(--accent-rgb),0.08)}'
+    + '.dks-err{font-size:13px;padding:10px 12px;border-radius:var(--radius-sm);background:rgba(224,82,82,0.1);border:1px solid rgba(224,82,82,0.35);color:var(--danger);margin-top:12px}'
+    + '.dks-pad{padding:12px 14px}.dks-sec{margin-top:16px}.web-head .web-head-actions{gap:8px}'
+    + '[data-theme="light"] .dks-card{background:#fff}';
+  document.head.appendChild(st);
+}
+// Fenêtre du bureau construite à la volée (Magasin).
+function dkStoreMakeWin(wid, title, w, h, bodyHtml, onClose) {
+  var div = document.createElement('div');
+  w = Math.max(320, Math.min(w, window.innerWidth - 40)); h = Math.max(240, Math.min(h, window.innerHeight - 120));
+  div.innerHTML = '<div class="window" id="win-' + wid + '" style="top:80px;left:' + Math.max(20, ((window.innerWidth - w) / 2) | 0) + 'px;width:' + w + 'px;height:' + h + 'px;">'
+    + '<div class="window-titlebar" data-win="' + wid + '"><span class="window-title"></span><div class="window-controls">'
+    + '<button class="win-btn min" onclick="minimizeWin(\'' + wid + '\')"></button><button class="win-btn max" onclick="toggleMaxWin(\'' + wid + '\')"></button>'
+    + '<button class="win-btn cls"></button></div></div>'
+    + '<div class="window-body" style="overflow:hidden;padding:0;display:flex;flex-direction:column;">' + bodyHtml + '</div>'
+    + '<div class="resize-handle" data-win="' + wid + '"></div></div>';
+  var win = div.firstElementChild;
+  win.querySelector('.window-title').textContent = title;
+  win.querySelector('.win-btn.cls').onclick = function() { win.remove(); removeTaskbarBtn(wid); if (onClose) onClose(); };
+  (document.getElementById('desktop') || document.body).appendChild(win);
+  setupResizeHandle(win.querySelector('.resize-handle'));
+  setupDragWin(win.querySelector('.window-titlebar'));
+  win.classList.add('visible');
+  bringToFront(win);
+  addTaskbarBtn(wid, win, title);
+  return win;
+}
+function dkStoreOpen() {
+  var win = document.getElementById('win-dkstore');
+  if (win) { win.classList.add('visible'); bringToFront(win); dkStoreLoad(); return; }
+  dkStoreCss();
+  // Gabarit des gestionnaires de Desktroo : colonne de navigation, en-tête, contenu.
+  win = dkStoreMakeWin('dkstore', T('Desktroo Apps'), 980, 660,
+    '<div class="web-shell"><nav class="web-side" id="dkstore-side" aria-label="' + T('Desktroo Apps') + '"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dkstore-head"></header><div class="web-body" id="dkstore-body"></div></section></div>',
+    function() { Object.keys(_dkStore.polls).forEach(function(k) { clearTimeout(_dkStore.polls[k]); }); _dkStore.polls = {}; });
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a8451,#3ecf8e);">' + DK_STORE_SVG.replace('<svg ', '<svg width="13" height="13" ') + '</span>');
+  _dkStore.sel = null; _dkStore.nav = 'all';
+  dkStoreSide(); wmHead('dkstore', T('Desktroo Apps'), { sub: T('Les apps Mdm-services.fr pour votre NAS, comprises dans l’abonnement Desktroo') });
+  dkStoreLoad();
+}
+function dkStoreGo(nav) { _dkStore.nav = nav; _dkStore.sel = null; dkStoreRender(); }
+function dkStoreSel(id) { _dkStore.sel = decodeURIComponent(id); dkStoreRender(); }
+function dkStoreSide() {
+  var apps = (_dkStore.view && _dkStore.view.apps) || [], nav = _dkStore.nav || 'all', sel = _dkStore.sel;
+  var inst = apps.filter(function(a) { return a.installed; }), upd = apps.filter(function(a) { return a.update_available; });
+  var h = wmNav({ active: !sel && nav === 'all', call: 'dkStoreGo(\'all\')', icon: 'grid', name: T('Toutes les apps'), count: apps.length || '' })
+    + wmNav({ active: !sel && nav === 'installed', call: 'dkStoreGo(\'installed\')', icon: 'box', name: T('Installées'), count: inst.length || '' })
+    + (upd.length ? wmNav({ active: !sel && nav === 'updates', call: 'dkStoreGo(\'updates\')', icon: 'refresh', name: T('Mises à jour'), count: upd.length }) : '');
+  if (inst.length) {
+    h += wmSep() + wmSideTitle(T('Mes apps'), inst.length);
+    inst.forEach(function(a) {
+      var st = a.installed.state, dot = st === 'RUNNING' ? '' : (st === 'DEPLOYING' ? 'warn' : 'off');
+      h += wmNav({ active: sel === a.id, call: 'dkStoreSel(' + wmQ(a.id) + ')', dot: dot, name: dkStoreName(a.name) || a.id,
+        meta: a.update_available ? T('Mise à jour disponible') : dkStoreStateLabel(st) });
+    });
+  }
+  wmSide('dkstore', h);
+}
+async function dkStoreLoad(refresh) {
+  var body = wmBody('dkstore');
+  if (!body) return;
+  // Attente « maison » : le logo animé pendant la recherche, et une panne passagère (service qui redémarre) n'est pas une erreur.
+  if (!_dkStore.view && !dkAwaiting('store')) body.innerHTML = dkWaitHtml('busy', T('Recherche des apps…'));
+  try { _dkStore.view = await fileops('GET', 'store/view' + (refresh ? '?refresh=1' : '')); }
+  catch (e) {
+    if (dkTransient(e)) { dkAwait('store', body, function() { dkStoreLoad(refresh); }, e, { failTitle: T('Desktroo Apps ne répond pas') }); return; }
+    body.innerHTML = dkWaitHtml('error', T('Desktroo Apps indisponible'), webEsc(dkErrText(e)),
+      '<button class="web-open" onclick="dkStoreLoad(true)">' + T('Réessayer') + '</button>');
+    return;
+  }
+  dkStoreRegisterApps((_dkStore.view.apps || []).filter(function(a) { return a.installed; }));
+  (_dkStore.view.apps || []).forEach(function(a) { if (a.job && a.job.state === 'running') dkStorePoll(a.id); });
+  dkStoreRender();
+}
+function dkStoreApp(id) { return ((_dkStore.view && _dkStore.view.apps) || []).filter(function(a) { return a.id === id; })[0] || null; }
+function dkStoreRefreshBtn() { return '<button class="fs-btn" onclick="_dkStore.view=null;dkStoreLoad(true)">' + T('Actualiser') + '</button>'; }
+function dkStoreRender() {
+  var body = wmBody('dkstore');
+  if (!body || !_dkStore.view) return;
+  dkStoreSide();
+  if (_dkStore.sel && dkStoreApp(_dkStore.sel)) return dkStoreRenderDetail(body, dkStoreApp(_dkStore.sel));
+  var v = _dkStore.view, nav = _dkStore.nav || 'all', all = v.apps || [];
+  var apps = nav === 'installed' ? all.filter(function(a) { return a.installed; }) : nav === 'updates' ? all.filter(function(a) { return a.update_available; }) : all;
+  var title = nav === 'installed' ? T('Installées') : nav === 'updates' ? T('Mises à jour') : T('Toutes les apps');
+  wmHead('dkstore', title, { sub: nav === 'all' ? T('Les apps Mdm-services.fr pour votre NAS, comprises dans l’abonnement Desktroo')
+    : (apps.length > 1 ? Tf('{0} apps', apps.length) : (apps.length ? T('1 app') : T('Aucune app'))), actions: dkStoreRefreshBtn() });
+  var h = '';
+  if (v.gate && !v.gate.ok) {
+    h += '<div class="dks-banner"><span style="flex:1;">' + T('Abonnement expiré : vos apps continuent de fonctionner. Installer et mettre à jour une app demandent un abonnement Desktroo.') + '</span>'
+      + (v.gate.subscribe_url ? '<a class="web-open" href="' + webEsc(v.gate.subscribe_url) + '" target="_blank" rel="noopener">' + T('S’abonner') + '</a>' : '') + '</div>';
+  }
+  if (v.error && !v.ok) {   // aucun catalogue reçu (première visite hors ligne, GitHub injoignable) : écran d'attente calme
+    body.innerHTML = h + dkWaitHtml('error', T('Catalogue injoignable'), T('Desktroo n’arrive pas à lire le catalogue des apps. Vérifiez que le NAS a accès à Internet, puis réessayez.'),
+      '<button class="web-open" onclick="dkStoreLoad(true)">' + T('Réessayer') + '</button>' + dkDetail(v.error));
+    return;
+  }
+  if (!apps.length) {
+    body.innerHTML = h + '<div class="fs-empty">' + webIcon('box') + '<div class="fs-empty-title">'
+      + (nav === 'installed' ? T('Aucune app installée') : nav === 'updates' ? T('Tout est à jour') : T('Aucune app pour le moment'))
+      + '</div><div>' + (nav === 'all' ? T('Les premières arrivent bientôt.') : '') + '</div>'
+      + (nav === 'installed' ? '<button class="web-open" onclick="dkStoreGo(\'all\')">' + T('Parcourir Desktroo Apps') + '</button>' : '') + '</div>';
+    return;
+  }
+  h += '<div class="dks-grid">';
+  apps.forEach(function(a) {
+    var b = '';
+    if (a.job && a.job.state === 'running') b += '<span class="dks-badge up">' + T('En cours…') + '</span>';
+    else if (a.update_available) b += '<span class="dks-badge up">' + T('Mise à jour disponible') + '</span>';
+    else if (a.installed) b += '<span class="dks-badge ok">' + T('Installée') + '</span>';
+    if (a.channel && a.channel !== 'stable') b += '<span class="dks-badge warn">' + T('Test') + '</span>';
+    if (!a.compatible) b += '<span class="dks-badge warn">' + T('Desktroo à mettre à jour') + '</span>';
+    h += '<button class="dks-card" onclick="dkStoreSel(' + wmQ(a.id) + ')">' + dkStoreIcon(a.id, 48) + '<span style="min-width:0;"><div class="dks-name">' + webEsc(dkStoreName(a.name) || a.id) + '</div>'
+      + '<div class="dks-tag">' + webEsc(dkStoreName(a.tagline)) + '</div>' + (b ? '<div class="dks-badges">' + b + '</div>' : '') + '</span></button>';
+  });
+  body.innerHTML = h + '</div>';
+}
+function dkStoreUsersHtml(checked) {
+  var list = _dkStore.users || [{ username: currentUser || '' }];
+  return '<div class="dks-users" id="dks-users">' + list.map(function(u) {
+    var on = checked.indexOf(u.username) >= 0;
+    return '<label><input type="checkbox" value="' + webEsc(u.username) + '"' + (on ? ' checked' : '') + '> ' + webEsc(u.username)
+      + (u.full_name ? ' <span class="dim">(' + webEsc(u.full_name) + ')</span>' : '') + (u.username === currentUser ? ' <span class="dim">— ' + T('vous') + '</span>' : '') + '</label>';
+  }).join('') + '</div>';
+}
+function dkStoreCheckedUsers() {
+  return Array.prototype.slice.call(document.querySelectorAll('#dks-users input:checked')).map(function(i) { return i.value; });
+}
+async function dkStoreLoadUsers() {
+  if (_dkStore.users) return;
+  try { var r = await fileops('GET', 'store/users'); _dkStore.users = r.users || []; } catch (_) { _dkStore.users = [{ username: currentUser || '' }]; }
+  if (currentUser && !_dkStore.users.some(function(u) { return u.username === currentUser; })) _dkStore.users.unshift({ username: currentUser });
+  dkStoreRender();
+}
+function dkStoreRenderDetail(body, a) {
+  var v = _dkStore.view, inst = a.installed, job = a.job || {}, running = job.state === 'running', gateOk = !v.gate || v.gate.ok;
+  var nav = _dkStore.nav || 'all', back = nav === 'installed' ? T('Installées') : nav === 'updates' ? T('Mises à jour') : T('Toutes les apps');
+  var acts = '', module = a.kind === 'module' || !!(inst && inst.kind === 'module');
+  if (!running && inst && module) {
+    if (a.id === 'webserver') acts += '<button class="web-open" onclick="openWebsites()">' + T('Ouvrir Sites Web') + '</button>';
+    if (a.id === 'npmplus' && inst.state === 'RUNNING') acts += '<button class="web-open" onclick="dkNpmOpen()">' + T('Gérer les domaines') + '</button>'
+      + '<button class="fs-btn" onclick="dkStoreNpmOpen()">' + T('Réglages avancés') + '</button>';
+    if (inst.state !== 'RUNNING' && !inst.legacy && !inst.linked) acts += '<button class="fs-btn" onclick="dkStoreAct(\'start\',\'' + a.id + '\')">' + T('Démarrer') + '</button>';
+  } else if (!running && inst) {
+    acts += (inst.state === 'RUNNING' ? '<button class="web-open" onclick="dkStoreOpenInstalled(\'' + a.id + '\')">' + T('Ouvrir') + '</button>'
+      : '<button class="web-open" onclick="dkStoreAct(\'start\',\'' + a.id + '\')">' + T('Démarrer') + '</button>');
+    if (inst.standalone || a.standalone) acts += '<button class="fs-btn" onclick="window.open(\'/a/' + a.id + '/\',\'_blank\',\'noopener\')">' + T('Ouvrir dans un onglet') + '</button>';
+  } else if (!running && !inst && a.compatible && gateOk) {
+    var npmF = a.npm && a.npm.foreign;
+    var npmLinkable = npmF && /npmplus/i.test(npmF.image || '');
+    if (npmF && npmF.adoptable) acts += '<button class="web-open" onclick="dkStoreAct(\'adopt\',\'' + a.id + '\')">' + T('Reprendre') + '</button>';
+    else if (!npmF) acts += '<button class="web-open" onclick="dkStoreAct(\'install\',\'' + a.id + '\')">' + T('Installer') + '</button>';
+    if (npmLinkable) acts += '<button class="' + (npmF.adoptable ? 'fs-btn' : 'web-open') + '" onclick="dkStoreAct(\'link\',\'' + a.id + '\')">' + T('Relier à Desktroo') + '</button>';
+  }
+  wmHead('dkstore', dkStoreName(a.name) || a.id, { back: [back, '_dkStore.sel=null;dkStoreRender()'],
+    lead: '<span style="margin-right:2px;">' + dkStoreIcon(a.id, 52) + '</span>',
+    sub: webEsc(T('Mdm-services.fr · ') + T('version') + ' ' + (a.version || '?')) + (inst && a.update_available ? ' · ' + webEsc(Tf('installée : {0}', inst.version || '?')) : '')
+      + (a.channel && a.channel !== 'stable' ? ' · <span class="dks-badge warn">' + T('Test') + '</span>' : ''),
+    actions: acts });
+  var h = (a.tagline ? '<div style="font-size:14px;font-weight:500;">' + webEsc(dkStoreName(a.tagline)) + '</div>' : '')
+    + (a.description ? '<div class="dks-tag" style="font-size:13px;margin-top:6px;max-width:680px;">' + webEsc(dkStoreName(a.description)) + '</div>' : '');
+  if (running) h += '<div class="dks-sec"><div class="dks-job"><div class="spinner" style="width:16px;height:16px;"></div><span>' + webEsc(T(job.step || 'En cours…')) + '</span></div></div>';
+  else if (job.state === 'error') h += '<div class="dks-err">' + webEsc((job.action === 'update' ? T('La mise à jour a échoué : ') : job.action === 'adopt' || job.action === 'migrate' ? '' : T('L’installation a échoué : ')) + job.error) + '</div>';
+  else if (job.state === 'done' && job.step && job.step !== 'Installée' && job.step !== 'Repris par Desktroo Apps') h += '<div class="dks-err" style="color:var(--warning);border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08);">' + webEsc(T(job.step)) + '</div>';
+  if (!running && module) {
+    if (inst && inst.legacy) {
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + (inst.migration
+        ? webEsc(T('Le serveur web tourne encore dans Desktroo. Il n’a pas pu être migré automatiquement : ') + inst.migration)
+        : T('Le serveur web tourne encore dans Desktroo : il sera déplacé automatiquement vers ce module, sans toucher à vos sites.')) + '</div>';
+    } else if (inst && inst.linked) {
+      var lp = inst.ports || dkStoreNpmPorts(a);
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Ce NPMplus a été installé hors de Desktroo Apps. Il est relié à la fenêtre Domaines : Desktroo gère vos domaines et certificats, sans toucher à son installation. Ses mises à jour se font là où il a été installé.') + '</div>'
+        + '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
+        + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : ' off') + '"></span>' + webEsc(inst.state === 'RUNNING' ? T('En marche') : T('Arrêté')) + '</dd>'
+        + '<dt>' + T('Conteneur') + '</dt><dd class="mono">' + webEsc(inst.container || '?') + '</dd>'
+        + '<dt>' + T('Ports') + '</dt><dd>' + webEsc('HTTP ' + lp.http + ' · HTTPS ' + lp.https + ' · admin ' + lp.admin) + '</dd></dl>'
+        + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
+        + wmRow('dkStoreAct(\'unlink\',\'' + a.id + '\')', T('Délier'), T('La fenêtre Domaines ne gère plus ce NPMplus. Lui continue de tourner, avec tous ses domaines.'), 'danger') + '</div>';
+    } else if (inst) {
+      h += '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
+        + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateLabel(inst.state)) + '</dd>'
+        + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
+        + (a.id === 'npmplus' ? dkStoreNpmFacts(a, inst) : '<dt>' + T('Ports publiés') + '</dt><dd>8080, 8100-8130</dd></dl>')
+        + (a.id === 'npmplus' ? '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Sur votre box, redirigez le port 80 vers ') + dkStoreNpmPorts(a).http + T(' et le port 443 vers ') + dkStoreNpmPorts(a).https + T(' de ce NAS. Les domaines et certificats se règlent dans NPMplus ; la page de chaque site, dans Sites Web, donne les valeurs à saisir (« Fiche proxy »).') + '</div>' : '')
+        + (a.update_available ? '<div class="web-group-title">' + T('Mise à jour') + '</div><div class="web-group">'
+          + (gateOk ? wmRow('dkStoreAct(\'update\',\'' + a.id + '\')', webEsc(Tf('Mettre à jour vers {0}', a.version)), T('Le module redémarre ; vos données ne bougent pas.'))
+            : '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + T('Abonnement requis pour mettre à jour') + '</span></span></div>') + '</div>' : '')
+        + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
+        + wmRow('dkStoreAct(\'uninstall\',\'' + a.id + '\')', T('Désinstaller'), a.id === 'npmplus' ? T('Arrête NPMplus. Ses certificats et réglages restent sur le NAS.') : T('Arrête le serveur web. Vos sites et vos bases de données restent sur le NAS.'), 'danger') + '</div>';
+    } else if (a.id === 'npmplus' && a.npm && a.npm.foreign) {
+      var f = a.npm.foreign;
+      h += '<div class="web-group-title">' + T('NPMplus déjà présent sur ce NAS') + '</div><dl class="web-facts">'
+        + '<dt>' + T('Conteneur') + '</dt><dd class="mono">' + webEsc(f.container) + '</dd>'
+        + '<dt>' + T('Ports') + '</dt><dd>' + webEsc('HTTP ' + f.ports.http + ' · HTTPS ' + f.ports.https + ' · admin ' + f.ports.admin) + '</dd>'
+        + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc(f.data || '?') + '</dd></dl>'
+        + '<div class="dks-sec dks-tag" style="max-width:680px;">' + (f.adoptable
+          ? T('« Reprendre » le confie à Desktroo Apps : mêmes ports, mêmes domaines et certificats. Ses données sont copiées dans le dossier de Desktroo Apps ; l’original reste en place, en secours. Si quelque chose échoue, votre NPMplus repart comme avant.')
+          : webEsc(f.why)) + '</div>';
+      if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour reprendre un module.') + '</p>';
+    } else if (a.id === 'npmplus' && a.compatible && gateOk) {
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('TrueNAS garde les ports 80 et 443 pour son interface : NPMplus écoutera sur 8090 (http), 8453 (https) et 8181 (administration). Sur votre box, il faudra rediriger 80 vers 8090 et 443 vers 8453.') + '</div>';
+    } else if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Ce module demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
+    else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer un module.') + '</p>';
+  } else if (!running) {
+    if (!inst) {
+      h += '<div class="web-group-title">' + T('Qui pourra l’utiliser') + '</div><div class="web-group dks-pad">' + dkStoreUsersHtml([currentUser]) + '</div>';
+      if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Cette app demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
+      else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer une app.') + '</p>';
+    } else {
+      if (a.update_available) {
+        h += '<div class="web-group-title">' + T('Mise à jour') + '</div><div class="web-group">'
+          + (gateOk ? wmRow('dkStoreAct(\'update\',\'' + a.id + '\')', webEsc(Tf('Mettre à jour vers {0}', a.version)), T('Un instantané des données est pris avant, pour pouvoir revenir en arrière.'))
+            : '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + T('Abonnement requis pour mettre à jour') + '</span></span></div>') + '</div>';
+      }
+      h += '<div class="web-group-title">' + T('Qui peut l’utiliser') + '</div><div class="web-group dks-pad">'
+        + dkStoreUsersHtml(inst.users || (_dkStore.users || []).map(function(u) { return u.username; }))
+        + '<div class="dks-acts"><button class="fs-btn" onclick="dkStoreAct(\'access\',\'' + a.id + '\')">' + T('Enregistrer les accès') + '</button></div></div>'
+        + '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
+        + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateLabel(inst.state)) + '</dd>'
+        + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
+        + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd>'
+        + ((inst.standalone || a.standalone) ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(location.origin + '/a/' + a.id + '/') + '</span><button class="web-mini" onclick="dkStoreCopyUrl(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
+        + '</dl>'
+        + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
+        + wmRow('dkStoreAct(\'uninstall\',\'' + a.id + '\')', T('Désinstaller'), T('Retire l’app du NAS. Vous choisirez de garder ou non ses données.'), 'danger') + '</div>';
+    }
+  }
+  body.innerHTML = h;
+  dkStoreLoadUsers();
+}
+// État d'une app TrueNAS, en mots (TrueNAS les donne en anglais et en capitales).
+function dkStoreStateLabel(st) {
+  return ({ RUNNING: T('En marche'), DEPLOYING: T('Démarrage…'), STOPPED: T('Arrêtée'), STOPPING: T('Arrêt…'),
+            CRASHED: T('En panne'), MISSING: T('Introuvable'), UNKNOWN: T('État inconnu') })[st] || st || '?';
+}
+function dkStoreNpmPorts(a) { return (a && a.npm && a.npm.ports) || _dkStore.npmPorts || { http: 8090, https: 8453, admin: 8181 }; }
+function dkStoreNpmOpen() {
+  var a = dkStoreApp('npmplus');
+  window.open('https://' + location.hostname + ':' + dkStoreNpmPorts(a).admin + '/', '_blank', 'noopener');
+}
+function dkStoreNpmFacts(a, inst) {
+  var p = dkStoreNpmPorts(a);
+  return '<dt>' + T('Ports') + '</dt><dd>' + webEsc('HTTP ' + p.http + ' · HTTPS ' + p.https) + '</dd>'
+    + '<dt>' + T('Administration') + '</dt><dd><span class="mono">' + webEsc('https://' + location.hostname + ':' + p.admin + '/') + '</span></dd>'
+    + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd></dl>';
+}
+async function dkStoreAct(act, id) {
+  var a = dkStoreApp(id); if (!a) return;
+  var name = dkStoreName(a.name) || id;
+  try {
+    if (act === 'install' || act === 'update') {
+      var b = { id: id };
+      if (act === 'install' && a.kind !== 'module') { b.users = dkStoreCheckedUsers(); if (!b.users.length) { toast(T('Choisissez au moins un utilisateur.')); return; } }
+      await fileops('POST', 'store/' + act, b);
+      dkStorePoll(id);
+      await dkStoreLoad();
+    } else if (act === 'link') {
+      await fileops('POST', 'store/npm/link', {});
+      toast(T('NPMplus est relié : ouvrez Domaines pour gérer vos domaines.'), 6000);
+      try { var sc = getShortcuts(); if (sc.indexOf('dkapp-npmplus') < 0) { sc.push('dkapp-npmplus'); saveShortcuts(sc); } } catch (_) {}
+      await dkStoreLoad();
+      dkNpmOpen();
+    } else if (act === 'unlink') {
+      if (!(await showConfirm(T('Délier NPMplus de Desktroo ?') + '<br><span style="font-size:12px;">' + T('Il continue de tourner, avec tous ses domaines. Seule la fenêtre Domaines ne le gère plus.') + '</span>', { danger: true, ok: T('Délier') }))) return;
+      await fileops('POST', 'store/npm/unlink', {});
+      await dkStoreLoad();
+    } else if (act === 'adopt') {
+      if (!(await showConfirm(T('Reprendre NPMplus dans Desktroo Apps ?') + '<br><span style="font-size:12px;">' + T('Il est arrêté moins d’une minute, le temps de copier ses données.') + '</span>', { ok: T('Reprendre') }))) return;
+      await fileops('POST', 'store/adopt', { id: id });
+      dkStorePoll(id);
+      await dkStoreLoad();
+    } else if (act === 'start') {
+      toast(Tf('Démarrage de {0}…', name));
+      await fileops('POST', 'store/start', { id: id });
+      await dkStoreLoad();
+    } else if (act === 'access') {
+      var users = dkStoreCheckedUsers();
+      if (!users.length) { toast(T('Choisissez au moins un utilisateur.')); return; }
+      await fileops('POST', 'store/access', { id: id, users: users });
+      toast(T('Accès enregistrés.'));
+      await dkStoreLoad();
+    } else if (act === 'uninstall') {
+      if (!(await showConfirm(Tf('Désinstaller {0} ?', webEsc(name)) + (a.kind === 'module' ? '<br><span style="font-size:12px;">' + (id === 'npmplus' ? T('Vos domaines publics ne répondront plus. Les certificats et réglages restent sur le NAS.') : T('Vos sites et vos bases de données restent sur le NAS.')) + '</span>' : ''), { danger: true, ok: T('Désinstaller') }))) return;
+      var drop = a.kind === 'module' ? false : await showConfirm(T('Supprimer aussi ses données ? Sans elles, une réinstallation repartira de zéro.'), { danger: true, ok: T('Supprimer les données'), cancel: T('Conserver les données') });
+      toast(Tf('Désinstallation de {0}…', name));
+      dkStoreCloseApp('dkapp-' + id);
+      await fileops('POST', 'store/uninstall', { id: id, keep_data: !drop });
+      toast(Tf('{0} est désinstallée.', name));
+      await dkStoreLoad();
+    }
+  } catch (e) { toast('⚠️ ' + (e.message || e), 6000); dkStoreLoad(); }
+}
+function dkStorePoll(id) {
+  if (_dkStore.polls[id]) return;
+  var tick = async function() {
+    var j = null;
+    try { j = (await fileops('GET', 'store/job?id=' + encodeURIComponent(id))).job; } catch (_) {}
+    var a = dkStoreApp(id);
+    if (a) { a.job = j; if (_dkStore.sel === id) dkStoreRender(); }
+    if (j && j.state === 'running' && document.getElementById('win-dkstore')) { _dkStore.polls[id] = setTimeout(tick, 1500); return; }
+    delete _dkStore.polls[id];
+    if (j && j.state === 'done') {
+      if (j.action === 'install' || j.action === 'adopt') {
+        var key = (a && a.kind === 'module') ? (id === 'webserver' ? 'websites' : id === 'npmplus' ? 'dkapp-npmplus' : '') : 'dkapp-' + id;   // un module apporte sa fenêtre du bureau
+        try { var s = getShortcuts(); if (key && s.indexOf(key) < 0) { s.push(key); saveShortcuts(s); } } catch (_) {}
+      }
+      toast(Tf('{0} est prête.', dkStoreName((a && a.name) || id)));
+    }
+    dkStoreLoad();
+  };
+  _dkStore.polls[id] = setTimeout(tick, 1200);
+}
+// Adresse directe d'une app : à ouvrir dans un onglet, en favori ou sur l'écran d'accueil du téléphone.
+function dkStoreCopyUrl(id) {
+  var url = location.origin + '/a/' + id + '/';
+  var done = function() { toast(T('Adresse copiée : ') + url, 4000); };
+  try { navigator.clipboard.writeText(url).then(done, function() { prompt(T('Adresse de l’app :'), url); }); }
+  catch (_) { prompt(T('Adresse de l’app :'), url); }
+}
+function dkStoreOpenInstalled(id) {
+  var a = dkStoreApp(id) || {}, w = (a.installed && a.installed.window) || a.window || {};
+  dkStoreOpenApp(id, dkStoreName(a.name) || id, { width: w.width, height: w.height });
+}
+// ── MDM-STORE-V1 · fenêtre « Domaines » : NPMplus sans quitter Desktroo ─────────────────────────────────
+// Desktroo parle à NPMplus par son API (côté NAS) : liste des domaines publiés, publication avec certificat
+// Let's Encrypt, renouvellement, suppression. L'interface NPMplus reste accessible en « réglages avancés ».
+var _dkNpm = { nav: 'list', st: null, sites: null, prefill: null, timer: null };
+function dkNpmOpen(prefill) {
+  _dkNpm.prefill = prefill || null;
+  _dkNpm.sites = null;   // la liste des sites est relue à chaque ouverture : un site créé entre-temps y figure
+  var win = document.getElementById('win-dknpm');
+  if (win) { win.classList.add('visible'); bringToFront(win); if (prefill) _dkNpm.nav = 'add'; dkNpmLoad(); return; }
+  dkStoreCss();
+  win = dkStoreMakeWin('dknpm', T('Domaines'), 900, 620,
+    '<div class="web-shell"><nav class="web-side" id="dknpm-side" aria-label="' + T('Domaines') + '"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dknpm-head"></header><div class="web-body" id="dknpm-body"></div></section></div>',
+    function() { clearTimeout(_dkNpm.timer); _dkNpm.timer = null; });
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('npmplus', 18) + '</span>');
+  _dkNpm.nav = prefill ? 'add' : 'list'; _dkNpm.st = null;
+  dkNpmLoad();
+}
+function dkNpmGo(nav) { _dkNpm.nav = nav; if (nav !== 'add') _dkNpm.prefill = null; else _dkNpm.sites = null; dkNpmRender(); }
+async function dkNpmLoad(quiet) {
+  var body = wmBody('dknpm'); if (!body) return;
+  if (!_dkNpm.st && !quiet) body.innerHTML = dkWaitHtml('busy', T('Lecture des domaines…'));
+  try { _dkNpm.st = await fileops('GET', 'store/npm/state'); }
+  catch (e) { wmFail('dknpm', T('Domaines indisponibles'), e, 'dkNpmLoad()'); return; }
+  var j = _dkNpm.st.job;
+  clearTimeout(_dkNpm.timer);
+  if (j && j.state === 'running') _dkNpm.timer = setTimeout(function() { dkNpmLoad(true); }, 2500);
+  dkNpmRender();
+}
+function dkNpmSide() {
+  var st = _dkNpm.st || {}, n = (st.hosts || []).length;
+  var h = wmNav({ active: _dkNpm.nav === 'list', call: 'dkNpmGo(\'list\')', icon: 'globe', name: T('Domaines publiés'), count: n || '' })
+    + wmNav({ active: _dkNpm.nav === 'add', call: 'dkNpmGo(\'add\')', icon: 'plus', name: T('Publier un domaine') })
+    + wmSep()
+    + wmNav({ active: _dkNpm.nav === 'settings', call: 'dkNpmGo(\'settings\')', icon: 'settings', name: T('Réglages') });
+  wmSide('dknpm', h);
+}
+function dkNpmPortsOf() { return (_dkNpm.st && _dkNpm.st.ports) || { http: 8090, https: 8453, admin: 8181 }; }
+function dkNpmAdvanced() { window.open('https://' + location.hostname + ':' + dkNpmPortsOf().admin + '/', '_blank', 'noopener'); }
+function dkNpmRender() {
+  var body = wmBody('dknpm'); if (!body) return;
+  var st = _dkNpm.st || {};
+  dkNpmSide();
+  if (!st.installed) {
+    wmHead('dknpm', T('Domaines'), { sub: T('Vos sites et vos apps en https, sous vos propres noms de domaine') });
+    body.innerHTML = dkWaitHtml('info', T('NPMplus n’est pas installé'), T('Installez-le depuis Desktroo Apps pour publier vos domaines.'),
+      '<button class="web-open" onclick="webNpmStore()">' + T('Ouvrir Desktroo Apps') + '</button>');
+    return;
+  }
+  if (st.login) return dkNpmRenderLogin(body, st);
+  if (_dkNpm.nav === 'add') return dkNpmRenderAdd(body, st);
+  if (_dkNpm.nav === 'settings') return dkNpmRenderSettings(body, st);
+  dkNpmRenderList(body, st);
+}
+function dkNpmJobHtml(st) {
+  var j = st.job; if (!j) return '';
+  if (j.state === 'running') return '<div class="dks-job" style="margin-bottom:14px;"><div class="spinner" style="width:16px;height:16px;"></div><span>' + webEsc(T(j.step || 'En cours…')) + '</span></div>';
+  if (j.state === 'error') return '<div class="dks-err" style="margin:0 0 14px;">' + webEsc(j.error) + ' <button class="web-mini" onclick="dkNpmClearJob()">' + T('OK') + '</button></div>';
+  if (j.state === 'done') return '<div class="dks-job" style="margin-bottom:14px;color:var(--success);">✓ ' + webEsc(Tf('{0} est publié.', j.domain || '')) + ' <button class="web-mini" onclick="dkNpmClearJob()">' + T('OK') + '</button></div>';
+  return '';
+}
+async function dkNpmClearJob() { try { await fileops('POST', 'store/npm/job/clear', {}); } catch (_) {} dkNpmLoad(true); }
+function dkNpmTarget(hst) {
+  var sites = _dkNpm.sites || [], local = /^(127\.0\.0\.1|localhost)$/.test(hst.host || '');
+  var s = sites.filter(function(x) { return String(x.port) === String(hst.port) && (local || hst.host === location.hostname); })[0];
+  if (s) return Tf('Site « {0} »', s.name || s.id);
+  if (local && String(hst.port) === String(location.port || 8099)) return T('Desktroo (ce bureau)');
+  return (local ? T('ce NAS') : hst.host) + ' : ' + hst.port;
+}
+function dkNpmCertHtml(c) {
+  if (!c) return '<span class="dks-badge warn">' + T('Sans https') + '</span>';
+  var t = Date.parse(c.expires_on || ''), days = isFinite(t) ? Math.round((t - Date.now()) / 86400000) : null;
+  if (days != null && days < 0) return '<span class="dks-badge warn" style="color:var(--danger);">' + T('Certificat expiré') + '</span>';
+  return '<span class="dks-badge ok">https</span>' + (days != null ? ' <span class="dks-tag" style="display:inline;">' + webEsc(Tf('certificat valable {0} jours', days)) + '</span>' : '');
+}
+async function dkNpmLoadSites() {
+  if (_dkNpm.sites) return;
+  _dkNpm.sites = [];
+  try { var r = await fileops('GET', 'websites'); _dkNpm.sites = r.sites || []; } catch (_) {}
+  _dkNpm.sitesOk = true;
+  dkNpmRender();
+}
+function dkNpmRenderList(body, st) {
+  dkNpmLoadSites();
+  wmHead('dknpm', T('Domaines publiés'), { sub: T('Ce qui est accessible depuis Internet, et vers où'),
+    actions: '<button class="web-open" onclick="dkNpmGo(\'add\')">' + T('Publier un domaine') + '</button>' });
+  var h = dkNpmJobHtml(st) + (st.error ? '<div class="dks-err" style="margin:0 0 14px;">' + webEsc(st.error) + '</div>' : '');
+  var hosts = (st.hosts || []).slice().sort(function(a, b) { return String(a.domains[0]).localeCompare(String(b.domains[0])); });
+  if (!hosts.length) {
+    h += '<div class="dks-empty">' + T('Aucun domaine publié pour l’instant.') + '<br><br><button class="web-open" onclick="dkNpmGo(\'add\')">' + T('Publier un domaine') + '</button></div>';
+  } else {
+    h += '<div class="web-group">';
+    hosts.forEach(function(x) {
+      var d = x.domains[0] || '?';
+      h += '<div class="web-row" style="cursor:default;align-items:center;gap:12px;flex-wrap:wrap;">'
+        + '<span class="web-dot' + (x.enabled ? '' : ' off') + '"></span>'
+        + '<span class="web-row-text" style="min-width:200px;flex:1;"><span class="web-row-name"><a href="' + (x.cert ? 'https' : 'http') + '://' + webEsc(d) + '/" target="_blank" rel="noopener" style="color:inherit;">' + webEsc(x.domains.join(', ')) + '</a></span>'
+        + '<span class="web-row-desc">→ ' + webEsc(dkNpmTarget(x)) + ' · ' + dkNpmCertHtml(x.cert) + (x.enabled ? '' : ' · ' + T('désactivé')) + '</span></span>'
+        + '<span style="display:flex;gap:6px;flex-wrap:wrap;">'
+        + (x.cert ? '<button class="web-mini" onclick="dkNpmAct(\'renew\',' + x.cert.id + ',' + wmQ(d) + ')">' + T('Renouveler') + '</button>' : '')
+        + '<button class="web-mini" onclick="dkNpmAct(\'' + (x.enabled ? 'disable' : 'enable') + '\',' + x.id + ',' + wmQ(d) + ')">' + (x.enabled ? T('Désactiver') : T('Activer')) + '</button>'
+        + '<button class="web-mini" style="color:var(--danger);" onclick="dkNpmAct(\'delete\',' + x.id + ',' + wmQ(d) + ')">' + T('Retirer') + '</button>'
+        + '</span></div>';
+    });
+    h += '</div>';
+  }
+  body.innerHTML = h;
+}
+async function dkNpmAct(act, id, dom) {
+  dom = decodeURIComponent(dom);
+  try {
+    if (act === 'delete') {
+      if (!(await showConfirm(Tf('Retirer {0} ?', webEsc(dom)) + '<br><span style="font-size:12px;">' + T('Le domaine ne répondra plus. Le site lui-même n’est pas touché.') + '</span>', { danger: true, ok: T('Retirer') }))) return;
+      await fileops('POST', 'store/npm/host/delete', { id: id });
+      toast(Tf('{0} est retiré.', dom));
+    } else if (act === 'enable' || act === 'disable') {
+      await fileops('POST', 'store/npm/host/toggle', { id: id, enabled: act === 'enable' });
+    } else if (act === 'renew') {
+      toast(Tf('Renouvellement du certificat de {0}…', dom));
+      await fileops('POST', 'store/npm/cert/renew', { id: id });
+      toast(Tf('Certificat de {0} renouvelé.', dom));
+    }
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkNpmLoad(true);
+}
+function dkNpmRenderAdd(body, st) {
+  dkNpmLoadSites();
+  var pf = _dkNpm.prefill || {}, p = dkNpmPortsOf(), sites = _dkNpm.sites || [];
+  wmHead('dknpm', T('Publier un domaine'), { back: [T('Domaines publiés'), 'dkNpmGo(\'list\')'], sub: T('Un nom de domaine, vers un site ou une app de ce NAS') });
+  if (st.job && st.job.state === 'running') { body.innerHTML = dkNpmJobHtml(st) + '<p class="dks-tag">' + T('Let’s Encrypt vérifie votre domaine : cela prend en général moins d’une minute.') + '</p>'; return; }
+  var keep = document.getElementById('dknpm-dom'), keepDom = keep ? keep.value : null;
+  var opts = '';
+  sites.forEach(function(s) {
+    opts += '<option value="site:' + webEsc(s.port) + '"' + (pf.site && String(pf.site.id) === String(s.id) ? ' selected' : '') + '>' + webEsc(Tf('Site « {0} » (port {1})', s.name || s.id, s.port)) + '</option>';
+  });
+  opts += '<option value="desktroo">' + webEsc(T('Desktroo (ce bureau)')) + '</option><option value="custom">' + T('Autre adresse…') + '</option>';
+  var dom = keepDom != null ? keepDom : (pf.site && pf.site.server_name ? pf.site.server_name : '');
+  body.innerHTML = dkNpmJobHtml(st)
+    + '<div style="display:flex;flex-direction:column;gap:14px;max-width:560px;">'
+    + formRow(T('Nom de domaine'), '<input id="dknpm-dom" style="' + iStyle() + '" placeholder="www.exemple.fr" value="' + webEsc(dom) + '" autocomplete="off" spellcheck="false">')
+    + '<div class="dks-tag" style="margin-top:-8px;">' + T('Plusieurs noms : séparez-les par une virgule (exemple.fr, www.exemple.fr).') + '</div>'
+    + formRow(T('Vers'), '<select id="dknpm-to" style="' + iStyle() + '" onchange="document.getElementById(\'dknpm-custom\').style.display=this.value===\'custom\'?\'flex\':\'none\'">' + opts + '</select>')
+    + '<div id="dknpm-custom" style="display:none;gap:10px;">'
+    + '<div style="flex:1;">' + formRow(T('Adresse'), '<input id="dknpm-host" style="' + iStyle() + '" placeholder="192.168.1.20">') + '</div>'
+    + '<div style="width:120px;">' + formRow(T('Port'), '<input id="dknpm-port" type="number" min="1" max="65535" style="' + iStyle() + '" placeholder="8080">') + '</div></div>'
+    + '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;"><input type="checkbox" id="dknpm-https" checked style="margin-top:3px;"><span>' + T('Certificat https (Let’s Encrypt), renouvelé automatiquement') + '</span></label>'
+    + '<div class="dks-tag" style="max-width:560px;">' + Tf('Avant de publier : le domaine doit pointer vers l’adresse publique de votre box, et la box rediriger le port 80 vers {0} et le port 443 vers {1} de ce NAS.', p.http, p.https) + '</div>'
+    + '<div class="dks-acts" style="margin-top:0;"><button class="web-open" onclick="dkNpmSubmit()">' + T('Publier') + '</button></div></div>';
+}
+async function dkNpmSubmit() {
+  var doms = (document.getElementById('dknpm-dom').value || '').split(/[\s,;]+/).filter(Boolean);
+  if (!doms.length) { toast(T('Indiquez un nom de domaine.')); return; }
+  var to = document.getElementById('dknpm-to').value, b = { domains: doms, https: document.getElementById('dknpm-https').checked, host: '127.0.0.1' };
+  if (to.indexOf('site:') === 0) b.port = parseInt(to.slice(5), 10);
+  else if (to === 'desktroo') b.port = parseInt(location.port || (location.protocol === 'https:' ? 443 : 80), 10);
+  else { b.host = (document.getElementById('dknpm-host').value || '').trim(); b.port = parseInt(document.getElementById('dknpm-port').value, 10); if (!b.host || !b.port) { toast(T('Indiquez l’adresse et le port.')); return; } }
+  try { await fileops('POST', 'store/npm/host', b); _dkNpm.prefill = null; _dkNpm.nav = 'list'; }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); return; }
+  dkNpmLoad(true);
+}
+function dkNpmRenderLogin(body, st) {
+  wmHead('dknpm', T('Relier NPMplus à Desktroo'), { sub: T('Une seule fois, pour que Desktroo puisse gérer vos domaines') });
+  body.innerHTML = '<div style="display:flex;flex-direction:column;gap:14px;max-width:440px;">'
+    + '<div class="dks-tag">' + T('Saisissez l’adresse e-mail et le mot de passe d’un administrateur NPMplus. Desktroo les garde sur le NAS pour gérer vos domaines ; vous n’aurez plus à les saisir.') + '</div>'
+    + (st.error ? '<div class="dks-err" style="margin:0;">' + webEsc(st.error) + '</div>' : '')
+    + formRow(T('E-mail'), '<input id="dknpm-em" style="' + iStyle() + '" autocomplete="off" value="' + webEsc(st.account || '') + '">')
+    + formRow(T('Mot de passe'), '<input id="dknpm-pw" type="password" style="' + iStyle() + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')dkNpmLogin()">')
+    + '<div class="dks-acts" style="margin-top:0;"><button class="web-open" onclick="dkNpmLogin()">' + T('Relier') + '</button>'
+    + '<button class="fs-btn" onclick="dkNpmAdvanced()">' + T('Ouvrir NPMplus') + '</button></div></div>';
+}
+async function dkNpmLogin() {
+  try {
+    await fileops('POST', 'store/npm/credentials', { email: document.getElementById('dknpm-em').value, password: document.getElementById('dknpm-pw').value });
+    toast(T('NPMplus est relié à Desktroo.'));
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); return; }
+  dkNpmLoad();
+}
+function dkNpmRenderSettings(body, st) {
+  var p = dkNpmPortsOf();
+  wmHead('dknpm', T('Réglages'), { sub: 'NPMplus' });
+  body.innerHTML = '<div class="web-group-title">' + T('Ports') + '</div><dl class="web-facts">'
+    + '<dt>HTTP</dt><dd>' + p.http + ' — ' + T('la box redirige le port 80 ici') + '</dd>'
+    + '<dt>HTTPS</dt><dd>' + p.https + ' — ' + T('la box redirige le port 443 ici') + '</dd>'
+    + '<dt>' + T('Administration') + '</dt><dd class="mono">https://' + webEsc(location.hostname) + ':' + p.admin + '/</dd></dl>'
+    + '<div class="web-group-title">' + T('Réglages avancés') + '</div>'
+    + '<div class="dks-tag" style="max-width:600px;margin-bottom:10px;">' + T('En-têtes personnalisés, listes d’accès, redirections, flux TCP… se règlent dans l’interface de NPMplus, dans un onglet.') + '</div>'
+    + '<dl class="web-facts"><dt>' + T('Compte') + '</dt><dd class="mono">' + webEsc(st.account || '?') + '</dd>'
+    + '<dt>' + T('Mot de passe') + '</dt><dd><span id="dknpm-secret" class="mono">••••••••</span> <button class="web-mini" onclick="dkNpmShowSecret()">' + T('Afficher') + '</button></dd></dl>'
+    + '<div class="dks-acts"><button class="web-open" onclick="dkNpmAdvanced()">' + T('Ouvrir NPMplus') + '</button>'
+    + '<button class="fs-btn" onclick="webNpmStore()">' + T('Voir dans Desktroo Apps') + '</button></div>';
+}
+async function dkNpmShowSecret() {
+  try {
+    var r = await fileops('POST', 'store/npm/secret', {});
+    var el = document.getElementById('dknpm-secret');
+    if (el) el.innerHTML = webEsc(r.password || '?') + ' <button class="web-mini" onclick="shareCopy(\'' + encodeURIComponent(r.password || '') + '\')">' + T('Copier') + '</button>';
+  } catch (e) { toast('⚠️ ' + (e.message || e)); }
+}
+// Icônes du bureau et du menu : une par app installée, plus le Magasin.
+function dkStoreRegisterApps(list) {
+  if (typeof ALL_APPS === 'undefined') return;
+  var want = {};
+  dkStoreWebToggle((list || []).some(function(a) { return a.id === 'webserver'; }));
+  (list || []).forEach(function(a) {
+    var npm = a.id === 'npmplus';   // NPMplus : son administration s'ouvre dans un onglet
+    if (!npm && (a.kind === 'module' || (a.installed && a.installed.kind === 'module'))) return;   // autre module : pas d'icône d'app
+    var id = a.id, key = 'dkapp-' + id, w = (a.installed && a.installed.window) || a.window || {};
+    want[key] = true;
+    if (npm && a.installed && a.installed.ports) _dkStore.npmPorts = a.installed.ports;
+    if (npm) try {   // une fois : l'icône va sur le bureau, même si NPMplus a été installé ou repris ailleurs
+      if (!localStorage.getItem('dk_npm_pin_v1')) { var sc = getShortcuts(); if (sc.indexOf(key) < 0) { sc.push(key); saveShortcuts(sc); } localStorage.setItem('dk_npm_pin_v1', '1'); }
+    } catch (_) {}
+    var label = npm ? T('Domaines') : (dkStoreName(a.name || (a.installed && a.installed.name)) || id);
+    var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
+    if (entry) { entry.label = label; return; }
+    ALL_APPS.push({ id: key, label: label, store: true,
+      action: npm ? function() { dkNpmOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      imgStyle: 'background:transparent;box-shadow:none;padding:0;overflow:hidden;',
+      svg: dkStoreIcon(id, 56) });
+  });
+  for (var i = ALL_APPS.length - 1; i >= 0; i--) if (ALL_APPS[i].store && !want[ALL_APPS[i].id]) ALL_APPS.splice(i, 1);
+  if (typeof renderDesktopIcons === 'function') renderDesktopIcons();
+}
+// La fenêtre « Sites Web » n'existe que si le module « Serveur web » est installé (ou encore intégré à Desktroo).
+function dkStoreWebToggle(on) {
+  if (typeof ALL_APPS === 'undefined') return;
+  var i = ALL_APPS.findIndex(function(a) { return a.id === 'websites'; });
+  if (i >= 0 && !_dkStore.webEntry) _dkStore.webEntry = ALL_APPS[i];
+  if (!on && i >= 0) ALL_APPS.splice(i, 1);
+  if (on && i < 0 && _dkStore.webEntry) ALL_APPS.push(_dkStore.webEntry);
+  _dkStore.webOn = !!on;
+}
+async function dkStoreBoot() {
+  if (_dkStore.booted || typeof ALL_APPS === 'undefined') return;
+  _dkStore.booted = true;
+  if (!ALL_APPS.some(function(a) { return a.id === 'store'; })) {
+    ALL_APPS.push({ id: 'store', label: T('Desktroo Apps'), action: dkStoreOpen,
+      imgStyle: 'background:linear-gradient(135deg,#0a8451,#3ecf8e);', svg: DK_STORE_SVG });
+  }
+  try {
+    if (!localStorage.getItem('dk_store_pin_v1')) {
+      var s = getShortcuts(); if (s.indexOf('store') < 0) s.push('store'); saveShortcuts(s);
+      localStorage.setItem('dk_store_pin_v1', '1');
+    }
+  } catch (_) {}
+  try {
+    var r = await fileops('GET', 'store/installed');
+    dkStoreRegisterApps((r.apps || []).map(function(x) { return { id: x.id, name: x.name, kind: x.kind, installed: x }; }));
+  } catch (_) { if (typeof renderDesktopIcons === 'function') renderDesktopIcons(); }
 }
 
 // ── MDM-LICENSE-V1 : essai + abonnement (front) ──────────────────────────────
@@ -13968,8 +14869,10 @@ async function webAppInstall() {
   }
   if (!payload.root) { toast(T('Dossier requis')); return; }
   const btn = document.getElementById('app-install-btn'); btn.disabled = true; btn.textContent = T('⏳ Installation… (1-2 min)');
+  let done = false;
   try {
     const r = await fileops('POST', 'apps/install', payload);
+    done = true;
     const url = webUrl(r.site);
     let h = '<div style="margin-top:6px;padding:12px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);">'
       + '<div style="font-size:13px;color:var(--success);margin-bottom:8px;">✅ ' + (r.app||'') + T(' installé</div>');
@@ -13997,8 +14900,12 @@ async function webAppInstall() {
     toast(T('✅ Application installée'));
     if (r.site && r.site.id) _webSel = r.site.id;
     webLoad().catch(function(){});
+    // Le site existe : un second clic en créerait un double. Le bouton mène désormais à sa page.
+    const sid = r.site && r.site.id;
+    btn.disabled = false; btn.textContent = T('Voir le site');
+    btn.onclick = function() { webSiteView(sid); };
   } catch(e) { toast('❌ ' + e.message); }
-  finally { btn.disabled = false; btn.textContent = T('⬇ Installer'); }
+  finally { if (!done) { btn.disabled = false; btn.textContent = T('⬇ Installer'); } }
 }
 let _dbCreds = {};
 async function webDbView() {
@@ -14176,25 +15083,31 @@ async function webNpmPanel() {
   try { st = await fileops('GET', 'proxy/npm/status'); } catch(e) { st = { running:false, error:e.message }; }
   const ip = st.nas_ip || webSiteHost();
   let h = '<div style="display:flex;flex-direction:column;gap:12px;">';
-  if (st.running) {
+  const adm = st.admin_port || (st.module ? 8181 : 81);
+  if (st.running && st.module) {
+    h += T('<div style="padding:10px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);font-size:13px;color:var(--success);">✅ NPMplus est géré par Desktroo.</div>')
+      + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Publiez vos sites sous vos domaines, avec un certificat https, depuis la fenêtre Domaines.</div>')
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="web-open" onclick="dkNpmOpen()">' + T('Gérer les domaines') + '</button>'
+      + '<button class="fs-btn" onclick="webNpmStore()">' + T('Voir dans Desktroo Apps') + '</button></div>';
+  } else if (st.running) {
     h += T('<div style="padding:10px;border:1px solid rgba(var(--success-rgb),.35);border-radius:10px;background:rgba(var(--success-rgb),.08);font-size:13px;color:var(--success);">✅ Reverse-proxy détecté : ') + (st.containers||[]).join(', ') + '</div>'
-      + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Ouvre l\'admin NPMplus (souvent <b>https://') + ip + T(':81</b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont sur la page de chaque site, sous « Fiche proxy ».</div>');
+      + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Ouvre l\'admin NPMplus (souvent <b>https://') + ip + T(':81</b>) et ajoute un « Proxy Host » par site avec domaine. Les valeurs exactes sont sur la page de chaque site, sous « Fiche proxy ».</div>')
+      + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Il a été installé hors de Desktroo Apps : vous pouvez l\'y reprendre, avec ses domaines et ses certificats.</div>')
+      + '<button class="fs-btn" onclick="webNpmStore()">' + T('Reprendre dans Desktroo Apps') + '</button>';
   } else {
-    const cmds = T('mkdir -p /mnt/<pool>/apps/npmplus && cd /mnt/<pool>/apps/npmplus   # remplace <pool> par ton pool\n')
-      + 'curl -fsSL https://raw.githubusercontent.com/ZoeyVid/NPMplus/develop/compose.yaml -o compose.yaml\n'
-      + T('# Éditez TZ, ACME_EMAIL et — pour éviter le conflit 80/443 de TrueNAS —\n')
-      + '# HTTP_PORT=8090  HTTPS_PORT=8453  NPM_PORT=8181\n'
-      + 'docker compose up -d';
     h += T('<div style="padding:10px;border:1px solid var(--glass-border);border-radius:10px;font-size:13px;">ℹ️ Aucun NPMplus détecté sur ce NAS.</div>')
-      + T('<div style="font-size:12px;color:var(--text-dim);">Installation guidée — en SSH root sur le NAS :</div>')
-      + '<textarea readonly rows="5" style="' + iStyle() + ';font-family:var(--font-mono);font-size:11px;white-space:pre;" onclick="this.select()">' + cmds.replace(/</g,'&lt;') + '</textarea>'
-      + '<button class="fs-btn" onclick="shareCopy(\'' + encodeURIComponent(cmds) + T('\')">📋 Copier les commandes</button>')
-      + T('<div style="font-size:11px;color:var(--text-dim);line-height:1.7;">Sur TrueNAS les ports 80/443 sont souvent occupés : remappe-les (8090/8453/8181) puis redirige au niveau de ta box <b>80→8090</b> et <b>443→8453</b>. Admin ensuite sur <b>https://') + ip + ':8181</b>.</div>'
+      + T('<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">Installez-le en un clic depuis Desktroo Apps. Il écoute sur 8090 (http) et 8453 (https) : sur votre box, redirigez <b>80→8090</b> et <b>443→8453</b>.</div>')
+      + '<button class="fs-btn" onclick="webNpmStore()">' + T('Installer depuis Desktroo Apps') + '</button>'
       + T('<a href="https://github.com/ZoeyVid/NPMplus" target="_blank" rel="noopener" style="color:var(--accent2);font-size:12px;">Documentation officielle NPMplus ↗</a>');
   }
   h += T('<div style="font-size:11px;color:var(--text-dim);line-height:1.7;border-top:1px solid var(--glass-border);padding-top:8px;">Rappel : un reverse-proxy externe (NPMplus) sert à donner des URL propres en <b>https://mondomaine</b> et à gérer les certificats. Nos sites restent servis sur leur port ; le proxy route le domaine vers <b>') + ip + ':&lt;port&gt;</b>.</div>';
   h += '</div>';
   box.innerHTML = h;
+}
+function webNpmStore() {
+  dkStoreOpen();
+  _dkStore.sel = 'npmplus';
+  if (_dkStore.view) dkStoreRender();
 }
 function webProxyCheat(id) {
   const s = (_webSites || []).find(function(x){ return x.id === id; });
@@ -14211,6 +15124,8 @@ function webProxyCheat(id) {
     + T('Forward Port&nbsp;: <b>') + s.port + '</b><br>'
     + T('Block Common Exploits&nbsp;: ✔ &nbsp;·&nbsp; Websockets&nbsp;: ✔</div>');
   h += T('<div style="font-size:11px;color:var(--text-dim);line-height:1.6;">Onglet <b>SSL</b> : « Request a new SSL Certificate » (Let\'s Encrypt) pour ') + dom + T(', puis coche « Force SSL » et « HTTP/2 ».</div>');
+  if (typeof ALL_APPS !== 'undefined' && ALL_APPS.some(function(x) { return x.id === 'dkapp-npmplus'; }))
+    h += '<button class="web-open" onclick="dkNpmOpen({site:_webSites.filter(function(x){return String(x.id)===' + webEsc(JSON.stringify(String(s.id))) + ';})[0]})">' + T('Publier ce site avec NPMplus') + '</button>';
   h += '<button class="fs-btn" onclick="shareCopy(\'' + encodeURIComponent('Domain: ' + dom + '\nScheme: http\nForward IP: ' + ip + '\nForward Port: ' + s.port) + T('\')">📋 Copier</button>');
   h += '</div>';
   webBody().innerHTML = h;
@@ -15538,7 +16453,8 @@ function appsAllView(soft) {
   var h = '<div class="web-table apps-list"><div class="web-tr head"><span>Application</span><span>Version</span><span>' + T('État') + '</span><span>' + T('Adresse') + '</span></div>';
   _apps.forEach(function(a, i) {
     var st = appStateInfo(a), v = appVersions(a), portal = appPortals(a)[0], ok = appAllowed(appKey(a));
-    var origin = a.custom_app ? (appAlias(appKey(a)) ? Tf('Application personnalisée, {0}', appKey(a)) : T('Application personnalisée')) : appKey(a);
+    var origin = (a.custom_app && /^dt-/.test(appKey(a))) ? T('App Desktroo, gérée par Desktroo Apps')   // MDM-STORE-V1
+      : a.custom_app ? (appAlias(appKey(a)) ? Tf('Application personnalisée, {0}', appKey(a)) : T('Application personnalisée')) : appKey(a);
     h += '<div class="web-tr click" role="button" tabindex="0" data-app="' + i + '">'
       + '<span class="apps-name">' + appIconOf(a) + '<span class="cron-two"><strong>' + webEsc(appTitle(a)) + '</strong><span class="dim">' + webEsc(origin) + '</span></span></span>'
       + '<span class="cron-two"><span>' + webEsc(v.app || '—') + '</span>' + (a.upgrade_available ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
@@ -17259,6 +18175,7 @@ function uninRender() {
   var imgs = p.images || [], shared = imgs.filter(function(i) { return i.shared; }).length;
   var always = (p.mode === 'app' ? row(T('Application TrueNAS'), webEsc(p.app || '')) : '')
     + ((p.containers || []).length ? row(T('Services de Desktroo'), Tf('{0} conteneurs', p.containers.length)) : '')
+    + ((p.store_apps || []).length ? row(T('Apps de Desktroo Apps'), webEsc(p.store_apps.map(function(a) { return a.replace(/^dt-/, ''); }).join(', ')) + ' — ' + T('leurs données restent')) : '')
     + (imgs.length ? row(T('Images Docker'), mntFmtSize(p.images_bytes)) : '')
     + (p.autostart ? row(T('Démarrage automatique'), T('1 tâche')) : '')
     + (p.dir_ok ? row(T('Fichiers de l\'application'), mntFmtSize(p.appfiles_bytes)) : '');
@@ -17464,7 +18381,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.45.1';
+var DK_PAGE_VERSION = '2.46.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -19547,6 +20464,8 @@ document.addEventListener('DOMContentLoaded', function () {
 // LOGOUT
 // ===========================
 function logout() {
+  try { fetch('/fileops/store/logout', { cache: 'no-store' }).catch(function() {}); } catch (_) {}   // MDM-STORE-V1 : fin de la session des apps
+  try { Object.keys(_dkStoreWins).forEach(dkStoreCloseApp); } catch (_) {}
   try { if (_wsOtpUsed && _wsAuthed) rpcRawCall('auth.logout', [], 3000).catch(function() {}); } catch (_) {}   // les jetons de la session meurent avec elle
   wsDisconnect();
   apiKey = null; basicAuth = null; authToken = null;
@@ -20724,7 +21643,7 @@ function cfFieldHtml(c, f) {
     + (f.ph ? ' placeholder="' + webEsc(f.ph) + '"' : '') + '>' + webEsc(v) + '</textarea>', f.h);
   if (f.t === 'secret') return wmField(webEsc(f.l), '<input class="wm-input" type="password" id="' + id + '" value="' + webEsc(v) + '" autocomplete="new-password" spellcheck="false" placeholder="'
     + webEsc(f.ph || (c.cfg[f.k] ? T('Inchangé') : T('Aucun'))) + '">', f.h);
-  if (f.t === 'num') return wmField(webEsc(f.l), wmInput(id, v == null ? '' : v, 'inputmode="numeric" style="max-width:160px;font-family:var(--font-mono);"' + (f.ph ? ' placeholder="' + webEsc(f.ph) + '"' : '')), f.h);
+  if (f.t === 'num') return wmField(webEsc(f.l), wmInput(id, v == null ? '' : v, 'inputmode="numeric" style="max-width:160px;font-family:var(--font-mono);"' + (f.ph ? ' placeholder="' + webEsc(f.ph) + '"' : '') + live), f.h);
   var dl = '';
   if (f.dl) { var sug = cfChoices(c, { from: f.dl, pick: f.dlPick }); dl = '<datalist id="' + id + '-dl">' + sug.slice(0, 4000).map(function(o) { return '<option value="' + webEsc(o[0]) + '">' + (o[1] !== o[0] ? webEsc(o[1]) : '') + '</option>'; }).join('') + '</datalist>'; }
   return wmField(webEsc(f.l), wmInput(id, f.t === 'list' ? v.join(', ') : v, (mono || f.t === 'list' ? 'style="font-family:var(--font-mono);"' : '') + (f.ph ? ' placeholder="' + webEsc(f.ph) + '"' : '') + (f.dl ? ' list="' + id + '-dl"' : '') + live) + dl, f.h);
@@ -20752,6 +21671,9 @@ function cfRender(win, keep) {
   });
   if (!any && !hidden) h += '<p class="web-note">' + T('Cette version de TrueNAS n\'a aucun réglage ici.') + '</p>';
   if (hidden) h += '<div class="web-group">' + wmRow('cfAdv(' + q + ')', T('Réglages avancés'), Tf('{0} réglages de plus, à ne changer qu\'en connaissance de cause', hidden)) + '</div>';
+  // Un avertissement n'empêche pas d'enregistrer : il signale une combinaison qui a toutes les chances d'échouer.
+  var warn = spec.warn ? spec.warn(c.v, c.cfg) : '';
+  if (warn) h += '<p class="web-note cf-warn" role="status">⚠ ' + webEsc(warn) + '</p>';
   if (spec.note) h += '<p class="web-note">' + spec.note + '</p>';
   h += '<div class="web-foot">' + (o.extra ? '<span style="margin-right:auto;display:flex;gap:8px;">' + o.extra + '</span>' : '') + (o.back ? '<button class="fs-btn" onclick="' + o.back[1] + '">' + T('Annuler') + '</button>' : '')
     + '<button class="fs-btn web-primary" id="cf-save-' + win + '" onclick="cfSave(' + q + ')"' + (c.busy ? ' disabled' : '') + '>' + (spec.saveLabel || T('Enregistrer')) + '</button></div></div>';
@@ -20770,7 +21692,14 @@ function cfPull(c) {
     else c.v[f.k] = String(el.value || '').trim();
   });
 }
-function cfLive(win) { var c = _cfs[win]; if (!c || !c.v) return; cfPull(c); cfRender(win, true); }
+function cfLive(win) {
+  var c = _cfs[win];
+  if (!c || !c.v) return;
+  var prev = JSON.parse(JSON.stringify(c.v));
+  cfPull(c);
+  if (c.spec.live) { try { c.spec.live(c.v, prev, c.cfg); } catch (_) {} }   // une page peut ajuster un champ selon un autre
+  cfRender(win, true);
+}
 function cfAdv(win) { var c = _cfs[win]; if (!c || !c.v) return; cfPull(c); c.adv = true; cfRender(win, true); }
 async function cfSave(win) {
   var c = _cfs[win];
@@ -26695,14 +27624,20 @@ function scSpec(k) {
       { k: 'fromemail', l: T('Adresse d\'expédition'), t: 'text', mono: 1, req: 1, ph: 'nas@exemple.fr', ok: function(v) { return /^[^@\s]+@[^@\s]+$/.test(v) ? '' : T('adresse e-mail invalide.'); } },
       { k: 'fromname', l: T('Nom affiché'), t: 'text', ph: 'NAS' },
       { k: 'outgoingserver', l: T('Serveur d\'envoi (SMTP)'), t: 'text', mono: 1, ph: 'smtp.exemple.fr' },
-      { k: 'port', l: T('Port'), t: 'num', min: 1, max: 65535 },
-      { k: 'security', l: T('Chiffrement'), t: 'sel', opts: [['TLS', T('STARTTLS (port 587 en général)')], ['SSL', T('SSL/TLS direct (port 465 en général)')], ['PLAIN', T('Aucun (port 25)')]] },
+      { k: 'port', l: T('Port'), t: 'num', min: 1, max: 65535, live: 1 },
+      { k: 'security', l: T('Chiffrement'), t: 'sel', live: 1, opts: [['TLS', T('STARTTLS (port 587 en général)')], ['SSL', T('SSL/TLS direct (port 465 en général)')], ['PLAIN', T('Aucun (port 25)')]] },
       { k: 'smtp', l: T('Le serveur demande un compte'), t: 'bool', live: 1 },
       { k: 'user', l: T('Nom d\'utilisateur'), t: 'text', mono: 1, nullable: 1, when: auth },
       { k: 'pass', l: T('Mot de passe'), t: 'secret', when: auth, h: T('Chez Gmail, Outlook et beaucoup d\'autres : un mot de passe d\'application, pas celui du compte.') } ] } ],
     sub: function(c) { return c.oauth && c.oauth.provider ? webEsc(Tf('Ce NAS envoie aujourd\'hui par un compte {0} autorisé dans TrueNAS.', c.oauth.provider)) : ''; },
     check: function(v, b) { return v.smtp && !v.user ? T('Indiquez le nom d\'utilisateur du serveur d\'envoi.') : ''; },
-    note: T('Enregistrez, puis envoyez un message d\'essai : il arrive à l\'adresse des comptes administrateurs.') }; }
+    // Changer de chiffrement propose le port qui va avec, sauf si le port en place est un port personnalisé.
+    live: function(v, prev) {
+      var std = { TLS: 587, SSL: 465, PLAIN: 25 };
+      if (v.security !== prev.security && std[v.security] && [25, 465, 587].indexOf(Number(v.port)) >= 0) v.port = std[v.security];
+    },
+    warn: function(v) { return scMailPortWarn(v.security, v.port); },
+    note: T('Enregistrez, puis envoyez un message d\'essai : vous choisissez l\'adresse qui le reçoit.') }; }
 
   if (k === 'adv') {
     var serial = function(v) { return !!v.serialconsole; };
@@ -26806,16 +27741,55 @@ function scExtra(soft) {
   if (k === 'dbg') { scDebugView(soft); return true; }
   return false;
 }
+// Port et chiffrement qui ne vont pas ensemble : la connexion échouera presque à coup sûr.
+function scMailPortWarn(sec, port) {
+  port = Number(port);
+  if (!port) return '';
+  if (sec === 'SSL' && (port === 25 || port === 587)) return Tf('Le chiffrement SSL/TLS direct se fait en général sur le port 465 : avec le port {0}, l\'envoi échouera sans doute.', port);
+  if (sec === 'TLS' && port === 465) return T('Le port 465 attend un chiffrement SSL/TLS direct, pas STARTTLS : choisissez SSL/TLS direct, ou le port 587.');
+  if (sec === 'PLAIN' && port === 465) return T('Le port 465 attend un chiffrement SSL/TLS direct : sans chiffrement, l\'envoi échouera.');
+  return '';
+}
+// Adresses e-mail des administrateurs complets : c'est là que TrueNAS envoie ses alertes.
+async function scMailAdmins() {
+  var l = ensureArray(await wsCall('user.query', [[['locked', '=', false]], {}], 60000).catch(function() { return []; }));
+  return l.filter(function(u) { return u && u.email && ensureArray(u.roles).indexOf('FULL_ADMIN') >= 0; }).map(function(u) { return String(u.email); });
+}
+function scMailErr(e) {
+  var m = wmErr(e);
+  if (/administrators has an e-?mail/i.test(m)) return T('Aucun compte administrateur n\'a d\'adresse e-mail : indiquez une adresse pour l\'essai, et ajoutez-en une à votre compte dans Utilisateurs.');
+  if (/authentication|535|534|530/i.test(m)) return T('Le serveur d\'envoi refuse le nom d\'utilisateur ou le mot de passe.');
+  if (/wrong version number|ssl|tls|handshake/i.test(m)) return T('La connexion chiffrée a échoué : vérifiez que le port et le chiffrement vont ensemble (465 avec SSL/TLS direct, 587 avec STARTTLS).');
+  if (/timed? ?out|refused|unreachable|name or service|getaddrinfo|no route/i.test(m)) return T('Le serveur d\'envoi ne répond pas : vérifiez son adresse et le port.');
+  return m;
+}
 async function scMailTest() {
   if (_sc.mailBusy) return;
+  var c = _cfs.sc;
+  // L'essai part avec les réglages ENREGISTRÉS : un brouillon non enregistré ne serait pas testé.
+  if (c && c.v && c.spec && c.spec.key === 'mail') {
+    cfPull(c);
+    var dirty = cfShown(c).some(function(f) { return f.t === 'secret' ? !!c.v[f.k] : !cfSame(f, c.v[f.k], cfNorm(f, c.cfg[f.k])); });
+    if (dirty) { toast(T('Enregistrez d\'abord vos changements : l\'essai utilise les réglages enregistrés.'), 8000); return; }
+  }
   _sc.mailBusy = true;
-  toast(T('Envoi du message d\'essai...'));
   try {
-    var j = await wsCall('mail.send', [{ subject: T('Desktroo : message d\'essai'), text: T('Ce message confirme que le NAS sait envoyer des e-mails.') }], 120000);
+    var admins = await scMailAdmins();
+    var to = await showPrompt('<strong>' + T('Envoyer le message d\'essai à :') + '</strong>'
+      + (admins.length ? '' : '<br><span style="font-size:12px;color:var(--text-dim);">' + T('Aucun compte administrateur n\'a d\'adresse e-mail : les alertes de TrueNAS ne partiront nulle part tant que vous n\'en ajoutez pas une dans Utilisateurs.') + '</span>'),
+      admins[0] || '');
+    if (!to) return;
+    to = String(to).trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { toast('❌ ' + T('Adresse e-mail invalide.'), 7000); return; }
+    toast(T('Envoi du message d\'essai...'));
+    var j = await wsCall('mail.send', [{ subject: T('Desktroo : message d\'essai'), text: T('Ce message confirme que le NAS sait envoyer des e-mails.'), to: [to] }], 120000);
     if (typeof j === 'number') await waitJob(j, 180000);
-    toast('✅ ' + T('Message d\'essai envoyé aux comptes administrateurs'), 8000);
-  } catch (e) { wmToastErr(e); }
-  _sc.mailBusy = false;
+    toast('✅ ' + Tf('Message d\'essai envoyé à {0}', to) + (admins.length ? '' : ' — ' + T('pensez à ajouter une adresse à votre compte administrateur pour recevoir les alertes.')), 10000);
+  } catch (e) {
+    if (!(e && e.message === 'LICENSE_READONLY')) toast('❌ ' + scMailErr(e), 12000);
+  } finally {
+    _sc.mailBusy = false;
+  }
 }
 // Envoi d'un fichier à TrueNAS, relayé par le service de Desktroo. Rend le numéro de la tâche ouverte par TrueNAS.
 async function tnUpload(method, params, file) {

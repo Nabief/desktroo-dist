@@ -34,15 +34,59 @@ TOKEN      = os.environ.get('FILEOPS_TOKEN',    'changeme-secret-token')
 PORT       = int(os.environ.get('FILEOPS_PORT',    '8765'))
 WS_PORT    = int(os.environ.get('FILEOPS_WS_PORT', '8766'))
 
-SSH_HOST   = os.environ.get('TRUENAS_SSH_HOST', '192.168.1.10')
+SSH_HOST_CONF = (os.environ.get('TRUENAS_SSH_HOST', '192.168.1.10') or '').strip()
 SSH_USER   = os.environ.get('TRUENAS_SSH_USER', 'truenas_admin')
 SSH_PASS   = os.environ.get('TRUENAS_SSH_PASS', '')
 SSH_PORT_N = int(os.environ.get('TRUENAS_SSH_PORT', '22'))
+
+
+# ── MDM-NAS-GATEWAY-V1 : joindre le NAS même quand son adresse sur le réseau local change ──
+# Le sidecar tourne SUR le NAS : la passerelle de son réseau Docker, c'est le NAS lui-même. Si l'adresse
+# saisie à l'installation ne répond plus (NAS en DHCP, VM qui change d'IP), on passe par cette passerelle.
+# TRUENAS_SSH_HOST: "auto" force ce mode dès le départ.
+def _container_gateway():
+    """Passerelle par défaut du conteneur (lue dans /proc/net/route), ou ''."""
+    import socket as _so
+    try:
+        with open('/proc/net/route') as fh:
+            for line in fh.read().splitlines()[1:]:
+                f = line.split()
+                if len(f) > 3 and f[1] == '00000000' and int(f[3], 16) & 2:
+                    return _so.inet_ntoa(struct.pack('<L', int(f[2], 16)))
+    except Exception:
+        pass
+    return ''
+
+
+def _tcp_ok(host, port, timeout=3):
+    import socket as _so
+    if not host:
+        return False
+    try:
+        _so.create_connection((host, int(port)), timeout=timeout).close()
+        return True
+    except Exception:
+        return False
+
+
+def _resolve_ssh_host():
+    conf = SSH_HOST_CONF
+    if conf and conf.lower() != 'auto' and _tcp_ok(conf, SSH_PORT_N):
+        return conf, False
+    gw = _container_gateway()
+    if gw and _tcp_ok(gw, SSH_PORT_N):
+        if conf and conf.lower() != 'auto':
+            log.warning('NAS injoignable à %s : passage par la passerelle Docker %s (le NAS lui-même)', conf, gw)
+        return gw, True
+    return (conf if conf.lower() != 'auto' else (gw or conf)), False
+
+
+SSH_HOST, SSH_VIA_GATEWAY = _resolve_ssh_host()
 VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.45.1'
+APP_VERSION = '2.46.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -358,7 +402,7 @@ def auth_login(body):
         log.warning('Connexion refusée : compte sans les pleins droits (%s)',
                     (me or {}).get('pw_name') or username or 'clé API')
         return 403, {'error': "Ce compte TrueNAS n'a pas les pleins droits d'administration."}
-    return 200, {'ok': True, 'token': TOKEN}
+    return 200, {'ok': True, 'token': TOKEN, 'user': str((me or {}).get('pw_name') or username or '')[:64]}
 # ── MDM-SERVER-LOGIN-V1 (fin) ────────────────────────────────────────────────
 
 
@@ -557,6 +601,56 @@ def _fetch_text(url, timeout=15):
         return r.read().decode('utf-8', 'replace').strip()
 
 
+# MDM-NAS-GATEWAY-V1 : IP du NAS sur le réseau local, demandée au NAS lui-même (mise en cache 5 min).
+_NAS_LAN = {'ip': '', 't': 0.0}
+
+
+def _nas_lan_ip():
+    import time as _t
+    now = _t.time()
+    if _NAS_LAN['ip'] and now - _NAS_LAN['t'] < 300:
+        return _NAS_LAN['ip']
+    try:
+        out, _err, _code = ssh_exec("ip -4 route get 1.1.1.1 2>/dev/null || ip -4 route get 192.168.0.1 2>/dev/null", timeout=8)
+        m = re.search(r'\bsrc\s+(\d{1,3}(?:\.\d{1,3}){3})', out or '')
+        if m:
+            _NAS_LAN['ip'], _NAS_LAN['t'] = m.group(1), now
+    except Exception:
+        pass
+    return _NAS_LAN['ip']
+
+
+def _heal_nginx_conf():
+    """Si nginx.conf vise une IP du NAS qui ne répond plus, la remplace par la passerelle Docker et recharge nginx.
+    Réécriture SUR PLACE (même inode) : le fichier est monté seul dans le conteneur du bureau."""
+    import time as _t
+    if not SSH_VIA_GATEWAY or not APP_DIR:
+        return
+    conf = os.path.join(APP_DIR, 'nginx.conf')
+    try:
+        txt = open(conf, encoding='utf-8').read()
+    except Exception:
+        return
+    ips = set(re.findall(r'proxy_pass\s+https://(\d{1,3}(?:\.\d{1,3}){3})[/:;]', txt))
+    gw = SSH_HOST
+    stale = [ip for ip in ips if ip != gw and not _tcp_ok(ip, 443)]
+    if not stale or not _tcp_ok(gw, 443):
+        return
+    new = txt
+    for ip in stale:
+        new = re.sub(r'(https?://)' + re.escape(ip) + r'(?=[/:;])', r'\g<1>' + gw, new)
+    if new == txt:
+        return
+    try:
+        with open(conf, 'r+', encoding='utf-8') as fh:
+            fh.seek(0); fh.write(new); fh.truncate()
+        log.warning('nginx.conf : %s remplacé par la passerelle %s', ', '.join(sorted(stale)), gw)
+        _t.sleep(1)
+        ssh_exec("sudo -n docker exec desktroo nginx -s reload || docker exec desktroo nginx -s reload", timeout=30)
+    except Exception as e:
+        log.warning('nginx.conf : réparation impossible : %s', e)
+
+
 def _truenas_ip():
     """Renvoie l'adresse IP LAN réelle du NAS, indépendante d'un nom de domaine
     configuré comme hôte SSH. On refuse toute IP publique : mieux vaut retomber
@@ -564,6 +658,10 @@ def _truenas_ip():
     IP littérale SSH > proxy_pass de nginx.conf (IP choisie à l'install) >
     IP privée réellement connectée en SSH > DNS si privée > hôte brut."""
     import socket as _socket, re as _re, os as _os
+
+    # MDM-NAS-GATEWAY-V1 : par la passerelle Docker, l'adresse d'accès ne dit rien de l'IP du NAS sur le réseau local.
+    if SSH_VIA_GATEWAY:
+        return _nas_lan_ip()
 
     def _is_ip(x):
         return bool(_re.match(r'^\d{1,3}(\.\d{1,3}){3}$', str(x or '')))
@@ -643,7 +741,7 @@ def _version_status():
         except Exception:
             upd = (latest != APP_VERSION)
     return {'version': APP_VERSION, 'latest': latest, 'update_available': bool(upd), 'boot': _BOOT_ID,
-            'truenas_host': SSH_HOST, 'truenas_ip': _truenas_ip()}
+            'truenas_host': ('' if SSH_VIA_GATEWAY else SSH_HOST), 'truenas_ip': _truenas_ip()}
 
 
 # Notes de version. Lues dans le dépôt de distribution, car elles doivent décrire aussi les versions
@@ -803,6 +901,8 @@ def _uninstall_parse_plan(out):
             if len(parts) == 4:
                 plan['images'].append({'id': parts[0], 'bytes': _int(parts[1]), 'shared': parts[2] == '1',
                                        'tag': parts[3]})
+        elif k == 'STOREAPP':
+            plan.setdefault('store_apps', []).append(v.strip())
         elif k == 'AUTOSTART':
             plan['autostart'] += 1
         elif k == 'ETC':
@@ -5393,7 +5493,7 @@ def _px_post(handler, path):
 def _npm_status():
     """Détecte un reverse-proxy NPMplus / Nginx Proxy Manager sur l'hôte.
     Matching sur le nom, l'image et le port admin 81. Utilise sudo (socket Docker root)."""
-    info = {'running': False, 'containers': [], 'nas_ip': SSH_HOST}
+    info = {'running': False, 'containers': [], 'nas_ip': (_truenas_ip() if SSH_VIA_GATEWAY else SSH_HOST)}
     cmd = (
         "sudo -n docker ps --format '{{.Names}}|{{.Image}}|{{.Ports}}' 2>/dev/null "
         "|| docker ps --format '{{.Names}}|{{.Image}}|{{.Ports}}' 2>/dev/null"
@@ -5415,6 +5515,11 @@ def _npm_status():
         info['containers'] = matches
     except Exception as e:
         info['error'] = str(e)
+    try:   # module Desktroo Apps : port de l'admin connu, et l'interface propose l'installation ou la reprise
+        info['module'] = STORE_NPM_ID in store_installed_get() or bool(store_npm_linked())
+        info['admin_port'] = int(((_lic_read_json(STORE_NPM_FILE) or {}).get('ports') or {}).get('admin') or 0) or None
+    except Exception:
+        pass
     return info
 
 
@@ -8616,7 +8721,7 @@ def _lic_is_readonly():
 
 # Routes POST dont l'écriture reste autorisée même en lecture seule (on doit pouvoir signaler un problème sans abonnement).
 _LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report', '/terms/accept',
-                            '/uninstall/run'}
+                            '/uninstall/run', '/store/uninstall', '/store/start', '/store/access'}
 
 
 # ── Licence d'utilisation (LICENSE.md) : l'accord de l'installation ─────────────────────────────
@@ -9265,6 +9370,1839 @@ def _wallpaper_free_name(base, name):
     return candidate
 
 
+# ── MDM-STORE-V1 : Magasin d'apps Desktroo ───────────────────────────────────────────────────────
+# Phase 0 : session des apps (cookie dt_app), vérification pour nginx (/store/auth), kit des apps (SDK),
+# catalogue signé, réseau Docker partagé et bloc nginx /a/<id>/. Plan : « Plan — Magasin d'apps Desktroo ».
+import hashlib as _st_hashlib, hmac as _st_hmac, base64 as _st_b64, time as _st_time
+
+STORE_URL        = (os.environ.get('STORE_URL') or 'https://raw.githubusercontent.com/Nabief/desktroo-store/main').rstrip('/')
+STORE_NET        = 'desktroo-apps'          # réseau partagé entre le nginx du bureau et les apps (aucun port publié)
+STORE_APP_PORT   = 8080                     # port interne imposé à toutes les apps du Magasin
+STORE_DIR        = os.path.join(ACCESS_DATA_DIR, 'store')
+STORE_CATALOG_CACHE = os.path.join(STORE_DIR, 'catalog.json')
+STORE_ACCESS_FILE   = os.path.join(STORE_DIR, 'access.json')
+STORE_REFRESH    = 43200                    # 12 h entre deux lectures du catalogue
+STORE_COOKIE     = 'dt_app'
+STORE_COOKIE_TTL = 12 * 3600
+# Clé publique du catalogue (RSA-2048), distincte de la clé de licence. Posée par tools/store/store-keygen.py.
+STORE_PUBKEY_N_HEX = 'F512261EA90C6D026B2F558CB305C4364F46B03222F6BAD240549D0EC8ADA61E6286FCF45456657CBBC912F5B90108584A130D990179CD29EF697492DC70B504A2C225FD565BF58C65F6D9620A64416891670D4E7688DC4D1429E2513E0249A953782E8DC583E03874EE712086EAC82242DC3062557949CEF8F09415E11C128DA1B4E0B62933B39891E5D4AAC4576C9B6BCD77DA0967561FAE914E52A956326FD5107B46AAC22F58762051EBCE308662D9DE6B99097567CD65B1397B84F3123EBB90A0BE8DD4AB64D126350B9CFAC358D63CCA120503163667909CE73A8CD5ECB950F4F8C2D9D27540D68564252070500F5A3443000F2A42617F534CCF4057DD'
+_STORE_ID_RE = re.compile(r'^[a-z0-9][a-z0-9-]{0,40}$')
+_STORE_SECRET = _st_hmac.new(TOKEN.encode('utf-8'), b'desktroo-store-v1', _st_hashlib.sha256).digest()
+_STORE_LOCK = _threading.Lock()
+_store_state = {'checked': 0.0, 'error': ''}
+
+
+def _store_b64e(b):
+    return _st_b64.urlsafe_b64encode(b).decode('ascii').rstrip('=')
+
+
+def _store_b64d(s):
+    s = str(s or '').strip()
+    return _st_b64.urlsafe_b64decode((s + '=' * (-len(s) % 4)).encode('ascii'))
+
+
+def _store_sign(text):
+    return _store_b64e(_st_hmac.new(_STORE_SECRET, text.encode('utf-8'), _st_hashlib.sha256).digest())
+
+
+def store_cookie_make(user, ttl=None):
+    """Valeur du cookie de session des apps : utilisateur + échéance, signés."""
+    body = _store_b64e(json.dumps({'u': str(user or '')[:64], 'exp': int(_st_time.time()) + int(ttl or STORE_COOKIE_TTL)},
+                                  separators=(',', ':')).encode('utf-8'))
+    return body + '.' + _store_sign('cookie.' + body)
+
+
+def store_cookie_header(handler, value, max_age):
+    secure = '; Secure' if (handler.headers.get('X-Forwarded-Proto', '') or '').lower() == 'https' else ''
+    return '%s=%s; Path=/a/; Max-Age=%d; HttpOnly; SameSite=Strict%s' % (STORE_COOKIE, value, int(max_age), secure)
+
+
+def store_cookie_user(cookie_header):
+    """Utilisateur porté par un cookie dt_app valide, sinon None. Lecture à la main : un autre cookie
+    mal formé (portail d'authentification…) ne doit pas faire échouer la lecture."""
+    val = ''
+    for part in str(cookie_header or '').split(';'):
+        k, _, v = part.strip().partition('=')
+        if k == STORE_COOKIE:
+            val = v.strip().strip('"')
+    try:
+        body, sig = val.split('.')
+        if not _st_hmac.compare_digest(sig, _store_sign('cookie.' + body)):
+            return None
+        d = json.loads(_store_b64d(body).decode('utf-8'))
+        if int(d.get('exp', 0)) < _st_time.time():
+            return None
+        return str(d.get('u') or '') or None
+    except Exception:
+        return None
+
+
+def store_app_secret(app_id):
+    """Secret propre à une app sur cette installation : posé dans son conteneur (DESKTROO_APP_SECRET)
+    et transmis par nginx à chaque requête (X-Desktroo-Secret). Sans lui, l'app ne fait confiance à personne."""
+    return _st_hmac.new(_STORE_SECRET, ('app.' + str(app_id)).encode('utf-8'), _st_hashlib.sha256).hexdigest()[:48]
+
+
+def store_access_get():
+    d = _lic_read_json(STORE_ACCESS_FILE)
+    return d if isinstance(d, dict) else {}
+
+
+def store_user_allowed(app_id, user):
+    """L'administrateur choisit qui a accès à chaque app (décision du plan). Liste absente = tous les comptes
+    Desktroo : la fenêtre de choix arrive en phase 1."""
+    acl = store_access_get().get(app_id)
+    if acl is None:
+        return True
+    return isinstance(acl, list) and user in acl
+
+
+def store_auth_check(handler):
+    """GET /store/auth, appelé par nginx (auth_request) avant chaque requête vers /a/<id>/."""
+    uri = handler.headers.get('X-Original-URI', '') or ''
+    m = re.match(r'^/a/([a-z0-9][a-z0-9-]{0,40})(?:[/?]|$)', uri)
+    if not m:
+        return 403, None, None
+    app = m.group(1)
+    user = store_cookie_user(handler.headers.get('Cookie', ''))
+    if not user:
+        return 401, None, None
+    if not store_user_allowed(app, user):
+        return 403, None, None
+    return 200, user, store_app_secret(app)
+
+
+def store_gate(action='install'):
+    """LE contrôle de licence du Magasin, à un seul endroit. Installer et mettre à jour demandent un essai,
+    un abonnement ou le délai de grâce ; voir, ouvrir, relancer et désinstaller restent toujours permis."""
+    try:
+        st = license_status()
+    except Exception:
+        st = {'state': 'expired'}
+    state = st.get('state')
+    ok = state in ('trial', 'active', 'grace') or action in ('view', 'open', 'start', 'uninstall')
+    return {'ok': bool(ok), 'action': action, 'state': state, 'days_left': st.get('days_left'),
+            'subscribe_url': SUBSCRIBE_URL}
+
+
+def _store_rsa_ok(data, sig_b64):
+    if not STORE_PUBKEY_N_HEX:
+        return False
+    try:
+        n = int(STORE_PUBKEY_N_HEX, 16)
+        k = (n.bit_length() + 7) // 8
+        sig = _store_b64d(sig_b64)
+        if len(sig) > k:
+            return False
+        sig = b'\x00' * (k - len(sig)) + sig
+        em = pow(int.from_bytes(sig, 'big'), 65537, n).to_bytes(k, 'big')
+        t = _LIC_SHA256_DI + _st_hashlib.sha256(data).digest()
+        if k - 3 - len(t) < 8:
+            return False
+        return _st_hmac.compare_digest(em, b'\x00\x01' + b'\xff' * (k - 3 - len(t)) + b'\x00' + t)
+    except Exception:
+        return False
+
+
+def store_catalog(force=False):
+    """Catalogue vérifié (signature, format, anti-retour arrière), mis en cache 12 h.
+    En cas d'échec, le dernier catalogue valide reste servi. Rend (catalogue ou None, message d'erreur)."""
+    cached = _lic_read_json(STORE_CATALOG_CACHE)
+    now = _st_time.time()
+    if not force and cached and now - _store_state['checked'] < STORE_REFRESH:
+        return cached, _store_state['error']
+    with _STORE_LOCK:
+        err = ''
+        try:
+            if not STORE_PUBKEY_N_HEX:
+                raise ValueError("Clé du catalogue non configurée.")
+            import urllib.request
+
+            def _get(name):
+                req = urllib.request.Request(STORE_URL + '/' + name + '?t=%d' % int(now), headers={'User-Agent': 'Desktroo'})
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    return r.read(4 * 1024 * 1024)
+
+            data = _get('catalog.json')
+            sig = _get('catalog.json.sig').decode('ascii', 'replace')
+            if not _store_rsa_ok(data, sig):
+                raise ValueError('Signature du catalogue invalide : catalogue ignoré.')
+            cat = json.loads(data.decode('utf-8'))
+            if not isinstance(cat, dict) or int(cat.get('schema', 0)) != 1 or not isinstance(cat.get('apps'), list):
+                raise ValueError('Format de catalogue inconnu.')
+            if cached and str(cat.get('published', '')) < str(cached.get('published', '')):
+                raise ValueError('Catalogue plus ancien que celui déjà reçu : ignoré.')
+            cat['apps'] = [a for a in cat['apps'] if isinstance(a, dict) and _STORE_ID_RE.match(str(a.get('id', '')))]
+            os.makedirs(STORE_DIR, exist_ok=True)
+            _lic_write_json(STORE_CATALOG_CACHE, cat)
+            cached = cat
+            try:
+                _store_icons_fetch(cat)
+            except Exception as e:
+                log.warning('Magasin : icônes non récupérées : %s', e)
+        except Exception as e:
+            err = str(e)
+            log.warning('Magasin : %s', err)
+        _store_state.update(checked=now, error=err)
+        return cached, err
+
+
+# Bloc nginx des apps. Posé par fileops dans nginx.conf (toutes les méthodes d'installation), une seule fois.
+_STORE_NGINX_MARK = 'MDM-STORE-NGINX-V3'   # à changer à chaque évolution du bloc : fileops remplace l'ancien
+_STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V3 : apps du Magasin Desktroo, derrière la session du bureau (posé par fileops) ──
+    location = /_store_auth {
+        internal;
+        proxy_pass              http://fileops:8765/store/auth;
+        proxy_pass_request_body off;
+        proxy_set_header        Content-Length "";
+        proxy_set_header        X-Original-URI $request_uri;
+        proxy_set_header        X-Forwarded-Proto $scheme;
+    }
+
+    location /a/_sdk/ {
+        proxy_pass         http://fileops:8765/store/sdk/;
+        proxy_http_version 1.1;
+    }
+
+    location = /a/_login {
+        rewrite            ^ /store/login break;
+        proxy_pass         http://fileops:8765;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        client_max_body_size 16k;
+    }
+
+    location ~ "^/a/([a-z0-9][a-z0-9-]{0,40})/desktroo\.webmanifest$" {
+        rewrite            ^/a/([^/]+)/ /store/manifest/$1 break;
+        proxy_pass         http://fileops:8765;
+    }
+
+    location ~ "^/a/([a-z0-9][a-z0-9-]{0,40})$" {
+        return 301 $uri/$is_args$args;
+    }
+
+    location ~ "^/a/([a-z0-9][a-z0-9-]{0,40})/" {
+        set                   $dt_app $1;
+        set                   $dt_orig $uri;     # adresse demandée, avant réécriture : retour après connexion
+        auth_request          /_store_auth;
+        auth_request_set      $dt_user   $upstream_http_x_desktroo_user;
+        auth_request_set      $dt_secret $upstream_http_x_desktroo_secret;
+        resolver              127.0.0.11 valid=10s ipv6=off;
+        rewrite               ^/a/[^/]+(/.*)$ $1 break;
+        proxy_pass            http://dt-$dt_app:8080;
+        proxy_http_version    1.1;
+        proxy_set_header      Host               $host;
+        proxy_set_header      X-Desktroo-User    $dt_user;
+        proxy_set_header      X-Desktroo-Secret  $dt_secret;
+        proxy_set_header      X-Forwarded-Prefix /a/$dt_app;
+        proxy_set_header      Upgrade            $http_upgrade;
+        proxy_set_header      Connection         $http_connection;
+        proxy_read_timeout    3600s;
+        client_max_body_size  1g;
+        error_page 401 = @dks_401;
+        error_page 403 = @dks_403;
+        error_page 502 504 = @dks_502;
+    }
+
+    location @dks_401 {
+        if ($http_accept ~* "text/html") { return 302 /a/_login?next=$dt_orig; }
+        rewrite ^ /store/error/401 break;
+        proxy_pass http://fileops:8765;
+    }
+    location @dks_403 { rewrite ^ /store/error/403 break; proxy_pass http://fileops:8765; }
+    location @dks_502 { rewrite ^ /store/error/502 break; proxy_pass http://fileops:8765; }
+
+'''
+
+
+def store_nginx_ensure():
+    """Ajoute le bloc /a/ à nginx.conf s'il manque, vérifie la config (nginx -t) et recharge ; en cas d'erreur,
+    remet le fichier d'origine. Réécriture SUR PLACE : le fichier est monté seul dans le conteneur du bureau."""
+    if not APP_DIR:
+        return False
+    conf = os.path.join(APP_DIR, 'nginx.conf')
+    try:
+        txt = open(conf, encoding='utf-8').read()
+    except Exception:
+        return False
+    if _STORE_NGINX_MARK in txt:
+        return True
+    anchor = '    location /fileops/ {'
+    if anchor not in txt:
+        log.warning('Magasin : nginx.conf sans « location /fileops/ », bloc des apps non posé')
+        return False
+    base = txt
+    old = base.find('    # ── MDM-STORE-V1')
+    if old >= 0 and base.find(anchor, old) > old:      # bloc d'une version précédente : on le remplace
+        base = base[:old] + base[base.find(anchor, old):]
+    new = base.replace(anchor, _STORE_NGINX + anchor, 1)
+
+    def _write(s):
+        with open(conf, 'r+', encoding='utf-8') as fh:
+            fh.seek(0); fh.write(s); fh.truncate()
+
+    try:
+        _write(new)
+        out, err, code = _px_host('docker exec desktroo nginx -t 2>&1', timeout=30)
+        if code != 0:
+            _write(txt)
+            log.warning('Magasin : nginx -t refuse le bloc des apps, nginx.conf remis : %s', (out or err)[-400:])
+            return False
+        _px_host('docker exec desktroo nginx -s reload', timeout=30)
+        log.info('Magasin : bloc nginx des apps posé')
+        return True
+    except Exception as e:
+        try:
+            _write(txt)
+        except Exception:
+            pass
+        log.warning('Magasin : bloc nginx non posé : %s', e)
+        return False
+
+
+def store_net_ensure():
+    """Crée le réseau partagé s'il manque et y branche le nginx du bureau (testé : tient au redémarrage).
+    À rappeler avant chaque installation : un conteneur recréé perd son branchement."""
+    cmd = ("docker network inspect {n} >/dev/null 2>&1 || docker network create {n} >/dev/null; "
+           "docker inspect desktroo --format '{{{{json .NetworkSettings.Networks}}}}' | grep -q '\"{n}\"' "
+           "|| docker network connect {n} desktroo; "
+           "docker inspect desktroo-fileops --format '{{{{json .NetworkSettings.Networks}}}}' | grep -q '\"{n}\"' "
+           "|| docker network connect {n} desktroo-fileops").format(n=STORE_NET)
+    try:
+        out, err, code = _px_host(cmd, timeout=60)
+        if code != 0:
+            log.warning('Magasin : réseau %s non prêt : %s', STORE_NET, (err or out)[-300:])
+        return code == 0
+    except Exception as e:
+        log.warning('Magasin : réseau %s non prêt : %s', STORE_NET, e)
+        return False
+
+
+def _store_boot():
+    _st_time.sleep(20)   # laisser le bureau et SSH démarrer
+    if not (SSH_HOST and SSH_USER and SSH_PASS):
+        return
+    store_net_ensure()
+    store_nginx_ensure()
+    # nginx ne résout le nom « fileops » qu'à son démarrage : si fileops redémarre avec une autre adresse sur le
+    # réseau de la pile (des conteneurs l'ont quittée, après la migration du serveur web par exemple), le bureau
+    # n'obtiendrait plus que des 502. Un rechargement lui fait relire l'adresse, sans couper personne.
+    _px_host('docker exec desktroo nginx -t >/dev/null 2>&1 && docker exec desktroo nginx -s reload', timeout=30)
+    try:
+        store_migrate_webserver()
+    except Exception as e:
+        log.warning('Magasin : migration du serveur web : %s', e)
+
+
+def _store_get(handler, path, qs):
+    """Routes GET du Magasin protégées par le jeton du bureau."""
+    if path == '/store/session':
+        user = _px_unquote(handler.headers.get('X-Desktroo-User', '') or '')[:64] or 'admin'
+        body = json.dumps({'ok': True, 'user': user, 'expires_in': STORE_COOKIE_TTL}).encode('utf-8')
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'application/json; charset=utf-8')
+        handler.send_header('Cache-Control', 'no-store')
+        handler.send_header('Set-Cookie', store_cookie_header(handler, store_cookie_make(user), STORE_COOKIE_TTL))
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path == '/store/npm/state':
+        handler._json(200, store_npm_state())
+        return True
+    if path == '/store/view':
+        if qs.get('refresh') == '1':
+            store_catalog(force=True)
+        handler._json(200, store_view())
+        return True
+    if path == '/store/installed':
+        handler._json(200, {'ok': True, 'apps': store_installed_list()})
+        return True
+    if path == '/store/users':
+        try:
+            handler._json(200, {'ok': True, 'users': store_admin_users()})
+        except Exception as e:
+            handler._json(502, {'ok': False, 'error': str(e)})
+        return True
+    if path == '/store/job':
+        handler._json(200, {'ok': True, 'job': store_job_get(qs.get('id', ''))})
+        return True
+    if path == '/store/catalog':
+        cat, err = store_catalog(force=qs.get('refresh') == '1')
+        handler._json(200, {'ok': cat is not None, 'catalog': cat, 'error': err,
+                            'gate': store_gate('install'), 'net': STORE_NET})
+        return True
+    return False
+
+
+_STORE_POST = {
+    '/store/install': lambda b: store_install(b),
+    '/store/update': lambda b: store_install(b, update=True),
+    '/store/uninstall': lambda b: store_uninstall(b),     # lambdas : les fonctions sont définies plus bas
+    '/store/start': lambda b: store_start(b),
+    '/store/access': lambda b: store_access_set(b),
+    '/store/adopt': lambda b: store_npm_adopt(b),
+    '/store/npm/credentials': lambda b: store_npm_credentials(b),
+    '/store/npm/secret': lambda b: store_npm_secret(b),
+    '/store/npm/host': lambda b: store_npm_host_add(b),
+    '/store/npm/host/delete': lambda b: store_npm_host_delete(b),
+    '/store/npm/host/toggle': lambda b: store_npm_host_toggle(b),
+    '/store/npm/cert/renew': lambda b: store_npm_cert_renew(b),
+    '/store/npm/job/clear': lambda b: store_npm_job_clear(b),
+    '/store/npm/link': lambda b: store_npm_link(b),
+    '/store/npm/unlink': lambda b: store_npm_unlink(b),
+}
+
+
+def _store_post(handler, path):
+    fn = _STORE_POST.get(path)
+    if not fn:
+        return False
+    try:
+        body = handler._body()
+    except Exception:
+        handler._json(400, {'ok': False, 'error': 'Requête invalide.'})
+        return True
+    code, resp = fn(body if isinstance(body, dict) else {})
+    handler._json(code, resp)
+    return True
+
+
+_STORE_ERRORS = {
+    401: ('Session expirée', 'Votre session Desktroo a expiré. Reconnectez-vous au bureau, puis rouvrez cette app.'),
+    403: ('Accès non autorisé', "Votre compte n'a pas accès à cette app. Un administrateur peut vous l'ouvrir dans Desktroo Apps : "
+                                "fiche de l'app, « Qui peut l'utiliser »."),
+    502: ("L'app ne répond pas", "Elle est peut-être arrêtée ou en train de démarrer. Patientez quelques secondes, ou ouvrez Desktroo Apps "
+                                 "pour la démarrer."),
+}
+
+
+def _store_error_page(code):
+    import html as _h
+    title, text = _STORE_ERRORS.get(code, _STORE_ERRORS[502])
+    return ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<title>%s</title><link rel="stylesheet" href="/a/_sdk/desktroo-app.css"><script src="/a/_sdk/desktroo-app.js"></script>'
+            '<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}'
+            '.box{max-width:420px;text-align:center}.ic{font-size:34px;margin-bottom:10px}</style></head>'
+            '<body><div class="box"><div class="ic" aria-hidden="true">%s</div><h1>%s</h1><p class="dk-muted">%s</p>'
+            '<p><button class="dk-btn" onclick="location.reload()">Réessayer</button></p></div></body></html>'
+            % (_h.escape(title), {401: '🔑', 403: '🔒'}.get(code, '⏳'), _h.escape(title), _h.escape(text)))
+
+
+def _store_public_get(handler, path):
+    """Routes GET du Magasin sans jeton : la vérification pour nginx, le kit des apps, la fin de session."""
+    if path == '/store/auth':
+        code, user, secret = store_auth_check(handler)
+        handler.send_response(code)
+        if code == 200:
+            handler.send_header('X-Desktroo-User', _px_quote(user, safe=''))
+            handler.send_header('X-Desktroo-Secret', secret)
+        handler.send_header('Cache-Control', 'no-store')
+        handler.send_header('Content-Length', '0')
+        handler.end_headers()
+        return True
+    if path.startswith('/store/sdk/'):
+        item = _STORE_SDK.get(path[len('/store/sdk/'):])
+        if not item:
+            handler.send_response(404); handler.send_header('Content-Length', '0'); handler.end_headers()
+            return True
+        ctype, body = item
+        handler.send_response(200)
+        handler.send_header('Content-Type', ctype)
+        handler.send_header('Cache-Control', 'no-cache')   # petit fichier : toujours revalidé, une mise à jour du kit s'applique tout de suite
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path == '/store/login':
+        body = _STORE_LOGIN_HTML.encode('utf-8')
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'text/html; charset=utf-8')
+        handler.send_header('Cache-Control', 'no-store')
+        handler.send_header('X-Frame-Options', 'SAMEORIGIN')
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path.startswith('/store/manifest/'):
+        man = store_manifest(path[len('/store/manifest/'):])
+        if not man:
+            handler.send_response(404); handler.send_header('Content-Length', '0'); handler.end_headers()
+            return True
+        body = json.dumps(man, ensure_ascii=False).encode('utf-8')
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
+        handler.send_header('Cache-Control', 'no-cache')
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path.startswith('/store/error/'):
+        code = {'401': 401, '403': 403, '502': 502}.get(path[len('/store/error/'):], 502)
+        body = _store_error_page(code).encode('utf-8')
+        handler.send_response(code)
+        handler.send_header('Content-Type', 'text/html; charset=utf-8')
+        handler.send_header('Cache-Control', 'no-store')
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path.startswith('/store/icon/'):
+        p, ctype = store_icon_path(path[len('/store/icon/'):])
+        if not p:
+            handler.send_response(404); handler.send_header('Content-Length', '0'); handler.end_headers()
+            return True
+        body = open(p, 'rb').read()
+        handler.send_response(200)
+        handler.send_header('Content-Type', ctype)
+        handler.send_header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
+        handler.send_header('Cache-Control', 'no-cache')
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path == '/store/logout':
+        handler.send_response(200)
+        handler.send_header('Set-Cookie', store_cookie_header(handler, '', 0))
+        handler.send_header('Cache-Control', 'no-store')
+        handler.send_header('Content-Length', '0')
+        handler.end_headers()
+        return True
+    return False
+
+
+# ── MDM-STORE-V1 · phase 1 : installer, désinstaller, droits d'accès ────────────────────────────────────
+STORE_INSTALLED_FILE = os.path.join(STORE_DIR, 'installed.json')
+STORE_ICON_DIR = os.path.join(STORE_DIR, 'icons')
+STORE_BETA_FILE = os.path.join(STORE_DIR, 'beta')     # présent : les apps du canal « test » apparaissent (NAS de test)
+_STORE_ICON_TYPES = {'.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp'}
+_store_jobs = {}            # id d'app → {'action', 'state': running|done|error, 'step', 'error', 'at'}
+_STORE_JOBS_LOCK = _threading.Lock()
+
+
+def _store_vtuple(v):
+    return tuple(int(x) for x in re.findall(r'\d+', str(v or ''))[:3]) or (0,)
+
+
+def _store_midclt(method, *args, job=False, timeout=120):
+    """Appel du middleware TrueNAS sur le NAS (SSH). Rend le résultat JSON décodé ; lève RuntimeError sinon."""
+    cmd = 'midclt call ' + ('-j ' if job else '') + method + ''.join(' ' + shq(json.dumps(a)) for a in args)
+    out, err, code = _px_host(cmd + ' 2>&1', timeout=timeout)
+    text = (out or '').strip()
+    if code != 0:
+        lines = [l for l in text.splitlines() if l.strip() and not l.startswith(('Status:', 'Total Progress'))]
+        raise RuntimeError((lines[-1] if lines else (err or 'erreur inconnue'))[-400:])
+    last = text.splitlines()[-1] if text else 'null'
+    try:
+        return json.loads(last)
+    except Exception:
+        return last
+
+
+def store_visible_apps(cat):
+    beta = os.path.exists(STORE_BETA_FILE)
+    return [a for a in (cat or {}).get('apps', []) if beta or (a.get('channel') or 'stable') == 'stable']
+
+
+def store_app_entry(app_id):
+    cat, _err = store_catalog()
+    for a in store_visible_apps(cat):
+        if a.get('id') == app_id:
+            return a
+    return None
+
+
+def store_installed_get():
+    d = _lic_read_json(STORE_INSTALLED_FILE)
+    return d if isinstance(d, dict) else {}
+
+
+def _store_installed_set(d):
+    os.makedirs(STORE_DIR, exist_ok=True)
+    _lic_write_json(STORE_INSTALLED_FILE, d)
+
+
+def store_installed_list():
+    """Apps du Magasin présentes sur ce NAS : registre local croisé avec l'état réel des apps TrueNAS."""
+    reg = store_installed_get()
+    states = {}
+    try:
+        rows = _store_midclt('app.query', [], {'select': ['name', 'state']}, timeout=60) or []
+        states = {r.get('name'): r.get('state') for r in rows if isinstance(r, dict)}
+    except Exception as e:
+        log.warning('Magasin : état des apps illisible : %s', e)
+    out = []
+    if STORE_WEB_ID not in reg:
+        try:
+            legacy = store_webserver_legacy()
+        except Exception:            # NAS injoignable : dans le doute, on garde la fenêtre Sites Web visible
+            legacy = {'running': False}
+        if legacy:
+            mig = _lic_read_json(STORE_WEB_MIGRATION_FILE) or {}
+            out.append({'id': STORE_WEB_ID, 'name': {'fr': 'Serveur web', 'en': 'Web server'}, 'kind': 'module', 'legacy': True,
+                        'version': '', 'state': 'RUNNING' if legacy['running'] else 'STOPPED', 'users': None,
+                        'migration': mig.get('skipped') or mig.get('error') or ''})
+    linked = (_lic_read_json(STORE_NPM_FILE) or {}).get('linked') if STORE_NPM_ID not in reg else None
+    if linked:   # NPMplus relié : une icône « Domaines » au bureau, sans que Desktroo Apps le gère
+        try:
+            running = _store_container_info(linked.get('container') or '')[1]
+        except Exception:
+            running = False
+        out.append({'id': STORE_NPM_ID, 'name': {'fr': 'NPMplus', 'en': 'NPMplus'}, 'kind': 'module', 'linked': True,
+                    'version': '', 'state': 'RUNNING' if running else 'STOPPED', 'users': None,
+                    'container': linked.get('container'), 'ports': store_npm_settings()['ports']})
+    for app_id, rec in reg.items():
+        r = dict(rec or {}); r['id'] = app_id
+        r['state'] = states.get('dt-' + app_id, 'MISSING' if states else 'UNKNOWN')
+        r['users'] = store_access_get().get(app_id)
+        if app_id == STORE_NPM_ID:   # ports seulement (le secret des cookies reste sur le NAS)
+            r['ports'] = store_npm_settings()['ports']
+        out.append(r)
+    return out
+
+
+def store_admin_users():
+    """Comptes qui peuvent se connecter à Desktroo (administrateurs complets de TrueNAS)."""
+    rows = _store_midclt('user.query', [['locked', '=', False]], {'select': ['username', 'builtin', 'roles', 'full_name']}, timeout=60) or []
+    admins = [r for r in rows if isinstance(r, dict) and 'FULL_ADMIN' in (r.get('roles') or [])]
+    if not admins:
+        admins = [r for r in rows if isinstance(r, dict) and not r.get('builtin')]
+    return [{'username': r.get('username'), 'full_name': r.get('full_name') or ''} for r in admins if r.get('username')]
+
+
+def _store_pool():
+    m = re.match(r'^/mnt/([^/]+)/', (APP_DIR or '') + '/')
+    if not m:
+        raise RuntimeError("Pool de Desktroo introuvable (APP_DIR).")
+    return m.group(1)
+
+
+def _store_dataset(app_id):
+    return '%s/desktroo-apps/%s' % (_store_pool(), app_id)
+
+
+def _store_timezone():
+    try:
+        return (_store_midclt('system.general.config', timeout=30) or {}).get('timezone') or 'Europe/Paris'
+    except Exception:
+        return 'Europe/Paris'
+
+
+def store_compose(app):
+    """Compose d'une app, fabriqué ici à partir du catalogue : l'utilisateur ne voit ni YAML ni port."""
+    app_id = app['id']
+    if not app.get('image') or not app.get('digest'):
+        raise RuntimeError("Fiche de l'app incomplète dans le catalogue (image) : contactez Mdm-services.fr.")
+    base = '/mnt/' + _store_dataset(app_id)
+    env = {}
+    for k, v in (app.get('env') or {}).items():
+        if re.match(r'^[A-Z_][A-Z0-9_]*$', str(k)):
+            env[str(k)] = _store_timezone() if (v == '@host' and k == 'TZ') else str(v)
+    env['DESKTROO_APP_SECRET'] = store_app_secret(app_id)
+    env['DESKTROO_APP_ID'] = app_id
+    vols = []
+    for v in app.get('volumes') or []:
+        name, mount = str(v.get('name', '')), str(v.get('mount', ''))
+        if re.match(r'^[a-z0-9][a-z0-9_-]{0,30}$', name) and mount.startswith('/'):
+            vols.append('%s/%s:%s' % (base, name, mount))
+    res = app.get('resources') or {}
+    svc = {
+        'image': '%s@%s' % (app['image'], app['digest']),
+        'container_name': 'dt-' + app_id,
+        'restart': 'unless-stopped',
+        'user': str(app.get('run_as') or '568:568'),
+        'environment': env,
+        'volumes': vols,
+        'networks': [STORE_NET],
+        'read_only': bool(app.get('read_only', True)),
+        'tmpfs': ['/tmp'],
+        'security_opt': ['no-new-privileges:true'],
+        'cap_drop': ['ALL'],
+        'labels': {'fr.desktroo.store': app_id, 'fr.desktroo.version': str(app.get('version', ''))},
+    }
+    if res.get('memory_mb'):
+        svc['mem_limit'] = '%dm' % int(res['memory_mb'])
+    if res.get('cpus'):
+        svc['cpus'] = float(res['cpus'])
+    if isinstance(app.get('command'), list) and app['command']:
+        svc['command'] = [str(x) for x in app['command']]
+    return {'services': {'app': svc}, 'networks': {STORE_NET: {'external': True}}}
+
+
+def _store_job_set(app_id, **kw):
+    with _STORE_JOBS_LOCK:
+        j = _store_jobs.setdefault(app_id, {})
+        j.update(kw); j['at'] = int(_st_time.time())
+
+
+def store_job_get(app_id):
+    with _STORE_JOBS_LOCK:
+        return dict(_store_jobs.get(app_id) or {})
+
+
+def _store_running(app_id):
+    return store_job_get(app_id).get('state') == 'running'
+
+
+def _store_prepare_data(app):
+    ds = _store_dataset(app['id'])
+    parent = ds.rsplit('/', 1)[0]
+    for d in (parent, ds):
+        out, _e, code = _px_host('zfs list -H -o name ' + shq(d) + ' 2>/dev/null', timeout=30)
+        if code != 0 or not out.strip():
+            _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
+    owner = str(app.get('run_as') or '568:568')
+    if not re.match(r'^\d+:\d+$', owner):
+        raise RuntimeError('run_as invalide dans le catalogue.')
+    base = '/mnt/' + ds
+    cmds = []
+    for v in app.get('volumes') or []:
+        name = str(v.get('name', ''))
+        if re.match(r'^[a-z0-9][a-z0-9_-]{0,30}$', name):
+            p = base + '/' + name
+            cmds.append('mkdir -p %s && chown %s %s' % (shq(p), owner, shq(p)))
+    if cmds:
+        _o, err, code = _px_host(' && '.join(cmds), timeout=60)
+        if code != 0:
+            raise RuntimeError('Dossiers de données : ' + (err or '')[-300:])
+    return ds
+
+
+def _store_health(app, tries=30):
+    path = str(app.get('health') or '/')
+    if not path.startswith('/'):
+        path = '/' + path
+    for _ in range(tries):
+        _o, _e, code = _px_host('docker exec desktroo wget -q -T 4 -O /dev/null %s 2>/dev/null'
+                                % shq('http://dt-%s:%d%s' % (app['id'], STORE_APP_PORT, path)), timeout=20)
+        if code == 0:
+            return True
+        _st_time.sleep(2)
+    return False
+
+
+def _store_install_job(app, users, update=False):
+    app_id = app['id']
+    is_module = app.get('kind') == 'module' or app_id in STORE_MODULE_IDS
+    npm_s = None
+    try:
+        _store_job_set(app_id, step='Préparation du réseau des apps')
+        if not store_net_ensure():
+            raise RuntimeError("Réseau des apps indisponible.")
+        store_nginx_ensure()
+        if update and not is_module:
+            _store_job_set(app_id, step='Instantané des données avant mise à jour')
+            ds = _store_dataset(app_id)
+            snap = '%s@desktroo-maj-%s' % (ds, _st_time.strftime('%Y%m%d-%H%M%S'))
+            _px_host('zfs snapshot ' + shq(snap), timeout=60)
+        if app_id == STORE_NPM_ID:
+            _store_job_set(app_id, step='Création du dossier de données')
+            npm_s = _store_npm_prepare(app)
+            ds = _store_dataset(app_id)
+            compose = store_npm_compose(app, npm_s)
+        elif is_module:
+            ds = ''
+            compose = store_webserver_compose(app)
+        else:
+            _store_job_set(app_id, step='Création des dossiers de données')
+            ds = _store_prepare_data(app)
+            compose = store_compose(app)
+        if update:
+            _store_job_set(app_id, step='Téléchargement et redémarrage')
+            _store_midclt('app.update', 'dt-' + app_id, {'custom_compose_config': compose}, job=True, timeout=1800)
+        else:
+            _store_job_set(app_id, step='Téléchargement et démarrage')
+            try:
+                _store_midclt('app.create', {'custom_app': True, 'app_name': 'dt-' + app_id,
+                                             'custom_compose_config': compose}, job=True, timeout=1800)
+            except Exception:
+                # TrueNAS retire en général lui-même une installation ratée ; si l'app est restée à moitié
+                # créée, elle bloquerait l'essai suivant : on la retire (les données restent).
+                try:
+                    left = _store_midclt('app.query', [['name', '=', 'dt-' + app_id]], {'select': ['name']}, timeout=60)
+                    if left:
+                        _store_midclt('app.delete', 'dt-' + app_id, {'remove_images': True}, job=True, timeout=600)
+                except Exception:
+                    pass
+                raise
+        reg = store_installed_get()
+        reg[app_id] = {'name': app.get('name'), 'version': app.get('version'), 'digest': app.get('digest'),
+                       'image': app.get('image'), 'dataset': ds, 'window': app.get('window') or {},
+                       'standalone': bool(app.get('standalone')), 'kind': 'module' if is_module else 'app',
+                       'installed_at': (reg.get(app_id) or {}).get('installed_at') or int(_st_time.time()),
+                       'updated_at': int(_st_time.time())}
+        _store_installed_set(reg)
+        if users is not None:
+            acl = store_access_get(); acl[app_id] = sorted(set(users))
+            os.makedirs(STORE_DIR, exist_ok=True); _lic_write_json(STORE_ACCESS_FILE, acl)
+        _store_job_set(app_id, step="Vérification que l'app répond")
+        if npm_s and _store_npm_wait(npm_s):
+            try:
+                store_npm_setup_admin()
+            except Exception as e:
+                log.warning('NPMplus : compte administrateur non créé : %s', e)
+        if not (_store_npm_wait(npm_s) if npm_s else _store_web_wait_running() if is_module else _store_health(app)):
+            _store_job_set(app_id, state='done', step='Installée, mais elle ne répond pas encore', error='')
+            return
+        _store_job_set(app_id, state='done', step='Installée', error='')
+        log.info('Magasin : %s %s (%s)', 'mise à jour' if update else 'installation', app_id, app.get('version'))
+    except Exception as e:
+        log.warning('Magasin : %s de %s en échec : %s', 'mise à jour' if update else 'installation', app_id, e, exc_info=not isinstance(e, RuntimeError))
+        _store_job_set(app_id, state='error', error=_store_explain(e))
+
+
+def _store_explain(e):
+    """Message lisible pour les pannes connues ; le détail technique est gardé dans le journal."""
+    t = str(e)
+    if re.search(r'unauthorized|denied|manifest unknown|not found', t, re.I) and 'ghcr.io' in t:
+        return "L'image de l'app n'a pas pu être téléchargée (refusée par le registre). Réessayez plus tard ; si cela persiste, contactez Mdm-services.fr."
+    if re.search(r'no such host|timeout|i/o timeout|connection refused|TLS handshake', t, re.I):
+        return "Le NAS n'arrive pas à télécharger l'app : vérifiez son accès à Internet, puis réessayez."
+    if re.search(r'no space left', t, re.I):
+        return "Plus assez de place sur le NAS pour installer l'app."
+    return t
+
+
+def store_install(body, update=False):
+    app_id = str((body or {}).get('id') or '')
+    if not _STORE_ID_RE.match(app_id):
+        return 400, {'ok': False, 'error': 'Identifiant d’app invalide.'}
+    gate = store_gate('update' if update else 'install')
+    if not gate['ok']:
+        return 402, {'ok': False, 'error': 'Abonnement requis pour installer ou mettre à jour une app.', 'gate': gate}
+    app = store_app_entry(app_id)
+    if not app:
+        return 404, {'ok': False, 'error': 'App absente du catalogue.'}
+    if _store_vtuple(app.get('min_desktroo')) > _store_vtuple(APP_VERSION):
+        return 409, {'ok': False, 'error': 'Cette app demande Desktroo %s ou plus récent : mettez Desktroo à jour.' % app.get('min_desktroo')}
+    if app.get('nas_access'):
+        return 409, {'ok': False, 'error': 'Cette app demande l’accès à des dossiers du NAS : prise en charge dans une prochaine version de Desktroo.'}
+    if app_id == STORE_WEB_ID and not update and store_webserver_legacy():
+        return 409, {'ok': False, 'error': 'Le serveur web tourne encore dans Desktroo : il sera migré automatiquement.'}
+    if app_id == STORE_NPM_ID and not update and app_id not in store_installed_get():
+        why = store_npm_check_install()
+        if why:
+            return 409, {'ok': False, 'error': why}
+    installed = app_id in store_installed_get()
+    if update and not installed:
+        return 409, {'ok': False, 'error': 'App non installée.'}
+    if not update and installed:
+        return 409, {'ok': False, 'error': 'App déjà installée.'}
+    if _store_running(app_id):
+        return 409, {'ok': False, 'error': 'Une opération est déjà en cours sur cette app.'}
+    users = body.get('users') if isinstance(body.get('users'), list) else None
+    if users is not None:
+        users = [str(u)[:64] for u in users if u][:50]
+        if not users:
+            return 400, {'ok': False, 'error': 'Choisissez au moins un utilisateur.'}
+    _store_job_set(app_id, action='update' if update else 'install', state='running', step='Démarrage', error='')
+    _threading.Thread(target=_store_install_job, args=(app, users, update), name='store-' + app_id, daemon=True).start()
+    return 202, {'ok': True, 'job': store_job_get(app_id)}
+
+
+def store_uninstall(body):
+    app_id = str((body or {}).get('id') or '')
+    if not _STORE_ID_RE.match(app_id) or app_id not in store_installed_get():
+        return 404, {'ok': False, 'error': 'App non installée.'}
+    if _store_running(app_id):
+        return 409, {'ok': False, 'error': 'Une opération est en cours sur cette app : attendez qu’elle se termine.'}
+    keep = bool((body or {}).get('keep_data', True))
+    module = (store_installed_get().get(app_id) or {}).get('kind') == 'module' or app_id in STORE_MODULE_IDS
+    try:
+        try:
+            # Un module utilise des images publiques (nginx, php, mariadb) : on les garde pour une réinstallation rapide.
+            _store_midclt('app.delete', 'dt-' + app_id, {'remove_images': not module}, job=True, timeout=600)
+        except RuntimeError as e:
+            if 'does not exist' not in str(e):
+                raise
+        if not keep and not module:
+            _store_midclt('pool.dataset.delete', _store_dataset(app_id), {'recursive': True}, timeout=300)
+        reg = store_installed_get(); reg.pop(app_id, None); _store_installed_set(reg)
+        acl = store_access_get()
+        if app_id in acl:
+            acl.pop(app_id); _lic_write_json(STORE_ACCESS_FILE, acl)
+        log.info('Magasin : %s désinstallée (données %s)', app_id, 'conservées' if keep else 'supprimées')
+        return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': str(e)}
+
+
+def store_start(body):
+    app_id = str((body or {}).get('id') or '')
+    if not _STORE_ID_RE.match(app_id) or app_id not in store_installed_get():
+        return 404, {'ok': False, 'error': 'App non installée.'}
+    try:
+        store_net_ensure()
+        _store_midclt('app.start', 'dt-' + app_id, job=True, timeout=600)
+        return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': str(e)}
+
+
+def store_access_set(body):
+    app_id = str((body or {}).get('id') or '')
+    users = (body or {}).get('users')
+    if not _STORE_ID_RE.match(app_id) or app_id not in store_installed_get():
+        return 404, {'ok': False, 'error': 'App non installée.'}
+    if not isinstance(users, list) or not [u for u in users if u]:
+        return 400, {'ok': False, 'error': 'Choisissez au moins un utilisateur.'}
+    acl = store_access_get(); acl[app_id] = sorted(set(str(u)[:64] for u in users if u))[:50]
+    os.makedirs(STORE_DIR, exist_ok=True); _lic_write_json(STORE_ACCESS_FILE, acl)
+    return 200, {'ok': True, 'users': acl[app_id]}
+
+
+def _store_icons_fetch(cat):
+    """Copie locale des icônes du catalogue : le bureau les sert lui-même, sans appel à GitHub depuis le navigateur."""
+    import urllib.request
+    os.makedirs(STORE_ICON_DIR, exist_ok=True)
+    for a in (cat or {}).get('apps', []):
+        icon, app_id = str(a.get('icon') or ''), str(a.get('id') or '')
+        ext = os.path.splitext(icon)[1].lower()
+        if not icon or ext not in _STORE_ICON_TYPES or '..' in icon or icon.startswith('/') or not _STORE_ID_RE.match(app_id):
+            continue
+        try:
+            req = urllib.request.Request(STORE_URL + '/' + icon, headers={'User-Agent': 'Desktroo'})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                data = r.read(256 * 1024 + 1)
+            if len(data) > 256 * 1024:
+                continue
+            for old in os.listdir(STORE_ICON_DIR):
+                if old.startswith(app_id + '.'):
+                    os.remove(os.path.join(STORE_ICON_DIR, old))
+            with open(os.path.join(STORE_ICON_DIR, app_id + ext), 'wb') as fh:
+                fh.write(data)
+        except Exception as e:
+            log.warning('Magasin : icône de %s non récupérée : %s', app_id, e)
+
+
+def store_icon_path(app_id):
+    if not _STORE_ID_RE.match(app_id or '') or not os.path.isdir(STORE_ICON_DIR):
+        return None, None
+    for ext, ctype in _STORE_ICON_TYPES.items():
+        p = os.path.join(STORE_ICON_DIR, app_id + ext)
+        if os.path.isfile(p):
+            return p, ctype
+    return None, None
+
+
+def store_view():
+    """Ce que montre la fenêtre Magasin : catalogue visible, apps installées, mises à jour, état de la licence."""
+    cat, err = store_catalog()
+    installed = {r['id']: r for r in store_installed_list()}
+    apps = []
+    for a in store_visible_apps(cat):
+        a = dict(a)
+        inst = installed.get(a['id'])
+        a['installed'] = inst
+        a['update_available'] = bool(inst and not inst.get('legacy') and not inst.get('linked') and _store_vtuple(a.get('version')) > _store_vtuple(inst.get('version')))
+        a['compatible'] = _store_vtuple(a.get('min_desktroo')) <= _store_vtuple(APP_VERSION)
+        a['job'] = store_job_get(a['id']) or None
+        if a['id'] == STORE_NPM_ID:
+            a['npm'] = store_npm_info()
+        apps.append(a)
+    # Une app installée mais retirée du catalogue reste visible : on peut toujours l'ouvrir et la désinstaller.
+    known = {a['id'] for a in apps}
+    for app_id, inst in installed.items():
+        if app_id not in known:
+            apps.append({'id': app_id, 'name': inst.get('name') or app_id, 'version': inst.get('version'),
+                         'kind': inst.get('kind') or 'app', 'installed': inst, 'orphan': True, 'update_available': False, 'compatible': True,
+                         'job': store_job_get(app_id) or None})
+    return {'ok': cat is not None, 'error': err, 'apps': apps, 'gate': store_gate('install'),
+            'published': (cat or {}).get('published'), 'version': APP_VERSION}
+
+
+# ── MDM-STORE-V1 · accès direct aux apps (sans ouvrir le bureau) ───────────────────────────────────────
+# Une app « standalone » s'ouvre aussi dans un onglet ou depuis l'écran d'accueil du téléphone, à l'adresse du bureau
+# (/a/<id>/). Sans session, nginx renvoie vers /a/_login : identifiants TrueNAS (et code de double authentification),
+# comme pour le bureau. « Rester connecté » garde la session des apps 30 jours ; elle n'ouvre jamais le bureau.
+STORE_REMEMBER_TTL = 30 * 86400
+
+
+async def _store_login_async(username, password, otp):
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    async with websockets.connect('wss://%s/api/current' % TRUENAS_API_HOST, ssl=ctx, open_timeout=10,
+                                  max_size=4 * 1024 * 1024) as ws:
+        async def call(ident, method, params):
+            await ws.send(json.dumps({'jsonrpc': '2.0', 'id': ident, 'method': method, 'params': params}))
+            while True:
+                msg = json.loads(await asyncio.wait_for(ws.recv(), 12))
+                if isinstance(msg, dict) and msg.get('id') == ident:
+                    return msg
+        opts = {'login_options': {'user_info': False}}
+        r = await call(1, 'auth.login_ex', [dict({'mechanism': 'PASSWORD_PLAIN', 'username': username, 'password': password}, **opts)])
+        if r.get('error'):      # TrueNAS sans « login_ex » : l'ancien appel prend aussi le code
+            r = await call(2, 'auth.login', [username, password, otp or None])
+            if r.get('error') or r.get('result') is not True:
+                return 'bad', None
+        else:
+            kind = (r.get('result') or {}).get('response_type')
+            if kind == 'OTP_REQUIRED':
+                if not otp:
+                    return 'otp', None
+                r = await call(3, 'auth.login_ex', [dict({'mechanism': 'OTP_TOKEN', 'otp_token': otp}, **opts)])
+                kind = (r.get('result') or {}).get('response_type')
+            if kind != 'SUCCESS':
+                return 'bad', None
+        me = await call(4, 'auth.me', [])
+        return 'ok', (None if me.get('error') else me.get('result'))
+
+
+def _store_safe_next(nxt):
+    nxt = str(nxt or '')
+    return nxt if re.match(r'^/a/[a-z0-9][a-z0-9-]{0,40}/[A-Za-z0-9._~/%-]*$', nxt) else ''
+
+
+def store_login(handler):
+    """POST /store/login (via /a/_login) : ouvre la session des apps. Rend toujours du JSON."""
+    def reply(code, obj, cookie=None):
+        body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
+        handler.send_response(code)
+        handler.send_header('Content-Type', 'application/json; charset=utf-8')
+        handler.send_header('Cache-Control', 'no-store')
+        if cookie:
+            handler.send_header('Set-Cookie', cookie)
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+    if _login_blocked():
+        return reply(429, {'ok': False, 'error': 'Trop de tentatives. Réessayez dans quelques minutes.'})
+    try:
+        n = int(handler.headers.get('Content-Length', 0) or 0)
+        b = json.loads(handler.rfile.read(min(n, 8192)).decode('utf-8')) if n > 0 else {}
+    except Exception:
+        return reply(400, {'ok': False, 'error': 'Requête invalide.'})
+    user = str(b.get('username') or '').strip()[:64]
+    password = str(b.get('password') or '')
+    otp = re.sub(r'\s', '', str(b.get('otp') or ''))[:12]
+    if not user or not password:
+        return reply(400, {'ok': False, 'error': 'Identifiant et mot de passe requis.'})
+    try:
+        state, me = asyncio.run(asyncio.wait_for(_store_login_async(user, password, otp), 30))
+    except Exception as e:
+        log.warning('Connexion aux apps : TrueNAS injoignable : %s', e)
+        return reply(502, {'ok': False, 'error': 'TrueNAS injoignable : réessayez dans un instant.'})
+    if state == 'otp':
+        return reply(200, {'ok': False, 'need_otp': True})
+    if state != 'ok':
+        _login_note_failure()
+        log.warning('Connexion aux apps refusée pour %s', user)
+        return reply(401, {'ok': False, 'error': 'Identifiants incorrects.' if not otp else 'Identifiants ou code incorrects.'})
+    if not _truenas_is_full_admin(me):
+        return reply(403, {'ok': False, 'error': "Ce compte n'a pas accès à Desktroo."})
+    name = str((me or {}).get('pw_name') or user)[:64]
+    ttl = STORE_REMEMBER_TTL if b.get('remember') else STORE_COOKIE_TTL
+    nxt = _store_safe_next(b.get('next'))
+    if nxt:
+        m = re.match(r'^/a/([a-z0-9][a-z0-9-]{0,40})/', nxt)
+        if m and not store_user_allowed(m.group(1), name):
+            return reply(403, {'ok': False, 'error': "Votre compte n'a pas accès à cette app."})
+    log.info('Connexion aux apps : %s%s', name, ' (30 jours)' if ttl == STORE_REMEMBER_TTL else '')
+    return reply(200, {'ok': True, 'next': nxt or ''}, store_cookie_header(handler, store_cookie_make(name, ttl), ttl))
+
+
+def store_manifest(app_id):
+    """Manifeste d'une app « standalone » : elle s'installe comme une application sur le téléphone ou l'ordinateur."""
+    inst = store_installed_get().get(app_id)
+    if not inst or not inst.get('standalone'):
+        return None
+    name = inst.get('name')
+    if isinstance(name, dict):
+        name = name.get('fr') or name.get('en')
+    p, ctype = store_icon_path(app_id)
+    icons = [{'src': '/fileops/store/icon/' + app_id, 'sizes': 'any', 'type': ctype, 'purpose': 'any'}] if p else []
+    return {'name': str(name or app_id), 'short_name': str(name or app_id)[:12], 'id': '/a/%s/' % app_id,
+            'start_url': '/a/%s/' % app_id, 'scope': '/a/%s/' % app_id, 'display': 'standalone',
+            'background_color': '#0a1220', 'theme_color': '#0a1220', 'icons': icons}
+
+
+_STORE_LOGIN_HTML = r'''<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Connexion — Desktroo</title><link rel="stylesheet" href="/a/_sdk/desktroo-app.css">
+<script>try{var t=localStorage.getItem('tn-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.box{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--glass-border);border-radius:var(--radius);padding:28px 26px}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:6px;font:700 22px var(--font-display)}
+.logo svg{width:34px;height:34px}.sub{margin:0 0 20px;color:var(--text-dim);font-size:13px}
+label{display:block;font-size:12px;color:var(--text-dim);margin:12px 0 5px}
+.row{display:flex;align-items:center;gap:8px;margin:16px 0 18px;font-size:13px;color:var(--text-dim)}
+.row label{display:flex;align-items:center;gap:8px;margin:0;font-size:13px;cursor:pointer}
+.err{min-height:18px;color:var(--danger);font-size:13px;margin:0 0 10px}.dk-btn{width:100%}
+.hidden{display:none}
+</style></head><body>
+<form class="box" id="f" autocomplete="on">
+ <div class="logo"><svg viewBox="4 4 56 56" aria-hidden="true"><rect x="4" y="4" width="56" height="56" rx="15" fill="#0f1a2e"/><circle cx="26" cy="37" r="11" fill="none" stroke="#e9eef7" stroke-width="6"/><circle cx="26" cy="37" r="11" fill="none" stroke="#3ecf8e" stroke-width="6" stroke-linecap="round" stroke-dasharray="17 52.2"/><rect x="37" y="12" width="6.5" height="38" rx="3.25" fill="#e9eef7"/><circle cx="26" cy="37" r="4.6" fill="#3ecf8e"/></svg>Desktroo</div>
+ <p class="sub" id="sub">Connectez-vous pour ouvrir l'app.</p>
+ <div id="step1"><label for="u">Identifiant TrueNAS</label><input class="dk-input" id="u" name="username" autocomplete="username" required autofocus>
+ <label for="p">Mot de passe</label><input class="dk-input" id="p" name="password" type="password" autocomplete="current-password" required></div>
+ <div id="step2" class="hidden"><label for="o">Code de double authentification</label>
+ <input class="dk-input" id="o" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="12"></div>
+ <div class="row"><label><input type="checkbox" id="r"> Rester connecté 30 jours sur cet appareil</label></div>
+ <p class="err" id="e" role="alert"></p>
+ <button class="dk-btn primary" id="b" type="submit">Se connecter</button>
+</form>
+<script>
+(function(){
+ var q=new URLSearchParams(location.search), next=q.get('next')||'';
+ if(!/^\/a\/[a-z0-9][a-z0-9-]{0,40}\//.test(next)) next='';
+ var f=document.getElementById('f'), e=document.getElementById('e'), b=document.getElementById('b');
+ f.onsubmit=function(ev){
+  ev.preventDefault(); e.textContent=''; b.disabled=true; b.textContent='Vérification…';
+  fetch('/a/_login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
+   body:JSON.stringify({username:f.u.value.trim(),password:f.p.value,otp:f.o.value,remember:document.getElementById('r').checked,next:next})})
+  .then(function(r){return r.json().catch(function(){return {ok:false,error:'Réponse inattendue du NAS.'}})})
+  .then(function(d){
+   b.disabled=false; b.textContent='Se connecter';
+   if(d.ok){ location.replace(d.next||next||'/'); return; }
+   if(d.need_otp){ document.getElementById('step2').classList.remove('hidden'); document.getElementById('sub').textContent='Votre compte est protégé par la double authentification.'; f.o.focus(); return; }
+   e.textContent=d.error||'Connexion impossible.';
+  }).catch(function(){ b.disabled=false; b.textContent='Se connecter'; e.textContent='NAS injoignable.'; });
+ };
+})();
+</script></body></html>'''
+
+
+# ── MDM-STORE-V1 · module « Serveur web » (dt-webserver) ───────────────────────────────────────────────
+# Le serveur web de Desktroo (nginx des sites, PHP 8.3/8.2/8.1/7.4, MariaDB) n'est plus dans la pile de base :
+# c'est un module de Desktroo Apps. Mêmes noms de conteneurs et mêmes dossiers de données qu'avant, pour que
+# tout le code des Sites Web reste valable. Les installations existantes sont migrées une fois, avec retour arrière.
+STORE_WEB_ID = 'webserver'
+STORE_WEB_CONTAINERS = ['desktroo-websites', 'desktroo-php83', 'desktroo-php82', 'desktroo-php81', 'desktroo-php74', 'desktroo-mariadb']
+STORE_WEB_SERVICES = ['websites', 'php83', 'php82', 'php81', 'php74', 'mariadb']
+STORE_WEB_MIGRATION_FILE = os.path.join(STORE_DIR, 'migration-webserver.json')
+
+# Commandes reprises telles quelles de l'assistant d'installation ('$$' = '$' littéral pour docker compose).
+_STORE_PHP_RELOAD = (
+    "apk add --no-cache curl >/dev/null 2>&1 || true; "
+    "[ -x /usr/local/bin/install-php-extensions ] || { curl -sSLf https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions && chmod +x /usr/local/bin/install-php-extensions; }; "
+    "[ -s /conf/extensions.txt ] && install-php-extensions $$(cat /conf/extensions.txt) || true; "
+    "( last=''; lastext=''; while true; do e=$$(cat /conf/.extreload 2>/dev/null); if [ \"$$e\" != \"$$lastext\" ]; then lastext=\"$$e\"; { [ -s /conf/extensions.txt ] && install-php-extensions $$(cat /conf/extensions.txt) >/dev/null 2>&1; } || true; kill -USR2 1 2>/dev/null || true; fi; v=$$(cat /conf/.reload 2>/dev/null); if [ \"$$v\" != \"$$last\" ]; then last=\"$$v\"; kill -USR2 1 2>/dev/null || true; fi; sleep 3; done ) & exec php-fpm"
+)
+_STORE_WEB_RELOAD = "last=''; ( while true; do v=$$(cat /etc/nginx/conf.d/.reload 2>/dev/null); if [ \"$$v\" != \"$$last\" ]; then last=\"$$v\"; nginx -t && nginx -s reload; fi; sleep 3; done ) & exec nginx -g 'daemon off;'"
+
+
+def store_webserver_compose(app):
+    """Configuration du module, fabriquée ici (comme l'assistant le faisait dans la pile de base)."""
+    if not APP_DIR or not WEB_CONF_DIR or not WEB_PHP_DIR:
+        raise RuntimeError("Dossier d'installation de Desktroo introuvable.")
+    images = (app or {}).get('images') or {}
+    img = lambda k, d: str(images.get(k) or d)
+    services = {}
+    for ver in ('8.3', '8.2', '8.1', '7.4'):
+        n = 'php' + ver.replace('.', '')
+        services[n] = {
+            'image': img(n, 'php:%s-fpm-alpine' % ver), 'container_name': 'desktroo-' + n, 'restart': 'unless-stopped',
+            'environment': {'PHP_INI_SCAN_DIR': ':/conf/ini'},
+            'volumes': ['/mnt:/mnt', '%s/%s:/conf' % (WEB_PHP_DIR.rstrip('/'), ver)],
+            'command': ['sh', '-c', _STORE_PHP_RELOAD],
+        }
+    services['websites'] = {
+        'image': img('nginx', 'nginx:alpine'), 'container_name': 'desktroo-websites', 'restart': 'unless-stopped',
+        'ports': ['%d:8080' % WEB_PROXY_PORT, '%d-%d:%d-%d' % (WEB_PORT_MIN, WEB_PORT_MAX, WEB_PORT_MIN, WEB_PORT_MAX)],
+        'volumes': ['/mnt:/mnt', WEB_CONF_DIR.rstrip('/') + ':/etc/nginx/conf.d'],
+        'command': ['sh', '-c', _STORE_WEB_RELOAD],
+        'depends_on': ['php83', 'php82', 'php81', 'php74'],
+    }
+    services['mariadb'] = {
+        'image': img('mariadb', 'mariadb:11'), 'container_name': 'desktroo-mariadb', 'restart': 'unless-stopped',
+        'environment': {'MARIADB_ROOT_PASSWORD': DB_ROOT_PASSWORD, 'MARIADB_AUTO_UPGRADE': '1'},
+        'volumes': [APP_DIR.rstrip('/') + '/mariadb:/var/lib/mysql'],
+        # « mariadb » reste joignable par Desktroo (fileops) à travers le réseau partagé des apps.
+        'networks': {'default': {}, STORE_NET: {'aliases': ['mariadb']}},
+    }
+    return {'services': services, 'networks': {STORE_NET: {'external': True}}}
+
+
+def _store_container_info(name):
+    """(existe, en marche, projet compose, fichier compose) d'un conteneur."""
+    fmt = '{{.State.Running}}|{{index .Config.Labels "com.docker.compose.project"}}|{{index .Config.Labels "com.docker.compose.project.config_files"}}'
+    out, _e, code = _px_host('docker inspect --format %s %s 2>/dev/null' % (shq(fmt), shq(name)), timeout=30)
+    if code != 0 or not out.strip():
+        return False, False, '', ''
+    run, proj, files = (out.strip().split('|') + ['', '', ''])[:3]
+    return True, run == 'true', proj, files
+
+
+def store_webserver_legacy():
+    """Le serveur web tourne-t-il encore dans la pile de base (installation d'avant le module) ?"""
+    exists, running, proj, files = _store_container_info('desktroo-websites')
+    if not exists or proj == 'ix-dt-' + STORE_WEB_ID:
+        return None
+    return {'running': running, 'project': proj, 'compose': files.split(',')[0] if files else ''}
+
+
+def _store_compose_drop_services(text, names):
+    """Retire des services d'un docker-compose.yml écrit par l'assistant (blocs indentés de 2 espaces sous services:)."""
+    out, skip, in_services = [], False, False
+    for line in text.splitlines(True):
+        if re.match(r'^\S', line):
+            in_services = line.startswith('services:')
+            skip = False
+        elif in_services:
+            m = re.match(r'^  ([A-Za-z0-9_.-]+):\s*$', line)
+            if m:
+                skip = m.group(1) in names
+        if not skip:
+            out.append(line)
+    return ''.join(out)
+
+
+def _store_web_wait_running(timeout=120):
+    end = _st_time.time() + timeout
+    while _st_time.time() < end:
+        if all(_store_container_info(n)[1] for n in ('desktroo-websites', 'desktroo-mariadb')):
+            return True
+        _st_time.sleep(3)
+    return False
+
+
+def store_migrate_webserver():
+    """Déplace le serveur web de la pile de base vers le module dt-webserver. Une fois ; retour arrière complet."""
+    legacy = store_webserver_legacy()
+    if not legacy or STORE_WEB_ID in store_installed_get():
+        return
+    state = _lic_read_json(STORE_WEB_MIGRATION_FILE) or {}
+    if state.get('done') or int(state.get('attempts', 0)) >= 3:
+        return
+    state['attempts'] = int(state.get('attempts', 0)) + 1
+    os.makedirs(STORE_DIR, exist_ok=True)
+    _lic_write_json(STORE_WEB_MIGRATION_FILE, state)
+    compose_file = legacy.get('compose') or ''
+    if legacy['project'].startswith('ix-') or not compose_file or not os.path.isfile(compose_file):   # fichier lu à travers /mnt
+        state.update(skipped='Pile installée autrement que par l’assistant (Custom App) : migration à faire à part.')
+        _lic_write_json(STORE_WEB_MIGRATION_FILE, state)
+        log.warning('Magasin : serveur web non migré : %s', state['skipped'])
+        return
+    log.info('Magasin : migration du serveur web vers le module (essai %d)', state['attempts'])
+    _store_job_set(STORE_WEB_ID, action='migrate', state='running', step='Migration du serveur web', error='')
+    backup = compose_file + '.avant-module-web'
+    renamed = []
+    try:
+        store_net_ensure()
+        # 1. La pile de base perd ses services web (copie gardée, fichier vérifié par docker compose).
+        original = open(compose_file, encoding='utf-8').read()
+        new = _store_compose_drop_services(original, STORE_WEB_SERVICES)
+        if new == original:
+            raise RuntimeError('services web introuvables dans ' + compose_file)
+        with open(backup, 'w', encoding='utf-8') as fh:
+            fh.write(original)
+        with open(compose_file + '.module-web.tmp', 'w', encoding='utf-8') as fh:
+            fh.write(new)
+        _o, err, code = _px_host('cd %s && docker compose -f %s config -q' % (shq(os.path.dirname(compose_file)), shq(compose_file + '.module-web.tmp')), timeout=60)
+        if code != 0:
+            raise RuntimeError('fichier compose refusé : ' + (err or _o)[-300:])
+        with open(compose_file, 'r+', encoding='utf-8') as fh:
+            fh.seek(0); fh.write(new); fh.truncate()
+        os.remove(compose_file + '.module-web.tmp')
+        # 2. Les anciens conteneurs s'arrêtent et sont mis de côté (renommés), pas supprimés.
+        for n in STORE_WEB_CONTAINERS:
+            if _store_container_info(n)[0]:
+                _px_host('docker stop -t 20 %s >/dev/null && docker rename %s %s' % (shq(n), shq(n), shq(n + '-avant-module')), timeout=60)
+                renamed.append(n)
+        # 3. Le module prend le relais, sur les mêmes données.
+        app = store_app_entry(STORE_WEB_ID) or {'id': STORE_WEB_ID, 'version': '1.0.0', 'name': {'fr': 'Serveur web'}}
+        _store_midclt('app.create', {'custom_app': True, 'app_name': 'dt-' + STORE_WEB_ID,
+                                     'custom_compose_config': store_webserver_compose(app)}, job=True, timeout=1800)
+        if not _store_web_wait_running():
+            raise RuntimeError('le serveur web ne redémarre pas')
+        # 4. Réussi : on retire les anciens conteneurs.
+        for n in renamed:
+            _px_host('docker rm %s >/dev/null 2>&1' % shq(n + '-avant-module'), timeout=60)
+        reg = store_installed_get()
+        reg[STORE_WEB_ID] = {'name': app.get('name'), 'version': app.get('version'), 'kind': 'module', 'image': '',
+                             'installed_at': int(_st_time.time()), 'updated_at': int(_st_time.time()), 'migrated': True}
+        _store_installed_set(reg)
+        state.update(done=True, at=int(_st_time.time()), error='')
+        _lic_write_json(STORE_WEB_MIGRATION_FILE, state)
+        _store_job_set(STORE_WEB_ID, state='done', step='Installée', error='')
+        log.info('Magasin : serveur web migré vers le module dt-webserver')
+    except Exception as e:
+        log.warning('Magasin : migration du serveur web en échec, retour arrière : %s', e)
+        try:
+            left = _store_midclt('app.query', [['name', '=', 'dt-' + STORE_WEB_ID]], {'select': ['name']}, timeout=60)
+            if left:
+                _store_midclt('app.delete', 'dt-' + STORE_WEB_ID, {'remove_images': False}, job=True, timeout=600)
+        except Exception:
+            pass
+        for n in renamed:
+            _px_host('docker rename %s %s 2>/dev/null; docker start %s >/dev/null 2>&1' % (shq(n + '-avant-module'), shq(n), shq(n)), timeout=60)
+        try:
+            if os.path.exists(backup):
+                with open(compose_file, 'r+', encoding='utf-8') as fh:
+                    fh.seek(0); fh.write(open(backup, encoding='utf-8').read()); fh.truncate()
+        except Exception:
+            pass
+        state.update(error=str(e)[:400])
+        _lic_write_json(STORE_WEB_MIGRATION_FILE, state)
+        _store_job_set(STORE_WEB_ID, state='error', error='Migration annulée, le serveur web tourne comme avant : ' + str(e)[:200])
+
+
+# ── MDM-STORE-V1 · module « NPMplus » (dt-npmplus) ─────────────────────────────────────────────────────
+# Reverse-proxy HTTPS (certificats Let's Encrypt, domaines publics) installé en un clic depuis Desktroo Apps.
+# TrueNAS garde 80/443 pour son interface : NPMplus écoute sur 8090 (http), 8453 (https) et 8181 (admin) ; la box
+# redirige 80→8090 et 443→8453. Réseau de l'hôte, comme le recommande NPMplus. Données dans <pool>/desktroo-apps/npmplus.
+# Un NPMplus installé à la main avant (commandes guidées de Sites Web) se « reprend » sur demande : mêmes ports,
+# mêmes réglages, données copiées dans le dataset, l'original gardé tel quel ; retour arrière si ça échoue.
+STORE_NPM_ID = 'npmplus'
+STORE_NPM_CONTAINER = 'desktroo-npmplus'
+STORE_NPM_FILE = os.path.join(STORE_DIR, 'npmplus.json')
+STORE_NPM_DEFAULT_PORTS = {'http': 8090, 'https': 8453, 'admin': 8181}
+# Réglages d'un NPMplus existant qu'on garde à la reprise (préfixes des variables d'environnement documentées).
+_STORE_NPM_KEEP = ('TZ', 'ACME_', 'TRUST_', 'DISABLE_', 'LOGROTAT', 'GOA', 'NGINX_', 'CUSTOM_OCSP', 'DEFAULT_CERT_ID',
+                   'IPV4_BINDING', 'IPV6_BINDING', 'NPM_IPV', 'NPM_LISTEN', 'OIDC_', 'AUTH_REQUEST_', 'CERTBOT_',
+                   'ECH_', 'ENABLE_MPTCP', 'LISTEN_PROXY', 'INITIAL_DEFAULT_PAGE', 'COOKIE_SECRET', 'PUID', 'PGID')
+STORE_MODULE_IDS = ('webserver', 'npmplus')
+
+
+def store_npm_settings():
+    s = _lic_read_json(STORE_NPM_FILE) or {}
+    ports = dict(STORE_NPM_DEFAULT_PORTS)
+    ports.update({k: int(v) for k, v in (s.get('ports') or {}).items() if k in ports and str(v).isdigit()})
+    s['ports'] = ports
+    if not s.get('cookie_secret'):
+        s['cookie_secret'] = _px_secrets.token_hex(32)
+    return s
+
+
+def _store_npm_settings_save(s):
+    os.makedirs(STORE_DIR, exist_ok=True)
+    _lic_write_json(STORE_NPM_FILE, s)
+
+
+def store_npm_compose(app, s):
+    images = (app or {}).get('images') or {}
+    p = s['ports']
+    env = {'TZ': _store_timezone()}
+    env.update({k: str(v) for k, v in (s.get('env') or {}).items() if re.match(r'^[A-Z_][A-Z0-9_]*$', str(k))})
+    env.update({'HTTP_PORT': str(p['http']), 'HTTPS_PORT': str(p['https']), 'NPM_PORT': str(p['admin']),
+                'COOKIE_SECRET': s['cookie_secret']})
+    svc = {
+        'image': str(images.get('npmplus') or 'docker.io/zoeyvid/npmplus:latest'),
+        'container_name': STORE_NPM_CONTAINER, 'restart': 'unless-stopped',
+        'network_mode': 'host',
+        'cap_drop': ['ALL'], 'cap_add': ['NET_BIND_SERVICE', 'SETGID'],
+        'security_opt': ['no-new-privileges:true'],
+        'volumes': [(s.get('data') or '/mnt/' + _store_dataset(STORE_NPM_ID)).rstrip('/') + ':/data'],
+        'environment': env,
+        'labels': {'fr.desktroo.store': STORE_NPM_ID, 'fr.desktroo.version': str((app or {}).get('version', ''))},
+    }
+    return {'services': {'npmplus': svc}}
+
+
+def _store_npm_inspect_all():
+    """Conteneurs NPMplus / Nginx Proxy Manager présents sur le NAS (docker inspect décodé)."""
+    out, _e, code = _px_host("docker ps -a --format '{{.Names}}|{{.Image}}' 2>/dev/null", timeout=30)
+    if code != 0:
+        return []
+    names = []
+    for line in (out or '').splitlines():
+        name, _s, image = line.strip().partition('|')
+        low = image.lower()
+        if name and name != STORE_NPM_CONTAINER and ('npmplus' in low or 'nginx-proxy-manager' in low):
+            names.append(name)
+    if not names:
+        return []
+    out, _e, code = _px_host('docker inspect ' + ' '.join(shq(n) for n in names) + ' 2>/dev/null', timeout=30)
+    try:
+        return json.loads(out) if code == 0 else []
+    except Exception:
+        return []
+
+
+def store_npm_foreign():
+    """Un reverse-proxy installé hors de Desktroo Apps ? Résumé utile à la fiche (ou None)."""
+    for c in _store_npm_inspect_all():
+        cfg, hc, st = c.get('Config') or {}, c.get('HostConfig') or {}, c.get('State') or {}
+        labels = cfg.get('Labels') or {}
+        image = str(cfg.get('Image') or '')
+        project = str(labels.get('com.docker.compose.project') or '')
+        env = {}
+        for kv in cfg.get('Env') or []:
+            k, _s, v = str(kv).partition('=')
+            env[k] = v
+        host_net = str(hc.get('NetworkMode') or '') == 'host'
+        if host_net:
+            ports = {'http': int(env.get('HTTP_PORT') or 80), 'https': int(env.get('HTTPS_PORT') or 443),
+                     'admin': int(env.get('NPM_PORT') or 81)}
+        else:
+            pb = hc.get('PortBindings') or {}
+            def hp(key, d):
+                try:
+                    return int(((pb.get(key) or [{}])[0] or {}).get('HostPort') or d)
+                except Exception:
+                    return d
+            # Réseau ponté : NPMplus écoute dans son conteneur sur ses ports (variables, sinon 80/443/81),
+            # publiés sur le NAS sous le même numéro ou un autre (app TrueNAS : 30360-30362, par exemple).
+            inner = {'http': int(env.get('HTTP_PORT') or 80), 'https': int(env.get('HTTPS_PORT') or 443),
+                     'admin': int(env.get('NPM_PORT') or 81)}
+            ports = {k: hp('%d/tcp' % v, v) for k, v in inner.items()}
+        data = ''
+        for m in c.get('Mounts') or []:
+            if m.get('Destination') == '/data':
+                data = str(m.get('Source') or '')
+        name = str(c.get('Name') or '').lstrip('/')
+        why = ''
+        if 'npmplus' not in image.lower():
+            why = 'Nginx Proxy Manager classique : sa reprise n’est pas prise en charge. Gardez-le, ou remplacez-le à la main par NPMplus.'
+        elif project.startswith('ix-'):
+            why = ('Installé comme app TrueNAS (%s) : Desktroo Apps ne le reprend pas, ses mises à jour restent dans Applications. '
+                   'Vous pouvez le relier à Desktroo pour gérer vos domaines depuis la fenêtre Domaines.' % project[3:])
+        elif not data:
+            why = 'Dossier de données introuvable sur ce conteneur.'
+        return {'container': name, 'image': image, 'running': bool(st.get('Running')), 'project': project,
+                'data': data, 'ports': ports, 'host_network': host_net, 'adoptable': not why, 'why': why,
+                'env': {k: v for k, v in env.items() if k.startswith(_STORE_NPM_KEEP)}}
+    return None
+
+
+def _store_npm_ports_busy(ports, ignore=''):
+    """Ports déjà pris sur le NAS (liste)."""
+    out, _e, _c = _px_host("ss -Hltn 2>/dev/null | awk '{print $4}'", timeout=30)
+    used = set()
+    for line in (out or '').splitlines():
+        m = re.search(r':(\d+)$', line.strip())
+        if m:
+            used.add(int(m.group(1)))
+    return [p for p in ports.values() if p in used]
+
+
+def _store_npm_prepare(app):
+    """Configuration du module NPMplus pour une installation neuve ou une mise à jour."""
+    s = store_npm_settings()
+    if not s.get('data'):
+        ds = _store_dataset(STORE_NPM_ID)
+        parent = ds.rsplit('/', 1)[0]
+        for d in (parent, ds):
+            out, _e, code = _px_host('zfs list -H -o name ' + shq(d) + ' 2>/dev/null', timeout=30)
+            if code != 0 or not out.strip():
+                _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
+        s['data'] = '/mnt/' + ds
+    _store_npm_settings_save(s)
+    return s
+
+
+def _store_npm_wait(s, timeout=180):
+    """En marche, puis l'admin répond (le premier démarrage prépare ses certificats : parfois une minute)."""
+    end = _st_time.time() + timeout
+    while _st_time.time() < end:
+        if _store_container_info(STORE_NPM_CONTAINER)[1]:
+            _o, _e, code = _px_host('curl -sk -m 4 -o /dev/null https://127.0.0.1:%d/ || wget -q -T 4 --no-check-certificate -O /dev/null https://127.0.0.1:%d/'
+                                    % (s['ports']['admin'], s['ports']['admin']), timeout=20)
+            if code == 0:
+                return True
+        _st_time.sleep(4)
+    return False
+
+
+def store_npm_check_install():
+    """Avant une installation neuve : pas d'autre proxy, ports libres. Rend un message d'erreur ou ''."""
+    f = store_npm_foreign()
+    if f:
+        if f.get('adoptable'):
+            return 'Un NPMplus tourne déjà sur ce NAS (%s) : utilisez « Reprendre » pour le confier à Desktroo Apps.' % f['container']
+        return f.get('why') or 'Un reverse-proxy tourne déjà sur ce NAS.'
+    busy = _store_npm_ports_busy(store_npm_settings()['ports'])
+    if busy:
+        return 'Ports déjà utilisés sur le NAS : %s. Libérez-les avant d’installer NPMplus.' % ', '.join(str(p) for p in busy)
+    return ''
+
+
+def store_npm_adopt(body=None):
+    gate = store_gate('install')
+    if not gate['ok']:
+        return 402, {'ok': False, 'error': 'Abonnement requis pour installer ou reprendre une app.', 'gate': gate}
+    if STORE_NPM_ID in store_installed_get():
+        return 409, {'ok': False, 'error': 'NPMplus est déjà géré par Desktroo Apps.'}
+    if _store_running(STORE_NPM_ID):
+        return 409, {'ok': False, 'error': 'Une opération est déjà en cours sur NPMplus.'}
+    app = store_app_entry(STORE_NPM_ID)
+    if not app:
+        return 404, {'ok': False, 'error': 'NPMplus absent du catalogue.'}
+    f = store_npm_foreign()
+    if not f:
+        return 404, {'ok': False, 'error': 'Aucun NPMplus à reprendre sur ce NAS.'}
+    if not f.get('adoptable'):
+        return 409, {'ok': False, 'error': f.get('why')}
+    _store_job_set(STORE_NPM_ID, action='adopt', state='running', step='Démarrage', error='')
+    _threading.Thread(target=_store_npm_adopt_job, args=(app, f), name='store-npm-adopt', daemon=True).start()
+    return 202, {'ok': True, 'job': store_job_get(STORE_NPM_ID)}
+
+
+def _store_npm_adopt_job(app, f):
+    """Reprise : copie des données dans le dataset, même configuration, retour arrière complet si échec."""
+    old, src = f['container'], f['data'].rstrip('/')
+    stopped = created = False
+    try:
+        _store_job_set(STORE_NPM_ID, step='Préparation du dossier de données')
+        s = store_npm_settings()
+        s.pop('data', None)
+        s['ports'] = f['ports']
+        s['env'] = {k: v for k, v in (f.get('env') or {}).items()
+                    if k not in ('HTTP_PORT', 'HTTPS_PORT', 'NPM_PORT')}
+        if s['env'].get('COOKIE_SECRET'):
+            s['cookie_secret'] = s['env'].pop('COOKIE_SECRET')
+        _store_npm_settings_save(s)
+        s = _store_npm_prepare(app)
+        dst = s['data']
+        if os.path.realpath(src) == os.path.realpath(dst):
+            raise RuntimeError('Les données sont déjà dans le dossier de Desktroo Apps.')
+        _o, _e, code = _px_host('test -d %s' % shq(src), timeout=20)
+        if code != 0:
+            raise RuntimeError('Dossier de données introuvable : ' + src)
+        _store_job_set(STORE_NPM_ID, step='Arrêt de l’ancien NPMplus')
+        _o, err, code = _px_host('docker stop -t 30 %s' % shq(old), timeout=90)
+        if code != 0:
+            raise RuntimeError('Arrêt impossible : ' + (err or '')[-200:])
+        stopped = True
+        _store_job_set(STORE_NPM_ID, step='Copie des certificats et des réglages')
+        _o, err, code = _px_host('cp -a %s/. %s/' % (shq(src), shq(dst)), timeout=900)
+        if code != 0:
+            raise RuntimeError('Copie des données : ' + (err or '')[-200:])
+        _store_job_set(STORE_NPM_ID, step='Démarrage dans Desktroo Apps')
+        _store_midclt('app.create', {'custom_app': True, 'app_name': 'dt-' + STORE_NPM_ID,
+                                     'custom_compose_config': store_npm_compose(app, s)}, job=True, timeout=1800)
+        created = True
+        if not _store_npm_wait(s):
+            raise RuntimeError("NPMplus ne répond pas après la reprise.")
+        # L'ancien conteneur est retiré ; ses données restent à leur place, intactes, en secours.
+        _px_host('docker rm %s' % shq(old), timeout=60)
+        reg = store_installed_get()
+        reg[STORE_NPM_ID] = {'name': app.get('name'), 'version': app.get('version'), 'kind': 'module', 'image': '',
+                             'dataset': _store_dataset(STORE_NPM_ID), 'window': {}, 'standalone': False,
+                             'adopted_from': {'container': old, 'data': src, 'image': f.get('image')},
+                             'installed_at': int(_st_time.time()), 'updated_at': int(_st_time.time())}
+        _store_installed_set(reg)
+        _store_job_set(STORE_NPM_ID, state='done', step='Repris par Desktroo Apps', error='')
+        log.info('Magasin : NPMplus repris (%s, données copiées depuis %s)', old, src)
+    except Exception as e:
+        log.warning('Magasin : reprise de NPMplus en échec : %s', e)
+        if created:
+            try:
+                _store_midclt('app.delete', 'dt-' + STORE_NPM_ID, {'remove_images': False}, job=True, timeout=600)
+            except Exception:
+                pass
+        else:
+            try:
+                left = _store_midclt('app.query', [['name', '=', 'dt-' + STORE_NPM_ID]], {'select': ['name']}, timeout=60)
+                if left:
+                    _store_midclt('app.delete', 'dt-' + STORE_NPM_ID, {'remove_images': False}, job=True, timeout=600)
+            except Exception:
+                pass
+        if stopped:
+            _px_host('docker start %s' % shq(old), timeout=90)
+        _store_job_set(STORE_NPM_ID, state='error',
+                       error='Reprise annulée, votre NPMplus tourne comme avant : ' + _store_explain(e)[:200])
+
+
+def store_npm_info():
+    """Pour la fiche : ports, adresse de l'admin, et un éventuel NPMplus à reprendre."""
+    s = _lic_read_json(STORE_NPM_FILE) or {}
+    ports = dict(STORE_NPM_DEFAULT_PORTS)
+    ports.update(s.get('ports') or {})
+    info = {'ports': ports, 'foreign': None, 'linked': s.get('linked') or None}
+    if STORE_NPM_ID not in store_installed_get():
+        try:
+            info['foreign'] = store_npm_foreign()
+        except Exception:
+            pass
+    return info
+
+
+# ── MDM-STORE-V1 · fenêtre « Domaines » : NPMplus piloté par son API, depuis le NAS ─────────────────────
+# L'administration de NPMplus refuse d'être affichée dans un cadre (X-Frame-Options DENY) et sa session ne vit
+# qu'en https : Desktroo ne l'affiche donc pas, il lui parle. fileops ouvre une session NPMplus avec un compte
+# administrateur gardé dans data/store/npmplus.json : créé par Desktroo à l'installation, ou donné une fois
+# par l'administrateur après une reprise. Le navigateur ne voit jamais ce mot de passe, sauf sur demande.
+_NPM_API = {'cookie': '', 'until': 0, 'fails': 0, 'job': {}}
+_NPM_API_LOCK = _threading.Lock()
+
+
+def _npm_base():
+    return 'https://%s:%d' % (SSH_HOST, store_npm_settings()['ports']['admin'])
+
+
+def _npm_http(method, path, body=None, cookie='', timeout=30):
+    import ssl, urllib.request, urllib.error
+    ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+    data = json.dumps(body).encode('utf-8') if body is not None else None
+    req = urllib.request.Request(_npm_base() + '/api' + path, data=data, method=method)
+    req.add_header('Accept', 'application/json')
+    if data is not None:
+        req.add_header('Content-Type', 'application/json')
+    if cookie:
+        req.add_header('Cookie', cookie)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+            raw, code, hdrs = r.read(), r.status, r.headers
+    except urllib.error.HTTPError as e:
+        raw, code, hdrs = e.read(), e.code, e.headers
+    try:
+        out = json.loads(raw.decode('utf-8') or 'null')
+    except Exception:
+        out = None
+    return code, out, hdrs
+
+
+def _npm_err(out, code):
+    msg = ((out or {}).get('error') or {}).get('message') if isinstance(out, dict) else ''
+    return str(msg or 'NPMplus a répondu %s' % code)
+
+
+def _npm_login(email, password):
+    code, out, hdrs = _npm_http('POST', '/tokens', {'identity': email, 'secret': password}, timeout=20)
+    if code != 200:
+        raise PermissionError(_npm_err(out, code))
+    if isinstance(out, dict) and out.get('requires_2fa'):
+        raise PermissionError('Ce compte NPMplus a la double authentification : donnez un compte administrateur sans code, réservé à Desktroo.')
+    for sc in hdrs.get_all('Set-Cookie') or []:
+        if sc.startswith('__Host-Http-token='):
+            return sc.split(';', 1)[0]
+    raise PermissionError('NPMplus n’a pas ouvert de session.')
+
+
+def _npm_session(force=False):
+    with _NPM_API_LOCK:
+        if not force and _NPM_API['cookie'] and _st_time.time() < _NPM_API['until']:
+            return _NPM_API['cookie']
+        api = store_npm_settings().get('api') or {}
+        if not api.get('email') or not api.get('password'):
+            raise LookupError('NPMPLUS_LOGIN')
+        if _NPM_API['fails'] >= 3:   # NPMplus bloque après 10 échecs en 5 min : on s'arrête bien avant
+            raise PermissionError('Identifiants NPMplus refusés : saisissez-les à nouveau.')
+        try:
+            ck = _npm_login(api['email'], api['password'])
+        except PermissionError:
+            _NPM_API['fails'] += 1
+            raise
+        _NPM_API.update(cookie=ck, until=_st_time.time() + 3000, fails=0)
+        return ck
+
+
+def _npm_call(method, path, body=None, timeout=30):
+    code, out, _h = _npm_http(method, path, body, _npm_session(), timeout)
+    if code in (401, 403):
+        code, out, _h = _npm_http(method, path, body, _npm_session(force=True), timeout)
+    if code >= 400:
+        raise RuntimeError(_npm_err(out, code))
+    return out
+
+
+def store_npm_setup_admin():
+    """Installation neuve : Desktroo crée le compte administrateur de NPMplus (mode « premier démarrage »)."""
+    s = store_npm_settings()
+    if (s.get('api') or {}).get('password'):
+        return True
+    for _ in range(20):
+        try:
+            code, out, _h = _npm_http('GET', '/', timeout=10)
+            if code == 200 and isinstance(out, dict):
+                break
+        except Exception:
+            pass
+        _st_time.sleep(3)
+    else:
+        return False
+    if out.get('setup'):
+        return False      # déjà configuré par quelqu'un : identifiants demandés dans la fenêtre Domaines
+    pw = _px_secrets.token_urlsafe(24)
+    email = 'desktroo@desktroo.local'
+    code, out, _h = _npm_http('POST', '/users', {'name': 'Desktroo', 'nickname': 'Desktroo', 'email': email,
+                                                 'roles': ['admin'], 'is_disabled': False,
+                                                 'auth': {'type': 'password', 'secret': pw}}, timeout=30)
+    if code not in (200, 201):
+        log.warning('NPMplus : création du compte administrateur refusée : %s', _npm_err(out, code))
+        return False
+    s['api'] = {'email': email, 'password': pw, 'created_by': 'desktroo'}
+    _store_npm_settings_save(s)
+    return True
+
+
+def _npm_host_view(h):
+    cert = h.get('certificate') or None
+    return {'id': h.get('id'), 'domains': h.get('domain_names') or [], 'scheme': h.get('forward_scheme'),
+            'host': h.get('forward_host'), 'port': h.get('forward_port'), 'enabled': bool(h.get('enabled')),
+            'ssl_forced': bool(h.get('ssl_forced')),
+            'cert': ({'id': cert.get('id'), 'provider': cert.get('provider'), 'expires_on': cert.get('expires_on'),
+                      'name': cert.get('nice_name') or ', '.join(cert.get('domain_names') or [])} if isinstance(cert, dict) else None),
+            'error': ((h.get('meta') or {}).get('nginx_err') or '') if isinstance(h.get('meta'), dict) else ''}
+
+
+def store_npm_state():
+    s = _lic_read_json(STORE_NPM_FILE) or {}
+    if s.get('linked') and STORE_NPM_ID not in store_installed_get():
+        try:   # NPMplus relié : ses ports peuvent changer de son côté (réglages de l'app TrueNAS)
+            f = store_npm_foreign()
+            if f and f.get('ports') and f['ports'] != s.get('ports'):
+                s['ports'] = f['ports']; _store_npm_settings_save(store_npm_settings() | {'ports': f['ports']})
+        except Exception:
+            pass
+    inst = STORE_NPM_ID in store_installed_get() or bool(s.get('linked'))
+    ports = dict(STORE_NPM_DEFAULT_PORTS); ports.update(s.get('ports') or {})
+    st = {'installed': inst, 'linked': bool(s.get('linked')), 'ports': ports, 'job': dict(_NPM_API['job']) or None, 'login': False, 'hosts': [],
+          'account': ((s.get('api') or {}).get('email') or '')}
+    if not inst:
+        return st
+    try:
+        rows = _npm_call('GET', '/nginx/proxy-hosts?expand=certificate') or []
+        st['hosts'] = [_npm_host_view(h) for h in rows if isinstance(h, dict)]
+    except LookupError:
+        st['login'] = True
+    except PermissionError as e:
+        st['login'] = True; st['error'] = str(e)
+    except Exception as e:
+        st['error'] = 'NPMplus ne répond pas : ' + str(e)[:200]
+    return st
+
+
+def store_npm_credentials(body):
+    email, pw = str(body.get('email') or '').strip(), str(body.get('password') or '')
+    if not email or not pw:
+        return 400, {'ok': False, 'error': 'Adresse e-mail et mot de passe NPMplus requis.'}
+    try:
+        ck = _npm_login(email, pw)
+    except PermissionError as e:
+        return 403, {'ok': False, 'error': str(e)}
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'NPMplus ne répond pas : ' + str(e)[:200]}
+    s = store_npm_settings(); s['api'] = {'email': email, 'password': pw, 'created_by': 'admin'}
+    _store_npm_settings_save(s)
+    with _NPM_API_LOCK:
+        _NPM_API.update(cookie=ck, until=_st_time.time() + 3000, fails=0)
+    return 200, {'ok': True}
+
+
+def store_npm_secret(_body=None):
+    api = store_npm_settings().get('api') or {}
+    return 200, {'ok': True, 'email': api.get('email') or '', 'password': api.get('password') or ''}
+
+
+_NPM_DOMAIN_RE = re.compile(r'^(?=.{1,253}$)(\*\.)?([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
+
+
+def store_npm_host_add(body):
+    doms = [str(d).strip().lower().rstrip('.') for d in (body.get('domains') or []) if str(d).strip()][:20]
+    bad = [d for d in doms if not _NPM_DOMAIN_RE.match(d)]
+    if not doms or bad:
+        return 400, {'ok': False, 'error': 'Nom de domaine invalide : ' + ', '.join(bad or ['(vide)'])}
+    try:
+        port = int(body.get('port'))
+        assert 1 <= port <= 65535
+    except Exception:
+        return 400, {'ok': False, 'error': 'Port invalide.'}
+    host = str(body.get('host') or '127.0.0.1').strip()
+    if not re.match(r'^[A-Za-z0-9.\-:\[\]]{1,253}$', host):
+        return 400, {'ok': False, 'error': 'Adresse de destination invalide.'}
+    scheme = 'https' if body.get('scheme') == 'https' else 'http'
+    https = bool(body.get('https', True))
+    if _NPM_API['job'].get('state') == 'running':
+        return 409, {'ok': False, 'error': 'Une demande de certificat est déjà en cours.'}
+    payload = {'domain_names': doms, 'forward_scheme': scheme, 'forward_host': host, 'forward_port': port,
+               'block_exploits': True, 'allow_websocket_upgrade': True, 'http2_support': True}
+    if https:
+        payload.update(certificate_id='new', ssl_forced=True)
+    _NPM_API['job'] = {'state': 'running', 'step': ('Demande du certificat pour ' if https else 'Publication de ') + doms[0], 'error': '',
+                       'domain': doms[0], 'at': int(_st_time.time())}
+
+    def run():
+        try:
+            _npm_call('POST', '/nginx/proxy-hosts', payload, timeout=240)
+            _NPM_API['job'].update(state='done', step='Publié', error='')
+            log.info('NPMplus : %s publié vers %s:%s', ', '.join(doms), host, port)
+        except Exception as e:
+            _NPM_API['job'].update(state='error', error=_npm_explain(str(e)))
+    _threading.Thread(target=run, name='npm-host', daemon=True).start()
+    return 202, {'ok': True}
+
+
+def _npm_explain(t):
+    if re.search(r'already in use', t, re.I):
+        return 'Ce domaine est déjà publié.'
+    if re.search(r'letsencrypt|certbot|challenge|acme|unauthorized|connection|timeout|dns', t, re.I):
+        return ('Le certificat n’a pas pu être obtenu. Vérifiez que le domaine pointe vers votre adresse publique et que la box '
+                'redirige le port 80 vers ce NAS (port %d). Détail : %s' % (store_npm_settings()['ports']['http'], t[:200]))
+    return t[:300]
+
+
+def store_npm_host_delete(body):
+    try:
+        _npm_call('DELETE', '/nginx/proxy-hosts/%d' % int(body.get('id')))
+        return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': str(e)[:300]}
+
+
+def store_npm_host_toggle(body):
+    try:
+        _npm_call('POST', '/nginx/proxy-hosts/%d/%s' % (int(body.get('id')), 'enable' if body.get('enabled') else 'disable'))
+        return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': str(e)[:300]}
+
+
+def store_npm_cert_renew(body):
+    try:
+        _npm_call('POST', '/nginx/certificates/%d/renew' % int(body.get('id')), timeout=240)
+        return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': _npm_explain(str(e))}
+
+
+def store_npm_job_clear(_body=None):
+    if _NPM_API['job'].get('state') != 'running':
+        _NPM_API['job'] = {}
+    return 200, {'ok': True}
+
+
+def store_npm_linked():
+    """NPMplus installé hors de Desktroo Apps (app TrueNAS, par exemple) mais relié à la fenêtre Domaines."""
+    return (_lic_read_json(STORE_NPM_FILE) or {}).get('linked') or None
+
+
+def store_npm_link(body=None):
+    """Relie un NPMplus existant à la fenêtre Domaines, sans toucher à son installation."""
+    gate = store_gate('install')
+    if not gate['ok']:
+        return 402, {'ok': False, 'error': 'Abonnement requis pour relier NPMplus.', 'gate': gate}
+    if STORE_NPM_ID in store_installed_get():
+        return 409, {'ok': False, 'error': 'NPMplus est déjà géré par Desktroo Apps.'}
+    f = store_npm_foreign()
+    if not f or 'npmplus' not in str(f.get('image', '')).lower():
+        return 404, {'ok': False, 'error': 'Aucun NPMplus à relier sur ce NAS.'}
+    s = store_npm_settings()
+    s['ports'] = f['ports']
+    s['linked'] = {'container': f['container'], 'project': f.get('project') or '', 'image': f.get('image') or '',
+                   'at': int(_st_time.time())}
+    s.pop('data', None)
+    _store_npm_settings_save(s)
+    with _NPM_API_LOCK:
+        _NPM_API.update(cookie='', until=0, fails=0)
+    log.info('NPMplus : %s relié à la fenêtre Domaines', f['container'])
+    return 200, {'ok': True}
+
+
+def store_npm_unlink(body=None):
+    s = _lic_read_json(STORE_NPM_FILE) or {}
+    if s.pop('linked', None) is not None:
+        s.pop('api', None)   # identifiants de l'instance reliée : ils ne servent plus
+        s['ports'] = dict(STORE_NPM_DEFAULT_PORTS)
+        _store_npm_settings_save(s)
+    with _NPM_API_LOCK:
+        _NPM_API.update(cookie='', until=0, fails=0)
+    return 200, {'ok': True}
+
+
+# Kit des apps (servi sous /a/_sdk/ par nginx → fileops). Embarqué ici : rien à distribuer en plus.
+_STORE_SDK_JS = "/* Desktroo — kit des apps du Magasin. © 2026 Mdm-services.fr. Tous droits réservés. */\n(function () {\n  'use strict';\n  var parentWin = (window.parent && window.parent !== window) ? window.parent : null;\n  var origin = location.origin, seq = 0, pending = {}, themeFns = [];\n  function post(type, data, id) {\n    if (!parentWin) return;\n    var m = { dk: 1, type: type, data: data || {} };\n    if (id) m.id = id;\n    parentWin.postMessage(m, origin);\n  }\n  function call(type, data) {\n    return new Promise(function (resolve, reject) {\n      if (!parentWin) return reject(new Error('Cette app doit être ouverte dans Desktroo.'));\n      var id = ++seq;\n      pending[id] = { resolve: resolve, reject: reject };\n      post(type, data, id);\n      setTimeout(function () { if (pending[id]) { delete pending[id]; reject(new Error('Pas de réponse du bureau.')); } }, 600000);\n    });\n  }\n  function applyTheme(t) {\n    var r = document.documentElement, vars = (t && t.vars) || {};\n    r.setAttribute('data-theme', t && t.mode === 'light' ? 'light' : 'dark');\n    Object.keys(vars).forEach(function (k) { if (/^--[a-z0-9-]+$/i.test(k)) r.style.setProperty(k, String(vars[k])); });\n    if (t && t.lang) r.lang = t.lang;\n    themeFns.forEach(function (f) { try { f(t); } catch (_) {} });\n  }\n  window.addEventListener('message', function (e) {\n    if (e.source !== parentWin || e.origin !== origin) return;\n    var m = e.data;\n    if (!m || m.dk !== 1) return;\n    if (m.type === 'theme') applyTheme(m.data || {});\n    else if (m.type === 'reply' && pending[m.id]) {\n      var p = pending[m.id]; delete pending[m.id];\n      if (m.error) p.reject(new Error(m.error)); else p.resolve(m.data);\n    }\n  });\n  // Hors du bureau (onglet, écran d'accueil du téléphone) : le thème choisi dans Desktroo sur ce navigateur,\n  // et le manifeste qui permet d'installer l'app comme une application.\n  var appId = (location.pathname.match(/^\\/a\\/([a-z0-9][a-z0-9-]{0,40})\\//) || [])[1] || '';\n  if (!parentWin) {\n    try { var tt = localStorage.getItem('tn-theme'); if (tt === 'light' || tt === 'dark') document.documentElement.setAttribute('data-theme', tt); } catch (_) {}\n    if (appId && !document.querySelector('link[rel=\"manifest\"]')) {\n      var ml = document.createElement('link'); ml.rel = 'manifest'; ml.href = '/a/' + appId + '/desktroo.webmanifest';\n      document.head.appendChild(ml);\n      var ic = document.createElement('link'); ic.rel = 'icon'; ic.href = '/fileops/store/icon/' + appId;\n      document.head.appendChild(ic);\n    }\n  }\n  window.desktroo = {\n    inDesktroo: !!parentWin,\n    appId: appId,\n    // Ferme la session des apps sur cet appareil (hors du bureau) et revient à la page de connexion.\n    logout: function () {\n      fetch('/fileops/store/logout', { credentials: 'same-origin', cache: 'no-store' }).catch(function () {}).then(function () {\n        location.replace('/a/_login?next=' + encodeURIComponent('/a/' + appId + '/'));\n      });\n    },\n    setTitle: function (t) { post('setTitle', { title: String(t || '') }); },\n    notify: function (text, level) { post('notify', { text: String(text || ''), level: level || 'info' }); },\n    close: function () { post('close'); },\n    user: function () { return call('user'); },\n    pickFile: function (opts) { return call('pickFile', opts || {}); },\n    onTheme: function (f) { if (typeof f === 'function') themeFns.push(f); }\n  };\n  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { post('ready', { title: document.title }); });\n  else post('ready', { title: document.title });\n})();\n"
+_STORE_SDK_CSS = "/* Desktroo — kit de style des apps du Magasin. © 2026 Mdm-services.fr. Tous droits réservés.\n   Les valeurs ci-dessous servent hors du bureau ; dans Desktroo, le bureau envoie les siennes (thème, accent). */\n:root {\n  --accent: #3ecf8e; --accent-rgb: 62,207,142; --accent2: #55dca0; --accent-ink: #04231a;\n  --bg: #0a1220; --surface: #0f1a2e; --surface-2: #16243f;\n  --text: #e9eef7; --text-dim: #9db0d0; --glass-border: rgba(255,255,255,0.09);\n  --danger: #e05252; --success: #3ecf8e; --warning: #f59e0b;\n  --radius: 16px; --radius-sm: 11px;\n  --font-body: \"Figtree\", system-ui, -apple-system, \"Segoe UI\", sans-serif;\n  --font-display: \"Schibsted Grotesk\", system-ui, -apple-system, sans-serif;\n  --font-mono: ui-monospace, \"SF Mono\", Menlo, Consolas, monospace;\n  color-scheme: dark;\n}\n:root[data-theme=\"light\"] {\n  --accent: #0a8451; --accent-rgb: 10,132,81; --accent2: #0a8451; --accent-ink: #ffffff;\n  --bg: #eef3fb; --surface: #ffffff; --surface-2: #f3f7fc;\n  --text: #1a2440; --text-dim: #5a6b8a; --glass-border: rgba(0,0,0,0.15);\n  color-scheme: light;\n}\n:root[data-theme=\"dark\"] { --surface: #0f1a2e; --surface-2: #16243f; }\n@media (prefers-color-scheme: light) {\n  :root:not([data-theme]) {\n    --bg: #f4f6fa; --surface: #ffffff; --surface-2: #eef2f8;\n    --text: #14213a; --text-dim: #5b6b86; --glass-border: rgba(10,20,40,0.12);\n    color-scheme: light;\n  }\n}\n*, *::before, *::after { box-sizing: border-box; }\n/* Comme les fenêtres du bureau : pas de barre de défilement visible (le défilement reste possible). */\n* { scrollbar-width: none !important; -ms-overflow-style: none !important; }\n*::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }\nhtml, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 14px/1.5 var(--font-body); }\nh1, h2, h3 { font-family: var(--font-display); line-height: 1.2; margin: 0 0 .5em; }\nh1 { font-size: 22px; } h2 { font-size: 17px; } h3 { font-size: 15px; }\na { color: var(--accent); }\ncode, pre, kbd { font-family: var(--font-mono); font-size: 13px; }\n.dk-muted { color: var(--text-dim); }\n.dk-page { padding: 20px; }\n.dk-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--glass-border); }\n.dk-spacer { flex: 1; }\n.dk-card { background: var(--surface); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 16px; }\n.dk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 14px;\n  border-radius: 999px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: var(--text);\n  font: 500 12.5px var(--font-body); line-height: 1.2; white-space: nowrap; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }\n.dk-btn:hover { background: rgba(var(--accent-rgb),0.16); border-color: rgba(var(--accent-rgb),0.45); color: var(--accent2); }\n.dk-btn:focus-visible, .dk-input:focus-visible, .dk-nav:focus-visible, .dk-open:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }\n.dk-btn.primary, .dk-open { background: var(--accent); border-color: transparent; color: var(--accent-ink); font-weight: 600; }\n.dk-btn.primary:hover, .dk-open:hover { background: var(--accent2); color: var(--accent-ink); }\n.dk-btn.danger { color: var(--danger); }\n.dk-btn.danger:hover { background: rgba(224,82,82,0.14); border-color: rgba(224,82,82,0.45); color: var(--danger); }\n.dk-btn:disabled { opacity: .5; cursor: default; }\n[data-theme=\"light\"] .dk-btn:not(.primary) { background: #ffffff; border-color: rgba(0,0,0,0.14); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }\n[data-theme=\"light\"] .dk-btn:not(.primary):hover { background: #ecf8f2; border-color: rgba(var(--accent-rgb),0.45); color: var(--accent); }\n.dk-input { width: 100%; min-height: 36px; padding: 0 12px; border-radius: var(--radius-sm); border: 1px solid var(--glass-border);\n  background: var(--surface-2); color: var(--text); font: 14px var(--font-body); }\n.dk-list { list-style: none; margin: 0; padding: 0; }\n.dk-list > li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--glass-border); }\n.dk-list > li:last-child { border-bottom: 0; }\n\n/* ── Gabarit des fenêtres Desktroo : colonne de navigation à gauche, en-tête, contenu ──────────────\n   <div class=\"dk-shell\"><nav class=\"dk-side\">…<button class=\"dk-nav active\">…</button></nav>\n   <section class=\"dk-main\"><header class=\"dk-head\"><div class=\"dk-head-text\"><h1 class=\"dk-title\">…</h1>\n   <div class=\"dk-sub\">…</div></div><div class=\"dk-head-actions\">…</div></header><div class=\"dk-body\">…</div></section></div> */\n.dk-shell { display: flex; height: 100vh; min-height: 0; }\n.dk-side { width: 236px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding: 10px 10px 14px; overflow-y: auto;\n  scrollbar-width: none; background: rgba(0,0,0,0.18); border-right: 1px solid rgba(255,255,255,0.07); }\n.dk-side::-webkit-scrollbar { display: none; }\n.dk-side-title { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px 6px; font-size: 10px;\n  font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; }\n.dk-side-sep { height: 1px; flex-shrink: 0; margin: 10px 10px 4px; background: rgba(255,255,255,0.07); }\n.dk-side-fill { flex: 1 1 auto; min-height: 8px; }\n.dk-side-note { padding: 6px 10px 0; font-size: 11px; color: var(--text-dim); }\n.dk-nav { display: flex; align-items: center; gap: 10px; width: 100%; flex-shrink: 0; padding: 8px 10px; border: 0;\n  border-radius: var(--radius-sm); background: none; color: var(--text); font: inherit; font-size: 13px; text-align: left;\n  cursor: pointer; transition: background .15s, color .15s; }\n.dk-nav:hover { background: rgba(255,255,255,0.07); }\n.dk-nav.active { background: rgba(var(--accent-rgb),0.18); color: var(--accent2); }\n.dk-nav.add { color: var(--accent2); }\n.dk-nav-ic { width: 18px; flex-shrink: 0; text-align: center; opacity: .85; }\n.dk-nav-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.dk-count { padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,0.08); font-size: 10px; font-weight: 600; color: var(--text-dim); }\n.dk-count:empty { display: none; }\n.dk-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }\n/* Fenêtre étroite : les actions passent sous le titre au lieu de l'écraser. */\n.dk-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; flex-shrink: 0; padding: 20px 28px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }\n.dk-head-text { flex: 1 1 220px; min-width: 0; }\n.dk-title { margin: 0; font-family: var(--font-display); font-size: 21px; font-weight: 700; letter-spacing: -0.01em; color: var(--text);\n  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.dk-sub { margin-top: 3px; font-size: 12.5px; color: var(--text-dim); line-height: 1.45; }\n.dk-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; flex: 0 1 auto; max-width: 100%; }\n.dk-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 18px 28px 28px; }\n.dk-open { display: inline-flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 999px; font: 600 12.5px var(--font-body); cursor: pointer; }\n.dk-group-title { display: flex; align-items: center; gap: 12px; margin: 22px 0 8px; font-size: 12px; font-weight: 600; color: var(--text-dim); }\n.dk-group-title::after { content: ''; flex: 1; min-width: 24px; height: 1px; background: rgba(255,255,255,0.08); }\n.dk-group { border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(255,255,255,0.03); }\n[data-theme=\"light\"] .dk-side { background: rgba(13,27,53,0.045); border-right-color: rgba(0,0,0,0.09); }\n[data-theme=\"light\"] .dk-side-sep, [data-theme=\"light\"] .dk-group-title::after { background: rgba(0,0,0,0.09); }\n[data-theme=\"light\"] .dk-nav:hover { background: rgba(0,0,0,0.055); }\n[data-theme=\"light\"] .dk-nav.active { background: rgba(var(--accent-rgb),0.2); }\n[data-theme=\"light\"] .dk-count { background: rgba(0,0,0,0.07); }\n[data-theme=\"light\"] .dk-head { border-bottom-color: rgba(0,0,0,0.09); }\n[data-theme=\"light\"] .dk-group { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.12); }\n@media (max-width: 760px) {\n  .dk-shell { flex-direction: column; height: auto; min-height: 100vh; }\n  .dk-side { width: auto; flex-direction: row; flex-wrap: wrap; gap: 4px; padding: 8px; border-right: 0; border-bottom: 1px solid rgba(255,255,255,0.07); }\n  .dk-side-title, .dk-side-sep, .dk-side-fill, .dk-side-note { display: none; }\n  .dk-nav { width: auto; padding: 6px 10px; }\n  .dk-head { flex-wrap: wrap; padding: 14px 16px 10px; }\n  .dk-head-actions { flex-wrap: wrap; }\n  .dk-body { padding: 12px 16px 20px; }\n}\n"
+_STORE_SDK = {
+    'desktroo-app.js': ('application/javascript; charset=utf-8', _STORE_SDK_JS.encode('utf-8')),
+    'desktroo-app.css': ('text/css; charset=utf-8', _STORE_SDK_CSS.encode('utf-8')),
+}
+# ── MDM-STORE-V1 (fin) ──────────────────────────────────────────────────────────────────────────
+
+
 class FileOpsHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -9290,6 +11228,8 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Cache-Control', 'no-store')
+        if code == 200 and isinstance(resp, dict) and resp.get('token'):   # MDM-STORE-V1 : session des apps
+            self.send_header('Set-Cookie', store_cookie_header(self, store_cookie_make(resp.get('user') or 'admin'), STORE_COOKIE_TTL))
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -9431,6 +11371,9 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         # MDM-FILES-PLUS-V1 : fichier lu par le navigateur, sur une adresse signée et temporaire
         if _pp.path.startswith('/media/') and not _pp.path.startswith('/media/ticket'):
             return _px_media_serve(self, _pp.path)
+        # MDM-STORE-V1 : vérification pour nginx, kit des apps, fin de session — sans jeton
+        if _pp.path.startswith('/store/') and _store_public_get(self, _pp.path):
+            return
         # Couleur du thème : lue par l'écran de connexion, donc sans jeton
         if _pp.path.rstrip('/') == '/branding':
             try:
@@ -9447,6 +11390,10 @@ class FileOpsHandler(BaseHTTPRequestHandler):
 
         # MDM-FILES-PLUS-V1
         if _px_get(self, path, qs):
+            return
+
+        # MDM-STORE-V1
+        if path.startswith('/store/') and _store_get(self, path, qs):
             return
 
         # Licence d'utilisation : l'accord a-t-il été donné pour la version en cours du texte ?
@@ -10096,6 +12043,8 @@ class FileOpsHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if urlparse(self.path).path.rstrip('/') == '/auth/login':
             return self._auth_login()
+        if urlparse(self.path).path.rstrip('/') == '/store/login':   # MDM-STORE-V1 : connexion directe aux apps
+            return store_login(self)
         if not self._auth():
             return
         p    = urlparse(self.path)
@@ -10157,6 +12106,10 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         if path not in _LIC_READONLY_ALLOW_POST and _lic_is_readonly():
             self._json(402, {'error': 'license_readonly',
                              'message': 'Abonnement requis — mode lecture seule.'})
+            return
+
+        # MDM-STORE-V1
+        if path.startswith('/store/') and _store_post(self, path):
             return
 
         # MDM-FILES-PLUS-V1
@@ -12286,6 +14239,12 @@ if os.environ.get('HOST_BOOTSTRAP', '1').lower() not in ('0', 'false', 'no', 'of
         name='host-bootstrap',
         daemon=True,
     ).start()
+
+# MDM-STORE-V1 : réseau des apps et bloc nginx /a/
+_threading.Thread(target=_store_boot, name='store-boot', daemon=True).start()
+
+# MDM-NAS-GATEWAY-V1 : remet nginx.conf sur une adresse du NAS qui répond
+_threading.Thread(target=_heal_nginx_conf, name='nas-gateway-heal', daemon=True).start()
 
 # MDM-FILES-PLUS-V1 : la corbeille se vide de ce qui a dépassé la durée de conservation
 _threading.Thread(target=_px_trash_loop, name='trash-purge', daemon=True).start()
