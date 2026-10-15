@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.46.3 — 15 octobre 2026
+
+### Corrigé
+- **Une app installée depuis Desktroo Apps a toujours son icône sur le bureau**, même si la fenêtre Desktroo Apps a été fermée pendant l'installation. Retirée ensuite, elle n'y revient pas.
+
 ## 2.46.2 — 15 octobre 2026
 
 ### Amélioré

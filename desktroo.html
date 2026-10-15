@@ -13236,8 +13236,14 @@ function dkStoreRegisterApps(list) {
     var id = a.id, key = 'dkapp-' + id, w = (a.installed && a.installed.window) || a.window || {};
     want[key] = true;
     if (npm && a.installed && a.installed.ports) _dkStore.npmPorts = a.installed.ports;
-    if (npm) try {   // une fois : l'icône va sur le bureau, même si NPMplus a été installé ou repris ailleurs
-      if (!localStorage.getItem('dk_npm_pin_v1')) { var sc = getShortcuts(); if (sc.indexOf(key) < 0) { sc.push(key); saveShortcuts(sc); } localStorage.setItem('dk_npm_pin_v1', '1'); }
+    // Une app nouvellement installée va une fois sur le bureau, même si l'installation s'est finie fenêtre fermée
+    // ou dans un autre navigateur. Retirée ensuite par l'utilisateur, elle n'y revient pas.
+    try {
+      var pinned = JSON.parse(localStorage.getItem('dk_store_pinned') || '[]');
+      if (pinned.indexOf(id) < 0) {
+        var sc = getShortcuts(); if (sc.indexOf(key) < 0) { sc.push(key); saveShortcuts(sc); }
+        pinned.push(id); localStorage.setItem('dk_store_pinned', JSON.stringify(pinned));
+      }
     } catch (_) {}
     var label = npm ? T('Domaines') : (dkStoreName(a.name || (a.installed && a.installed.name)) || id);
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
@@ -13248,6 +13254,12 @@ function dkStoreRegisterApps(list) {
       svg: dkStoreIcon(id, 56) });
   });
   for (var i = ALL_APPS.length - 1; i >= 0; i--) if (ALL_APPS[i].store && !want[ALL_APPS[i].id]) ALL_APPS.splice(i, 1);
+  // Une app désinstallée retrouvera son icône si on la réinstalle.
+  try {
+    var pin = JSON.parse(localStorage.getItem('dk_store_pinned') || '[]');
+    var keep = pin.filter(function(x) { return want['dkapp-' + x]; });
+    if (keep.length !== pin.length) localStorage.setItem('dk_store_pinned', JSON.stringify(keep));
+  } catch (_) {}
   if (typeof renderDesktopIcons === 'function') renderDesktopIcons();
 }
 // La fenêtre « Sites Web » n'existe que si le module « Serveur web » est installé (ou encore intégré à Desktroo).
@@ -18477,7 +18489,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.46.2';
+var DK_PAGE_VERSION = '2.46.3';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

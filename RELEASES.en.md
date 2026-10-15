@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.46.3 — 15 October 2026
+
+### Fixed
+- **An app installed from Desktroo Apps always gets its desktop icon**, even if the Desktroo Apps window was closed during the installation. Removed afterwards, it does not come back.
+
 ## 2.46.2 — 15 October 2026
 
 ### Improved
