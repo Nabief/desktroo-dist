@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.47.1 — 15 octobre 2026
+
+### Amélioré
+- **Desktroo Pass envoie les invitations par e-mail**, avec la messagerie déjà réglée pour les alertes du NAS. La personne reçoit un lien pour créer son compte ; une invitation peut être renvoyée.
+  > Les messageries Gmail ou Outlook connectées par OAuth ne peuvent pas servir au coffre : il faut un serveur SMTP avec mot de passe. Sans messagerie, l'invitation reste possible : la personne crée son compte elle-même sur l'adresse du coffre.
+
 ## 2.47.0 — 15 octobre 2026
 
 ### Nouveau

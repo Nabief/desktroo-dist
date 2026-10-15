@@ -9444,7 +9444,17 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Supprimer le compte {0} ?": "Delete the account {0}?",
 "Une personne invitée crée son compte sur {0} avec cette même adresse e-mail, puis choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.": "An invited person creates their account at {0} with that same e-mail address, then chooses their master password. Nobody else can sign up.",
 "vu {0}": "seen {0}",
-"{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.": "{0} is invited: they still need to create their account at the vault address."
+"{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.": "{0} is invited: they still need to create their account at the vault address.",
+"Les invitations partent par e-mail depuis {0}, avec un lien pour créer le compte.": "Invitations are sent by e-mail from {0}, with a link to create the account.",
+"Les invitations ne partent pas encore par e-mail : la personne doit créer son compte elle-même sur l’adresse du coffre.": "Invitations are not sent by e-mail yet: the person must create their account themselves at the vault address.",
+"Régler la messagerie": "Set up e-mail",
+"Envoyer les invitations par e-mail": "Send invitations by e-mail",
+"Renvoyer l’invitation": "Resend the invitation",
+"La personne invitée suit le lien reçu par e-mail, crée son compte et choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.": "The invited person follows the link received by e-mail, creates their account and chooses their master password. Nobody else can sign up.",
+"Invitation envoyée à {0}.": "Invitation sent to {0}.",
+"Activation de l’envoi par e-mail… (le coffre redémarre quelques secondes)": "Turning on e-mail sending… (the vault restarts for a few seconds)",
+"Les invitations partiront depuis {0}.": "Invitations will be sent from {0}.",
+"Invitation renvoyée à {0}.": "Invitation resent to {0}."
 }
 </script>
 <script id="dk-i18n">
@@ -13363,6 +13373,13 @@ function dkPassRenderUsers(body, st) {
   var h = (st.error ? '<div class="dks-err" style="margin:0 0 14px;">' + webEsc(st.error) + '</div>' : '')
     + '<div style="display:flex;gap:8px;max-width:560px;margin-bottom:14px;"><input id="dkpass-inv" style="' + iStyle() + 'margin-top:0;" placeholder="' + T('adresse e-mail de la personne') + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')dkPassInvite()">'
     + '<button class="web-open" onclick="dkPassInvite()">' + T('Inviter') + '</button></div>';
+  var mail = st.mail || {};
+  h += mail.ok
+    ? '<p class="dks-tag" style="margin:-4px 0 14px;">' + Tf('Les invitations partent par e-mail depuis {0}, avec un lien pour créer le compte.', webEsc(mail.from)) + '</p>'
+    : '<div class="dks-banner" style="flex-wrap:wrap;"><span style="flex:1;min-width:240px;">' + T('Les invitations ne partent pas encore par e-mail : la personne doit créer son compte elle-même sur l’adresse du coffre.')
+      + (mail.why ? ' <span class="dks-tag" style="display:block;">' + webEsc(mail.why) + '</span>' : '') + '</span>'
+      + '<button class="fs-btn" onclick="openApp(\'sysconfig\');gsAfter(\'sysconfig\',function(){scGo(\'mail\');})">' + T('Régler la messagerie') + '</button>'
+      + '<button class="web-open" onclick="dkPassMail()">' + T('Envoyer les invitations par e-mail') + '</button></div>';
   var users = st.users || [];
   if (!users.length) h += '<div class="dks-empty">' + T('Aucun compte pour l’instant. Invitez-vous en premier, avec votre adresse e-mail.') + '</div>';
   else {
@@ -13374,20 +13391,30 @@ function dkPassRenderUsers(body, st) {
         + '<span style="display:flex;gap:6px;flex-wrap:wrap;">'
         + (u.status === 2 || u.enabled === false ? '<button class="web-mini" onclick="dkPassUser(' + wmQ(u.id) + ',\'enable\',' + wmQ(u.email) + ')">' + T('Réactiver') + '</button>'
            : (u.status !== 1 ? '<button class="web-mini" onclick="dkPassUser(' + wmQ(u.id) + ',\'disable\',' + wmQ(u.email) + ')">' + T('Désactiver') + '</button>' : ''))
+        + (u.status === 1 && mail.ok ? '<button class="web-mini" onclick="dkPassUser(' + wmQ(u.id) + ',\'invite/resend\',' + wmQ(u.email) + ')">' + T('Renvoyer l’invitation') + '</button>' : '')
         + (u.twofa ? '<button class="web-mini" onclick="dkPassUser(' + wmQ(u.id) + ',\'remove-2fa\',' + wmQ(u.email) + ')">' + T('Retirer la 2FA') + '</button>' : '')
         + '<button class="web-mini" style="color:var(--danger);" onclick="dkPassUser(' + wmQ(u.id) + ',\'delete\',' + wmQ(u.email) + ')">' + T('Supprimer') + '</button>'
         + '</span></div>';
     });
     h += '</div>';
   }
-  h += '<p class="dks-tag" style="margin-top:14px;max-width:640px;">' + Tf('Une personne invitée crée son compte sur {0} avec cette même adresse e-mail, puis choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.', dkPassUrl()) + '</p>';
+  h += '<p class="dks-tag" style="margin-top:14px;max-width:640px;">' + (mail.ok
+    ? T('La personne invitée suit le lien reçu par e-mail, crée son compte et choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.')
+    : Tf('Une personne invitée crée son compte sur {0} avec cette même adresse e-mail, puis choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.', dkPassUrl())) + '</p>';
   body.innerHTML = h;
 }
 async function dkPassInvite() {
   var el = document.getElementById('dkpass-inv'), email = (el && el.value || '').trim();
   if (!email) { toast(T('Indiquez une adresse e-mail.')); return; }
-  try { await fileops('POST', 'store/pass/invite', { email: email }); toast(Tf('{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.', email), 7000); }
+  try { await fileops('POST', 'store/pass/invite', { email: email });
+    toast(((_dkPass.st || {}).mail || {}).ok ? Tf('Invitation envoyée à {0}.', email) : Tf('{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.', email), 7000); }
   catch (e) { toast('⚠️ ' + (e.message || e), 7000); return; }
+  dkPassLoad(true);
+}
+async function dkPassMail() {
+  toast(T('Activation de l’envoi par e-mail… (le coffre redémarre quelques secondes)'), 5000);
+  try { var r = await fileops('POST', 'store/pass/mail', {}); toast('✅ ' + Tf('Les invitations partiront depuis {0}.', r.from || ''), 6000); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 9000); }
   dkPassLoad(true);
 }
 async function dkPassUser(id, act, email) {
@@ -13395,7 +13422,8 @@ async function dkPassUser(id, act, email) {
   var ask = { delete: [Tf('Supprimer le compte {0} ?', webEsc(email)) + '<br><span style="font-size:12px;">' + T('Son coffre et tous ses mots de passe sont effacés définitivement.') + '</span>', T('Supprimer')],
               'remove-2fa': [Tf('Retirer la double authentification de {0} ?', webEsc(email)) + '<br><span style="font-size:12px;">' + T('À faire seulement si la personne a perdu son téléphone.') + '</span>', T('Retirer')] }[act];
   if (ask && !(await showConfirm(ask[0], { danger: true, ok: ask[1] }))) return;
-  try { await fileops('POST', 'store/pass/user', { id: id, action: act }); } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  try { await fileops('POST', 'store/pass/user', { id: id, action: act }); if (act === 'invite/resend') toast(Tf('Invitation renvoyée à {0}.', email)); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
   dkPassLoad(true);
 }
 function dkPassRenderSettings(body, st) {
@@ -18673,7 +18701,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.47.0';
+var DK_PAGE_VERSION = '2.47.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.47.0'
+APP_VERSION = '2.47.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9756,6 +9756,7 @@ _STORE_POST = {
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
+    '/store/pass/mail': lambda b: store_pass_mail(b),
 }
 
 
@@ -11235,6 +11236,25 @@ def _store_pass_save(s):
     _lic_write_json(STORE_PASS_FILE, s)
 
 
+def _store_pass_smtp():
+    """Messagerie de TrueNAS (celle des alertes), reprise pour les invitations du coffre. Rend (env, raison)."""
+    try:
+        m = _store_midclt('mail.config', timeout=30) or {}
+    except Exception as e:
+        return {}, 'Messagerie de TrueNAS illisible : ' + str(e)[:120]
+    if m.get('oauth'):
+        return {}, 'La messagerie du NAS passe par Gmail ou Outlook (connexion OAuth) : le coffre ne peut pas s’en servir. Configurez un serveur SMTP avec mot de passe.'
+    host, sender = str(m.get('outgoingserver') or ''), str(m.get('fromemail') or '')
+    if not host or not sender:
+        return {}, 'La messagerie du NAS n’est pas configurée.'
+    sec = {'TLS': 'starttls', 'SSL': 'force_tls'}.get(str(m.get('security') or '').upper(), 'off')
+    env = {'SMTP_HOST': host, 'SMTP_PORT': str(m.get('port') or (465 if sec == 'force_tls' else 587)), 'SMTP_SECURITY': sec,
+           'SMTP_FROM': sender, 'SMTP_FROM_NAME': 'Desktroo Pass'}
+    if m.get('smtp') and m.get('user'):
+        env['SMTP_USERNAME'] = str(m.get('user')); env['SMTP_PASSWORD'] = str(m.get('pass') or '')
+    return env, ''
+
+
 def store_pass_compose(app, s):
     images = (app or {}).get('images') or {}
     env = {'TZ': _store_timezone(), 'ROCKET_PORT': '8080', 'SIGNUPS_ALLOWED': 'false', 'INVITATIONS_ALLOWED': 'true',
@@ -11242,6 +11262,10 @@ def store_pass_compose(app, s):
            'INVITATION_ORG_NAME': 'Desktroo Pass', 'LOG_LEVEL': 'warn', 'DATA_FOLDER': '/data'}
     if s.get('domain'):
         env['DOMAIN'] = 'https://' + s['domain']
+    smtp, _why = _store_pass_smtp()   # invitations par e-mail, avec la messagerie du NAS
+    env.update(smtp)
+    s['mail'] = {'ok': bool(smtp), 'from': smtp.get('SMTP_FROM', ''), 'why': _why}
+    _store_pass_save(s)
     svc = {
         'image': str(images.get('vaultwarden') or 'docker.io/vaultwarden/server:latest'),
         'container_name': STORE_PASS_CONTAINER, 'restart': 'unless-stopped',
@@ -11345,7 +11369,8 @@ def _pass_admin(method, path, body=None):
 def store_pass_state():
     s = _lic_read_json(STORE_PASS_FILE) or {}
     st = {'installed': store_pass_installed(), 'domain': s.get('domain') or '', 'port': int(s.get('port') or STORE_PASS_PORT),
-          'job': dict(_NPM_API['job']) or None, 'users': [], 'npm': None}
+          'job': dict(_NPM_API['job']) or None, 'users': [], 'npm': None,
+          'mail': s.get('mail') or {'ok': False, 'from': '', 'why': ''}}
     try:
         n = _lic_read_json(STORE_NPM_FILE) or {}
         st['npm'] = 'module' if STORE_NPM_ID in store_installed_get() else ('linked' if n.get('linked') else None)
@@ -11385,11 +11410,28 @@ def store_pass_invite(body):
 def store_pass_user(body):
     uid = str((body or {}).get('id') or '')
     act = str((body or {}).get('action') or '')
-    if not re.match(r'^[0-9a-f-]{8,64}$', uid) or act not in ('delete', 'disable', 'enable', 'deauth', 'remove-2fa'):
+    if not re.match(r'^[0-9a-f-]{8,64}$', uid) or act not in ('delete', 'disable', 'enable', 'deauth', 'remove-2fa', 'invite/resend'):
         return 400, {'ok': False, 'error': 'Demande invalide.'}
     try:
         _pass_admin('POST', '/users/%s/%s' % (uid, act))
         return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': str(e)[:300]}
+
+
+def store_pass_mail(body=None):
+    """Reprend la messagerie actuelle du NAS pour les invitations (redéploie le coffre, quelques secondes)."""
+    if not store_pass_installed():
+        return 409, {'ok': False, 'error': 'Desktroo Pass n’est pas installé.'}
+    smtp, why = _store_pass_smtp()
+    if not smtp:
+        return 409, {'ok': False, 'error': why}
+    try:
+        s = store_pass_settings()
+        app = store_app_entry(STORE_PASS_ID) or {'id': STORE_PASS_ID, 'version': (store_installed_get().get(STORE_PASS_ID) or {}).get('version')}
+        _store_midclt('app.update', 'dt-' + STORE_PASS_ID, {'custom_compose_config': store_pass_compose(app, s)}, job=True, timeout=900)
+        _PASS.update(cookie='', until=0)
+        return 200, {'ok': True, 'from': smtp.get('SMTP_FROM')}
     except Exception as e:
         return 502, {'ok': False, 'error': str(e)[:300]}
 

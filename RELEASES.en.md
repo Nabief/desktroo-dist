@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.47.1 — 15 October 2026
+
+### Improved
+- **Desktroo Pass sends invitations by e-mail**, using the mail settings already set for the NAS alerts. The person receives a link to create their account; an invitation can be resent.
+  > Gmail or Outlook mail connected through OAuth cannot be used by the vault: it needs an SMTP server with a password. Without mail, invitations still work: the person creates their account at the vault address.
+
 ## 2.47.0 — 15 October 2026
 
 ### New
