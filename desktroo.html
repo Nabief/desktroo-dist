@@ -9386,7 +9386,20 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Chacune redémarre pendant sa mise à jour.": "Each one restarts during its update.",
 "Tout mettre à jour": "Update all",
 "Mise à jour {0}/{1} : {2}…": "Updating {0}/{1}: {2}…",
-"Serveur web": "Web server"
+"Serveur web": "Web server",
+"Arrêtée(s) : {0}. Démarrez-la pour la mettre à jour.": "Stopped: {0}. Start it to update it.",
+"Laissée(s) de côté, car arrêtée(s) : {0}.": "Left aside, because stopped: {0}.",
+"Le reverse-proxy passe en dernier : si vous ouvrez Desktroo par lui, la page se reconnectera toute seule.": "The reverse proxy goes last: if you open Desktroo through it, the page will reconnect by itself.",
+"Connexion coupée pendant la mise à jour de {0} : TrueNAS la termine, vérifiez dans quelques minutes.": "Connection lost while updating {0}: TrueNAS finishes it, check again in a few minutes.",
+"Mise à jour en cours…": "Updating…",
+"TrueNAS termine la mise à jour": "TrueNAS is finishing the update",
+"Arrêtée : démarrez-la pour la mettre à jour": "Stopped: start it to update it",
+"Mises à jour terminées": "Updates finished",
+"Mises à jour en cours": "Updates in progress",
+"Fermer le suivi": "Close the progress",
+"Abonnement requis": "Subscription required",
+"Non lancée": "Not started",
+"Mises à jour terminées : {0} à jour, {1} en échec.": "Updates finished: {0} up to date, {1} failed."
 }
 </script>
 <script id="dk-i18n">
@@ -16343,30 +16356,74 @@ function appUpCardsHtml() {
 }
 // Toutes les applications annoncées, l'une après l'autre : nouvelle version du catalogue (app.upgrade),
 // ou nouvelles images d'une app personnalisée (app.pull_images, puis redéploiement).
+// Suivi de « Tout mettre à jour » : un panneau en tête de la fenêtre Alertes, une ligne par application.
+function appUpRunHtml() {
+  var r = _appUp.run; if (!r) return '';
+  var ic = { wait: '<span style="color:var(--text-dim);">•</span>', run: '<div class="spinner" style="width:14px;height:14px;"></div>',
+             ok: '<span style="color:var(--success);">✓</span>', err: '<span style="color:var(--danger);">✕</span>',
+             later: '<span style="color:var(--warning);">⏳</span>', skip: '<span style="color:var(--text-dim);">⏸</span>' };
+  var lab = { wait: T('En attente'), run: T('Mise à jour en cours…'), ok: T('À jour'), later: T('TrueNAS termine la mise à jour'), skip: T('Arrêtée : démarrez-la pour la mettre à jour') };
+  var n = r.items.length, fin = r.items.filter(function(x) { return x.state !== 'wait' && x.state !== 'run'; }).length;
+  var h = '<div style="border:1px solid rgba(var(--accent-rgb),0.35);background:rgba(var(--accent-rgb),0.07);border-radius:10px;padding:12px 14px;margin-bottom:10px;">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><b style="font-size:13px;">' + (r.done ? T('Mises à jour terminées') : T('Mises à jour en cours')) + '</b>'
+    + '<span style="font-size:12px;color:var(--text-dim);">' + fin + ' / ' + n + '</span>'
+    + (r.done ? '<button class="fs-btn" style="margin-left:auto;" onclick="appUpRunClose()">' + T('Fermer le suivi') + '</button>' : '') + '</div>'
+    + '<div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.08);margin-bottom:10px;overflow:hidden;"><div style="height:100%;width:' + Math.round(100 * fin / Math.max(1, n)) + '%;background:var(--accent);transition:width .3s;"></div></div>';
+  r.items.forEach(function(x) {
+    h += '<div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;padding:4px 0;"><span style="width:16px;display:inline-flex;justify-content:center;padding-top:2px;">' + ic[x.state] + '</span>'
+      + '<span style="flex:1;min-width:0;"><b>' + webEsc(x.title) + '</b> <span style="color:var(--text-dim);">— ' + webEsc(x.state === 'err' ? x.msg : lab[x.state]) + '</span></span></div>';
+  });
+  return h + '</div>';
+}
+function appUpRunRender() {
+  var box = document.getElementById('app-up-run');
+  if (box) box.innerHTML = appUpRunHtml();
+  else if (wmVisible('notifs')) { try { loadAlertsWindow(); } catch (e) {} }
+}
+function appUpRunClose() { _appUp.run = null; loadAlertsWindow(); }
 async function appUpdateAll() {
-  var list = (_appUp.list || []).slice();
-  if (!list.length || _appUp.all_busy) return;
+  var all = (_appUp.list || []).slice();
+  if (!all.length || (_appUp.run && !_appUp.run.done)) return;
+  // TrueNAS refuse de mettre à jour une app arrêtée : on le dit, sans la démarrer à la place de l'utilisateur.
+  var stopped = all.filter(function(u) { return String((u.app && u.app.state) || '').toUpperCase() === 'STOPPED'; });
+  var list = all.filter(function(u) { return stopped.indexOf(u) < 0; });
+  // Un reverse-proxy (NPMplus…) passe en dernier : s'il porte l'adresse du bureau, sa mise à jour coupe la connexion.
+  var isProxy = function(u) { return /npm|proxy|traefik|caddy|nginx-proxy/i.test(u.name + ' ' + u.title); };
+  list.sort(function(x, y) { return (isProxy(x) ? 1 : 0) - (isProxy(y) ? 1 : 0); });
+  if (!list.length) { toast(Tf('Arrêtée(s) : {0}. Démarrez-la pour la mettre à jour.', stopped.map(function(u) { return u.title; }).join(', ')), 8000); return; }
   if (!await showConfirm(Tf('Mettre à jour {0} application(s) ?', list.length) + '<br><span style="font-size:12px;color:var(--text-dim);">'
-      + webEsc(list.map(function(u) { return u.title; }).join(', ')) + '. ' + T('Chacune redémarre pendant sa mise à jour.') + '</span>', { ok: T('Tout mettre à jour') })) return;
-  var done = [], failed = [];
-  for (var i = 0; i < list.length; i++) {
-    var u = list[i];
-    _appUp.all_busy = Tf('Mise à jour {0}/{1} : {2}…', i + 1, list.length, u.title);
-    _appsBusy[u.name] = T('Mise à jour en cours');
-    if (wmVisible('notifs')) { try { loadAlertsWindow(); } catch (e) {} }
+      + webEsc(list.map(function(u) { return u.title; }).join(', ')) + '. ' + T('Chacune redémarre pendant sa mise à jour.')
+      + (stopped.length ? '<br>' + webEsc(Tf('Laissée(s) de côté, car arrêtée(s) : {0}.', stopped.map(function(u) { return u.title; }).join(', '))) : '')
+      + (list.some(isProxy) ? '<br>' + T('Le reverse-proxy passe en dernier : si vous ouvrez Desktroo par lui, la page se reconnectera toute seule.') : '')
+      + '</span>', { ok: T('Tout mettre à jour') })) return;
+  var items = list.map(function(u) { return { u: u, title: u.title, state: 'wait', msg: '' }; })
+    .concat(stopped.map(function(u) { return { u: u, title: u.title, state: 'skip', msg: '' }; }));
+  _appUp.run = { items: items, done: false };
+  if (!wmVisible('notifs')) { try { openApp('notifs'); } catch (e) {} } else loadAlertsWindow();
+  var waitWs = async function() { for (var t = 0; t < 60 && !_wsAuthed; t++) await new Promise(function(r) { setTimeout(r, 2000); }); };
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i], u = it.u;
+    if (it.state === 'skip') continue;
+    it.state = 'run'; _appsBusy[u.name] = T('Mise à jour en cours'); appUpRunRender();
     try {
+      await waitWs();
       if (u.images) await appsJob('app.pull_images', [u.name, { redeploy: true }], 1200000);
       else await appsJob('app.upgrade', [u.name, { app_version: 'latest' }], 1200000);
-      done.push(u.title);
+      it.state = 'ok';
     } catch (e) {
-      if (e && e.message === 'LICENSE_READONLY') { delete _appsBusy[u.name]; break; }
-      failed.push(u.title + ' : ' + ((e && e.message) || e));
+      var msg = String((e && e.message) || e);
+      if (msg === 'LICENSE_READONLY') { it.state = 'err'; it.msg = T('Abonnement requis'); delete _appsBusy[u.name]; break; }
+      // Connexion coupée (reverse-proxy qui redémarre…) : TrueNAS poursuit la mise à jour de son côté.
+      if (/WS_UNAVAILABLE|WS_TIMEOUT/.test(msg)) { it.state = 'later'; appUpRunRender(); await waitWs(); }
+      else { it.state = 'err'; it.msg = msg.replace(/^\[EFAULT\]\s*/, ''); }
     }
     delete _appsBusy[u.name];
+    appUpRunRender();
   }
-  _appUp.all_busy = '';
-  if (done.length) toast('✅ ' + Tf('À jour : {0}', done.join(', ')), 7000);
-  if (failed.length) toast('❌ ' + failed.join(' · '), 12000);
+  items.forEach(function(x) { if (x.state === 'wait') { x.state = 'err'; x.msg = T('Non lancée'); } });
+  _appUp.run.done = true;
+  var ok = items.filter(function(x) { return x.state === 'ok'; }).length, bad = items.filter(function(x) { return x.state === 'err'; }).length;
+  toast((bad ? '⚠️ ' : '✅ ') + Tf('Mises à jour terminées : {0} à jour, {1} en échec.', ok, bad), 7000);
   _appUp.at = 0;
   await appUpdatesCheck(true);
   try { await loadApps(true); } catch (e) {}
@@ -18420,7 +18477,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.46.1';
+var DK_PAGE_VERSION = '2.46.2';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -20789,21 +20846,22 @@ function appsGoX(nav) { clClose('apps'); _appsNav = nav; _appsSel = null; appsRe
 async function loadAlertsWindow() {
   const el = document.getElementById('alerts-content');
   if (!el) return;
-  el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
+  var runBox = '<div id="app-up-run">' + appUpRunHtml() + '</div>';
+  if (!_appUp.run) el.innerHTML = T('<div class="fs-loading" style="height:200px;"><div class="spinner"></div> Chargement...</div>');
   try {
     try { await tndVersionFetch(); } catch (e) {}
     var upCard = tndUpdateCardHtml() + appUpCardsHtml();
     const alerts = ensureArray(await socketCall('/alert/list')).filter(function(a){ return !a.dismissed; });
     if (!alerts.length && !upCard) {
-      el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">ok</div><span>Aucune alerte — Système opérationnel</span></div>');
+      el.innerHTML = runBox + T('<div class="empty-state" style="height:200px;"><div class="es-icon">ok</div><span>Aucune alerte — Système opérationnel</span></div>');
       return;
     }
-    let html = '';
+    let html = runBox;
     var nUp = (_appUp.list || []).length;
     if (alerts.length || nUp) {
       html += '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">'
-        + (nUp ? '<button class="web-open" id="app-up-all"' + (_appUp.all_busy ? ' disabled' : '') + ' onclick="appUpdateAll()">'
-          + webEsc(_appUp.all_busy || (nUp > 1 ? Tf('Tout mettre à jour ({0})', nUp) : T('Mettre à jour'))) + '</button>' : '')
+        + (nUp && !(_appUp.run && !_appUp.run.done) ? '<button class="web-open" id="app-up-all" onclick="appUpdateAll()">'
+          + webEsc(nUp > 1 ? Tf('Tout mettre à jour ({0})', nUp) : T('Mettre à jour')) + '</button>' : '')
         + (alerts.length ? T('<button class="fs-btn" onclick="dismissAllAlerts()">Effacer toutes</button>') : '')
         + '</div>';
     }
@@ -20832,7 +20890,8 @@ async function loadAlertsWindow() {
     html += '</div>';
     el.innerHTML = html;
   } catch(e) {
-    el.innerHTML = T('<div class="empty-state" style="height:200px;"><div class="es-icon">ok</div><span>Système opérationnel</span></div>');
+    // Connexion perdue un instant (reverse-proxy en cours de mise à jour…) : le suivi reste affiché.
+    el.innerHTML = '<div id="app-up-run">' + appUpRunHtml() + '</div>' + (_appUp.run ? '' : T('<div class="empty-state" style="height:200px;"><div class="es-icon">ok</div><span>Système opérationnel</span></div>'));
   }
 }
 

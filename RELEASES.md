@@ -3,6 +3,14 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.46.2 — 15 octobre 2026
+
+### Amélioré
+- **Suivi de « Tout mettre à jour ».** La fenêtre Alertes reste ouverte avec une ligne par application : en attente, en cours, à jour, ou la raison d'un échec, et une barre d'avancement.
+- **« Tout mettre à jour » ne bute plus sur une application arrêtée** : TrueNAS refuse de la mettre à jour, Desktroo la laisse de côté et vous le dit.
+- **Le reverse-proxy est mis à jour en dernier.** Si vous ouvrez Desktroo par lui (NPMplus, par exemple), la connexion coupée pendant sa mise à jour n'interrompt plus les autres : la page se reconnecte et continue.
+  > Une mise à jour lancée continue côté TrueNAS même quand la page perd la connexion ; Desktroo l'indique au lieu d'afficher « WS_UNAVAILABLE ».
+
 ## 2.46.1 — 15 octobre 2026
 
 ### Nouveau
