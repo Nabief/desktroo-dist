@@ -991,6 +991,22 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   #win-snapshots { min-width:860px; min-height:520px; }
   /* Snapshots ZFS */
   .web-table.snap-list { --wt-cols:minmax(0,1fr) 172px 92px 92px; }
+  .web-table.snap-list.sel { --wt-cols:22px minmax(0,1fr) 172px 92px 92px; }
+  .snap-r { cursor:pointer; transition:background .12s; }
+  .snap-r:hover { background:rgba(255,255,255,0.075) !important; }
+  .snap-r:focus-visible { outline:2px solid var(--accent2); outline-offset:-2px; }
+  .snap-r.is-sel { background:rgba(224,82,82,0.10) !important; }
+  [data-theme="light"] .snap-r.is-sel { background:rgba(224,82,82,0.08) !important; }
+  .snap-ck { display:flex; align-items:center; justify-content:center; align-self:stretch; margin:0 -6px; padding:0 6px; cursor:pointer; overflow:visible !important; }
+  .snap-ck input { margin:0; cursor:pointer; }
+  input[type="checkbox"].acl-check:indeterminate { background:var(--accent); border-color:var(--accent); }
+  input[type="checkbox"].acl-check:indeterminate::before { top:7px; left:3px; width:9px; height:0; border-width:0 0 2px 0; transform:none; opacity:1; }
+  .snap-selbar { position:sticky; bottom:0; z-index:2; display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:12px 0 0; padding:10px 12px;
+    border:1px solid rgba(224,82,82,0.35); border-radius:12px; background:var(--glass-solid, #16213a); box-shadow:0 -6px 18px rgba(0,0,0,0.25); font-size:13px; }
+  [data-theme="light"] .snap-selbar { background:#ffffff; box-shadow:0 -6px 18px rgba(0,0,0,0.08); }
+  .snap-selbar[hidden] { display:none; }
+  .snap-selbar .dim { color:var(--text-dim); }
+  .snap-selbar .grow { flex:1; }
   .web-table.snap-list.with-ds .web-tr:not(.head), .web-table.snap-tasks .web-tr:not(.head) { min-height:50px; }
   .web-table.snap-tasks { --wt-cols:minmax(0,1.35fr) minmax(0,1.1fr) 104px minmax(0,1.1fr); }
   .web-title.snap-path { font-family:var(--font-mono); font-size:17px; letter-spacing:0; word-break:break-all; }
@@ -9182,7 +9198,20 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Elle continue sur le NAS. Le journal indique où elle en est.": "It is still running on the NAS. The log shows how far it got.",
 "Le nom saisi ne correspond pas au nom du NAS.": "The name you typed does not match the name of the NAS.",
 "La désinstallation est déjà lancée.": "The uninstall has already started.",
-"sudo bash uninstall.sh": "sudo bash uninstall.sh"
+"sudo bash uninstall.sh": "sudo bash uninstall.sh",
+"Tout cocher": "Select all",
+"Cocher {0}": "Select {0}",
+"{0} snapshots cochés": "{0} snapshots selected",
+"1 snapshot coché": "1 snapshot selected",
+"au moins {0} libérés": "at least {0} freed",
+"Tout décocher": "Clear selection",
+"Supprimer ({0})": "Delete ({0})",
+"Au moins {0} libérés. Un snapshot supprimé ne se récupère pas.": "At least {0} freed. A deleted snapshot cannot be recovered.",
+"Suppression de snapshots": "Deleting snapshots",
+"Suppression {0} sur {1}…": "Deleting {0} of {1}…",
+"La suppression continue sur le NAS : la liste se mettra à jour d'elle-même.": "Deletion is still running on the NAS: the list will update by itself.",
+"{0} supprimés": "{0} deleted",
+"{0} supprimés, {1} refusés : {2}": "{0} deleted, {1} refused: {2}"
 }
 </script>
 <script id="dk-i18n">
@@ -17435,7 +17464,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.45.0';
+var DK_PAGE_VERSION = '2.45.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -25442,6 +25471,10 @@ var _snapCounts = null;      // snapshots par dataset, connu seulement si la lis
 var _snapTruncated = false;
 var _snapSeq = 0;
 var _snapTaskBack = 'tasks'; // d'où l'on a ouvert l'éditeur de tâche : tasks | ds
+var _snapSel = {};           // snapshots cochés pour une suppression groupée, par identifiant (pool/ds@nom)
+var _snapSelList = [];       // la liste affichée, dans l'ordre : sert à la sélection par plage (Maj + clic)
+var _snapSelLast = -1;
+var _snapBulkBusy = false;
 var SNAP_LIMIT = 2000;
 var SNAP_UNITS = [['HOUR',T('heure(s)')],['DAY',T('jour(s)')],['WEEK',T('semaine(s)')],['MONTH',T('mois')],['YEAR',T('année(s)')]];
 WEB_ICONS.clock = '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>';
@@ -25536,6 +25569,7 @@ function snapSideRender() {
   el.querySelectorAll('[data-ds]').forEach(function(b) { b.onclick = function() { snapGo('ds', b.dataset.ds); }; });
 }
 function snapGo(nav, ds) {
+  if (nav !== _snapNav || (ds !== undefined && ds !== _snapDs)) { _snapSel = {}; _snapSelLast = -1; }
   _snapNav = nav;
   if (ds !== undefined) _snapDs = ds;
   if (nav === 'ds' && _snapDs) snapDsView();
@@ -25579,19 +25613,139 @@ async function loadSnapshots() {
 
 // Tableau de snapshots. withDs : la ligne rappelle le dataset (vue d'ensemble).
 function snapTable(list, withDs) {
-  var h = '<div class="web-table snap-list' + (withDs ? ' with-ds' : '') + '"><div class="web-tr head"><span>Snapshot</span><span>' + T('Créé') + '</span><span class="num">' + T('Utilisé') + '</span><span class="num">' + T('Référencé') + '</span></div>';
+  var h = '<div class="web-table snap-list sel' + (withDs ? ' with-ds' : '') + '"><div class="web-tr head">'
+    + '<label class="snap-ck" title="' + webEsc(T('Tout cocher')) + '"><input type="checkbox" class="acl-check" id="snap-ck-all" onchange="snapSelAll(this.checked)" aria-label="' + webEsc(T('Tout cocher')) + '"></label>'
+    + '<span>Snapshot</span><span>' + T('Créé') + '</span><span class="num">' + T('Utilisé') + '</span><span class="num">' + T('Référencé') + '</span></div>';
   list.forEach(function(s, i) {
-    h += '<button class="web-tr" data-snap="' + i + '" data-find="' + webEsc(String(s.name || s.id || '').toLowerCase()) + '">'
+    var on = !!(s.id && _snapSel[s.id]);
+    h += '<div class="web-tr snap-r' + (on ? ' is-sel' : '') + '" role="button" tabindex="0" data-snap="' + i + '" data-find="' + webEsc(String(s.name || s.id || '').toLowerCase()) + '">'
+      + '<label class="snap-ck" data-ck="' + i + '"><input type="checkbox" class="acl-check"' + (on ? ' checked' : '') + ' aria-label="' + webEsc(Tf('Cocher {0}', s.snapshot_name || s.name || '')) + '"></label>'
       + (withDs ? '<span class="cron-two"><strong class="mono">' + webEsc(s.snapshot_name || '') + '</strong><span class="mono dim" title="' + webEsc(s.dataset || '') + '">' + webEsc(s.dataset || '') + '</span></span>'
                 : '<span class="mono" title="' + webEsc(s.snapshot_name || '') + '"><strong>' + webEsc(s.snapshot_name || '') + '</strong></span>')
       + '<span>' + webEsc(snapWhen(s)) + '</span>'
       + '<span class="num">' + webEsc(snapSize(s, 'used')) + '</span>'
-      + '<span class="num dim">' + webEsc(snapSize(s, 'referenced')) + '</span></button>';
+      + '<span class="num dim">' + webEsc(snapSize(s, 'referenced')) + '</span></div>';
   });
-  return h + '</div>';
+  return h + '</div><div class="snap-selbar" id="snap-selbar" role="region" aria-live="polite" hidden></div>';
 }
 function snapTableBind(el, list) {
-  el.querySelectorAll('[data-snap]').forEach(function(b) { b.onclick = function() { _snapCur = list[Number(b.dataset.snap)]; _snapDs = _snapCur.dataset; snapGo('snap'); }; });
+  _snapSelList = list; _snapSelLast = -1;
+  // Un snapshot coché qui n'est plus dans la liste (supprimé ailleurs, autre vue) ne compte plus.
+  var ids = {};
+  list.forEach(function(s) { if (s.id) ids[s.id] = 1; });
+  Object.keys(_snapSel).forEach(function(id) { if (!ids[id]) delete _snapSel[id]; });
+  el.querySelectorAll('[data-snap]').forEach(function(b) {
+    var open = function() { _snapCur = list[Number(b.dataset.snap)]; _snapDs = _snapCur.dataset; snapGo('snap'); };
+    b.onclick = function(ev) { if (ev.target.closest && ev.target.closest('.snap-ck')) return; open(); };
+    b.onkeydown = function(ev) { if (ev.target === b && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); open(); } };
+  });
+  el.querySelectorAll('[data-ck]').forEach(function(l) {
+    var cb = l.querySelector('input');
+    if (cb) cb.onclick = function(ev) { ev.stopPropagation(); snapSelClick(Number(l.dataset.ck), cb.checked, ev.shiftKey); };
+  });
+  snapSelSync();
+}
+// ── Sélection pour la suppression groupée ──
+function snapVisibleIdx() {
+  var out = [], body = snapBody();
+  if (body) body.querySelectorAll('.snap-list [data-snap]').forEach(function(r) { if (r.style.display !== 'none') out.push(Number(r.dataset.snap)); });
+  return out;
+}
+function snapSelSet(i, on) {
+  var s = _snapSelList[i];
+  if (!s || !s.id) return;
+  if (on) _snapSel[s.id] = s; else delete _snapSel[s.id];
+}
+// Maj + clic : coche ou décoche toutes les lignes visibles entre le dernier clic et celui-ci.
+function snapSelClick(i, on, shift) {
+  if (_snapBulkBusy) { snapSelSync(); return; }
+  if (shift && _snapSelLast >= 0) {
+    var a = Math.min(_snapSelLast, i), b = Math.max(_snapSelLast, i);
+    snapVisibleIdx().forEach(function(k) { if (k >= a && k <= b) snapSelSet(k, on); });
+  } else snapSelSet(i, on);
+  _snapSelLast = i;
+  snapSelSync();
+}
+// « Tout cocher » ne prend que les lignes visibles : filtrer d'abord, puis tout cocher.
+function snapSelAll(on) {
+  if (_snapBulkBusy) { snapSelSync(); return; }
+  snapVisibleIdx().forEach(function(k) { snapSelSet(k, on); });
+  snapSelSync();
+}
+function snapSelClear() { _snapSel = {}; _snapSelLast = -1; snapSelSync(); }
+function snapSelIds() { return Object.keys(_snapSel); }
+// Place propre aux snapshots cochés. C'est un minimum : ce que plusieurs snapshots se partagent n'est compté
+// dans aucun d'eux, et n'est libéré que lorsqu'ils partent tous.
+function snapSelUsed() {
+  return snapSelIds().reduce(function(t, id) { var n = Number(snapPropRaw(((_snapSel[id] || {}).properties || {}).used)); return t + (isFinite(n) ? n : 0); }, 0);
+}
+function snapSelSync() {
+  var body = snapBody();
+  if (!body) return;
+  var vis = snapVisibleIdx(), nOn = 0;
+  body.querySelectorAll('.snap-list [data-snap]').forEach(function(r) {
+    var s = _snapSelList[Number(r.dataset.snap)], on = !!(s && s.id && _snapSel[s.id]);
+    r.classList.toggle('is-sel', on);
+    var cb = r.querySelector('.snap-ck input');
+    if (cb) { cb.checked = on; cb.disabled = _snapBulkBusy; }
+  });
+  vis.forEach(function(k) { var s = _snapSelList[k]; if (s && s.id && _snapSel[s.id]) nOn++; });
+  var all = document.getElementById('snap-ck-all');
+  if (all) { all.checked = vis.length > 0 && nOn === vis.length; all.indeterminate = nOn > 0 && nOn < vis.length; all.disabled = _snapBulkBusy || !vis.length; }
+  snapSelBar();
+}
+function snapSelBar(progress) {
+  var bar = document.getElementById('snap-selbar');
+  if (!bar) return;
+  var ids = snapSelIds();
+  if (!ids.length) { bar.hidden = true; bar.innerHTML = ''; return; }
+  bar.hidden = false;
+  bar.innerHTML = '<strong>' + webEsc(ids.length > 1 ? Tf('{0} snapshots cochés', ids.length) : T('1 snapshot coché')) + '</strong>'
+    + '<span class="dim">' + webEsc(progress || Tf('au moins {0} libérés', mntFmtSize(snapSelUsed()))) + '</span><span class="grow"></span>'
+    + '<button class="fs-btn" onclick="snapSelClear()"' + (_snapBulkBusy ? ' disabled' : '') + '>' + T('Tout décocher') + '</button>'
+    + '<button class="fs-btn snap-danger" onclick="snapBulkDelete()"' + (_snapBulkBusy ? ' disabled' : '') + '>'
+    + webEsc(_snapBulkBusy ? T('Suppression…') : Tf('Supprimer ({0})', ids.length)) + '</button>';
+}
+// Suppression groupée : core.bulk en un seul job, avec un résultat par snapshot ; un par un si core.bulk manque.
+async function snapBulkDelete() {
+  var ids = snapSelIds();
+  if (!ids.length || _snapBulkBusy) return;
+  var names = ids.map(function(id) { return (_snapSel[id] && _snapSel[id].name) || id; }).sort();
+  var list = names.slice(0, 6).map(function(n) { return '<div class="mono" style="font-size:12px;word-break:break-all;">' + snapEsc(n) + '</div>'; }).join('')
+    + (names.length > 6 ? '<div style="font-size:12px;color:var(--text-dim);">' + snapEsc(Tf('et {0} autres', names.length - 6)) + '</div>' : '');
+  var msg = '<strong>' + snapEsc(Tf('Supprimer {0} ?', snapCountText(ids.length))) + '</strong>'
+    + '<div style="margin:8px 0;max-height:160px;overflow:auto;text-align:left;">' + list + '</div>'
+    + '<span style="font-size:12px;color:var(--text-dim);">' + snapEsc(Tf('Au moins {0} libérés. Un snapshot supprimé ne se récupère pas.', mntFmtSize(snapSelUsed()))) + '</span>';
+  if (!await showConfirm(msg, { danger: true, ok: Tf('Supprimer ({0})', ids.length) })) return;
+  _snapBulkBusy = true;
+  snapSelSync();
+  var ok = 0, fails = [], unknown = false, res;
+  try {
+    try {
+      var jid = await wsCall('core.bulk', ['pool.snapshot.delete', ids.map(function(id) { return [id]; }), T('Suppression de snapshots')], 120000);
+      res = await waitJob(jid, Math.max(120000, ids.length * 15000));
+      if (res === null) unknown = true;
+    } catch (e) { res = undefined; }
+    if (Array.isArray(res)) {
+      res.forEach(function(r, k) { if (r && r.error) fails.push([ids[k], String(r.error)]); else ok++; });
+    } else if (res === undefined) {
+      for (var k = 0; k < ids.length; k++) {
+        snapSelBar(Tf('Suppression {0} sur {1}…', k + 1, ids.length));
+        try { await wsCall('pool.snapshot.delete', [ids[k]], 120000); ok++; }
+        catch (e) { fails.push([ids[k], (e && e.message) || String(e)]); }
+      }
+    }
+  } finally {
+    _snapBulkBusy = false;
+  }
+  // Ceux qui ont été refusés restent cochés : on les voit, on peut réessayer ou les décocher.
+  var keep = {};
+  fails.forEach(function(f) { if (_snapSel[f[0]]) keep[f[0]] = _snapSel[f[0]]; });
+  _snapSel = keep;
+  if (unknown) toast(T('La suppression continue sur le NAS : la liste se mettra à jour d\'elle-même.'), 8000);
+  else if (!fails.length) toast('✅ ' + Tf('{0} supprimés', snapCountText(ok)));
+  else toast('⚠️ ' + Tf('{0} supprimés, {1} refusés : {2}', ok, fails.length, String(fails[0][1]).replace(/\s+/g, ' ').slice(0, 160)), 12000);
+  loadSnapshots();
 }
 function snapFind(v) {
   v = String(v || '').trim().toLowerCase();
@@ -25599,6 +25753,7 @@ function snapFind(v) {
   snapBody().querySelectorAll('.snap-list [data-snap]').forEach(function(b) { var ok = !v || b.dataset.find.indexOf(v) >= 0; b.style.display = ok ? '' : 'none'; if (ok) n++; });
   var none = document.getElementById('snap-none');
   if (none) none.style.display = n ? 'none' : '';
+  snapSelSync();
 }
 
 // ── Tous les snapshots ──

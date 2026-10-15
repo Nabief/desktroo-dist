@@ -3,7 +3,13 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.45.0 — à paraître
+## 2.45.1 — à paraître
+
+### Nouveau
+- **Supprimer plusieurs snapshots d'un coup.** Une case par ligne dans Snapshots, « Tout cocher » pour ce qui est affiché, et Maj + clic pour cocher une plage. Une barre indique combien sont cochés et la place libérée, avec le bouton de suppression.
+  > Astuce : filtrez d'abord (par exemple `auto-2026-09`), puis « Tout cocher » ne prend que les lignes visibles. Un snapshot que TrueNAS refuse de supprimer (retenu, ou à l'origine d'un clone) reste coché, avec la raison. La place affichée est un minimum : ce que plusieurs snapshots partagent n'est libéré que quand ils partent tous.
+
+## 2.45.0 — 14 octobre 2026
 
 ### Nouveau
 - **Désinstaller Desktroo depuis l'application.** À propos → Désinstaller Desktroo : la fenêtre montre ce qui sera supprimé, ce qui reste, et la place que vous récupérez. Il faut taper le nom du NAS pour confirmer.
