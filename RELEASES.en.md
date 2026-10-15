@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.47.0 — 15 October 2026
+
+### New
+- **Desktroo Pass, the NAS password vault** (Desktroo Apps). It works with the official, free Bitwarden apps: autofill in the browser, on the phone and on the PC. Everyone has their own vault, encrypted with their own master password.
+  > Built on Vaultwarden. Desktroo installs it, publishes it over https under your domain through NPMplus, and administers it from its window: accounts by invitation only, administration page never served on the Internet.
+
 ## 2.46.3 — 15 October 2026
 
 ### Fixed

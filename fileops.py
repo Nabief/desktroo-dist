@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.46.3'
+APP_VERSION = '2.47.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9706,6 +9706,9 @@ def _store_get(handler, path, qs):
         handler.end_headers()
         handler.wfile.write(body)
         return True
+    if path == '/store/pass/state':
+        handler._json(200, store_pass_state())
+        return True
     if path == '/store/npm/state':
         handler._json(200, store_npm_state())
         return True
@@ -9743,13 +9746,16 @@ _STORE_POST = {
     '/store/adopt': lambda b: store_npm_adopt(b),
     '/store/npm/credentials': lambda b: store_npm_credentials(b),
     '/store/npm/secret': lambda b: store_npm_secret(b),
-    '/store/npm/host': lambda b: store_npm_host_add(b),
+    '/store/npm/host': lambda b: store_npm_host_add({k: v for k, v in (b or {}).items() if k != 'advanced_config'}),
     '/store/npm/host/delete': lambda b: store_npm_host_delete(b),
     '/store/npm/host/toggle': lambda b: store_npm_host_toggle(b),
     '/store/npm/cert/renew': lambda b: store_npm_cert_renew(b),
     '/store/npm/job/clear': lambda b: store_npm_job_clear(b),
     '/store/npm/link': lambda b: store_npm_link(b),
     '/store/npm/unlink': lambda b: store_npm_unlink(b),
+    '/store/pass/invite': lambda b: store_pass_invite(b),
+    '/store/pass/user': lambda b: store_pass_user(b),
+    '/store/pass/domain': lambda b: store_pass_domain(b),
 }
 
 
@@ -10083,7 +10089,7 @@ def _store_health(app, tries=30):
 def _store_install_job(app, users, update=False):
     app_id = app['id']
     is_module = app.get('kind') == 'module' or app_id in STORE_MODULE_IDS
-    npm_s = None
+    npm_s = pass_s = None
     try:
         _store_job_set(app_id, step='Préparation du réseau des apps')
         if not store_net_ensure():
@@ -10094,7 +10100,12 @@ def _store_install_job(app, users, update=False):
             ds = _store_dataset(app_id)
             snap = '%s@desktroo-maj-%s' % (ds, _st_time.strftime('%Y%m%d-%H%M%S'))
             _px_host('zfs snapshot ' + shq(snap), timeout=60)
-        if app_id == STORE_NPM_ID:
+        if app_id == STORE_PASS_ID:
+            _store_job_set(app_id, step='Création du dossier de données')
+            pass_s = _store_pass_prepare(app)
+            ds = _store_dataset(app_id)
+            compose = store_pass_compose(app, pass_s)
+        elif app_id == STORE_NPM_ID:
             _store_job_set(app_id, step='Création du dossier de données')
             npm_s = _store_npm_prepare(app)
             ds = _store_dataset(app_id)
@@ -10140,7 +10151,7 @@ def _store_install_job(app, users, update=False):
                 store_npm_setup_admin()
             except Exception as e:
                 log.warning('NPMplus : compte administrateur non créé : %s', e)
-        if not (_store_npm_wait(npm_s) if npm_s else _store_web_wait_running() if is_module else _store_health(app)):
+        if not (_store_pass_wait(pass_s) if pass_s else _store_npm_wait(npm_s) if npm_s else _store_web_wait_running() if is_module else _store_health(app)):
             _store_job_set(app_id, state='done', step='Installée, mais elle ne répond pas encore', error='')
             return
         _store_job_set(app_id, state='done', step='Installée', error='')
@@ -10653,7 +10664,7 @@ STORE_NPM_DEFAULT_PORTS = {'http': 8090, 'https': 8453, 'admin': 8181}
 _STORE_NPM_KEEP = ('TZ', 'ACME_', 'TRUST_', 'DISABLE_', 'LOGROTAT', 'GOA', 'NGINX_', 'CUSTOM_OCSP', 'DEFAULT_CERT_ID',
                    'IPV4_BINDING', 'IPV6_BINDING', 'NPM_IPV', 'NPM_LISTEN', 'OIDC_', 'AUTH_REQUEST_', 'CERTBOT_',
                    'ECH_', 'ENABLE_MPTCP', 'LISTEN_PROXY', 'INITIAL_DEFAULT_PAGE', 'COOKIE_SECRET', 'PUID', 'PGID')
-STORE_MODULE_IDS = ('webserver', 'npmplus')
+STORE_MODULE_IDS = ('webserver', 'npmplus', 'pass')
 
 
 def store_npm_settings():
@@ -11081,7 +11092,8 @@ def store_npm_secret(_body=None):
 _NPM_DOMAIN_RE = re.compile(r'^(?=.{1,253}$)(\*\.)?([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
 
 
-def store_npm_host_add(body):
+def store_npm_host_add(body, advanced='', then=None):
+    """Publie un domaine. « advanced » et « then » ne servent qu'aux modules (Desktroo Pass), jamais à la page."""
     doms = [str(d).strip().lower().rstrip('.') for d in (body.get('domains') or []) if str(d).strip()][:20]
     bad = [d for d in doms if not _NPM_DOMAIN_RE.match(d)]
     if not doms or bad:
@@ -11102,12 +11114,16 @@ def store_npm_host_add(body):
                'block_exploits': True, 'allow_websocket_upgrade': True, 'http2_support': True}
     if https:
         payload.update(certificate_id='new', ssl_forced=True)
+    if advanced:
+        payload['advanced_config'] = advanced
     _NPM_API['job'] = {'state': 'running', 'step': ('Demande du certificat pour ' if https else 'Publication de ') + doms[0], 'error': '',
                        'domain': doms[0], 'at': int(_st_time.time())}
 
     def run():
         try:
             _npm_call('POST', '/nginx/proxy-hosts', payload, timeout=240)
+            if then:
+                then(doms[0])
             _NPM_API['job'].update(state='done', step='Publié', error='')
             log.info('NPMplus : %s publié vers %s:%s', ', '.join(doms), host, port)
         except Exception as e:
@@ -11191,6 +11207,218 @@ def store_npm_unlink(body=None):
     with _NPM_API_LOCK:
         _NPM_API.update(cookie='', until=0, fails=0)
     return 200, {'ok': True}
+
+
+# ── MDM-STORE-V1 · module « Desktroo Pass » (dt-pass) : coffre de mots de passe compatible Bitwarden ──────
+# Serveur Vaultwarden (AGPL-3.0, image officielle non modifiée), utilisable avec les applis Bitwarden officielles
+# (extensions de navigateur, téléphone, PC). Desktroo l'installe, le publie en https sous un domaine via NPMplus
+# (chemin /admin bloqué côté Internet) et l'administre depuis sa fenêtre : comptes sur invitation seulement.
+# Le jeton d'administration reste sur le NAS (data/store/pass.json) ; le navigateur ne le voit jamais.
+STORE_PASS_ID = 'pass'
+STORE_PASS_CONTAINER = 'desktroo-pass'
+STORE_PASS_FILE = os.path.join(STORE_DIR, 'pass.json')
+STORE_PASS_PORT = 8282          # port publié sur le NAS, vers lequel NPMplus relaie le domaine
+_PASS = {'cookie': '', 'until': 0, 'job': {}}
+_PASS_LOCK = _threading.Lock()
+
+
+def store_pass_settings():
+    s = _lic_read_json(STORE_PASS_FILE) or {}
+    if not s.get('admin_token'):
+        s['admin_token'] = _px_secrets.token_urlsafe(32)
+    s['port'] = int(s.get('port') or STORE_PASS_PORT)
+    return s
+
+
+def _store_pass_save(s):
+    os.makedirs(STORE_DIR, exist_ok=True)
+    _lic_write_json(STORE_PASS_FILE, s)
+
+
+def store_pass_compose(app, s):
+    images = (app or {}).get('images') or {}
+    env = {'TZ': _store_timezone(), 'ROCKET_PORT': '8080', 'SIGNUPS_ALLOWED': 'false', 'INVITATIONS_ALLOWED': 'true',
+           'SIGNUPS_VERIFY': 'false', 'SHOW_PASSWORD_HINT': 'false', 'ADMIN_TOKEN': s['admin_token'],
+           'INVITATION_ORG_NAME': 'Desktroo Pass', 'LOG_LEVEL': 'warn', 'DATA_FOLDER': '/data'}
+    if s.get('domain'):
+        env['DOMAIN'] = 'https://' + s['domain']
+    svc = {
+        'image': str(images.get('vaultwarden') or 'docker.io/vaultwarden/server:latest'),
+        'container_name': STORE_PASS_CONTAINER, 'restart': 'unless-stopped',
+        'user': '568:568',
+        'environment': env,
+        'volumes': ['/mnt/' + _store_dataset(STORE_PASS_ID) + '/data:/data'],
+        'ports': ['%d:8080' % s['port']],
+        'networks': [STORE_NET],
+        'security_opt': ['no-new-privileges:true'], 'cap_drop': ['ALL'],
+        'labels': {'fr.desktroo.store': STORE_PASS_ID, 'fr.desktroo.version': str((app or {}).get('version', ''))},
+    }
+    return {'services': {'pass': svc}, 'networks': {STORE_NET: {'external': True}}}
+
+
+def _store_pass_prepare(app):
+    s = store_pass_settings()
+    ds = _store_dataset(STORE_PASS_ID)
+    parent = ds.rsplit('/', 1)[0]
+    for d in (parent, ds):
+        out, _e, code = _px_host('zfs list -H -o name ' + shq(d) + ' 2>/dev/null', timeout=30)
+        if code != 0 or not out.strip():
+            _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
+    p = '/mnt/' + ds + '/data'
+    _o, err, code = _px_host('mkdir -p %s && chown 568:568 %s' % (shq(p), shq(p)), timeout=60)
+    if code != 0:
+        raise RuntimeError('Dossier de données : ' + (err or '')[-300:])
+    busy = []
+    if not store_pass_installed():
+        out, _e, _c = _px_host("ss -Hltn 2>/dev/null | awk '{print $4}'", timeout=30)
+        if any(re.search(r':%d$' % s['port'], l.strip()) for l in (out or '').splitlines()):
+            busy.append(s['port'])
+    if busy:
+        raise RuntimeError('Le port %d est déjà utilisé sur le NAS.' % s['port'])
+    _store_pass_save(s)
+    return s
+
+
+def store_pass_installed():
+    return STORE_PASS_ID in store_installed_get()
+
+
+def _store_pass_wait(s, timeout=150):
+    end = _st_time.time() + timeout
+    while _st_time.time() < end:
+        if _store_container_info(STORE_PASS_CONTAINER)[1]:
+            _o, _e, code = _px_host('curl -s -m 4 -o /dev/null http://127.0.0.1:%d/alive || wget -q -T 4 -O /dev/null http://127.0.0.1:%d/alive'
+                                    % (s['port'], s['port']), timeout=20)
+            if code == 0:
+                return True
+        _st_time.sleep(4)
+    return False
+
+
+# ── administration (API /admin de Vaultwarden, jointe par le réseau des apps) ──
+def _pass_http(method, path, body=None, form=None, cookie='', timeout=20):
+    import http.client
+    conn = http.client.HTTPConnection(STORE_PASS_CONTAINER, 8080, timeout=timeout)
+    headers = {'Accept': 'application/json'}
+    data = None
+    if form is not None:
+        from urllib.parse import urlencode
+        data = urlencode(form).encode('utf-8'); headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    elif body is not None:
+        data = json.dumps(body).encode('utf-8'); headers['Content-Type'] = 'application/json'
+    if cookie:
+        headers['Cookie'] = cookie
+    try:
+        conn.request(method, path, body=data, headers=headers)
+        r = conn.getresponse()
+        raw = r.read()
+        return r.status, raw, r.getheader('Set-Cookie') or ''
+    finally:
+        conn.close()
+
+
+def _pass_session(force=False):
+    with _PASS_LOCK:
+        if not force and _PASS['cookie'] and _st_time.time() < _PASS['until']:
+            return _PASS['cookie']
+        tok = store_pass_settings()['admin_token']
+        code, _raw, sc = _pass_http('POST', '/admin', form={'token': tok, 'redirect': ''})
+        m = re.search(r'(VW_ADMIN=[^;]+)', sc or '')
+        if not m:
+            raise PermissionError('Le coffre refuse le jeton d’administration (réponse %s).' % code)
+        _PASS.update(cookie=m.group(1), until=_st_time.time() + 900)
+        return _PASS['cookie']
+
+
+def _pass_admin(method, path, body=None):
+    code, raw, _sc = _pass_http(method, '/admin' + path, body=body, cookie=_pass_session())
+    if code in (401, 403) or (code in (302, 303)):
+        code, raw, _sc = _pass_http(method, '/admin' + path, body=body, cookie=_pass_session(force=True))
+    if code >= 400:
+        raise RuntimeError('Le coffre a répondu %s : %s' % (code, raw[:200].decode('utf-8', 'replace')))
+    try:
+        return json.loads(raw.decode('utf-8') or 'null')
+    except Exception:
+        return None
+
+
+def store_pass_state():
+    s = _lic_read_json(STORE_PASS_FILE) or {}
+    st = {'installed': store_pass_installed(), 'domain': s.get('domain') or '', 'port': int(s.get('port') or STORE_PASS_PORT),
+          'job': dict(_NPM_API['job']) or None, 'users': [], 'npm': None}
+    try:
+        n = _lic_read_json(STORE_NPM_FILE) or {}
+        st['npm'] = 'module' if STORE_NPM_ID in store_installed_get() else ('linked' if n.get('linked') else None)
+    except Exception:
+        pass
+    if not st['installed']:
+        return st
+    try:
+        rows = _pass_admin('GET', '/users') or []
+        st['users'] = [{'id': u.get('id') or u.get('Id'), 'email': u.get('email') or u.get('Email'),
+                        'name': u.get('name') or u.get('Name') or '',
+                        'status': u.get('_status') if u.get('_status') is not None else u.get('status'),
+                        'enabled': u.get('userEnabled', u.get('UserEnabled', True)),
+                        'twofa': bool(u.get('twoFactorEnabled') or u.get('TwoFactorEnabled')),
+                        'last_active': u.get('lastActive') or u.get('last_active') or '',
+                        'created': u.get('createdAt') or u.get('created_at') or ''}
+                       for u in rows if isinstance(u, dict)]
+    except Exception as e:
+        st['error'] = 'Le coffre ne répond pas : ' + str(e)[:200]
+    return st
+
+
+def store_pass_invite(body):
+    email = str((body or {}).get('email') or '').strip().lower()
+    if not re.match(r'^[^@\s]{1,64}@[^@\s]{1,253}\.[a-z]{2,}$', email):
+        return 400, {'ok': False, 'error': 'Adresse e-mail invalide.'}
+    try:
+        _pass_admin('POST', '/invite', {'email': email})
+        return 200, {'ok': True}
+    except Exception as e:
+        t = str(e)
+        if re.search(r'already exists', t, re.I):
+            return 409, {'ok': False, 'error': 'Cette adresse a déjà un compte.'}
+        return 502, {'ok': False, 'error': t[:300]}
+
+
+def store_pass_user(body):
+    uid = str((body or {}).get('id') or '')
+    act = str((body or {}).get('action') or '')
+    if not re.match(r'^[0-9a-f-]{8,64}$', uid) or act not in ('delete', 'disable', 'enable', 'deauth', 'remove-2fa'):
+        return 400, {'ok': False, 'error': 'Demande invalide.'}
+    try:
+        _pass_admin('POST', '/users/%s/%s' % (uid, act))
+        return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': str(e)[:300]}
+
+
+def store_pass_domain(body):
+    """Publie le coffre sous un domaine (NPMplus, certificat Let's Encrypt), puis le redéploie avec ce domaine."""
+    dom = str((body or {}).get('domain') or '').strip().lower().rstrip('.')
+    if not _NPM_DOMAIN_RE.match(dom) or dom.startswith('*.'):
+        return 400, {'ok': False, 'error': 'Nom de domaine invalide.'}
+    if not store_pass_installed():
+        return 409, {'ok': False, 'error': 'Desktroo Pass n’est pas installé.'}
+    n = _lic_read_json(STORE_NPM_FILE) or {}
+    if STORE_NPM_ID in store_installed_get():
+        host = '127.0.0.1'          # NPMplus de Desktroo Apps : réseau de l'hôte
+    elif n.get('linked'):
+        host = _truenas_ip() or SSH_HOST   # NPMplus relié (app TrueNAS, réseau ponté) : l'adresse du NAS
+    else:
+        return 409, {'ok': False, 'error': 'NPMplus est nécessaire : installez-le ou reliez-le dans Desktroo Apps.'}
+    port = store_pass_settings()['port']
+
+    def then(d):
+        s = store_pass_settings(); s['domain'] = d; _store_pass_save(s)
+        app = store_app_entry(STORE_PASS_ID) or {'id': STORE_PASS_ID, 'version': (store_installed_get().get(STORE_PASS_ID) or {}).get('version')}
+        _store_midclt('app.update', 'dt-' + STORE_PASS_ID, {'custom_compose_config': store_pass_compose(app, s)}, job=True, timeout=900)
+        _PASS.update(cookie='', until=0)
+
+    # /admin n'est jamais servi sur Internet : l'administration passe par Desktroo.
+    return store_npm_host_add({'domains': [dom], 'host': host, 'port': port, 'https': True},
+                              advanced='location /admin { return 404; }', then=then)
 
 
 # Kit des apps (servi sous /a/_sdk/ par nginx → fileops). Embarqué ici : rien à distribuer en plus.

@@ -9399,7 +9399,52 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Fermer le suivi": "Close the progress",
 "Abonnement requis": "Subscription required",
 "Non lancée": "Not started",
-"Mises à jour terminées : {0} à jour, {1} en échec.": "Updates finished: {0} up to date, {1} failed."
+"Mises à jour terminées : {0} à jour, {1} en échec.": "Updates finished: {0} up to date, {1} failed.",
+"Accès et applis": "Access and apps",
+"Administration web": "Web administration",
+"Adresse du coffre": "Vault address",
+"Après l’installation, Desktroo Pass se publie sous un de vos domaines, en https, grâce à NPMplus : installez ou reliez NPMplus si ce n’est pas fait. Les comptes s’ouvrent ensuite sur invitation.": "After installation, Desktroo Pass is published under one of your domains, over https, through NPMplus: install or link NPMplus if you have not done so. Accounts are then opened by invitation.",
+"Arrête Desktroo Pass. Les coffres chiffrés restent sur le NAS.": "Stops Desktroo Pass. The encrypted vaults stay on the NAS.",
+"Aucun compte pour l’instant. Invitez-vous en premier, avec votre adresse e-mail.": "No account yet. Invite yourself first, with your e-mail address.",
+"Bloquée sur Internet ; elle se fait ici": "Blocked on the Internet; it happens here",
+"Chaque personne a son coffre, chiffré avec son propre mot de passe maître": "Everyone has their own vault, encrypted with their own master password",
+"Créez d’abord ce nom chez votre fournisseur de domaine, pointé vers l’adresse publique de votre box. Desktroo demande ensuite le certificat https. La page d’administration du coffre n’est jamais servie sur Internet.": "First create this name at your domain provider, pointing to your router's public address. Desktroo then requests the https certificate. The vault's administration page is never served on the Internet.",
+"Desktroo Pass indisponible": "Desktroo Pass unavailable",
+"Desktroo Pass n’est pas installé": "Desktroo Pass is not installed",
+"Desktroo Pass repose sur Vaultwarden, logiciel libre compatible avec les applis Bitwarden. Il n’est ni édité ni soutenu par Bitwarden, Inc.": "Desktroo Pass is built on Vaultwarden, free software compatible with the Bitwarden apps. It is not published or endorsed by Bitwarden, Inc.",
+"Desktroo Pass se publie sous un de vos domaines, en https, grâce à NPMplus. Installez ou reliez d’abord NPMplus dans Desktroo Apps.": "Desktroo Pass is published under one of your domains, over https, through NPMplus. First install or link NPMplus in Desktroo Apps.",
+"Desktroo Pass": "Desktroo Pass",
+"Indiquez une adresse e-mail.": "Enter an e-mail address.",
+"Inscriptions": "Sign-ups",
+"Installer les applis": "Install the apps",
+"Installez-le depuis Desktroo Apps.": "Install it from Desktroo Apps.",
+"Inviter": "Invite",
+"Invité": "Invited",
+"Lecture du coffre…": "Reading the vault…",
+"Les applis Bitwarden demandent une adresse https, joignable depuis Internet": "The Bitwarden apps need an https address, reachable from the Internet",
+"Les applis Bitwarden ne pourront plus se synchroniser. Les coffres chiffrés restent sur le NAS.": "The Bitwarden apps will no longer sync. The encrypted vaults stay on the NAS.",
+"Les coffres sont chiffrés et rangés dans le dossier de Desktroo Apps sur le NAS. Ajoutez ce dossier à vos instantanés ZFS ou à votre sauvegarde cloud. Chaque appli Bitwarden garde aussi une copie chiffrée hors ligne.": "The vaults are encrypted and stored in the Desktroo Apps folder on the NAS. Add this folder to your ZFS snapshots or your cloud backup. Each Bitwarden app also keeps an encrypted offline copy.",
+"NPMplus y relaie le domaine": "NPMplus forwards the domain to it",
+"Ouvrir Desktroo Pass": "Open Desktroo Pass",
+"Ouvrir NPMplus dans Desktroo Apps": "Open NPMplus in Desktroo Apps",
+"Ouvrir le coffre web ↗": "Open the web vault ↗",
+"Port sur le NAS": "Port on the NAS",
+"Publier le coffre": "Publish the vault",
+"Retirer la 2FA": "Remove 2FA",
+"Réactiver": "Re-enable",
+"Son coffre et tous ses mots de passe sont effacés définitivement.": "Their vault and all their passwords are deleted for good.",
+"Sur invitation seulement": "By invitation only",
+"Téléchargements Bitwarden ↗": "Bitwarden downloads ↗",
+"Utilisez les applis Bitwarden officielles et gratuites. À la connexion, choisissez « Auto-hébergé » (ou « Self-hosted »), saisissez l’adresse du coffre ci-dessus, puis votre e-mail et votre mot de passe maître.": "Use the official, free Bitwarden apps. When signing in, choose “Self-hosted”, enter the vault address above, then your e-mail and master password.",
+"Vos mots de passe, sur votre NAS, avec les applis Bitwarden": "Your passwords, on your NAS, with the Bitwarden apps",
+"adresse e-mail de la personne": "the person's e-mail address",
+"À faire seulement si la personne a perdu son téléphone.": "Only do this if the person has lost their phone.",
+"Étape 1 : l’adresse du coffre": "Step 1: the vault address",
+"Retirer la double authentification de {0} ?": "Remove two-factor authentication for {0}?",
+"Supprimer le compte {0} ?": "Delete the account {0}?",
+"Une personne invitée crée son compte sur {0} avec cette même adresse e-mail, puis choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.": "An invited person creates their account at {0} with that same e-mail address, then chooses their master password. Nobody else can sign up.",
+"vu {0}": "seen {0}",
+"{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.": "{0} is invited: they still need to create their account at the vault address."
 }
 </script>
 <script id="dk-i18n">
@@ -12843,6 +12888,7 @@ function dkStoreRenderDetail(body, a) {
   var acts = '', module = a.kind === 'module' || !!(inst && inst.kind === 'module');
   if (!running && inst && module) {
     if (a.id === 'webserver') acts += '<button class="web-open" onclick="openWebsites()">' + T('Ouvrir Sites Web') + '</button>';
+    if (a.id === 'pass') acts += '<button class="web-open" onclick="dkPassOpen()">' + T('Ouvrir Desktroo Pass') + '</button>';
     if (a.id === 'npmplus' && inst.state === 'RUNNING') acts += '<button class="web-open" onclick="dkNpmOpen()">' + T('Gérer les domaines') + '</button>'
       + '<button class="fs-btn" onclick="dkStoreNpmOpen()">' + T('Réglages avancés') + '</button>';
     if (inst.state !== 'RUNNING' && !inst.legacy && !inst.linked) acts += '<button class="fs-btn" onclick="dkStoreAct(\'start\',\'' + a.id + '\')">' + T('Démarrer') + '</button>';
@@ -12885,13 +12931,14 @@ function dkStoreRenderDetail(body, a) {
       h += '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
         + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateLabel(inst.state)) + '</dd>'
         + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
-        + (a.id === 'npmplus' ? dkStoreNpmFacts(a, inst) : '<dt>' + T('Ports publiés') + '</dt><dd>8080, 8100-8130</dd></dl>')
+        + (a.id === 'npmplus' ? dkStoreNpmFacts(a, inst) : a.id === 'pass' ? '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd></dl>'
+           : '<dt>' + T('Ports publiés') + '</dt><dd>8080, 8100-8130</dd></dl>')
         + (a.id === 'npmplus' ? '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Sur votre box, redirigez le port 80 vers ') + dkStoreNpmPorts(a).http + T(' et le port 443 vers ') + dkStoreNpmPorts(a).https + T(' de ce NAS. Les domaines et certificats se règlent dans NPMplus ; la page de chaque site, dans Sites Web, donne les valeurs à saisir (« Fiche proxy »).') + '</div>' : '')
         + (a.update_available ? '<div class="web-group-title">' + T('Mise à jour') + '</div><div class="web-group">'
           + (gateOk ? wmRow('dkStoreAct(\'update\',\'' + a.id + '\')', webEsc(Tf('Mettre à jour vers {0}', a.version)), T('Le module redémarre ; vos données ne bougent pas.'))
             : '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + T('Abonnement requis pour mettre à jour') + '</span></span></div>') + '</div>' : '')
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
-        + wmRow('dkStoreAct(\'uninstall\',\'' + a.id + '\')', T('Désinstaller'), a.id === 'npmplus' ? T('Arrête NPMplus. Ses certificats et réglages restent sur le NAS.') : T('Arrête le serveur web. Vos sites et vos bases de données restent sur le NAS.'), 'danger') + '</div>';
+        + wmRow('dkStoreAct(\'uninstall\',\'' + a.id + '\')', T('Désinstaller'), a.id === 'npmplus' ? T('Arrête NPMplus. Ses certificats et réglages restent sur le NAS.') : a.id === 'pass' ? T('Arrête Desktroo Pass. Les coffres chiffrés restent sur le NAS.') : T('Arrête le serveur web. Vos sites et vos bases de données restent sur le NAS.'), 'danger') + '</div>';
     } else if (a.id === 'npmplus' && a.npm && a.npm.foreign) {
       var f = a.npm.foreign;
       h += '<div class="web-group-title">' + T('NPMplus déjà présent sur ce NAS') + '</div><dl class="web-facts">'
@@ -12902,6 +12949,8 @@ function dkStoreRenderDetail(body, a) {
           ? T('« Reprendre » le confie à Desktroo Apps : mêmes ports, mêmes domaines et certificats. Ses données sont copiées dans le dossier de Desktroo Apps ; l’original reste en place, en secours. Si quelque chose échoue, votre NPMplus repart comme avant.')
           : webEsc(f.why)) + '</div>';
       if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour reprendre un module.') + '</p>';
+    } else if (a.id === 'pass' && a.compatible && gateOk) {
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Après l’installation, Desktroo Pass se publie sous un de vos domaines, en https, grâce à NPMplus : installez ou reliez NPMplus si ce n’est pas fait. Les comptes s’ouvrent ensuite sur invitation.') + '</div>';
     } else if (a.id === 'npmplus' && a.compatible && gateOk) {
       h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('TrueNAS garde les ports 80 et 443 pour son interface : NPMplus écoutera sur 8090 (http), 8453 (https) et 8181 (administration). Sur votre box, il faudra rediriger 80 vers 8090 et 443 vers 8453.') + '</div>';
     } else if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Ce module demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
@@ -12985,7 +13034,7 @@ async function dkStoreAct(act, id) {
       toast(T('Accès enregistrés.'));
       await dkStoreLoad();
     } else if (act === 'uninstall') {
-      if (!(await showConfirm(Tf('Désinstaller {0} ?', webEsc(name)) + (a.kind === 'module' ? '<br><span style="font-size:12px;">' + (id === 'npmplus' ? T('Vos domaines publics ne répondront plus. Les certificats et réglages restent sur le NAS.') : T('Vos sites et vos bases de données restent sur le NAS.')) + '</span>' : ''), { danger: true, ok: T('Désinstaller') }))) return;
+      if (!(await showConfirm(Tf('Désinstaller {0} ?', webEsc(name)) + (a.kind === 'module' ? '<br><span style="font-size:12px;">' + (id === 'npmplus' ? T('Vos domaines publics ne répondront plus. Les certificats et réglages restent sur le NAS.') : id === 'pass' ? T('Les applis Bitwarden ne pourront plus se synchroniser. Les coffres chiffrés restent sur le NAS.') : T('Vos sites et vos bases de données restent sur le NAS.')) + '</span>' : ''), { danger: true, ok: T('Désinstaller') }))) return;
       var drop = a.kind === 'module' ? false : await showConfirm(T('Supprimer aussi ses données ? Sans elles, une réinstallation repartira de zéro.'), { danger: true, ok: T('Supprimer les données'), cancel: T('Conserver les données') });
       toast(Tf('Désinstallation de {0}…', name));
       dkStoreCloseApp('dkapp-' + id);
@@ -13006,7 +13055,7 @@ function dkStorePoll(id) {
     delete _dkStore.polls[id];
     if (j && j.state === 'done') {
       if (j.action === 'install' || j.action === 'adopt') {
-        var key = (a && a.kind === 'module') ? (id === 'webserver' ? 'websites' : id === 'npmplus' ? 'dkapp-npmplus' : '') : 'dkapp-' + id;   // un module apporte sa fenêtre du bureau
+        var key = (a && a.kind === 'module') ? (id === 'webserver' ? 'websites' : id === 'npmplus' ? 'dkapp-npmplus' : id === 'pass' ? 'dkapp-pass' : '') : 'dkapp-' + id;   // un module apporte sa fenêtre du bureau
         try { var s = getShortcuts(); if (key && s.indexOf(key) < 0) { s.push(key); saveShortcuts(s); } } catch (_) {}
       }
       toast(Tf('{0} est prête.', dkStoreName((a && a.name) || id)));
@@ -13225,14 +13274,149 @@ async function dkNpmShowSecret() {
     if (el) el.innerHTML = webEsc(r.password || '?') + ' <button class="web-mini" onclick="shareCopy(\'' + encodeURIComponent(r.password || '') + '\')">' + T('Copier') + '</button>';
   } catch (e) { toast('⚠️ ' + (e.message || e)); }
 }
+// ── MDM-STORE-V1 · fenêtre « Desktroo Pass » : administration du coffre (Vaultwarden) ────────────────────
+// Les mots de passe se gèrent dans les applis Bitwarden officielles ; ici, l'administrateur publie le coffre
+// sous un domaine (https) et gère les comptes, qui ne s'ouvrent que sur invitation.
+var _dkPass = { nav: 'users', st: null, timer: null };
+function dkPassOpen() {
+  var win = document.getElementById('win-dkpass');
+  if (win) { win.classList.add('visible'); bringToFront(win); dkPassLoad(); return; }
+  dkStoreCss();
+  win = dkStoreMakeWin('dkpass', T('Desktroo Pass'), 900, 620,
+    T('<div class="web-shell"><nav class="web-side" id="dkpass-side" aria-label="Desktroo Pass"></nav>')
+    + '<section class="web-main"><header class="web-head" id="dkpass-head"></header><div class="web-body" id="dkpass-body"></div></section></div>',
+    function() { clearTimeout(_dkPass.timer); _dkPass.timer = null; });
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('pass', 18) + '</span>');
+  _dkPass.st = null; _dkPass.nav = 'users';
+  dkPassLoad();
+}
+function dkPassGo(nav) { _dkPass.nav = nav; dkPassRender(); }
+async function dkPassLoad(quiet) {
+  var body = wmBody('dkpass'); if (!body) return;
+  if (!_dkPass.st && !quiet) body.innerHTML = dkWaitHtml('busy', T('Lecture du coffre…'));
+  try { _dkPass.st = await fileops('GET', 'store/pass/state'); }
+  catch (e) { wmFail('dkpass', T('Desktroo Pass indisponible'), e, 'dkPassLoad()'); return; }
+  clearTimeout(_dkPass.timer);
+  if (_dkPass.st.job && _dkPass.st.job.state === 'running') _dkPass.timer = setTimeout(function() { dkPassLoad(true); }, 2500);
+  dkPassRender();
+}
+function dkPassUrl() { var st = _dkPass.st || {}; return st.domain ? 'https://' + st.domain : ''; }
+function dkPassRender() {
+  var body = wmBody('dkpass'); if (!body) return;
+  var st = _dkPass.st || {}, n = (st.users || []).length;
+  wmSide('dkpass', wmNav({ active: _dkPass.nav === 'users', call: 'dkPassGo(\'users\')', icon: 'box', name: T('Comptes'), count: n || '' })
+    + wmNav({ active: _dkPass.nav === 'access', call: 'dkPassGo(\'access\')', icon: 'globe', name: T('Accès et applis') })
+    + wmSep() + wmNav({ active: _dkPass.nav === 'settings', call: 'dkPassGo(\'settings\')', icon: 'settings', name: T('Réglages') }));
+  if (!st.installed) {
+    wmHead('dkpass', T('Desktroo Pass'), { sub: T('Vos mots de passe, sur votre NAS, avec les applis Bitwarden') });
+    body.innerHTML = dkWaitHtml('info', T('Desktroo Pass n’est pas installé'), T('Installez-le depuis Desktroo Apps.'),
+      '<button class="web-open" onclick="dkStoreOpen();_dkStore.sel=\'pass\';if(_dkStore.view)dkStoreRender()">' + T('Ouvrir Desktroo Apps') + '</button>');
+    return;
+  }
+  // Tant que le coffre n'a pas d'adresse https, c'est la seule chose à faire : on la propose partout.
+  if (!st.domain || _dkPass.nav === 'access') return dkPassRenderAccess(body, st);
+  if (_dkPass.nav === 'settings') return dkPassRenderSettings(body, st);
+  dkPassRenderUsers(body, st);
+}
+function dkPassJobHtml(st) { return (typeof dkNpmJobHtml === 'function') ? dkNpmJobHtml({ job: st.job }) : ''; }
+function dkPassRenderAccess(body, st) {
+  wmHead('dkpass', st.domain ? T('Accès et applis') : T('Étape 1 : l’adresse du coffre'),
+    { sub: st.domain ? dkPassUrl() : T('Les applis Bitwarden demandent une adresse https, joignable depuis Internet') });
+  var h = dkPassJobHtml(st);
+  if (!st.domain) {
+    if (!st.npm) {
+      h += '<div class="dks-tag" style="max-width:620px;">' + T('Desktroo Pass se publie sous un de vos domaines, en https, grâce à NPMplus. Installez ou reliez d’abord NPMplus dans Desktroo Apps.') + '</div>'
+        + '<div class="dks-acts"><button class="web-open" onclick="webNpmStore()">' + T('Ouvrir NPMplus dans Desktroo Apps') + '</button></div>';
+    } else if (!(st.job && st.job.state === 'running')) {
+      h += '<div style="display:flex;flex-direction:column;gap:12px;max-width:560px;">'
+        + formRow(T('Adresse du coffre'), '<input id="dkpass-dom" style="' + iStyle() + '" placeholder="coffre.mondomaine.fr" autocomplete="off" spellcheck="false">')
+        + '<div class="dks-tag">' + T('Créez d’abord ce nom chez votre fournisseur de domaine, pointé vers l’adresse publique de votre box. Desktroo demande ensuite le certificat https. La page d’administration du coffre n’est jamais servie sur Internet.') + '</div>'
+        + '<div class="dks-acts" style="margin-top:0;"><button class="web-open" onclick="dkPassSetDomain()">' + T('Publier le coffre') + '</button></div></div>';
+    }
+  } else {
+    var u = dkPassUrl();
+    h += '<div class="web-group-title">' + T('Adresse du coffre') + '</div><dl class="web-facts">'
+      + '<dt>' + T('Adresse') + '</dt><dd><a href="' + webEsc(u) + '" target="_blank" rel="noopener" class="mono">' + webEsc(u) + '</a> <button class="web-mini" onclick="shareCopy(\'' + encodeURIComponent(u) + '\')">' + T('Copier') + '</button></dd></dl>'
+      + '<div class="web-group-title">' + T('Installer les applis') + '</div>'
+      + '<div class="dks-tag" style="max-width:640px;line-height:1.6;">' + T('Utilisez les applis Bitwarden officielles et gratuites. À la connexion, choisissez « Auto-hébergé » (ou « Self-hosted »), saisissez l’adresse du coffre ci-dessus, puis votre e-mail et votre mot de passe maître.') + '</div>'
+      + '<div class="dks-acts">'
+      + '<a class="fs-btn" href="https://bitwarden.com/download/" target="_blank" rel="noopener">' + T('Téléchargements Bitwarden ↗') + '</a>'
+      + '<a class="fs-btn" href="' + webEsc(u) + '" target="_blank" rel="noopener">' + T('Ouvrir le coffre web ↗') + '</a></div>'
+      + '<p class="dks-tag" style="margin-top:14px;max-width:640px;">' + T('Desktroo Pass repose sur Vaultwarden, logiciel libre compatible avec les applis Bitwarden. Il n’est ni édité ni soutenu par Bitwarden, Inc.') + '</p>';
+  }
+  body.innerHTML = h;
+}
+async function dkPassSetDomain() {
+  var d = (document.getElementById('dkpass-dom').value || '').trim();
+  if (!d) { toast(T('Indiquez un nom de domaine.')); return; }
+  try { await fileops('POST', 'store/pass/domain', { domain: d }); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); return; }
+  dkPassLoad(true);
+}
+function dkPassStatus(u) {
+  if (u.status === 1) return '<span class="dks-badge warn">' + T('Invité') + '</span>';
+  if (u.status === 2 || u.enabled === false) return '<span class="dks-badge">' + T('Désactivé') + '</span>';
+  return '<span class="dks-badge ok">' + T('Actif') + '</span>' + (u.twofa ? ' <span class="dks-badge ok">2FA</span>' : '');
+}
+function dkPassRenderUsers(body, st) {
+  wmHead('dkpass', T('Comptes'), { sub: T('Chaque personne a son coffre, chiffré avec son propre mot de passe maître') });
+  var h = (st.error ? '<div class="dks-err" style="margin:0 0 14px;">' + webEsc(st.error) + '</div>' : '')
+    + '<div style="display:flex;gap:8px;max-width:560px;margin-bottom:14px;"><input id="dkpass-inv" style="' + iStyle() + 'margin-top:0;" placeholder="' + T('adresse e-mail de la personne') + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')dkPassInvite()">'
+    + '<button class="web-open" onclick="dkPassInvite()">' + T('Inviter') + '</button></div>';
+  var users = st.users || [];
+  if (!users.length) h += '<div class="dks-empty">' + T('Aucun compte pour l’instant. Invitez-vous en premier, avec votre adresse e-mail.') + '</div>';
+  else {
+    h += '<div class="web-group">';
+    users.forEach(function(u) {
+      h += '<div class="web-row" style="cursor:default;align-items:center;gap:12px;flex-wrap:wrap;">'
+        + '<span class="web-row-text" style="min-width:220px;flex:1;"><span class="web-row-name">' + webEsc(u.name || u.email) + '</span>'
+        + '<span class="web-row-desc">' + webEsc(u.email) + ' · ' + dkPassStatus(u) + (u.last_active ? ' · ' + webEsc(Tf('vu {0}', String(u.last_active).slice(0, 10))) : '') + '</span></span>'
+        + '<span style="display:flex;gap:6px;flex-wrap:wrap;">'
+        + (u.status === 2 || u.enabled === false ? '<button class="web-mini" onclick="dkPassUser(' + wmQ(u.id) + ',\'enable\',' + wmQ(u.email) + ')">' + T('Réactiver') + '</button>'
+           : (u.status !== 1 ? '<button class="web-mini" onclick="dkPassUser(' + wmQ(u.id) + ',\'disable\',' + wmQ(u.email) + ')">' + T('Désactiver') + '</button>' : ''))
+        + (u.twofa ? '<button class="web-mini" onclick="dkPassUser(' + wmQ(u.id) + ',\'remove-2fa\',' + wmQ(u.email) + ')">' + T('Retirer la 2FA') + '</button>' : '')
+        + '<button class="web-mini" style="color:var(--danger);" onclick="dkPassUser(' + wmQ(u.id) + ',\'delete\',' + wmQ(u.email) + ')">' + T('Supprimer') + '</button>'
+        + '</span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<p class="dks-tag" style="margin-top:14px;max-width:640px;">' + Tf('Une personne invitée crée son compte sur {0} avec cette même adresse e-mail, puis choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.', dkPassUrl()) + '</p>';
+  body.innerHTML = h;
+}
+async function dkPassInvite() {
+  var el = document.getElementById('dkpass-inv'), email = (el && el.value || '').trim();
+  if (!email) { toast(T('Indiquez une adresse e-mail.')); return; }
+  try { await fileops('POST', 'store/pass/invite', { email: email }); toast(Tf('{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.', email), 7000); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); return; }
+  dkPassLoad(true);
+}
+async function dkPassUser(id, act, email) {
+  id = decodeURIComponent(id); email = decodeURIComponent(email);
+  var ask = { delete: [Tf('Supprimer le compte {0} ?', webEsc(email)) + '<br><span style="font-size:12px;">' + T('Son coffre et tous ses mots de passe sont effacés définitivement.') + '</span>', T('Supprimer')],
+              'remove-2fa': [Tf('Retirer la double authentification de {0} ?', webEsc(email)) + '<br><span style="font-size:12px;">' + T('À faire seulement si la personne a perdu son téléphone.') + '</span>', T('Retirer')] }[act];
+  if (ask && !(await showConfirm(ask[0], { danger: true, ok: ask[1] }))) return;
+  try { await fileops('POST', 'store/pass/user', { id: id, action: act }); } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkPassLoad(true);
+}
+function dkPassRenderSettings(body, st) {
+  wmHead('dkpass', T('Réglages'), { sub: T('Desktroo Pass') });
+  body.innerHTML = '<dl class="web-facts">'
+    + '<dt>' + T('Adresse') + '</dt><dd class="mono">' + webEsc(dkPassUrl() || '—') + '</dd>'
+    + '<dt>' + T('Port sur le NAS') + '</dt><dd>' + webEsc(st.port) + ' — ' + T('NPMplus y relaie le domaine') + '</dd>'
+    + '<dt>' + T('Inscriptions') + '</dt><dd>' + T('Sur invitation seulement') + '</dd>'
+    + '<dt>' + T('Administration web') + '</dt><dd>' + T('Bloquée sur Internet ; elle se fait ici') + '</dd></dl>'
+    + '<div class="web-group-title">' + T('Sauvegarde') + '</div>'
+    + '<div class="dks-tag" style="max-width:640px;">' + T('Les coffres sont chiffrés et rangés dans le dossier de Desktroo Apps sur le NAS. Ajoutez ce dossier à vos instantanés ZFS ou à votre sauvegarde cloud. Chaque appli Bitwarden garde aussi une copie chiffrée hors ligne.') + '</div>'
+    + '<div class="dks-acts"><button class="fs-btn" onclick="dkStoreOpen();_dkStore.sel=\'pass\';if(_dkStore.view)dkStoreRender()">' + T('Voir dans Desktroo Apps') + '</button></div>';
+}
 // Icônes du bureau et du menu : une par app installée, plus le Magasin.
 function dkStoreRegisterApps(list) {
   if (typeof ALL_APPS === 'undefined') return;
   var want = {};
   dkStoreWebToggle((list || []).some(function(a) { return a.id === 'webserver'; }));
   (list || []).forEach(function(a) {
-    var npm = a.id === 'npmplus';   // NPMplus : son administration s'ouvre dans un onglet
-    if (!npm && (a.kind === 'module' || (a.installed && a.installed.kind === 'module'))) return;   // autre module : pas d'icône d'app
+    var npm = a.id === 'npmplus', pass = a.id === 'pass';   // modules qui ont leur fenêtre Desktroo
+    if (!npm && !pass && (a.kind === 'module' || (a.installed && a.installed.kind === 'module'))) return;   // autre module : pas d'icône d'app
     var id = a.id, key = 'dkapp-' + id, w = (a.installed && a.installed.window) || a.window || {};
     want[key] = true;
     if (npm && a.installed && a.installed.ports) _dkStore.npmPorts = a.installed.ports;
@@ -13245,11 +13429,11 @@ function dkStoreRegisterApps(list) {
         pinned.push(id); localStorage.setItem('dk_store_pinned', JSON.stringify(pinned));
       }
     } catch (_) {}
-    var label = npm ? T('Domaines') : (dkStoreName(a.name || (a.installed && a.installed.name)) || id);
+    var label = npm ? T('Domaines') : pass ? T('Desktroo Pass') : (dkStoreName(a.name || (a.installed && a.installed.name)) || id);
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
     if (entry) { entry.label = label; return; }
     ALL_APPS.push({ id: key, label: label, store: true,
-      action: npm ? function() { dkNpmOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
       imgStyle: 'background:transparent;box-shadow:none;padding:0;overflow:hidden;',
       svg: dkStoreIcon(id, 56) });
   });
@@ -18489,7 +18673,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.46.3';
+var DK_PAGE_VERSION = '2.47.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

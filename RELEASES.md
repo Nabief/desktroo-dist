@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.47.0 — 15 octobre 2026
+
+### Nouveau
+- **Desktroo Pass, le coffre de mots de passe du NAS** (Desktroo Apps). Il fonctionne avec les applis Bitwarden officielles et gratuites : remplissage automatique dans le navigateur, sur le téléphone et sur le PC. Chaque personne a son coffre, chiffré avec son propre mot de passe maître.
+  > Basé sur Vaultwarden. Desktroo l'installe, le publie en https sous votre domaine grâce à NPMplus, et l'administre depuis sa fenêtre : comptes sur invitation seulement, page d'administration jamais servie sur Internet.
+
 ## 2.46.3 — 15 octobre 2026
 
 ### Corrigé
