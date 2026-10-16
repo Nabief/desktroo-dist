@@ -3,6 +3,22 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.15 — 16 octobre 2026
+
+### Nouveau
+- **Uptime Kuma : surveillez vos sites et services depuis Desktroo Apps.** Uptime Kuma vérifie en continu que vos sites, serveurs et appareils répondent, et vous prévient par e-mail, Telegram, SMS ou une centaine d'autres moyens dès qu'un service tombe. Une fenêtre Desktroo montre l'état de tous vos services d'un coup d'œil : en ligne, hors ligne, temps de réponse, disponibilité sur 30 jours, jours restants avant l'expiration du certificat. Créer ou modifier un service se fait dans Uptime Kuma (« Administration complète »).
+  > Fiche `uptime-kuma` (image officielle fixée par empreinte, base SQLite imposée). La fenêtre lit l'état au format Prometheus (`/metrics`) avec une clé API en lecture créée par l'utilisateur, gardée sur le NAS et jamais renvoyée au navigateur (`/store/uptime-kuma/api`).
+- **Une pastille « Mise à jour disponible » pour les apps de Desktroo Apps, dans le gestionnaire d'applications.** Elle apparaît dans la liste, dans la colonne de gauche et sur la fiche de l'app, avec un bouton qui ouvre directement les mises à jour de Desktroo Apps.
+
+### Amélioré
+- **Fiches des apps plus lisibles.** Les descriptions sont présentées en paragraphes, en français comme en anglais.
+- **Desktroo Apps se met à jour tout seul.** Les états (en marche, arrêtée, installée…) se rafraîchissent d'eux-mêmes : plus besoin de fermer et rouvrir la fenêtre pour voir un changement.
+- **Compatibilité élargie des fiches.** Desktroo Apps accepte de nouveaux droits de conteneur (CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID) pour les apps qui en ont besoin.
+
+### Corrigé
+- **Installer une app sur un dossier de données déjà présent n'échoue plus** (erreur « Path … already exists » après une installation interrompue).
+- **« Installée, mais elle ne répond pas encore » ne reste plus affiché** quand l'app répond bien.
+
 ## 2.54.0 — 16 octobre 2026
 
 ### Nouveau

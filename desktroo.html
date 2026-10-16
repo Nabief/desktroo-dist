@@ -9657,9 +9657,33 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Ce fichier contient la clé de l’appareil : ne le partagez qu’avec lui.": "This file contains the device’s key: share it only with that device.",
 "Copié.": "Copied.",
 "Appareil supprimé.": "Device deleted.",
-"Supprimer l’appareil « {0} » ? Il ne pourra plus se connecter.": "Delete the device “{0}”? It will no longer be able to connect."
-}
-</script>
+"Supprimer l’appareil « {0} » ? Il ne pourra plus se connecter.": "Delete the device “{0}”? It will no longer be able to connect.",
+  "complète": "full",
+  "Continuer": "Continue",
+  "Adresse invalide.": "Invalid address.",
+  "Uptime Kuma ne répond pas pour le moment.": "Uptime Kuma is not responding right now.",
+  "Uptime Kuma indisponible": "Uptime Kuma unavailable",
+  "L’état de vos sites, serveurs et appareils surveillés": "The status of your monitored sites, servers and devices",
+  "Aucun service surveillé pour l’instant.": "No monitored service yet.",
+  "Ajouter un service dans Uptime Kuma": "Add a service in Uptime Kuma",
+  "{0} en ligne": "{0} online",
+  "{0} hors ligne": "{0} offline",
+  "{0} autre(s)": "{0} other",
+  "{0} % sur 30 jours": "{0}% over 30 days",
+  "Certificat : {0} j": "Certificate: {0} d",
+  "Autoriser Desktroo à lire l’état de vos services": "Allow Desktroo to read the status of your services",
+  "Uptime Kuma refuse la clé enregistrée. Créez-en une nouvelle et collez-la ci-dessous.": "Uptime Kuma rejects the saved key. Create a new one and paste it below.",
+  "Ouvrez Uptime Kuma avec le bouton « Administration complète » et connectez-vous.": "Open Uptime Kuma with the “Full administration” button and sign in.",
+  "Menu du profil en haut à droite, puis Paramètres, puis Clés API, puis « Ajouter une clé API ».": "Profile menu at the top right, then Settings, then API Keys, then “Add API Key”.",
+  "Nommez-la « Desktroo », laissez « Pas d’expiration », puis copiez la clé affichée.": "Name it “Desktroo”, leave “Don’t expire”, then copy the key shown.",
+  "Collez-la ci-dessous.": "Paste it below.",
+  "Oublier la clé": "Forget the key",
+  "Cette clé ne permet que de lire l’état des services. Elle reste sur le NAS et n’est jamais renvoyée au navigateur.": "This key can only read the status of services. It stays on the NAS and is never sent back to the browser.",
+  "Collez la clé d’accès.": "Paste the access key.",
+  "Connecté à Uptime Kuma.": "Connected to Uptime Kuma.",
+  "Oublier la clé d’accès ? Desktroo ne pourra plus afficher l’état de vos services.": "Forget the access key? Desktroo will no longer be able to show the status of your services.",
+  "Uptime Kuma peut annoncer qu’une nouvelle version existe : la mise à jour se fait dans Desktroo Apps, pas depuis Kuma.": "Uptime Kuma may announce that a new version exists: the update is done in Desktroo Apps, not from Kuma."
+}</script>
 <script id="dk-i18n">
 /* ===== Langues : français (langue du code) et anglais =====
    Le code reste écrit en français. Chaque texte affiché passe par T('…'), qui le rend
@@ -12989,18 +13013,46 @@ function dkStoreMakeWin(wid, title, w, h, bodyHtml, onClose) {
 }
 function dkStoreOpen() {
   var win = document.getElementById('win-dkstore');
-  if (win) { win.classList.add('visible'); bringToFront(win); dkStoreLoad(); return; }
+  if (win) { win.classList.add('visible'); bringToFront(win); dkStoreLoad(); dkStoreAutoStart(); return; }
   dkStoreCss();
   // Gabarit des gestionnaires de Desktroo : colonne de navigation, en-tête, contenu.
   win = dkStoreMakeWin('dkstore', T('Desktroo Apps'), 980, 660,
     '<div class="web-shell"><nav class="web-side" id="dkstore-side" aria-label="' + T('Desktroo Apps') + '"></nav>'
     + '<section class="web-main"><header class="web-head" id="dkstore-head"></header><div class="web-body" id="dkstore-body"></div></section></div>',
-    function() { Object.keys(_dkStore.polls).forEach(function(k) { clearTimeout(_dkStore.polls[k]); }); _dkStore.polls = {}; });
+    function() { Object.keys(_dkStore.polls).forEach(function(k) { clearTimeout(_dkStore.polls[k]); }); _dkStore.polls = {}; clearTimeout(_dkStore.auto); _dkStore.auto = null; });
   var ic = win.querySelector('.window-title');
   if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a8451,#3ecf8e);">' + DK_STORE_SVG.replace('<svg ', '<svg width="13" height="13" ') + '</span>');
   _dkStore.sel = null; _dkStore.nav = 'all';
   dkStoreSide(); wmHead('dkstore', T('Desktroo Apps'), { sub: T('Les apps Mdm-services.fr pour votre NAS, comprises dans l’abonnement Desktroo') });
   dkStoreLoad();
+  dkStoreAutoStart();
+}
+// Les états (en marche, arrêtée, installée…) se mettent à jour d'eux-mêmes : sans cela, il fallait fermer et rouvrir la fenêtre.
+// On ne redessine pas pendant une saisie (un champ de la fiche a le focus) : la mise à jour attend la fin de la saisie.
+function dkStoreAutoStart() {
+  if (_dkStore.auto) return;
+  _dkStore.auto = setTimeout(dkStoreAutoTick, 4000);
+}
+async function dkStoreAutoTick() {
+  _dkStore.auto = null;
+  var win = document.getElementById('win-dkstore');
+  if (!win) return;
+  var delay = 8000;
+  try {
+    var body = wmBody('dkstore');
+    if (!document.hidden && win.classList.contains('visible') && body && _dkStore.view && !Object.keys(_dkStore.polls).length) {
+      var v = await fileops('GET', 'store/view');
+      if (v && v.apps) {
+        var sig = JSON.stringify(v.apps), changed = sig !== _dkStore.sig;
+        if (changed) { _dkStore.sig = sig; _dkStore.view = v; _dkStore.stale = true; dkStoreRegisterApps((v.apps || []).filter(function(a) { return a.installed; })); }
+        var ae = document.activeElement;
+        var typing = !!(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && body.contains(ae));
+        if (_dkStore.stale && !typing && document.getElementById('win-dkstore')) { _dkStore.stale = false; dkStoreRender(); }
+        if ((v.apps || []).some(function(a) { return a.installed && a.installed.state && a.installed.state !== 'RUNNING'; })) delay = 4000;
+      }
+    }
+  } catch (_) {}
+  if (document.getElementById('win-dkstore')) _dkStore.auto = setTimeout(dkStoreAutoTick, delay);
 }
 function dkStoreGo(nav) { _dkStore.nav = nav; _dkStore.sel = null; dkStoreRender(); }
 function dkStoreSel(id) { _dkStore.sel = decodeURIComponent(id); dkStoreRender(); }
@@ -13034,6 +13086,7 @@ async function dkStoreLoad(refresh) {
   }
   dkStoreRegisterApps((_dkStore.view.apps || []).filter(function(a) { return a.installed; }));
   (_dkStore.view.apps || []).forEach(function(a) { if (a.job && a.job.state === 'running') dkStorePoll(a.id); });
+  _dkStore.sig = JSON.stringify(_dkStore.view.apps || []); _dkStore.stale = false;
   dkStoreRender();
 }
 function dkStoreApp(id) { return ((_dkStore.view && _dkStore.view.apps) || []).filter(function(a) { return a.id === id; })[0] || null; }
@@ -13122,7 +13175,7 @@ function dkStoreRenderDetail(body, a) {
       + (a.channel && a.channel !== 'stable' ? ' · <span class="dks-badge warn">' + T('Test') + '</span>' : ''),
     actions: acts });
   var h = (a.tagline ? '<div style="font-size:14px;font-weight:500;">' + webEsc(dkStoreName(a.tagline)) + '</div>' : '')
-    + (a.description ? '<div class="dks-tag" style="font-size:13px;margin-top:6px;max-width:680px;">' + webEsc(dkStoreName(a.description)) + '</div>' : '');
+    + (a.description ? '<div class="dks-tag" style="font-size:13px;margin-top:6px;max-width:680px;white-space:pre-line;line-height:1.55;">' + webEsc(dkStoreName(a.description)) + '</div>' : '');
   if (running) h += '<div class="dks-sec"><div class="dks-job"><div class="spinner" style="width:16px;height:16px;"></div><span>' + webEsc(T(job.step || 'En cours…')) + '</span></div></div>';
   else if (job.state === 'error') h += '<div class="dks-err">' + webEsc((job.action === 'update' ? T('La mise à jour a échoué : ') : job.action === 'adopt' || job.action === 'migrate' ? '' : T('L’installation a échoué : ')) + job.error) + '</div>';
   else if (job.state === 'done' && job.step && job.step !== 'Installée' && job.step !== 'Repris par Desktroo Apps') h += '<div class="dks-err" style="color:var(--warning);border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08);">' + webEsc(T(job.step)) + '</div>';
@@ -13975,9 +14028,141 @@ async function dkWgDel(id) {
   catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
   dkWgLoad(true);
 }
+// ── MDM-STORE-V1 · fenêtre « Uptime Kuma » en lecture seule : l'état de vos services, sans quitter Desktroo ──
+// Le NAS lit l'état des services dans Uptime Kuma (clé d'accès en lecture créée par l'utilisateur, gardée sur le NAS)
+// et la fenêtre l'affiche. Créer ou modifier un service se fait dans Uptime Kuma (« Administration complète »).
+var _dkUk = { nav: 'mon', data: null, timer: null };
+function dkUkCss() {
+  if (document.getElementById('dkuk-css')) return;
+  var st = document.createElement('style');
+  st.id = 'dkuk-css';
+  st.textContent = '.dkuk-sum{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}'
+    + '.dkuk-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--text-dim)}'
+    + '.dkuk-ms{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--text-dim);min-width:64px;text-align:right}'
+    + '.dkuk-in{width:100%;max-width:420px;box-sizing:border-box;margin:6px 0 12px;font-family:var(--font-mono);font-size:12.5px;color:var(--text);background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:8px 10px}'
+    + '.dkuk-help{max-width:620px;font-size:13px;line-height:1.6}.dkuk-help ol{padding-left:20px}';
+  document.head.appendChild(st);
+}
+async function dkUkOpen() {
+  var win = document.getElementById('win-dkuk');
+  if (win) { win.classList.add('visible'); bringToFront(win); dkUkLoad(); return; }
+  dkStoreCss(); dkUkCss();
+  win = dkStoreMakeWin('dkuk', T('Uptime Kuma'), 900, 620,
+    '<div class="web-shell"><nav class="web-side" id="dkuk-side" aria-label="' + T('Uptime Kuma') + '"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dkuk-head"></header><div class="web-body" id="dkuk-body"></div></section></div>',
+    function() { clearTimeout(_dkUk.timer); _dkUk.timer = null; });
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('uptime-kuma', 18) + '</span>');
+  _dkUk.nav = 'mon'; _dkUk.data = null;
+  dkUkLoad();
+}
+async function dkUkApi(action, extra) {
+  var rr;
+  try { rr = await fileops('POST', 'store/uptime-kuma/api', Object.assign({ action: action }, extra || {})); }
+  catch (e) { var et = new Error(T('Uptime Kuma ne répond pas pour le moment.')); et.transient = true; throw et; }
+  if (!rr || rr.ok === false) { var e5 = new Error((rr && rr.error) || T('Uptime Kuma ne répond pas pour le moment.')); e5.transient = true; throw e5; }
+  return rr;
+}
+function dkUkGo(nav) { _dkUk.nav = nav; dkUkLoad(); }
+function dkUkFull() {
+  var a = dkStoreApp('uptime-kuma') || {};
+  window.open(String(a.open_url || 'http://{ip}:3001').replace('{ip}', a.nas_ip || location.hostname), '_blank', 'noopener');
+}
+function dkUkSide() {
+  var d = _dkUk.data, n = d && d.configured && !d.denied && d.monitors ? d.monitors.length : '';
+  wmSide('dkuk', wmNav({ active: _dkUk.nav === 'mon', call: 'dkUkGo(\'mon\')', icon: 'list', name: T('Services'), count: n })
+    + wmSep()
+    + wmNav({ active: _dkUk.nav === 'set', call: 'dkUkGo(\'set\')', icon: 'key', name: T('Connexion') }));
+}
+async function dkUkLoad(quiet) {
+  clearTimeout(_dkUk.timer);
+  var nav = _dkUk.nav;
+  dkUkSide();
+  if (nav === 'set') {
+    if (!_dkUk.data) { try { _dkUk.data = await dkUkApi('state'); } catch (_) {} }
+    if (nav !== _dkUk.nav) return;
+    dkUkRenderSetup(wmBody('dkuk')); return;
+  }
+  if (!quiet && !_dkUk.data) wmLoading('dkuk');
+  try { _dkUk.data = await dkUkApi('monitors'); }
+  catch (e) { if (nav === _dkUk.nav) wmFail('dkuk', T('Uptime Kuma indisponible'), e, 'dkUkLoad()'); return; }
+  if (nav !== _dkUk.nav) return;
+  dkUkSide();
+  if (!_dkUk.data.configured || _dkUk.data.denied) { dkUkRenderSetup(wmBody('dkuk')); return; }
+  dkUkRenderMon(wmBody('dkuk'));
+  _dkUk.timer = setTimeout(function() { dkUkLoad(true); }, 15000);
+}
+var DKUK_ORDER = { 0: 0, 2: 1, 3: 2, 1: 3 };
+function dkUkSt(s) {
+  if (s === 1) return { dot: '', txt: T('En ligne') };
+  if (s === 0) return { dot: 'background:var(--danger,#ef4444);box-shadow:0 0 0 3px rgba(239,68,68,0.18);', txt: T('Hors ligne') };
+  if (s === 3) return { dot: 'background:#3b82f6;', txt: T('Maintenance') };
+  return { dot: 'background:#f59e0b;', txt: T('En attente') };
+}
+function dkUkTarget(m) {
+  if (m.url && m.url !== 'https://' && /^(http|keyword|json)/.test(m.type)) return m.url;
+  if (m.host) return m.host + (m.port ? ':' + m.port : '');
+  return m.url && m.url !== 'https://' ? m.url : '';
+}
+function dkUkRenderMon(body) {
+  if (!body) return;
+  var list = (_dkUk.data.monitors || []).slice();
+  wmHead('dkuk', T('Services'), { sub: T('L’état de vos sites, serveurs et appareils surveillés'), keepScroll: true,
+    actions: '<button class="web-open" onclick="dkUkFull()">' + T('Administration complète') + '</button>' });
+  if (!list.length) {
+    body.innerHTML = '<div class="dks-empty">' + T('Aucun service surveillé pour l’instant.') + '<div class="dks-acts" style="justify-content:center;"><button class="web-open" onclick="dkUkFull()">' + T('Ajouter un service dans Uptime Kuma') + '</button></div></div>';
+    return;
+  }
+  list.sort(function(a, b) { return (DKUK_ORDER[a.status] - DKUK_ORDER[b.status]) || String(a.name).localeCompare(String(b.name)); });
+  var up = list.filter(function(m) { return m.status === 1; }).length, down = list.filter(function(m) { return m.status === 0; }).length;
+  var other = list.length - up - down;
+  body.innerHTML = '<div class="dkuk-sum"><span class="dks-badge">' + Tf('{0} en ligne', up) + '</span>'
+    + (down ? '<span class="dks-badge warn">' + Tf('{0} hors ligne', down) + '</span>' : '')
+    + (other ? '<span class="dks-badge">' + Tf('{0} autre(s)', other) + '</span>' : '') + '</div>'
+    + '<div class="web-group">' + list.map(function(m) {
+      var st = dkUkSt(m.status), tg = dkUkTarget(m);
+      return '<div class="web-row" style="cursor:default;align-items:center;gap:12px;"><span class="web-dot" style="' + st.dot + '"></span>'
+        + '<span class="web-row-text" style="flex:1;min-width:0;"><span class="web-row-name">' + webEsc(m.name) + '</span>'
+        + '<span class="web-row-desc dkuk-meta"><span>' + webEsc(st.txt) + '</span>' + (tg ? '<span>' + webEsc(tg) + '</span>' : '')
+        + (m.up30d != null ? '<span>' + Tf('{0} % sur 30 jours', m.up30d) + '</span>' : '')
+        + (m.cert_days != null ? '<span>' + (m.cert_days < 15 ? '⚠️ ' : '') + Tf('Certificat : {0} j', m.cert_days) + '</span>' : '') + '</span></span>'
+        + '<span class="dkuk-ms">' + (m.ms != null ? m.ms + ' ms' : '—') + '</span></div>';
+    }).join('') + '</div>'
+    + '<div class="dkag-note" style="margin-top:14px;">' + T('Uptime Kuma peut annoncer qu’une nouvelle version existe : la mise à jour se fait dans Desktroo Apps, pas depuis Kuma.') + '</div>';
+}
+function dkUkRenderSetup(body) {
+  if (!body) return;
+  var d = _dkUk.data || {};
+  wmHead('dkuk', T('Connexion'), { sub: T('Autoriser Desktroo à lire l’état de vos services') });
+  body.innerHTML = '<div class="dkuk-help">'
+    + (d.denied ? '<div class="dkag-note" style="margin-bottom:12px;">' + T('Uptime Kuma refuse la clé enregistrée. Créez-en une nouvelle et collez-la ci-dessous.') + '</div>' : '')
+    + '<ol><li>' + T('Ouvrez Uptime Kuma avec le bouton « Administration complète » et connectez-vous.') + '</li>'
+    + '<li>' + T('Menu du profil en haut à droite, puis Paramètres, puis Clés API, puis « Ajouter une clé API ».') + '</li>'
+    + '<li>' + T('Nommez-la « Desktroo », laissez « Pas d’expiration », puis copiez la clé affichée.') + '</li>'
+    + '<li>' + T('Collez-la ci-dessous.') + '</li></ol>'
+    + '<input class="dkuk-in" id="dkuk-key" autocomplete="off" spellcheck="false" placeholder="uk1_…">'
+    + '<div class="dks-acts" style="justify-content:flex-start;"><button class="web-open" id="dkuk-save" onclick="dkUkSave()">' + T('Enregistrer') + '</button>'
+    + '<button class="fs-btn" onclick="dkUkFull()">' + T('Administration complète') + '</button>'
+    + (d.configured ? '<button class="fs-btn" style="color:var(--danger);" onclick="dkUkForget()">' + T('Oublier la clé') + '</button>' : '') + '</div>'
+    + '<div class="dkag-note" style="margin-top:14px;">' + T('Cette clé ne permet que de lire l’état des services. Elle reste sur le NAS et n’est jamais renvoyée au navigateur.') + '</div></div>';
+}
+async function dkUkSave() {
+  var inp = document.getElementById('dkuk-key'), b = document.getElementById('dkuk-save');
+  var k = inp ? inp.value.trim() : '';
+  if (!k) { toast(T('Collez la clé d’accès.'), 4000); return; }
+  if (b) b.disabled = true;
+  try { await dkUkApi('save_key', { key: k }); toast(T('Connecté à Uptime Kuma.')); _dkUk.nav = 'mon'; _dkUk.data = null; dkUkLoad(); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); if (b) b.disabled = false; }
+}
+async function dkUkForget() {
+  if (!(await showConfirm(T('Oublier la clé d’accès ? Desktroo ne pourra plus afficher l’état de vos services.'), { danger: true, ok: T('Oublier') }))) return;
+  try { await dkUkApi('clear_key'); _dkUk.data = null; _dkUk.nav = 'set'; dkUkLoad(); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+}
 function dkStoreOpenInstalled(id) {
   if (id === 'adguard') return dkAgOpen();
   if (id === 'wireguard') return dkWgOpen();
+  if (id === 'uptime-kuma') return dkUkOpen();
   var a = dkStoreApp(id) || {};
   if (a.open_url) {   // app dont l'interface ne peut pas passer par le bureau : adresse directe sur le réseau local
     window.open(String(a.open_url).replace('{ip}', a.nas_ip || location.hostname), '_blank', 'noopener');
@@ -14381,7 +14566,7 @@ function dkStoreRegisterApps(list) {
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
     if (entry) { entry.label = label; return; }
     ALL_APPS.push({ id: key, label: label, store: true,
-      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : id === 'uptime-kuma' ? function() { dkUkOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
       imgStyle: 'background:transparent;box-shadow:none;padding:0;overflow:hidden;',
       svg: dkStoreIcon(id, 56) });
   });
@@ -17629,6 +17814,23 @@ function appsOpen(enc) {
   var w = document.getElementById('win-apps');
   if (w && w.classList.contains('visible') && _appsLoaded) { bringToFront(w); appsGo('one', _appsSel); } else openApp('apps');
 }
+// Les apps du Magasin (dt-…) n'ont pas de « mise à jour » TrueNAS : leur nouvelle version vient du catalogue Desktroo Apps.
+// On relit l'état du Magasin en arrière-plan (au plus une fois par minute) pour afficher la pastille dans ce gestionnaire.
+var _appsStoreView = null, _appsStoreAt = 0;
+function appsStoreUpd(a) {
+  if (!(a && a.custom_app && /^dt-/.test(appKey(a)))) return null;
+  var id = appKey(a).slice(3), v = _dkStore.view || _appsStoreView;
+  var s = ((v && v.apps) || []).filter(function(x) { return x.id === id; })[0];
+  return s && s.installed && s.update_available ? s : null;
+}
+async function appsStoreCheck() {
+  if (Date.now() - _appsStoreAt < 60000) return;
+  _appsStoreAt = Date.now();
+  var sig = function() { return _apps.map(function(a) { return appsStoreUpd(a) ? 1 : 0; }).join(''); }, before = sig();
+  try { _appsStoreView = await fileops('GET', 'store/view'); } catch (_) { return; }
+  if (sig() !== before && wmVisible('apps')) appsRender(true);
+}
+function appsStoreUpdates() { dkStoreOpen(); _dkStore.nav = 'updates'; _dkStore.sel = null; }
 async function loadApps(soft) {
   var body = wmBody('apps');
   if (!body) return;
@@ -17642,6 +17844,7 @@ async function loadApps(soft) {
     appsRender(soft === true);
     appUpdatesFrom(list); _appUp.at = Date.now();
     if (!soft) appLabelsLoad();
+    appsStoreCheck();
   } catch (e) {
     if (seq !== _appsSeq) return;
     _appsLoaded = false; _apps = [];
@@ -17670,7 +17873,7 @@ function appsSide() {
   _apps.forEach(function(a) {
     var st = appStateInfo(a);
     h += wmNav({ active: _appsNav === 'one' && _appsSel === appKey(a), call: 'appsGo(\'one\',decodeURIComponent(' + wmQ(appKey(a)) + '))', dot: st.dot, name: appTitle(a),
-      meta: a.upgrade_available && st.key !== 'busy' ? T('Mise à jour disponible') : st.label, title: st.label });
+      meta: (a.upgrade_available || appsStoreUpd(a)) && st.key !== 'busy' ? T('Mise à jour disponible') : st.label, title: st.label });
   });
   if (_appsLoaded && !_apps.length) h += '<div class="web-side-empty">' + T('Aucune application') + '</div>';
   h += wmSep() + wmSideTitle(T('Voir aussi'))
@@ -17697,7 +17900,7 @@ function appsAllView(soft) {
       : a.custom_app ? (appAlias(appKey(a)) ? Tf('Application personnalisée, {0}', appKey(a)) : T('Application personnalisée')) : appKey(a);
     h += '<div class="web-tr click" role="button" tabindex="0" data-app="' + i + '">'
       + '<span class="apps-name">' + appIconOf(a) + '<span class="cron-two"><strong>' + webEsc(appTitle(a)) + '</strong><span class="dim">' + webEsc(origin) + '</span></span></span>'
-      + '<span class="cron-two"><span>' + webEsc(v.app || '—') + '</span>' + (a.upgrade_available ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
+      + '<span class="cron-two"><span>' + webEsc(v.app || '—') + '</span>' + (a.upgrade_available || appsStoreUpd(a) ? '<span class="apps-up">' + T('Mise à jour disponible') + '</span>' : '') + '</span>'
       + '<span class="cron-two"><span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>'
         + (st.key === 'run' ? '<span class="dim apps-load" data-rt-app="' + webEsc(appKey(a)) + '"></span>' : '') + '</span>'
       + '<span class="apps-open">' + (portal ? (ok && st.key === 'run' ? '<a class="web-mini" href="' + webEsc(portal.url) + '" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">' + T('Ouvrir') + '</a>'
@@ -17746,6 +17949,8 @@ function appsOneView(soft) {
   if (busy) h += '<div class="apps-note"><div class="spinner"></div><span>' + webEsc(st.label) + '. ' + T('La page se met à jour toute seule.') + '</span></div>';
   else if (a.upgrade_available) h += '<div class="apps-note up"><span><strong>' + (a.latest_version ? webEsc(Tf('Version {0} disponible', a.latest_version)) : T('Mise à jour disponible')) + '</strong>'
     + (v.pack ? '<span class="dim">' + webEsc(Tf('installée : {0}', v.pack)) + '</span>' : '') + '</span><button class="web-open" onclick="appsAct(' + q + ',\'upgrade\')">' + T('Mettre à jour') + '</button></div>';
+  else if (appsStoreUpd(a)) { var su = appsStoreUpd(a); h += '<div class="apps-note up"><span><strong>' + webEsc(Tf('Version {0} disponible', su.version || '?')) + '</strong>'
+    + '<span class="dim">' + webEsc(Tf('installée : {0}', (su.installed && su.installed.version) || '?')) + '</span></span><button class="web-open" onclick="appsStoreUpdates()">' + T('Voir dans Desktroo Apps') + '</button></div>'; }
   else if (a.image_updates_available) h += '<div class="apps-note up"><span><strong>' + T('De nouvelles images sont disponibles') + '</strong><span class="dim">' + T('même version de l\'application, conteneurs plus récents') + '</span></span>'
     + '<button class="web-open" onclick="appsAct(' + q + ',\'pull\')">' + T('Récupérer les images') + '</button></div>';
   var nct = ensureArray((a.active_workloads || {}).container_details).length || (a.active_workloads || {}).containers || 0;
@@ -19621,11 +19826,18 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.54.0';
-function dkVerCmp(a, b) {
-  var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
-  for (var i = 0; i < Math.max(x.length, y.length); i++) {
-    var d = (+x[i] || 0) - (+y[i] || 0);
+var DK_PAGE_VERSION = '2.54.15';
+function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
+  function key(v) {
+    v = String(v || '').trim();
+    var n = (v.match(/\d+/g) || []).slice(0, 4).map(Number);
+    while (n.length < 4) n.push(0);
+    n.push(/\d[bB]\d*$/.test(v) ? 0 : 1);
+    return n;
+  }
+  var x = key(a), y = key(b);
+  for (var i = 0; i < x.length; i++) {
+    var d = x[i] - y[i];
     if (d) return d < 0 ? -1 : 1;
   }
   return 0;

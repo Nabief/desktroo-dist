@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.0'
+APP_VERSION = '2.54.15'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -752,8 +752,10 @@ def _version_status():
         except Exception:
             latest = ''
 
-    def _norm(v):
-        return [int(x) for x in re.findall(r'\d+', v or '')[:4]]
+    def _norm(v):   # « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
+        v = str(v or '').strip()
+        nums = [int(x) for x in re.findall(r'\d+', v)[:4]]
+        return nums + [0] * (4 - len(nums)) + [0 if re.search(r'\d[bB]\d*$', v) else 1]
 
     upd = False
     if latest:
@@ -9781,6 +9783,7 @@ _STORE_POST = {
     '/store/adguard/unlink': lambda b: store_adguard_unlink(b),
     '/store/adguard/api': lambda b: store_adguard_api(b),
     '/store/wireguard/api': lambda b: store_wireguard_api(b),
+    '/store/uptime-kuma/api': lambda b: store_uptimekuma_api(b),
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
@@ -10028,7 +10031,8 @@ def _store_timezone():
         return 'Europe/Paris'
 
 
-STORE_CAP_ALLOWED = ('NET_BIND_SERVICE', 'NET_ADMIN', 'NET_RAW', 'SYS_MODULE')   # capacités qu'une app signée peut demander (ports < 1024 ; VPN)
+STORE_CAP_ALLOWED = ('NET_BIND_SERVICE', 'NET_ADMIN', 'NET_RAW', 'SYS_MODULE',   # capacités qu'une app signée peut demander (ports < 1024 ; VPN ;
+                      'CHOWN', 'DAC_OVERRIDE', 'FOWNER', 'SETUID', 'SETGID')   # apps qui gèrent leurs propres fichiers et comptes : sauvegarde)
 STORE_SYSCTL_ALLOWED = ('net.ipv4.ip_forward', 'net.ipv4.conf.all.src_valid_mark', 'net.ipv6.conf.all.disable_ipv6',
                         'net.ipv6.conf.all.forwarding', 'net.ipv6.conf.default.forwarding')
 STORE_HOST_MOUNTS_ALLOWED = ('/lib/modules',)   # dossiers de l'hôte qu'une app peut voir, en lecture seule
@@ -10255,6 +10259,16 @@ def _store_prepare_data(app):
     for d in (parent, ds):
         out, _e, code = _px_host('zfs list -H -o name ' + shq(d) + ' 2>/dev/null', timeout=30)
         if code != 0 or not out.strip():
+            if d == ds and re.match(r'^[A-Za-z0-9_.-]+/desktroo-apps/[a-z0-9][a-z0-9-]{0,40}$', d):
+                # Un dossier ordinaire porte déjà ce nom (reste d'une désinstallation, ou dossier recréé par Docker) : un dataset
+                # ne peut pas le remplacer. Vide de fichiers, on le retire pour créer le dataset ; sinon on garde son contenu.
+                p = '/mnt/' + d
+                _o, _e, c2 = _px_host('[ -d %s ]' % shq(p), timeout=15)
+                if c2 == 0:
+                    _o, _e, c3 = _px_host('[ -z "$(find %s -mindepth 1 ! -type d 2>/dev/null | head -n 1)" ] && rm -rf %s' % (shq(p), shq(p)), timeout=60)
+                    if c3 != 0:
+                        log.warning('Magasin : %s existe déjà et contient des fichiers : utilisé tel quel, sans dataset.', p)
+                        continue
             _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
     owner = str(app.get('run_as') or '568:568')
     nas = _store_nas_get(app['id']) if (app.get('nas_access') and not _store_nas_all(app)) else None
@@ -10285,12 +10299,13 @@ def _store_health(app, tries=30):
     path = str(app.get('health') or '/')
     if not path.startswith('/'):
         path = '/' + path
-    for _ in range(tries):
+    for i in range(tries):
         _o, _e, code = _px_host('docker exec desktroo wget -q -T 4 -O /dev/null %s 2>/dev/null'
                                 % shq('http://dt-%s:%d%s' % (app['id'], STORE_APP_PORT, path)), timeout=20)
         if code == 0:
             return True
-        _st_time.sleep(2)
+        if i < tries - 1:
+            _st_time.sleep(2)
     return False
 
 
@@ -10537,7 +10552,16 @@ def store_view():
         a['installed'] = inst
         a['update_available'] = bool(inst and not inst.get('legacy') and not inst.get('linked') and _store_vtuple(a.get('version')) > _store_vtuple(inst.get('version')))
         a['compatible'] = _store_vtuple(a.get('min_desktroo')) <= _store_vtuple(APP_VERSION)
-        a['job'] = store_job_get(a['id']) or None
+        j = store_job_get(a['id'])
+        if inst and j.get('state') == 'done' and j.get('step') == 'Installée, mais elle ne répond pas encore' \
+                and a.get('kind') != 'module' and inst.get('state') == 'RUNNING':
+            try:   # l'app a fini de démarrer depuis : l'avertissement de l'installation tombe tout seul
+                if _store_health(a, tries=1):
+                    _store_job_set(a['id'], step='Installée')
+                    j = store_job_get(a['id'])
+            except Exception:
+                pass
+        a['job'] = j or None
         if a['id'] == STORE_NPM_ID:
             a['npm'] = store_npm_info()
         if _store_host_ports(a):
@@ -11754,6 +11778,121 @@ def store_wireguard_api(body):
     except Exception as e:
         return 502, {'ok': False, 'error': 'WireGuard ne répond pas : ' + str(e)[:160]}
     return 200, {'ok': True, 'status': code, 'text': txt}
+
+
+# ── MDM-STORE-V1 · fenêtre « Uptime Kuma » en lecture seule : le NAS lit l'état des services et le met en forme ──────
+# Uptime Kuma publie l'état de tous ses services au format Prometheus (/metrics), protégé par une clé d'accès que
+# l'utilisateur crée dans Kuma (lecture seule). La clé reste sur le NAS ; le navigateur ne la revoit jamais.
+STORE_UK_ID = 'uptime-kuma'
+_UK_BASE = 'http://dt-uptime-kuma:8080'
+_UK_KEY_RE = re.compile(r'^[A-Za-z0-9_.-]{8,128}$')
+_UK_LINE = re.compile(r'^(monitor_[a-z_0-9]+)\{(.*)\}\s+(-?[0-9.]+(?:[eE][-+]?[0-9]+)?|NaN)\s*$')
+_UK_LBL = re.compile(r'(\w+)="((?:[^"\\]|\\.)*)"')
+
+
+def _uk_unesc(v):
+    return v.replace('\\n', ' ').replace('\\"', '"').replace('\\\\', '\\')[:200]
+
+
+def _uk_fetch(key):
+    """Le texte /metrics ; ValueError('auth') si la clé est refusée, RuntimeError si Kuma ne répond pas."""
+    import urllib.request, urllib.error, base64
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
+    req = urllib.request.Request(_UK_BASE + '/metrics', headers={
+        'Authorization': 'Basic ' + base64.b64encode((':' + key).encode()).decode()})
+    try:
+        with opener.open(req, timeout=15) as r:
+            return r.read(8 * 1024 * 1024).decode('utf-8', 'replace')
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise ValueError('auth')
+        raise RuntimeError('HTTP %d' % e.code)
+    except Exception as e:
+        raise RuntimeError(str(e)[:120])
+
+
+def _uk_parse(text):
+    mons = {}
+    for ln in text.splitlines():
+        m = _UK_LINE.match(ln)
+        if not m:
+            continue
+        name, lbls, val = m.group(1), dict((k, _uk_unesc(v)) for k, v in _UK_LBL.findall(m.group(2))), m.group(3)
+        if name not in ('monitor_status', 'monitor_response_time', 'monitor_cert_days_remaining', 'monitor_uptime_ratio'):
+            continue
+        if not lbls.get('monitor_name'):
+            continue
+        key = (lbls.get('monitor_name'), lbls.get('monitor_type', ''), lbls.get('monitor_url', ''),
+               lbls.get('monitor_hostname', ''), lbls.get('monitor_port', ''))
+        if len(mons) >= 500 and key not in mons:
+            continue
+        d = mons.setdefault(key, {'name': key[0], 'type': key[1], 'url': key[2], 'host': key[3], 'port': key[4],
+                                  'status': None, 'ms': None, 'cert_days': None, 'up1d': None, 'up30d': None})
+        try:
+            v = float(val)
+        except ValueError:
+            continue
+        if v != v:
+            continue
+        if name == 'monitor_status':
+            d['status'] = int(v)
+        elif name == 'monitor_response_time':
+            d['ms'] = int(v) if v >= 0 else None
+        elif name == 'monitor_cert_days_remaining':
+            d['cert_days'] = int(v)
+        elif name == 'monitor_uptime_ratio':
+            w = lbls.get('window', '')
+            if w in ('1d', '24h'):
+                d['up1d'] = round(v * 100, 2)
+            elif w == '30d':
+                d['up30d'] = round(v * 100, 2)
+    for d in mons.values():
+        for k in ('url', 'host', 'port'):
+            if d[k] in ('null', 'undefined'):
+                d[k] = ''
+    return [d for d in mons.values() if d['status'] is not None]
+
+
+def store_uptimekuma_api(body):
+    """{ action: state | save_key | clear_key | monitors } → { ok, ... }. La clé n'est jamais renvoyée."""
+    if STORE_UK_ID not in store_installed_get():
+        return 409, {'ok': False, 'error': 'Uptime Kuma n’est pas installé.'}
+    action = str((body or {}).get('action') or '')
+    fields = _store_fields_get(STORE_UK_ID)
+    key = str(fields.get('api_key') or '')
+    if action == 'state':
+        return 200, {'ok': True, 'configured': bool(key)}
+    if action == 'clear_key':
+        fields.pop('api_key', None)
+        _store_fields_set(STORE_UK_ID, fields or None)
+        return 200, {'ok': True, 'configured': False}
+    if action == 'save_key':
+        k = str((body or {}).get('key') or '').strip()
+        if not _UK_KEY_RE.match(k):
+            return 400, {'ok': False, 'error': 'Clé invalide : copiez-la telle quelle depuis Uptime Kuma.'}
+        try:
+            _uk_fetch(k)
+        except ValueError:
+            return 400, {'ok': False, 'error': 'Uptime Kuma refuse cette clé : vérifiez qu’elle est active et complète.'}
+        except RuntimeError as e:
+            return 502, {'ok': False, 'error': 'Uptime Kuma ne répond pas : ' + str(e)}
+        fields['api_key'] = k
+        _store_fields_set(STORE_UK_ID, fields)
+        return 200, {'ok': True, 'configured': True}
+    if action == 'monitors':
+        if not key:
+            return 200, {'ok': True, 'configured': False, 'monitors': []}
+        try:
+            mons = _uk_parse(_uk_fetch(key))
+        except ValueError:
+            return 200, {'ok': True, 'configured': True, 'denied': True, 'monitors': []}
+        except RuntimeError as e:
+            return 502, {'ok': False, 'error': 'Uptime Kuma ne répond pas : ' + str(e)}
+        return 200, {'ok': True, 'configured': True, 'monitors': mons}
+    return 400, {'ok': False, 'error': 'Requête non autorisée.'}
 
 
 # ── MDM-STORE-V1 · module « Desktroo Pass » (dt-pass) : coffre de mots de passe compatible Bitwarden ──────

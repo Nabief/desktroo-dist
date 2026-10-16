@@ -3,6 +3,22 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.15 — 16 October 2026
+
+### New
+- **Uptime Kuma: watch your sites and services from Desktroo Apps.** Uptime Kuma continuously checks that your websites, servers and devices respond, and alerts you by email, Telegram, SMS or a hundred other ways as soon as a service goes down. A Desktroo window shows the status of all your services at a glance: online, offline, response time, 30-day availability, days left before the certificate expires. Creating or editing a service is done in Uptime Kuma (“Full administration”).
+  > `uptime-kuma` app page (official image pinned by digest, SQLite database enforced). The window reads the status in Prometheus format (`/metrics`) with a read-only API key created by the user, kept on the NAS and never sent back to the browser (`/store/uptime-kuma/api`).
+- **An “Update available” badge for Desktroo Apps apps, in the application manager.** It shows in the list, in the left column and on the app page, with a button that opens Desktroo Apps updates directly.
+
+### Improved
+- **Easier-to-read app pages.** Descriptions are laid out in paragraphs, in French and in English.
+- **Desktroo Apps refreshes by itself.** States (running, stopped, installed…) update on their own: no more closing and reopening the window to see a change.
+- **Wider app compatibility.** Desktroo Apps accepts new container rights (CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID) for apps that need them.
+
+### Fixed
+- **Installing an app onto an existing data folder no longer fails** (“Path … already exists” error after an interrupted install).
+- **“Installed, but not responding yet” no longer stays on screen** when the app does respond.
+
 ## 2.54.0 — 16 October 2026
 
 ### New
