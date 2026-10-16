@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.15'
+APP_VERSION = '2.54.16b'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10234,7 +10234,7 @@ def store_compose(app):
     if _store_nas_all(app):
         _store_nas_apply_all(svc, env, app_id)
     elif app.get('nas_access'):
-        _store_nas_apply(svc, env, app_id)
+        _store_nas_apply(svc, env, app_id, app)
     return {'services': {'app': svc}, 'networks': {STORE_NET: {'external': True}}}
 
 
@@ -12239,12 +12239,18 @@ def store_nas_validate(app, body):
             'at': int(_st_time.time())}
 
 
-def _store_nas_apply(svc, env, app_id):
+def _store_nas_apply(svc, env, app_id, app=None):
     """Ajoute au service d'une app ses dossiers du NAS et l'identité du compte prêté."""
     cfg = _store_nas_get(app_id)
     if not cfg:
         return None
     svc['user'] = '%d:%d' % (int(cfg['uid']), int(cfg['gid']))
+    ue = (app or {}).get('nas_user_env') or {}
+    if re.match(r'^[A-Z_][A-Z0-9_]*$', str(ue.get('uid') or '')) and re.match(r'^[A-Z_][A-Z0-9_]*$', str(ue.get('gid') or '')):
+        # Image qui démarre en root puis change de compte elle-même (s6-overlay : PhotoPrism) : on lui donne le compte prêté.
+        svc['user'] = '0:0'
+        env[str(ue['uid'])] = str(int(cfg['uid']))
+        env[str(ue['gid'])] = str(int(cfg['gid']))
     if cfg.get('groups'):
         svc['group_add'] = [str(int(g)) for g in cfg['groups']]
     flag = 'ro' if cfg.get('mode') != 'rw' else 'rw'
