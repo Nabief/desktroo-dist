@@ -1290,6 +1290,29 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   button.web-row:hover .web-row-chev { color:var(--accent2); }
   .web-row.danger .web-row-name { color:#f87171; }
   /* Variante sur une ligne : nom à gauche, explication à la suite (actions d'un site). */
+  /* Domaines publiés : liste aérée, actions discrètes */
+  .dkn-row { display:grid; grid-template-columns:12px minmax(0,1fr) auto auto; align-items:center; column-gap:16px; padding:14px 18px; border-top:1px solid rgba(255,255,255,0.06); transition:background .15s; }
+  .dkn-row:first-child { border-top:0; }
+  .dkn-row:hover, .dkn-row:focus-within { background:rgba(255,255,255,0.035); }
+  .dkn-row.off .dkn-main, .dkn-row.off .dkn-cert { opacity:.55; }
+  .dkn-main { min-width:0; }
+  .dkn-name { display:block; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dkn-name a { color:inherit; text-decoration:none; }
+  .dkn-name a:hover { color:var(--accent2); text-decoration:underline; }
+  .dkn-name .dkn-more { font-weight:400; color:var(--text-dim); }
+  .dkn-to { display:block; margin-top:3px; font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dkn-to b { font-weight:500; color:var(--text); opacity:.8; }
+  .dkn-cert { display:flex; flex-direction:column; align-items:flex-end; gap:3px; min-width:120px; }
+  .dkn-cert small { font-size:11.5px; color:var(--text-dim); }
+  .dkn-cert small.bad { color:var(--danger); }
+  .dkn-acts { display:flex; gap:6px; opacity:0; transition:opacity .15s; }
+  .dkn-row:hover .dkn-acts, .dkn-row:focus-within .dkn-acts { opacity:1; }
+  .dkn-state { font-size:11.5px; color:var(--text-dim); margin-left:8px; font-weight:400; }
+  @media (hover:none) { .dkn-acts { opacity:1; } }
+  @media (max-width:760px) {
+    .dkn-row { grid-template-columns:12px minmax(0,1fr) auto; row-gap:10px; }
+    .dkn-acts { grid-column:2 / -1; opacity:1; }
+  }
   .web-row.line { padding:11px 14px; }
   .web-row.line .web-row-text { display:flex; align-items:baseline; gap:14px; }
   .web-row.line .web-row-name { flex:0 0 172px; }
@@ -9271,6 +9294,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Desktroo à mettre à jour": "Desktroo needs an update",
 "Domaines indisponibles": "Domains unavailable",
 "Domaines publiés": "Published domains",
+"Valable {0} jours": "Valid for {0} days",
+"Expire aujourd’hui": "Expires today",
 "Délier NPMplus de Desktroo ?": "Unlink NPMplus from Desktroo?",
 "Délier": "Unlink",
 "En cours…": "In progress…",
@@ -13287,7 +13312,9 @@ function dkNpmCertHtml(c) {
   if (!c) return '<span class="dks-badge warn">' + T('Sans https') + '</span>';
   var t = Date.parse(c.expires_on || ''), days = isFinite(t) ? Math.round((t - Date.now()) / 86400000) : null;
   if (days != null && days < 0) return '<span class="dks-badge warn" style="color:var(--danger);">' + T('Certificat expiré') + '</span>';
-  return '<span class="dks-badge ok">https</span>' + (days != null ? ' <span class="dks-tag" style="display:inline;">' + webEsc(Tf('certificat valable {0} jours', days)) + '</span>' : '');
+  var sm = '';
+  if (days != null) sm = '<small' + (days <= 1 ? ' class="bad"' : '') + '>' + (days === 0 ? T('Expire aujourd’hui') : days === 1 ? T('Expire demain') : webEsc(Tf('Valable {0} jours', days))) + '</small>';
+  return '<span class="dks-badge ok">https</span>' + sm;
 }
 async function dkNpmLoadSites() {
   if (_dkNpm.sites) return;
@@ -13307,12 +13334,15 @@ function dkNpmRenderList(body, st) {
   } else {
     h += '<div class="web-group">';
     hosts.forEach(function(x) {
-      var d = x.domains[0] || '?';
-      h += '<div class="web-row" style="cursor:default;align-items:center;gap:12px;flex-wrap:wrap;">'
+      var d = x.domains[0] || '?', more = x.domains.slice(1);
+      h += '<div class="dkn-row' + (x.enabled ? '' : ' off') + '">'
         + '<span class="web-dot' + (x.enabled ? '' : ' off') + '"></span>'
-        + '<span class="web-row-text" style="min-width:200px;flex:1;"><span class="web-row-name"><a href="' + (x.cert ? 'https' : 'http') + '://' + webEsc(d) + '/" target="_blank" rel="noopener" style="color:inherit;">' + webEsc(x.domains.join(', ')) + '</a></span>'
-        + '<span class="web-row-desc">→ ' + webEsc(dkNpmTarget(x)) + ' · ' + dkNpmCertHtml(x.cert) + (x.enabled ? '' : ' · ' + T('désactivé')) + '</span></span>'
-        + '<span style="display:flex;gap:6px;flex-wrap:wrap;">'
+        + '<span class="dkn-main"><span class="dkn-name"><a href="' + (x.cert ? 'https' : 'http') + '://' + webEsc(d) + '/" target="_blank" rel="noopener">' + webEsc(d) + '</a>'
+        + (more.length ? ' <span class="dkn-more">+ ' + webEsc(more.join(', ')) + '</span>' : '')
+        + (x.enabled ? '' : '<span class="dkn-state">' + T('désactivé') + '</span>') + '</span>'
+        + '<span class="dkn-to">→ <b>' + webEsc(dkNpmTarget(x)) + '</b></span></span>'
+        + '<span class="dkn-cert">' + dkNpmCertHtml(x.cert) + '</span>'
+        + '<span class="dkn-acts">'
         + (x.cert ? '<button class="web-mini" onclick="dkNpmAct(\'renew\',' + x.cert.id + ',' + wmQ(d) + ')">' + T('Renouveler') + '</button>' : '')
         + '<button class="web-mini" onclick="dkNpmAct(\'' + (x.enabled ? 'disable' : 'enable') + '\',' + x.id + ',' + wmQ(d) + ')">' + (x.enabled ? T('Désactiver') : T('Activer')) + '</button>'
         + '<button class="web-mini" style="color:var(--danger);" onclick="dkNpmAct(\'delete\',' + x.id + ',' + wmQ(d) + ')">' + T('Retirer') + '</button>'
@@ -18833,7 +18863,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.49.0';
+var DK_PAGE_VERSION = '2.49.1';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

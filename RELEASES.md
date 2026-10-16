@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.49.1 — 16 octobre 2026
+
+### Amélioré
+- **La liste des domaines publiés est plus claire** : un domaine par ligne, sa destination dessous, l'état du certificat à droite. Les boutons Renouveler, Désactiver et Retirer apparaissent quand on survole la ligne (toujours visibles sur tablette et téléphone).
+
 ## 2.49.0 — 16 octobre 2026
 
 ### Amélioré

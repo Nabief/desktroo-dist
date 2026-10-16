@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.49.1 — 16 October 2026
+
+### Improved
+- **The published-domains list is clearer**: one domain per line, its destination underneath, the certificate status on the right. Renew, Disable and Remove appear when you hover a row (always visible on tablets and phones).
+
 ## 2.49.0 — 16 October 2026
 
 ### Improved
