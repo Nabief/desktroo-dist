@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.53.0'
+APP_VERSION = '2.54.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -718,6 +718,22 @@ def _truenas_ip():
     return host
 
 
+def _dist_channel():
+    """'beta' sur un NAS de test (fichier data/store/beta, le même que pour les apps en test), sinon 'stable'."""
+    try:
+        return 'beta' if os.path.exists(STORE_BETA_FILE) else 'stable'
+    except OSError:
+        return 'stable'
+
+
+def _dist_raw(channel=None):
+    """Adresse du dépôt de distribution : branche « main » (stable) ou « beta ». Un GITHUB_RAW personnalisé reste intact."""
+    base = GITHUB_RAW
+    if (channel or _dist_channel()) == 'beta' and base.endswith('/main'):
+        return base[:-5] + '/beta'
+    return base
+
+
 # Identifiant de démarrage du service. Après une mise à jour, l'ancien service répond encore quelques secondes
 # (Docker lui laisse dix secondes pour s'arrêter) : la page attend de voir cet identifiant changer avant de se
 # recharger, au lieu de croire que le premier service qui répond est le nouveau.
@@ -727,9 +743,14 @@ _BOOT_ID = "%x" % int(_login_time.time() * 1000)
 def _version_status():
     latest = ''
     try:
-        latest = _fetch_text(GITHUB_RAW + '/version.txt')[:40]
+        latest = _fetch_text(_dist_raw() + '/version.txt')[:40]
     except Exception:
         latest = ''
+    if not latest and _dist_channel() == 'beta':   # branche beta absente : on suit le stable
+        try:
+            latest = _fetch_text(_dist_raw('stable') + '/version.txt')[:40]
+        except Exception:
+            latest = ''
 
     def _norm(v):
         return [int(x) for x in re.findall(r'\d+', v or '')[:4]]
@@ -740,7 +761,7 @@ def _version_status():
             upd = _norm(latest) > _norm(APP_VERSION)
         except Exception:
             upd = (latest != APP_VERSION)
-    return {'version': APP_VERSION, 'latest': latest, 'update_available': bool(upd), 'boot': _BOOT_ID,
+    return {'version': APP_VERSION, 'latest': latest, 'update_available': bool(upd), 'channel': _dist_channel(), 'boot': _BOOT_ID,
             'truenas_host': ('' if SSH_VIA_GATEWAY else SSH_HOST), 'truenas_ip': _truenas_ip()}
 
 
@@ -765,7 +786,7 @@ def _releases_text(force=False, lang='fr'):
     for nom in noms:
         suffixe = '' if nom == _RELEASES_FILES[lang] else ':fr'
         try:
-            text = _fetch_text(GITHUB_RAW + '/' + nom, timeout=20)[:200000]
+            text = _fetch_text(_dist_raw() + '/' + nom, timeout=20)[:200000]
         except Exception:
             text = ''
         if text:
@@ -794,7 +815,7 @@ def _do_update():
     updated = []
     for f in ('fileops.py', 'desktroo.html', 'vnc-viewer.html'):
         dst = os.path.join(APP_DIR, f)
-        req = urllib.request.Request(GITHUB_RAW + '/' + f, headers={'User-Agent': 'Desktroo'})
+        req = urllib.request.Request(_dist_raw() + '/' + f, headers={'User-Agent': 'Desktroo'})
         with urllib.request.urlopen(req, timeout=60) as r:
             data = r.read()
         # Écriture SUR PLACE (même inode) : indispensable pour que les bind-mounts
@@ -806,7 +827,7 @@ def _do_update():
     # échouer la mise à jour. La copie locale des notes sert aux NAS sans accès à Internet.
     for extra in ('LICENSE.md', 'RELEASES.md', 'RELEASES.en.md', 'uninstall.sh'):
         try:
-            req = urllib.request.Request(GITHUB_RAW + '/' + extra, headers={'User-Agent': 'Desktroo'})
+            req = urllib.request.Request(_dist_raw() + '/' + extra, headers={'User-Agent': 'Desktroo'})
             with urllib.request.urlopen(req, timeout=30) as r:
                 data = r.read()
             with open(os.path.join(APP_DIR, extra), 'wb') as fh:
@@ -9759,6 +9780,7 @@ _STORE_POST = {
     '/store/adguard/link': lambda b: store_adguard_link(b),
     '/store/adguard/unlink': lambda b: store_adguard_unlink(b),
     '/store/adguard/api': lambda b: store_adguard_api(b),
+    '/store/wireguard/api': lambda b: store_wireguard_api(b),
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
@@ -10006,7 +10028,7 @@ def _store_timezone():
         return 'Europe/Paris'
 
 
-STORE_CAP_ALLOWED = ('NET_BIND_SERVICE', 'NET_ADMIN', 'SYS_MODULE')   # capacités qu'une app signée peut demander (ports < 1024 ; VPN)
+STORE_CAP_ALLOWED = ('NET_BIND_SERVICE', 'NET_ADMIN', 'NET_RAW', 'SYS_MODULE')   # capacités qu'une app signée peut demander (ports < 1024 ; VPN)
 STORE_SYSCTL_ALLOWED = ('net.ipv4.ip_forward', 'net.ipv4.conf.all.src_valid_mark', 'net.ipv6.conf.all.disable_ipv6',
                         'net.ipv6.conf.all.forwarding', 'net.ipv6.conf.default.forwarding')
 STORE_HOST_MOUNTS_ALLOWED = ('/lib/modules',)   # dossiers de l'hôte qu'une app peut voir, en lecture seule
@@ -10078,7 +10100,13 @@ def _store_host_ports(app):
             continue
         proto = str(x.get('proto') or 'tcp').lower()
         if 1 <= port <= 65535 and proto in ('tcp', 'udp', 'both') and port not in (22, 80, 443):
-            out.append({'port': port, 'proto': proto, 'label': x.get('label') or {}, 'bind': 'all' if x.get('bind') == 'all' else 'lan'})
+            try:
+                to = int(x.get('to') or port)
+            except (TypeError, ValueError):
+                to = port
+            if not 1 <= to <= 65535:
+                to = port
+            out.append({'port': port, 'to': to, 'proto': proto, 'label': x.get('label') or {}, 'bind': 'all' if x.get('bind') == 'all' else 'lan'})
     return out
 
 
@@ -10191,7 +10219,7 @@ def store_compose(app):
     hp = _store_host_ports(app)
     if hp:   # services que l'app offre au réseau local (DNS, par exemple) : seuls ces ports sont ouverts
         ip = _store_bind_ip()
-        svc['ports'] = [('%s:' % ip if (ip and x['bind'] == 'lan') else '') + '%d:%d/%s' % (x['port'], x['port'], pr)
+        svc['ports'] = [('%s:' % ip if (ip and x['bind'] == 'lan') else '') + '%d:%d/%s' % (x['port'], x['to'], pr)
                         for x in hp for pr in _store_proto_list(x)]
     caps = [c for c in (app.get('cap_add') or []) if c in STORE_CAP_ALLOWED]
     if caps:
@@ -11664,6 +11692,67 @@ def store_adguard_api(body):
         code, txt = _ag_http(method, path, payload, timeout=25)
     except Exception as e:
         return 502, {'ok': False, 'error': 'AdGuard Home ne répond pas : ' + str(e)[:160]}
+    return 200, {'ok': True, 'status': code, 'text': txt}
+
+
+# ── MDM-STORE-V1 · fenêtre « WireGuard » : le NAS relaie les requêtes vers l'API de wg-easy ─────────────────────
+# wg-easy tourne sur le réseau Docker des apps (dt-wireguard:8080). Son compte administrateur est celui de la fiche
+# (mot de passe dérivé) : le navigateur ne le voit jamais, la fenêtre passe par /store/wireguard/api.
+STORE_WG_ID = 'wireguard'
+_WG_BASE = 'http://dt-wireguard:8080'
+_WG_ALLOWED = (   # (méthode, motif) : seules ces requêtes passent
+    ('GET', re.compile(r'^/api/client$')),
+    ('POST', re.compile(r'^/api/client$')),
+    ('GET', re.compile(r'^/api/client/[0-9]{1,6}/(configuration|qrcode\.svg)$')),
+    ('POST', re.compile(r'^/api/client/[0-9]{1,6}/(enable|disable)$')),
+    ('DELETE', re.compile(r'^/api/client/[0-9]{1,6}$')),
+)
+
+
+def _wg_http(method, path, body=None, timeout=20):
+    import urllib.request, urllib.error, base64
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
+    data = json.dumps(body).encode('utf-8') if body is not None else None
+    req = urllib.request.Request(_WG_BASE + path, data=data, method=method)
+    req.add_header('Accept', 'application/json')
+    if data is not None:
+        req.add_header('Content-Type', 'application/json')
+    cred = 'admin:' + _store_derive(STORE_WG_ID, 'wg-admin')
+    req.add_header('Authorization', 'Basic ' + base64.b64encode(cred.encode('utf-8')).decode('ascii'))
+    try:
+        with opener.open(req, timeout=timeout) as r:
+            raw, code = r.read(2 * 1024 * 1024), r.status
+    except urllib.error.HTTPError as e:
+        raw, code = e.read(2 * 1024 * 1024), e.code
+    return code, raw.decode('utf-8', 'replace')
+
+
+def store_wireguard_api(body):
+    """Relaie une requête de la fenêtre WireGuard : { method, path, body } → { status, text }."""
+    if STORE_WG_ID not in store_installed_get():
+        return 409, {'ok': False, 'error': 'WireGuard n’est pas installé.'}
+    method, path = str((body or {}).get('method') or 'GET').upper(), str((body or {}).get('path') or '')
+    if not path.startswith('/api/'):
+        path = '/api/' + path.lstrip('/')
+    if not any(m == method and rx.match(path) for m, rx in _WG_ALLOWED):
+        return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+    payload = (body or {}).get('body')
+    if method == 'POST' and path == '/api/client':
+        name = str((payload or {}).get('name') or '').strip() if isinstance(payload, dict) else ''
+        if not name or len(name) > 64:
+            return 400, {'ok': False, 'error': 'Nom d’appareil invalide.'}
+        payload = {'name': name, 'expiresAt': None}
+    elif method == 'POST':
+        payload = {}
+    else:
+        payload = None
+    try:
+        code, txt = _wg_http(method, path, payload)
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'WireGuard ne répond pas : ' + str(e)[:160]}
     return 200, {'ok': True, 'status': code, 'text': txt}
 
 

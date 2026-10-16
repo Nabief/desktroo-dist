@@ -9629,7 +9629,35 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Tous, en lecture seule": "All, read-only",
 "Lecture seule (l’app ne pourra rien modifier)": "Read only (the app cannot change anything)",
 "Choisissez le compte dont l’app prendra les droits.": "Choose the account whose rights the app will take.",
-"Cochez au moins un dossier.": "Tick at least one folder."
+"Cochez au moins un dossier.": "Tick at least one folder.",
+"WireGuard": "WireGuard",
+"WireGuard ne répond pas pour le moment.": "WireGuard is not responding right now.",
+"Accès refusé par WireGuard : le mot de passe administrateur a-t-il été changé dans son interface ?": "Access refused by WireGuard: was the administrator password changed in its own interface?",
+"Appareils": "Devices",
+"Connecter un appareil": "Connect a device",
+"Brancher un téléphone ou un ordinateur sur votre réseau": "Plug a phone or a computer into your network",
+"WireGuard indisponible": "WireGuard unavailable",
+"Jamais connecté": "Never connected",
+"Vu {0}": "Seen {0}",
+"Les téléphones et ordinateurs autorisés à se connecter à votre réseau": "The phones and computers allowed to connect to your network",
+"Administration complète": "Full administration",
+"Ajouter un appareil": "Add a device",
+"Aucun appareil pour l’instant.": "No device yet.",
+"Ajouter mon premier appareil": "Add my first device",
+"QR code": "QR code",
+"Installez l’application WireGuard sur le téléphone ou l’ordinateur (gratuite, sur le site wireguard.com ou dans les magasins d’applications).": "Install the WireGuard app on the phone or computer (free, from wireguard.com or the app stores).",
+"Ici, dans « Appareils », ajoutez un appareil puis affichez son QR code.": "Here, under “Devices”, add a device then show its QR code.",
+"Dans l’application WireGuard, ajoutez un tunnel en scannant le QR code (ou en important le fichier de configuration).": "In the WireGuard app, add a tunnel by scanning the QR code (or by importing the configuration file).",
+"Activez le tunnel : l’appareil accède à votre réseau local et à vos appareils, même depuis l’extérieur.": "Turn the tunnel on: the device reaches your local network and your devices, even from outside.",
+"Pour que cela marche depuis l’extérieur, le port UDP 51820 de votre box doit être redirigé vers ce NAS, et l’adresse indiquée à l’installation doit être joignable depuis Internet.": "For this to work from outside, your router’s UDP port 51820 must be forwarded to this NAS, and the address given at install time must be reachable from the Internet.",
+"Nom de l’appareil (par exemple « Téléphone de Marie ») :": "Device name (for example “Marie’s phone”):",
+"QR code indisponible.": "QR code unavailable.",
+"Dans l’application WireGuard : ajouter un tunnel, puis scanner ce QR code.": "In the WireGuard app: add a tunnel, then scan this QR code.",
+"Configuration indisponible.": "Configuration unavailable.",
+"Ce fichier contient la clé de l’appareil : ne le partagez qu’avec lui.": "This file contains the device’s key: share it only with that device.",
+"Copié.": "Copied.",
+"Appareil supprimé.": "Device deleted.",
+"Supprimer l’appareil « {0} » ? Il ne pourra plus se connecter.": "Delete the device “{0}”? It will no longer be able to connect."
 }
 </script>
 <script id="dk-i18n">
@@ -13768,9 +13796,194 @@ async function dkAgClear(what) {
   catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
   dkAgLoad(true);
 }
+// ── MDM-STORE-V1 · fenêtre « WireGuard » : l'interface Desktroo, pilotée par l'API de wg-easy ─────────────────
+// Le NAS relaie les requêtes (/store/wireguard/api) avec le compte administrateur de l'app : le navigateur ne le voit pas.
+var _dkWg = { nav: 'devices', list: null, timer: null };
+function dkWgCss() {
+  if (document.getElementById('dkwg-css')) return;
+  var st = document.createElement('style');
+  st.id = 'dkwg-css';
+  st.textContent = '.dkwg-ov{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);padding:16px}'
+    + '.dkwg-box{width:100%;max-width:440px;max-height:100%;overflow:auto;border-radius:14px;border:1px solid var(--glass-border);background:var(--bg-elevated,#1b1e27);padding:18px}'
+    + '.dkwg-box h4{margin:0 0 4px;font-size:15px}.dkwg-box .dks-tag{margin:0 0 12px}'
+    + '.dkwg-qr{display:block;margin:0 auto;width:240px;height:240px;border-radius:10px;background:#fff;padding:8px;box-sizing:border-box}'
+    + '.dkwg-conf{width:100%;box-sizing:border-box;min-height:200px;resize:vertical;font-family:var(--font-mono);font-size:12px;color:var(--text);background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:8px 10px}'
+    + '.dkwg-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--text-dim)}'
+    + '.dkwg-help{max-width:620px;font-size:13px;line-height:1.6}.dkwg-help ol{padding-left:20px}';
+  document.head.appendChild(st);
+}
+async function dkWgOpen() {
+  var win = document.getElementById('win-dkwg');
+  if (win) { win.classList.add('visible'); bringToFront(win); dkWgLoad(); return; }
+  dkStoreCss(); dkWgCss();
+  win = dkStoreMakeWin('dkwg', T('WireGuard'), 900, 600,
+    '<div class="web-shell" style="position:relative;"><nav class="web-side" id="dkwg-side" aria-label="' + T('WireGuard') + '"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dkwg-head"></header><div class="web-body" id="dkwg-body"></div></section></div>',
+    function() { clearTimeout(_dkWg.timer); _dkWg.timer = null; });
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('wireguard', 18) + '</span>');
+  _dkWg.nav = 'devices'; _dkWg.list = null;
+  dkWgLoad();
+}
+async function dkWgApi(method, path, body) {
+  var rr;
+  try { rr = await fileops('POST', 'store/wireguard/api', { method: method, path: path, body: body }); }
+  catch (e) { var et = new Error(T('WireGuard ne répond pas pour le moment.')); et.transient = true; throw et; }
+  var rt = rr.text || '';
+  if (rr.status === 401) throw new Error(T('Accès refusé par WireGuard : le mot de passe administrateur a-t-il été changé dans son interface ?'));
+  if (rr.status >= 500) { var e5 = new Error(T('WireGuard ne répond pas pour le moment.')); e5.transient = true; throw e5; }
+  if (rr.status >= 400) {
+    var msg = ''; try { var j = JSON.parse(rt); msg = j.statusMessage || j.message || ''; } catch (_) {}
+    throw new Error(String(msg || rt).replace(/<[^>]*>/g, ' ').trim().slice(0, 240) || ('HTTP ' + rr.status));
+  }
+  if (!rt) return {};
+  try { return JSON.parse(rt); } catch (_) { return { text: rt }; }
+}
+function dkWgGo(nav) { _dkWg.nav = nav; dkWgLoad(); }
+function dkWgFull() {
+  var a = dkStoreApp('wireguard') || {};
+  window.open(String(a.open_url || 'http://{ip}:51821').replace('{ip}', a.nas_ip || location.hostname), '_blank', 'noopener');
+}
+function dkWgSide() {
+  var n = _dkWg.list ? _dkWg.list.length : '';
+  wmSide('dkwg', wmNav({ active: _dkWg.nav === 'devices', call: 'dkWgGo(\'devices\')', icon: 'shield', name: T('Appareils'), count: n })
+    + wmSep()
+    + wmNav({ active: _dkWg.nav === 'help', call: 'dkWgGo(\'help\')', icon: 'settings', name: T('Connecter un appareil') }));
+}
+async function dkWgLoad(quiet) {
+  clearTimeout(_dkWg.timer);
+  var nav = _dkWg.nav;
+  dkWgSide();
+  if (nav === 'help') { wmHead('dkwg', T('Connecter un appareil'), { sub: T('Brancher un téléphone ou un ordinateur sur votre réseau') }); dkWgRenderHelp(wmBody('dkwg')); return; }
+  if (!quiet && !_dkWg.list) wmLoading('dkwg');
+  try { var l = await dkWgApi('GET', 'client'); _dkWg.list = Array.isArray(l) ? l : []; }
+  catch (e) { if (nav === _dkWg.nav) wmFail('dkwg', T('WireGuard indisponible'), e, 'dkWgLoad()'); return; }
+  if (nav !== _dkWg.nav) return;
+  dkWgSide();
+  dkWgRenderDevices(wmBody('dkwg'));
+  _dkWg.timer = setTimeout(function() { dkWgLoad(true); }, 10000);
+}
+function dkWgSeen(c) {
+  var t = Date.parse(c.latestHandshakeAt || '');
+  if (!isFinite(t)) return { on: false, txt: T('Jamais connecté') };
+  if (Date.now() - t < 180000) return { on: true, txt: T('Connecté') };
+  return { on: false, txt: Tf('Vu {0}', wmAgo(c.latestHandshakeAt) || '—') };
+}
+function dkWgRenderDevices(body) {
+  if (!body) return;
+  var list = _dkWg.list || [];
+  wmHead('dkwg', T('Appareils'), { sub: T('Les téléphones et ordinateurs autorisés à se connecter à votre réseau'), keepScroll: true,
+    actions: '<button class="fs-btn" onclick="dkWgFull()">' + T('Administration complète') + '</button>'
+      + '<button class="web-open" onclick="dkWgAdd()">' + T('Ajouter un appareil') + '</button>' });
+  if (!list.length) {
+    body.innerHTML = '<div class="dks-empty">' + T('Aucun appareil pour l’instant.') + '<div class="dks-acts" style="justify-content:center;"><button class="web-open" onclick="dkWgAdd()">' + T('Ajouter mon premier appareil') + '</button></div></div>';
+    return;
+  }
+  body.innerHTML = '<div class="web-group">' + list.map(function(c) {
+    var sn = dkWgSeen(c), en = c.enabled !== false;
+    return '<div class="web-row" style="cursor:default;align-items:center;gap:12px;flex-wrap:wrap;"><span class="web-dot' + (en && sn.on ? '' : ' off') + '"></span>'
+      + '<span class="web-row-text" style="min-width:180px;flex:1;"><span class="web-row-name">' + webEsc(c.name || ('#' + c.id)) + (en ? '' : ' <span class="dks-badge warn">' + T('Désactivé') + '</span>') + '</span>'
+      + '<span class="web-row-desc dkwg-meta"><span>' + webEsc(c.ipv4Address || '') + '</span><span>' + webEsc(sn.txt) + '</span>'
+      + (c.transferRx || c.transferTx ? '<span>↓ ' + webEsc(fmtBytes(c.transferRx || 0)) + ' · ↑ ' + webEsc(fmtBytes(c.transferTx || 0)) + '</span>' : '') + '</span></span>'
+      + '<span style="display:flex;gap:6px;flex-wrap:wrap;"><button class="web-mini" onclick="dkWgQr(' + Number(c.id) + ')">' + T('QR code') + '</button>'
+      + '<button class="web-mini" onclick="dkWgConf(' + Number(c.id) + ')">' + T('Configuration') + '</button>'
+      + '<button class="web-mini" onclick="dkWgToggle(' + Number(c.id) + ',' + (en ? 'false' : 'true') + ')">' + (en ? T('Désactiver') : T('Activer')) + '</button>'
+      + '<button class="web-mini" style="color:var(--danger);" onclick="dkWgDel(' + Number(c.id) + ')">' + T('Supprimer') + '</button></span></div>';
+  }).join('') + '</div>';
+}
+function dkWgRenderHelp(body) {
+  if (!body) return;
+  body.innerHTML = '<div class="dkwg-help"><ol>'
+    + '<li>' + T('Installez l’application WireGuard sur le téléphone ou l’ordinateur (gratuite, sur le site wireguard.com ou dans les magasins d’applications).') + '</li>'
+    + '<li>' + T('Ici, dans « Appareils », ajoutez un appareil puis affichez son QR code.') + '</li>'
+    + '<li>' + T('Dans l’application WireGuard, ajoutez un tunnel en scannant le QR code (ou en important le fichier de configuration).') + '</li>'
+    + '<li>' + T('Activez le tunnel : l’appareil accède à votre réseau local et à vos appareils, même depuis l’extérieur.') + '</li></ol>'
+    + '<div class="dkag-note">' + T('Pour que cela marche depuis l’extérieur, le port UDP 51820 de votre box doit être redirigé vers ce NAS, et l’adresse indiquée à l’installation doit être joignable depuis Internet.') + '</div></div>';
+}
+function dkWgModal(html) {
+  dkWgModalClose();
+  var sh = document.querySelector('#win-dkwg .web-shell');
+  if (!sh) return;
+  var ov = document.createElement('div');
+  ov.className = 'dkwg-ov'; ov.id = 'dkwg-ov';
+  ov.onclick = function(e) { if (e.target === ov) dkWgModalClose(); };
+  ov.innerHTML = '<div class="dkwg-box">' + html + '</div>';
+  sh.appendChild(ov);
+}
+function dkWgModalClose() { var o = document.getElementById('dkwg-ov'); if (o) o.remove(); }
+function dkWgDev(id) { return (_dkWg.list || []).filter(function(c) { return Number(c.id) === Number(id); })[0] || {}; }
+async function dkWgAdd() {
+  var name = await showPrompt(T('Nom de l’appareil (par exemple « Téléphone de Marie ») :'), '');
+  if (!name) return;
+  name = name.trim().slice(0, 64);
+  var before = (_dkWg.list || []).map(function(c) { return Number(c.id); });
+  try { await dkWgApi('POST', 'client', { name: name }); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); return; }
+  _dkWg.nav = 'devices';
+  try { var l = await dkWgApi('GET', 'client'); _dkWg.list = Array.isArray(l) ? l : []; } catch (_) {}
+  dkWgSide(); dkWgRenderDevices(wmBody('dkwg'));
+  var nw = (_dkWg.list || []).filter(function(c) { return before.indexOf(Number(c.id)) < 0; })[0];
+  if (nw) dkWgQr(nw.id);
+}
+async function dkWgQr(id) {
+  var c = dkWgDev(id);
+  try {
+    var r = await dkWgApi('GET', 'client/' + Number(id) + '/qrcode.svg'), svg = r.text || '';
+    if (svg.indexOf('<svg') < 0) throw new Error(T('QR code indisponible.'));
+    dkWgModal('<h4>' + webEsc(c.name || '') + '</h4><div class="dks-tag">' + T('Dans l’application WireGuard : ajouter un tunnel, puis scanner ce QR code.') + '</div>'
+      + '<img class="dkwg-qr" alt="" src="data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) + '">'
+      + '<div class="dks-acts" style="justify-content:flex-end;"><button class="fs-btn" onclick="dkWgConf(' + Number(id) + ')">' + T('Configuration') + '</button>'
+      + '<button class="web-open" onclick="dkWgModalClose()">' + T('Fermer') + '</button></div>');
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+}
+async function dkWgConf(id) {
+  var c = dkWgDev(id);
+  try {
+    var r = await dkWgApi('GET', 'client/' + Number(id) + '/configuration'), txt = r.text || '';
+    if (txt.indexOf('[Interface]') < 0) throw new Error(T('Configuration indisponible.'));
+    dkWgModal('<h4>' + webEsc(c.name || '') + '</h4><div class="dks-tag">' + T('Ce fichier contient la clé de l’appareil : ne le partagez qu’avec lui.') + '</div>'
+      + '<textarea class="dkwg-conf" id="dkwg-conf" readonly spellcheck="false">' + webEsc(txt) + '</textarea>'
+      + '<div class="dks-acts" style="justify-content:flex-end;"><button class="fs-btn" onclick="dkWgCopy()">' + T('Copier') + '</button>'
+      + '<button class="fs-btn" onclick="dkWgDownload(' + wmQ(c.name || 'wireguard') + ')">' + T('Télécharger') + '</button>'
+      + '<button class="web-open" onclick="dkWgModalClose()">' + T('Fermer') + '</button></div>');
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+}
+function dkWgCopy() {
+  var t = document.getElementById('dkwg-conf'); if (!t) return;
+  var ok = function() { toast(T('Copié.')); };
+  try { navigator.clipboard.writeText(t.value).then(ok, function() { t.select(); document.execCommand('copy'); ok(); }); }
+  catch (_) { t.select(); try { document.execCommand('copy'); ok(); } catch (__) {} }
+}
+function dkWgDownload(nameEnc) {
+  var t = document.getElementById('dkwg-conf'); if (!t) return;
+  var n = decodeURIComponent(nameEnc).replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30) || 'wireguard';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([t.value], { type: 'text/plain' }));
+  a.download = n + '.conf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function() { URL.revokeObjectURL(a.href); }, 2000);
+}
+async function dkWgToggle(id, on) {
+  try { await dkWgApi('POST', 'client/' + Number(id) + (on ? '/enable' : '/disable'), {}); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkWgLoad(true);
+}
+async function dkWgDel(id) {
+  var c = dkWgDev(id);
+  if (!(await showConfirm(Tf('Supprimer l’appareil « {0} » ? Il ne pourra plus se connecter.', webEsc(c.name || '')), { danger: true, ok: T('Supprimer') }))) return;
+  try { await dkWgApi('DELETE', 'client/' + Number(id)); toast(T('Appareil supprimé.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkWgLoad(true);
+}
 function dkStoreOpenInstalled(id) {
   if (id === 'adguard') return dkAgOpen();
-  var a = dkStoreApp(id) || {}, w = (a.installed && a.installed.window) || a.window || {};
+  if (id === 'wireguard') return dkWgOpen();
+  var a = dkStoreApp(id) || {};
+  if (a.open_url) {   // app dont l'interface ne peut pas passer par le bureau : adresse directe sur le réseau local
+    window.open(String(a.open_url).replace('{ip}', a.nas_ip || location.hostname), '_blank', 'noopener');
+    return;
+  }
+  var w = (a.installed && a.installed.window) || a.window || {};
   dkStoreOpenApp(id, dkStoreName(a.name) || id, { width: w.width, height: w.height });
 }
 // ── MDM-STORE-V1 · fenêtre « Domaines » : NPMplus sans quitter Desktroo ─────────────────────────────────
@@ -14168,7 +14381,7 @@ function dkStoreRegisterApps(list) {
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
     if (entry) { entry.label = label; return; }
     ALL_APPS.push({ id: key, label: label, store: true,
-      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
       imgStyle: 'background:transparent;box-shadow:none;padding:0;overflow:hidden;',
       svg: dkStoreIcon(id, 56) });
   });
@@ -19408,7 +19621,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.53.0';
+var DK_PAGE_VERSION = '2.54.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -23908,6 +24121,7 @@ function fsxDecorate(wid) {
   if (ctx && !ctx.querySelector('.fsx-ctx-vers')) {
     var mk = function(cls, label, fn) { var d = document.createElement('div'); d.className = 'ctx-item ' + cls; d.textContent = label; d.onclick = function() { setActiveFsWin(wid); fn(); }; return d; };
     var perm = document.getElementById(wid + '-fsctx-perm');
+    ctx.insertBefore(mk('fsctx-sel fsx-ctx-restore', T('Restaurer'), function() { fsxRestoreSelected(); }), ctx.firstChild);
     if (perm) perm.parentNode.insertBefore(mk('fsctx-sel fsx-ctx-vers', T('Versions précédentes'), function() { fsxVersions(fsSelected); }), perm);
     if (perm) perm.parentNode.insertBefore(mk('fsctx-sel fsx-ctx-space', T('Analyser l\'espace'), function() { if (fsSelected) spOpenFolder(fsSelected.path); }), perm);
     var del = ctx.querySelector('.ctx-item.danger');
@@ -23916,12 +24130,32 @@ function fsxDecorate(wid) {
     if (mkdir) mkdir.parentNode.insertBefore(mk('fsx-ctx-versdir', T('Versions précédentes de ce dossier'), function() { fsxVersions({ path: currentFsPath, name: currentFsPath.split('/').pop(), type: 'DIRECTORY' }); }), mkdir.nextSibling);
   }
 }
+// Un élément qu'on regarde directement dans le dossier caché de la corbeille (…/.desktroo-corbeille/<id>[/<nom>]) :
+// rend {root, id} pour le remettre à sa place d'origine.
+function fsxTrashSlot(path) {
+  var m = /^(\/.+?)\/\.desktroo-corbeille\/([0-9A-Za-z_-]{1,64})(?:\/[^\/]+)?$/.exec(String(path || ''));
+  return m ? { root: m[1], id: m[2] } : null;
+}
+async function fsxRestoreSelected() {
+  var seen = {}, items = [];
+  fsSelList().forEach(function(x) { var t = fsxTrashSlot(x.path); if (t && !seen[t.root + '|' + t.id]) { seen[t.root + '|' + t.id] = 1; items.push(t); } });
+  if (!items.length) return;
+  try {
+    var r = await fileops('POST', 'trash/restore', { items: items });
+    var done = ensureArray(r.restored), failed = ensureArray(r.failed);
+    if (done.length === 1) toast('✅ ' + Tf('Restauré : {0}', done[0]), 7000);
+    else if (done.length) toast('✅ ' + Tf('{0} éléments restaurés', done.length), 7000);
+    if (failed.length) toast('❌ ' + String(failed[0].error || ''), 9000);
+  } catch (e) { wmToastErr(e); }
+  try { fsRefresh(); } catch (_) {}
+}
 // Ce que le menu du clic droit montre, selon ce qui est visé (item : l'élément ; null : le vide du dossier).
 function fsxCtxSync(item, multi) {
   var ctx = fsEl('fs-ctx');
   if (!ctx) return;
   var v = ctx.querySelector('.fsx-ctx-vers'), p = ctx.querySelector('.fsx-ctx-perm'), d = ctx.querySelector('.fsx-ctx-versdir'), o = fsEl('fsctx-open');
   if (v) v.style.display = item && !multi && fsxPoolPath(item.path) ? '' : 'none';
+  var rs = ctx.querySelector('.fsx-ctx-restore'); if (rs) rs.style.display = item && fsSelList().every(function(x) { return fsxTrashSlot(x.path); }) ? '' : 'none';
   var sp = ctx.querySelector('.fsx-ctx-space'); if (sp) sp.style.display = item && !multi && item.type === 'DIRECTORY' && fsxPoolPath(item.path) ? '' : 'none';
   if (p) p.style.display = item && _fsx.conf && _fsx.conf.enabled && fsSelList().every(function(x) { return fsxPoolPath(x.path); }) ? '' : 'none';
   if (d) d.style.display = !item && fsxPoolPath(currentFsPath + '/x') && currentFsPath !== '/mnt' ? '' : 'none';

@@ -3,13 +3,46 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.0 — 16 octobre 2026
+
+### Nouveau
+- **VPN (WireGuard) : une fenêtre Desktroo dédiée.** Ajoutez un téléphone ou un ordinateur en quelques clics, affichez son QR code à scanner dans l'application WireGuard, récupérez ou copiez son fichier de configuration, activez, désactivez ou supprimez un appareil. La liste montre qui est connecté et le trafic de chacun. « Ouvrir » ouvre cette fenêtre ; l'administration complète de wg-easy reste accessible depuis son bouton.
+  > Le NAS relaie les requêtes vers l'API de wg-easy (`/store/wireguard/api`, routes limitées aux appareils) avec le compte administrateur de la fiche : le navigateur ne le voit jamais.
+
+## 2.53.4 — 16 octobre 2026
+
+### Corrigé
+- **VPN (WireGuard) : « Ouvrir » mène à l'administration** (adresse directe sur votre réseau local) au lieu de revenir à l'accueil du bureau.
+
+## 2.53.3 — 16 octobre 2026
+
+### Corrigé
+- **VPN (WireGuard) : administration accessible** : l'interface de wg-easy ne peut pas s'afficher dans le bureau. Elle est maintenant joignable depuis votre réseau local, à l'adresse indiquée dans la fiche (port 51821, jamais ouvert sur Internet). Une fenêtre Desktroo dédiée la remplacera.
+  > Un port publié peut désormais viser un autre port dans le conteneur (`to` dans le catalogue).
+
+## 2.53.2 — 16 octobre 2026
+
+### Corrigé
+- **VPN (WireGuard) ne démarrait pas** : son interface réseau ne pouvait pas régler le pare-feu du conteneur. L'app reçoit maintenant le droit réseau qui lui manquait (NET_RAW), en plus de ceux déjà prévus. Si vous l'aviez installée en test, « Mettre à jour » corrige l'installation.
+
+## 2.53.1 — 16 octobre 2026
+
+### Amélioré
+- **Test du canal bêta** : cette version ne change rien d'autre que son numéro. Elle sert à vérifier qu'un NAS de test reçoit bien les versions avant tout le monde.
+
 ## 2.53.0 — 16 octobre 2026
 
 ### Nouveau
 - **VPN (WireGuard), en test** : rejoignez votre NAS et votre réseau depuis l'extérieur. À l'installation, Desktroo demande l'adresse publique de votre box, puis génère le compte administrateur (visible dans la fiche). Une fenêtre Desktroo dédiée suivra.
   > Moteur wg-easy (AGPL-3.0, image officielle figée par empreinte). Droits réseau étendus (NET_ADMIN, SYS_MODULE), transfert IP et dossier des modules du noyau en lecture seule ; port 51820 en UDP à rediriger vers le NAS.
+- **Canal bêta pour les mises à jour** : un NAS de test (celui qui a déjà le fichier `data/store/beta`) reçoit les versions de la branche `beta` du dépôt de distribution, avant qu'elles soient publiées pour tout le monde. Les autres NAS ne voient rien.
+  > `publish-dist.ps1 -Beta` publie sur la branche `beta` seulement ; la publication normale met à jour `main` puis réaligne `beta` dessus. Sans branche `beta`, le NAS de test suit le stable.
 - **Réglages demandés avant l'installation** : une app du Magasin peut maintenant demander une valeur (adresse publique, par exemple), vérifiée avant de démarrer.
   > Champs `install_fields` du catalogue ; valeurs gardées sur le NAS ; secrets dérivés propres à chaque installation (`@derive:`).
+
+### Amélioré
+- **Fichiers : « Restaurer » dans la corbeille ouverte comme un dossier** : quand on parcourt `.desktroo-corbeille` directement, le clic droit propose maintenant de remettre l'élément à sa place d'origine.
+  > Même restauration que la fenêtre Corbeille (emplacement d'origine vérifié, nom unique si besoin).
 
 ## 2.52.0 — 16 octobre 2026
 

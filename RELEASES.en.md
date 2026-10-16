@@ -3,13 +3,46 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.0 — 16 October 2026
+
+### New
+- **VPN (WireGuard): a dedicated Desktroo window.** Add a phone or a computer in a few clicks, show its QR code to scan in the WireGuard app, get or copy its configuration file, and turn a device on, off or delete it. The list shows who is connected and how much traffic each device used. “Open” opens this window; the full wg-easy administration remains available from its button.
+  > The NAS relays requests to wg-easy’s API (`/store/wireguard/api`, routes limited to devices) with the administrator account from the app’s page: the browser never sees it.
+
+## 2.53.4 — 16 October 2026
+
+### Fixed
+- **VPN (WireGuard): "Open" leads to the administration** (direct address on your local network) instead of going back to the desktop home.
+
+## 2.53.3 — 16 October 2026
+
+### Fixed
+- **VPN (WireGuard): administration reachable**: the wg-easy interface cannot be displayed inside the desktop. It is now reachable from your local network, at the address shown in the app page (port 51821, never opened to the Internet). A dedicated Desktroo window will replace it.
+  > A published port can now target a different port inside the container (`to` in the catalog).
+
+## 2.53.2 — 16 October 2026
+
+### Fixed
+- **VPN (WireGuard) did not start**: its network interface could not set the container firewall. The app now gets the network right it was missing (NET_RAW), in addition to those already planned. If you installed it in test, "Update" fixes the installation.
+
+## 2.53.1 — 16 October 2026
+
+### Improved
+- **Beta channel test**: this version changes nothing but its number. It checks that a test NAS receives versions before everyone else.
+
 ## 2.53.0 — 16 October 2026
 
 ### New
 - **VPN (WireGuard), in test**: reach your NAS and your network from outside. At install, Desktroo asks for your router's public address, then generates the administrator account (shown in the app page). A dedicated Desktroo window will follow.
   > wg-easy engine (AGPL-3.0, official image pinned by digest). Extended network rights (NET_ADMIN, SYS_MODULE), IP forwarding and the kernel modules folder read-only; UDP port 51820 to forward to the NAS.
+- **Beta channel for updates**: a test NAS (one that already has the `data/store/beta` file) receives the versions on the distribution repository's `beta` branch, before they are published to everyone. Other NAS see nothing.
+  > `publish-dist.ps1 -Beta` publishes to the `beta` branch only; a normal publish updates `main` then realigns `beta` on it. Without a `beta` branch, the test NAS follows stable.
 - **Settings asked before install**: a Store app can now ask for a value (public address, for example), checked before starting.
   > Catalog `install_fields`; values kept on the NAS; per-installation derived secrets (`@derive:`).
+
+### Improved
+- **Files: "Restore" when the recycle bin is browsed as a folder**: when you browse `.desktroo-corbeille` directly, right-click now offers to put the item back where it came from.
+  > Same restore as the Recycle bin window (original location checked, unique name if needed).
 
 ## 2.52.0 — 16 October 2026
 
