@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.51.0 — 16 October 2026
+
+### New
+- **AdGuard Home has its own Desktroo window**, in the same style as the others: Overview (queries, blocks, chart, most active sites and devices, pause protection), Query log (with one-click “Block” and “Allow”), Block lists (add, turn on or off, personal rules) and Settings (DNS servers tested before saving, retention period).
+  > The window talks to AdGuard's API through Desktroo's proxy (desktop session): no password, no open port. AdGuard's full interface remains available from Settings.
+
 ## 2.50.1 — 16 October 2026
 
 ### Fixed

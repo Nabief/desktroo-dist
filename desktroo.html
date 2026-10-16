@@ -9294,6 +9294,91 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Desktroo à mettre à jour": "Desktroo needs an update",
 "Domaines indisponibles": "Domains unavailable",
 "Domaines publiés": "Published domains",
+"24 dernières heures": "Last 24 hours",
+"Activer le filtrage": "Turn filtering on",
+"AdGuard indisponible": "AdGuard unavailable",
+"AdGuard ne répond pas pour le moment.": "AdGuard is not responding right now.",
+"Ajouter une liste": "Add a list",
+"Appareils les plus actifs": "Most active devices",
+"Aucune liste.": "No lists.",
+"Aucune requête reçue pour l’instant.": "No queries received yet.",
+"Aucune requête à afficher.": "No queries to show.",
+"Autorisé par une règle": "Allowed by a rule",
+"Autorisées": "Allowed",
+"Bloquer": "Block",
+"Bloqué": "Blocked",
+"Bloquées": "Blocked",
+"Ce que vos appareils demandent, et ce qui est bloqué": "What your devices ask for, and what is blocked",
+"Ce serveur ne répond pas :": "This server is not responding:",
+"Chercher un site ou un appareil": "Search a site or a device",
+"Conservation enregistrée.": "Retention saved.",
+"Conserver le journal des requêtes": "Keep the query log for",
+"Conserver les statistiques": "Keep the statistics for",
+"Contrôle parental": "Parental control",
+"C’est fait.": "Done.",
+"Désactiver le filtrage": "Turn filtering off",
+"Enregistrer la conservation": "Save retention",
+"Enregistrer mes règles": "Save my rules",
+"Indiquez au moins un serveur DNS.": "Enter at least one DNS server.",
+"Indiquez l’adresse de la liste (https://…).": "Enter the list address (https://…).",
+"Interface complète d’AdGuard": "Full AdGuard interface",
+"Journal des requêtes": "Query log",
+"Le filtrage est désactivé : rien n’est bloqué.": "Filtering is off: nothing is blocked.",
+"Lecture d’AdGuard…": "Reading AdGuard…",
+"Les listes qui disent quoi bloquer": "The lists that say what to block",
+"Les serveurs qui répondent quand AdGuard ne connaît pas un site. Un par ligne.": "The servers that answer when AdGuard does not know a site. One per line.",
+"Liste ajoutée.": "List added.",
+"Liste de blocage": "Block list",
+"Listes de blocage": "Block lists",
+"Mes règles": "My rules",
+"Mettre en pause 1 h": "Pause for 1 h",
+"Mettre à jour les listes": "Update the lists",
+"Mise à jour des listes…": "Updating the lists…",
+"Protection active": "Protection on",
+"Protection en pause pour 1 h.": "Protection paused for 1 h.",
+"Protection en pause": "Protection paused",
+"Protection réactivée.": "Protection turned back on.",
+"Recherche sécurisée": "Safe search",
+"Remettre les statistiques à zéro ?": "Reset the statistics?",
+"Remettre les statistiques à zéro": "Reset the statistics",
+"Requête invalide": "Invalid query",
+"Requêtes dans le temps": "Queries over time",
+"Requêtes": "Queries",
+"Rien pour l’instant.": "Nothing yet.",
+"Règles enregistrées.": "Rules saved.",
+"Réactiver la protection": "Turn protection back on",
+"Réécrit": "Rewritten",
+"Servent à trouver l’adresse des serveurs ci-dessus quand ils sont donnés par un nom.": "Used to find the address of the servers above when they are given by name.",
+"Serveurs DNS en amont": "Upstream DNS servers",
+"Serveurs DNS en amont, conservation des données": "Upstream DNS servers, data retention",
+"Serveurs DNS enregistrés.": "DNS servers saved.",
+"Serveurs d’amorçage": "Bootstrap servers",
+"Service bloqué": "Blocked service",
+"Session expirée : rouvrez la fenêtre.": "Session expired: reopen the window.",
+"Site dangereux": "Dangerous site",
+"Sites dangereux évités": "Dangerous sites avoided",
+"Sites les plus bloqués": "Most blocked sites",
+"Sites les plus demandés": "Most requested sites",
+"Temps de réponse moyen": "Average response time",
+"Tester et enregistrer": "Test and save",
+"Une règle par ligne. Exemple :": "One rule per line. Example:",
+"Vider le journal des requêtes ?": "Clear the query log?",
+"Vider le journal": "Clear the log",
+"Vue d’ensemble": "Overview",
+"6 h": "6 h",
+"24 h": "24 h",
+"90 j": "90 d",
+"Bloquées ({0} %)": "Blocked ({0}%)",
+"{0} derniers jours": "Last {0} days",
+"{0} règles": "{0} rules",
+"{0} liste(s) mise(s) à jour.": "{0} list(s) updated.",
+"Autoriser {0} ?": "Allow {0}?",
+"Bloquer {0} ?": "Block {0}?",
+"{0} est autorisé.": "{0} is allowed.",
+"{0} est bloqué.": "{0} is blocked.",
+"Retirer la liste « {0} » ?": "Remove the list “{0}”?",
+"{0} h": "{0} h",
+"mise à jour ": "updated ",
 "Ports ouverts sur le réseau": "Ports open on the network",
 "Pour l’utiliser": "To use it",
 "Logiciel libre": "Free software",
@@ -13263,7 +13348,331 @@ function dkStoreCopyUrl(id) {
   try { navigator.clipboard.writeText(url).then(done, function() { prompt(T('Adresse de l’app :'), url); }); }
   catch (_) { prompt(T('Adresse de l’app :'), url); }
 }
+// ── MDM-STORE-V1 · fenêtre « AdGuard Home » : l'interface Desktroo, pilotée par l'API d'AdGuard ──────────────
+// L'app tourne derrière le proxy /a/adguard/ (session du bureau). La fenêtre parle à son API (/control/...) depuis
+// le navigateur : aucun mot de passe, aucun port à ouvrir. L'interface d'origine reste accessible dans un onglet.
+var _dkAg = { nav: 'home', st: null, stats: null, log: null, filt: null, dns: null, qcfg: null, scfg: null, q: '', status: 'all', timer: null };
+function dkAgCss() {
+  if (document.getElementById('dkag-css')) return;
+  var st = document.createElement('style');
+  st.id = 'dkag-css';
+  st.textContent = '.dkag-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}'
+    + '.dkag-tile{padding:14px 16px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.03)}'
+    + '.dkag-tile b{display:block;font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1.2}'
+    + '.dkag-tile span{display:block;margin-top:2px;font-size:12px;color:var(--text-dim)}'
+    + '.dkag-chart{margin-top:14px;padding:12px 14px 8px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.03)}'
+    + '.dkag-chart svg{display:block;width:100%;height:92px}'
+    + '.dkag-legend{display:flex;gap:16px;margin-top:6px;font-size:11.5px;color:var(--text-dim)}'
+    + '.dkag-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:6px;vertical-align:-1px}'
+    + '.dkag-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:16px}'
+    + '.dkag-box{border:1px solid var(--glass-border);border-radius:12px;background:rgba(255,255,255,0.03);padding:12px 14px;min-width:0}'
+    + '.dkag-box h5{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--text-dim)}'
+    + '.dkag-r{position:relative;display:flex;justify-content:space-between;gap:10px;padding:5px 6px;margin:1px 0;font-size:12.5px;border-radius:6px;overflow:hidden}'
+    + '.dkag-r>i{position:absolute;left:0;top:0;bottom:0;background:rgba(var(--accent-rgb),0.14);z-index:0}'
+    + '.dkag-r>span{position:relative;z-index:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+    + '.dkag-r>em{position:relative;z-index:1;font-style:normal;color:var(--text-dim)}'
+    + '.dkag-empty{font-size:12.5px;color:var(--text-dim);padding:6px 2px}'
+    + '.dkag-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}'
+    + '.dkag-bar input[type=text],.dkag-bar select,.dkag-form input[type=text],.dkag-form textarea{font:inherit;font-size:13px;color:var(--text);background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:7px 10px;min-width:0}'
+    + '.dkag-bar input[type=text]{flex:1;min-width:160px}'
+    + '.dkag-form textarea{width:100%;box-sizing:border-box;min-height:84px;resize:vertical;font-family:var(--font-mono);font-size:12.5px}'
+    + '.dkag-form label{display:block;margin:14px 0 6px;font-size:12.5px;font-weight:600}'
+    + '.dkag-form .dks-tag{margin-top:4px}'
+    + '.dkag-log{display:grid;grid-template-columns:78px minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;padding:9px 14px;border-top:1px solid rgba(255,255,255,0.06);font-size:12.5px}'
+    + '.dkag-log:first-child{border-top:0}.dkag-log:hover{background:rgba(255,255,255,0.035)}'
+    + '.dkag-log .t{color:var(--text-dim);font-size:11.5px}'
+    + '.dkag-log .d{min-width:0}.dkag-log .d b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+    + '.dkag-log .d small{display:block;color:var(--text-dim);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+    + '.dkag-note{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid rgba(var(--accent-rgb),0.35);background:rgba(var(--accent-rgb),0.07);font-size:13px;line-height:1.5;max-width:680px}'
+    + '@media (max-width:760px){.dkag-log{grid-template-columns:minmax(0,1fr) auto}.dkag-log .t{grid-column:1/-1}}';
+  document.head.appendChild(st);
+}
+async function dkAgOpen() {
+  var win = document.getElementById('win-dkag');
+  if (win) { win.classList.add('visible'); bringToFront(win); dkAgLoad(); return; }
+  try { await dkStoreSession(true); }
+  catch (e) { toast(T('Impossible d\'ouvrir l\'app : ') + (e.message || e)); return; }
+  dkStoreCss(); dkAgCss();
+  win = dkStoreMakeWin('dkag', T('AdGuard Home'), 980, 660,
+    '<div class="web-shell"><nav class="web-side" id="dkag-side" aria-label="' + T('AdGuard Home') + '"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dkag-head"></header><div class="web-body" id="dkag-body"></div></section></div>',
+    function() { clearTimeout(_dkAg.timer); _dkAg.timer = null; });
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('adguard', 18) + '</span>');
+  _dkAg.nav = 'home'; _dkAg.st = null;
+  dkAgLoad();
+}
+async function dkAgApi(method, path, body) {
+  var opt = { method: method, credentials: 'same-origin', headers: {} };
+  if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  var r = await fetch('/a/adguard/control/' + path, opt), t = await r.text();
+  if (r.status === 401) throw new Error(T('Session expirée : rouvrez la fenêtre.'));
+  if (r.status === 502 || r.status === 503 || r.status === 504) { var e = new Error(T('AdGuard ne répond pas pour le moment.')); e.transient = true; throw e; }
+  if (!r.ok) throw new Error(String(t || '').replace(/<[^>]*>/g, ' ').trim().slice(0, 240) || ('HTTP ' + r.status));
+  if (!t) return {};
+  try { return JSON.parse(t); } catch (_) { return { text: t }; }
+}
+function dkAgGo(nav) { _dkAg.nav = nav; dkAgLoad(); }
+function dkAgSide() {
+  var f = _dkAg.filt, n = f && f.filters ? f.filters.filter(function(x) { return x.enabled; }).length : '';
+  wmSide('dkag', wmNav({ active: _dkAg.nav === 'home', call: 'dkAgGo(\'home\')', icon: 'chart', name: T('Vue d’ensemble') })
+    + wmNav({ active: _dkAg.nav === 'log', call: 'dkAgGo(\'log\')', icon: 'list', name: T('Journal des requêtes') })
+    + wmNav({ active: _dkAg.nav === 'lists', call: 'dkAgGo(\'lists\')', icon: 'shield', name: T('Listes de blocage'), count: n })
+    + wmSep()
+    + wmNav({ active: _dkAg.nav === 'settings', call: 'dkAgGo(\'settings\')', icon: 'settings', name: T('Réglages') }));
+}
+async function dkAgLoad(quiet) {
+  var body = wmBody('dkag'); if (!body) return;
+  var nav = _dkAg.nav;
+  clearTimeout(_dkAg.timer);
+  dkAgSide();
+  if (!quiet) body.innerHTML = dkWaitHtml('busy', T('Lecture d’AdGuard…'));
+  try {
+    if (nav === 'home') { var r = await Promise.all([dkAgApi('GET', 'status'), dkAgApi('GET', 'stats')]); _dkAg.st = r[0]; _dkAg.stats = r[1]; }
+    else if (nav === 'log') {
+      var qs = 'limit=100&response_status=' + encodeURIComponent(_dkAg.status) + (_dkAg.q ? '&search=' + encodeURIComponent(_dkAg.q) : '');
+      _dkAg.log = await dkAgApi('GET', 'querylog?' + qs);
+    }
+    else if (nav === 'lists') _dkAg.filt = await dkAgApi('GET', 'filtering/status');
+    else if (nav === 'settings') {
+      var s = await Promise.all([dkAgApi('GET', 'dns_info'), dkAgApi('GET', 'querylog/config'), dkAgApi('GET', 'stats/config'), dkAgApi('GET', 'status')]);
+      _dkAg.dns = s[0]; _dkAg.qcfg = s[1]; _dkAg.scfg = s[2]; _dkAg.st = s[3];
+    }
+  } catch (e) { if (nav === _dkAg.nav) wmFail('dkag', T('AdGuard indisponible'), e, 'dkAgLoad()'); return; }
+  if (nav !== _dkAg.nav) return;
+  dkAgRender();
+  if (nav === 'home') _dkAg.timer = setTimeout(function() { dkAgLoad(true); }, 15000);
+}
+function dkAgRender() {
+  var body = wmBody('dkag'); if (!body) return;
+  dkAgSide();
+  if (_dkAg.nav === 'log') return dkAgRenderLog(body);
+  if (_dkAg.nav === 'lists') return dkAgRenderLists(body);
+  if (_dkAg.nav === 'settings') return dkAgRenderSettings(body);
+  dkAgRenderHome(body);
+}
+function dkAgN(n) { return Number(n || 0).toLocaleString(); }
+function dkAgNote() {
+  var a = dkStoreApp('adguard') || {};
+  return a.setup_note ? dkStoreName(a.setup_note).replace('{ip}', a.nas_ip || location.hostname) : '';
+}
+function dkAgTop(title, arr) {
+  var items = (arr || []).slice(0, 8).map(function(o) { var k = Object.keys(o)[0]; return [k, o[k]]; }), max = items.length ? Math.max.apply(null, items.map(function(x) { return x[1]; })) : 0;
+  return '<div class="dkag-box"><h5>' + title + '</h5>' + (items.length ? items.map(function(x) {
+    return '<div class="dkag-r"><i style="width:' + (max ? Math.max(3, Math.round(x[1] * 100 / max)) : 0) + '%"></i><span title="' + webEsc(x[0]) + '">' + webEsc(x[0]) + '</span><em>' + dkAgN(x[1]) + '</em></div>';
+  }).join('') : '<div class="dkag-empty">' + T('Rien pour l’instant.') + '</div>') + '</div>';
+}
+function dkAgChart(all, blocked) {
+  all = all || []; blocked = blocked || [];
+  if (all.length < 2) return '';
+  var W = 480, H = 90, max = Math.max.apply(null, all.concat([1])), bw = W / all.length, o = '';
+  all.forEach(function(v, i) {
+    var h = Math.round((v / max) * (H - 4)), bh = Math.min(h, Math.round(((blocked[i] || 0) / max) * (H - 4))), x = (i * bw + 1).toFixed(1), w = Math.max(1, bw - 2).toFixed(1);
+    o += '<rect x="' + x + '" y="' + (H - h) + '" width="' + w + '" height="' + Math.max(h, 1) + '" rx="1.5" style="fill:rgba(var(--accent-rgb),0.55)"/>';
+    if (bh > 0) o += '<rect x="' + x + '" y="' + (H - bh) + '" width="' + w + '" height="' + bh + '" rx="1.5" style="fill:var(--warning)"/>';
+  });
+  return '<div class="dkag-chart"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + T('Requêtes dans le temps') + '">' + o + '</svg>'
+    + '<div class="dkag-legend"><span><i style="background:rgba(var(--accent-rgb),0.7)"></i>' + T('Requêtes') + '</span><span><i style="background:var(--warning)"></i>' + T('Bloquées') + '</span></div></div>';
+}
+function dkAgRenderHome(body) {
+  var st = _dkAg.st || {}, s = _dkAg.stats || {}, q = s.num_dns_queries || 0, b = s.num_blocked_filtering || 0;
+  var safe = (s.num_replaced_safebrowsing || 0) + (s.num_replaced_parental || 0), pct = q ? Math.round(b * 1000 / q) / 10 : 0;
+  var on = st.protection_enabled !== false, span = s.time_units === 'days' ? Tf('{0} derniers jours', (s.dns_queries || []).length || 1) : T('24 dernières heures');
+  wmHead('dkag', T('Vue d’ensemble'), {
+    sub: '<span class="dks-badge ' + (on ? 'ok' : 'warn') + '">' + webEsc(on ? T('Protection active') : T('Protection en pause')) + '</span> ' + webEsc(span),
+    actions: on ? '<button class="fs-btn" onclick="dkAgProtect(false)">' + T('Mettre en pause 1 h') + '</button>'
+                : '<button class="web-open" onclick="dkAgProtect(true)">' + T('Réactiver la protection') + '</button>' });
+  var h = '<div class="dkag-tiles">'
+    + '<div class="dkag-tile"><b>' + dkAgN(q) + '</b><span>' + T('Requêtes') + '</span></div>'
+    + '<div class="dkag-tile"><b>' + dkAgN(b) + '</b><span>' + Tf('Bloquées ({0} %)', String(pct).replace('.', ',')) + '</span></div>'
+    + '<div class="dkag-tile"><b>' + dkAgN(safe) + '</b><span>' + T('Sites dangereux évités') + '</span></div>'
+    + '<div class="dkag-tile"><b>' + Math.round((s.avg_processing_time || 0) * 1000) + ' ms</b><span>' + T('Temps de réponse moyen') + '</span></div></div>';
+  if (!q) h += '<div class="dkag-note">' + (dkAgNote() ? webEsc(dkAgNote()) : T('Aucune requête reçue pour l’instant.')) + '</div>';
+  h += dkAgChart(s.dns_queries, s.blocked_filtering)
+    + '<div class="dkag-cols">' + dkAgTop(T('Sites les plus demandés'), s.top_queried_domains)
+    + dkAgTop(T('Sites les plus bloqués'), s.top_blocked_domains)
+    + dkAgTop(T('Appareils les plus actifs'), s.top_clients) + '</div>';
+  body.innerHTML = h;
+}
+async function dkAgProtect(on) {
+  try { await dkAgApi('POST', 'protection', on ? { enabled: true } : { enabled: false, duration: 3600000 }); toast(on ? T('Protection réactivée.') : T('Protection en pause pour 1 h.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkAgLoad(true);
+}
+// ── Journal des requêtes ──
+function dkAgReasonBlocked(r) { return /^Filtered/.test(r || '') && r !== 'FilteredSafeSearch'; }
+function dkAgWhy(r) {
+  return ({ FilteredBlackList: T('Liste de blocage'), FilteredBlockedService: T('Service bloqué'), FilteredSafeBrowsing: T('Site dangereux'),
+            FilteredParental: T('Contrôle parental'), FilteredInvalid: T('Requête invalide'), FilteredSafeSearch: T('Recherche sécurisée'),
+            NotFilteredWhiteList: T('Autorisé par une règle'), Rewrite: T('Réécrit'), RewriteEtcHosts: T('Réécrit'), RewriteRule: T('Réécrit') })[r] || '';
+}
+function dkAgTime(iso) {
+  var d = new Date(iso); if (isNaN(d)) return '';
+  var now = new Date(), same = d.toDateString() === now.toDateString();
+  return same ? d.toLocaleTimeString() : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+function dkAgRenderLog(body) {
+  var rows = (_dkAg.log && _dkAg.log.data) || [];
+  wmHead('dkag', T('Journal des requêtes'), { sub: T('Ce que vos appareils demandent, et ce qui est bloqué'),
+    actions: '<button class="fs-btn" onclick="dkAgLoad()">' + T('Actualiser') + '</button>' });
+  var h = '<div class="dkag-bar"><input type="text" id="dkag-q" placeholder="' + T('Chercher un site ou un appareil') + '" value="' + webEsc(_dkAg.q) + '" onkeydown="if(event.key===\'Enter\')dkAgSearch()">'
+    + '<select id="dkag-st" onchange="dkAgSearch()">'
+    + [['all', T('Tout')], ['filtered', T('Bloquées')], ['processed', T('Autorisées')]].map(function(o) { return '<option value="' + o[0] + '"' + (_dkAg.status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('')
+    + '</select><button class="fs-btn" onclick="dkAgSearch()">' + T('Chercher') + '</button></div>';
+  if (!rows.length) h += '<div class="dks-empty">' + T('Aucune requête à afficher.') + '</div>';
+  else {
+    h += '<div class="web-group">';
+    rows.forEach(function(r) {
+      var name = String((r.question && r.question.name) || '?').replace(/\.$/, ''), blocked = dkAgReasonBlocked(r.reason), why = dkAgWhy(r.reason);
+      var cl = (r.client_info && r.client_info.name) || r.client || '';
+      h += '<div class="dkag-log"><span class="t">' + webEsc(dkAgTime(r.time)) + '</span>'
+        + '<span class="d"><b title="' + webEsc(name) + '">' + webEsc(name) + '</b><small>' + webEsc(cl + (r.question && r.question.type ? ' · ' + r.question.type : '') + (why ? ' · ' + why : '')) + '</small></span>'
+        + '<span class="dks-badge ' + (blocked ? 'warn' : 'ok') + '">' + (blocked ? T('Bloqué') : T('Autorisé')) + '</span>'
+        + '<button class="web-mini" onclick="dkAgRule(' + wmQ(name) + ',' + (blocked ? 'true' : 'false') + ')">' + (blocked ? T('Autoriser') : T('Bloquer')) + '</button></div>';
+    });
+    h += '</div>';
+  }
+  body.innerHTML = h;
+}
+function dkAgSearch() {
+  var q = document.getElementById('dkag-q'), s = document.getElementById('dkag-st');
+  _dkAg.q = q ? q.value.trim() : ''; _dkAg.status = s ? s.value : 'all';
+  dkAgLoad();
+}
+// Autoriser ou bloquer un site : une règle dans « Mes règles » (le reste de la configuration ne bouge pas).
+async function dkAgRule(domEnc, allow) {
+  var dom = decodeURIComponent(domEnc).replace(/\.$/, '');
+  if (!/^[A-Za-z0-9._-]+$/.test(dom)) return;
+  if (!(await showConfirm(allow ? Tf('Autoriser {0} ?', webEsc(dom)) : Tf('Bloquer {0} ?', webEsc(dom)),
+        { ok: allow ? T('Autoriser') : T('Bloquer'), danger: !allow }))) return;
+  try {
+    var f = await dkAgApi('GET', 'filtering/status'), rules = (f.user_rules || []).slice();
+    var add = (allow ? '@@||' : '||') + dom + '^', opp = (allow ? '||' : '@@||') + dom + '^';
+    rules = rules.filter(function(x) { return x !== opp; });
+    if (rules.indexOf(add) < 0) rules.push(add);
+    await dkAgApi('POST', 'filtering/set_rules', { rules: rules });
+    toast(allow ? Tf('{0} est autorisé.', dom) : Tf('{0} est bloqué.', dom));
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkAgLoad(true);
+}
+// ── Listes de blocage ──
+function dkAgRenderLists(body) {
+  var f = _dkAg.filt || {}, list = f.filters || [], on = f.enabled !== false;
+  wmHead('dkag', T('Listes de blocage'), { sub: T('Les listes qui disent quoi bloquer'),
+    actions: '<button class="fs-btn" onclick="dkAgRefresh()">' + T('Mettre à jour les listes') + '</button>'
+      + '<button class="' + (on ? 'fs-btn' : 'web-open') + '" onclick="dkAgFilterToggle()">' + (on ? T('Désactiver le filtrage') : T('Activer le filtrage')) + '</button>' });
+  var h = on ? '' : '<div class="dks-err" style="margin:0 0 14px;">' + T('Le filtrage est désactivé : rien n’est bloqué.') + '</div>';
+  h += '<div class="web-group">' + (list.length ? list.map(function(x) {
+    var dt = x.last_updated && x.last_updated.indexOf('0001') !== 0 ? wmAgo(x.last_updated) : '';
+    return '<div class="web-row" style="cursor:default;align-items:center;gap:12px;flex-wrap:wrap;"><span class="web-dot' + (x.enabled ? '' : ' off') + '"></span>'
+      + '<span class="web-row-text" style="min-width:200px;flex:1;"><span class="web-row-name">' + webEsc(x.name || x.url) + '</span>'
+      + '<span class="web-row-desc">' + webEsc(Tf('{0} règles', dkAgN(x.rules_count))) + (dt ? ' · ' + webEsc(T('mise à jour ') + dt) : '') + '</span></span>'
+      + '<span style="display:flex;gap:6px;"><button class="web-mini" onclick="dkAgFilterAct(\'toggle\',' + wmQ(x.url) + ')">' + (x.enabled ? T('Désactiver') : T('Activer')) + '</button>'
+      + '<button class="web-mini" style="color:var(--danger);" onclick="dkAgFilterAct(\'remove\',' + wmQ(x.url) + ')">' + T('Retirer') + '</button></span></div>';
+  }).join('') : '<div class="dks-empty">' + T('Aucune liste.') + '</div>') + '</div>'
+    + '<div class="web-group-title">' + T('Ajouter une liste') + '</div><div class="dkag-form dkag-bar">'
+    + '<input type="text" id="dkag-ln" placeholder="' + T('Nom') + '" style="max-width:200px;"><input type="text" id="dkag-lu" placeholder="https://…">'
+    + '<button class="web-open" onclick="dkAgFilterAdd()">' + T('Ajouter') + '</button></div>'
+    + '<div class="web-group-title">' + T('Mes règles') + '</div><div class="dkag-form">'
+    + '<textarea id="dkag-rules" spellcheck="false">' + webEsc((f.user_rules || []).join('\n')) + '</textarea>'
+    + '<div class="dks-tag">' + T('Une règle par ligne. Exemple : ') + '<code>||exemple.com^</code></div>'
+    + '<div class="dks-acts"><button class="web-open" onclick="dkAgRulesSave()">' + T('Enregistrer mes règles') + '</button></div></div>';
+  body.innerHTML = h;
+}
+async function dkAgFilterToggle() {
+  var f = _dkAg.filt || {};
+  try { await dkAgApi('POST', 'filtering/config', { enabled: f.enabled === false, interval: f.interval || 24 }); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkAgLoad(true);
+}
+async function dkAgFilterAct(act, urlEnc) {
+  var url = decodeURIComponent(urlEnc), x = ((_dkAg.filt || {}).filters || []).filter(function(y) { return y.url === url; })[0];
+  if (!x) return;
+  try {
+    if (act === 'remove') {
+      if (!(await showConfirm(Tf('Retirer la liste « {0} » ?', webEsc(x.name || x.url)), { danger: true, ok: T('Retirer') }))) return;
+      await dkAgApi('POST', 'filtering/remove_url', { url: url, whitelist: false });
+    } else await dkAgApi('POST', 'filtering/set_url_params', { url: url, whitelist: false, data: { name: x.name, url: x.url, enabled: !x.enabled } });
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkAgLoad(true);
+}
+async function dkAgFilterAdd() {
+  var n = document.getElementById('dkag-ln'), u = document.getElementById('dkag-lu');
+  var name = n ? n.value.trim() : '', url = u ? u.value.trim() : '';
+  if (!/^https?:\/\//i.test(url)) { toast(T('Indiquez l’adresse de la liste (https://…).')); return; }
+  try { await dkAgApi('POST', 'filtering/add_url', { name: name || url, url: url, whitelist: false }); toast(T('Liste ajoutée.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); return; }
+  dkAgLoad(true);
+}
+async function dkAgRefresh() {
+  toast(T('Mise à jour des listes…'));
+  try { var r = await dkAgApi('POST', 'filtering/refresh', { whitelist: false }); toast(Tf('{0} liste(s) mise(s) à jour.', r.updated || 0)); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkAgLoad(true);
+}
+async function dkAgRulesSave() {
+  var t = document.getElementById('dkag-rules'); if (!t) return;
+  var rules = t.value.split('\n').map(function(x) { return x.trim(); }).filter(Boolean);
+  try { await dkAgApi('POST', 'filtering/set_rules', { rules: rules }); toast(T('Règles enregistrées.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkAgLoad(true);
+}
+// ── Réglages ──
+var DK_AG_KEEP = [[21600000, T('6 h')], [86400000, T('24 h')], [604800000, T('7 j')], [2592000000, T('30 j')], [7776000000, T('90 j')]];
+function dkAgKeepSel(id, cur) {
+  var opts = DK_AG_KEEP.slice(); if (!opts.some(function(o) { return o[0] === cur; })) opts.push([cur, Tf('{0} h', Math.round(cur / 3600000))]);
+  return '<select id="' + id + '">' + opts.map(function(o) { return '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>';
+}
+function dkAgRenderSettings(body) {
+  var d = _dkAg.dns || {}, q = _dkAg.qcfg || {}, s = _dkAg.scfg || {}, st = _dkAg.st || {};
+  wmHead('dkag', T('Réglages'), { sub: T('Serveurs DNS en amont, conservation des données') + (st.version ? ' · AdGuard Home ' + webEsc(st.version) : ''),
+    actions: '<button class="fs-btn" onclick="window.open(\'/a/adguard/\',\'_blank\',\'noopener\')">' + T('Interface complète d’AdGuard') + '</button>' });
+  var note = dkAgNote(), h = note ? '<div class="dkag-note" style="margin-top:0;">' + webEsc(note) + '</div>' : '';
+  h += '<div class="dkag-form"><label for="dkag-up">' + T('Serveurs DNS en amont') + '</label>'
+    + '<textarea id="dkag-up" spellcheck="false">' + webEsc((d.upstream_dns || []).join('\n')) + '</textarea>'
+    + '<div class="dks-tag">' + T('Les serveurs qui répondent quand AdGuard ne connaît pas un site. Un par ligne.') + '</div>'
+    + '<label for="dkag-bs">' + T('Serveurs d’amorçage') + '</label>'
+    + '<textarea id="dkag-bs" spellcheck="false" style="min-height:58px;">' + webEsc((d.bootstrap_dns || []).join('\n')) + '</textarea>'
+    + '<div class="dks-tag">' + T('Servent à trouver l’adresse des serveurs ci-dessus quand ils sont donnés par un nom.') + '</div>'
+    + '<div class="dks-acts"><button class="web-open" onclick="dkAgDnsSave()">' + T('Tester et enregistrer') + '</button></div>'
+    + '<label for="dkag-ql">' + T('Conserver le journal des requêtes') + '</label>' + dkAgKeepSel('dkag-ql', q.interval || 86400000)
+    + '<label for="dkag-sl">' + T('Conserver les statistiques') + '</label>' + dkAgKeepSel('dkag-sl', s.interval || 86400000)
+    + '<div class="dks-acts"><button class="fs-btn" onclick="dkAgKeepSave()">' + T('Enregistrer la conservation') + '</button>'
+    + '<button class="fs-btn" style="color:var(--danger);" onclick="dkAgClear(\'querylog_clear\')">' + T('Vider le journal') + '</button>'
+    + '<button class="fs-btn" style="color:var(--danger);" onclick="dkAgClear(\'stats_reset\')">' + T('Remettre les statistiques à zéro') + '</button></div></div>';
+  body.innerHTML = h;
+}
+function dkAgLines(id) { var t = document.getElementById(id); return t ? t.value.split('\n').map(function(x) { return x.trim(); }).filter(Boolean) : []; }
+async function dkAgDnsSave() {
+  var up = dkAgLines('dkag-up'), bs = dkAgLines('dkag-bs');
+  if (!up.length) { toast(T('Indiquez au moins un serveur DNS.')); return; }
+  try {
+    var t = await dkAgApi('POST', 'test_upstream_dns', { upstream_dns: up, bootstrap_dns: bs }), bad = [];
+    Object.keys(t || {}).forEach(function(k) { if (t[k] !== 'OK') bad.push(k + ' : ' + t[k]); });
+    if (bad.length) { toast('⚠️ ' + T('Ce serveur ne répond pas : ') + bad[0], 9000); return; }
+    await dkAgApi('POST', 'dns_config', { upstream_dns: up, bootstrap_dns: bs });
+    toast(T('Serveurs DNS enregistrés.'));
+  } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+  dkAgLoad(true);
+}
+async function dkAgKeepSave() {
+  var q = document.getElementById('dkag-ql'), s = document.getElementById('dkag-sl');
+  try {
+    await dkAgApi('PUT', 'querylog/config/update', Object.assign({}, _dkAg.qcfg, { interval: Number(q.value) }));
+    await dkAgApi('PUT', 'stats/config/update', Object.assign({}, _dkAg.scfg, { interval: Number(s.value) }));
+    toast(T('Conservation enregistrée.'));
+  } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+  dkAgLoad(true);
+}
+async function dkAgClear(what) {
+  var q = what === 'querylog_clear' ? T('Vider le journal des requêtes ?') : T('Remettre les statistiques à zéro ?');
+  if (!(await showConfirm(q, { danger: true, ok: T('Confirmer') }))) return;
+  try { await dkAgApi('POST', what, {}); toast(T('C’est fait.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkAgLoad(true);
+}
 function dkStoreOpenInstalled(id) {
+  if (id === 'adguard') return dkAgOpen();
   var a = dkStoreApp(id) || {}, w = (a.installed && a.installed.window) || a.window || {};
   dkStoreOpenApp(id, dkStoreName(a.name) || id, { width: w.width, height: w.height });
 }
@@ -13653,7 +14062,7 @@ function dkStoreRegisterApps(list) {
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
     if (entry) { entry.label = label; return; }
     ALL_APPS.push({ id: key, label: label, store: true,
-      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
       imgStyle: 'background:transparent;box-shadow:none;padding:0;overflow:hidden;',
       svg: dkStoreIcon(id, 56) });
   });
@@ -18893,7 +19302,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.50.1';
+var DK_PAGE_VERSION = '2.51.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

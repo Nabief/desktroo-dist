@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.51.0 — 16 octobre 2026
+
+### Nouveau
+- **AdGuard Home a sa propre fenêtre Desktroo**, au même gabarit que les autres : Vue d'ensemble (requêtes, blocages, graphique, sites et appareils les plus actifs, pause de la protection), Journal des requêtes (avec « Bloquer » et « Autoriser » en un clic), Listes de blocage (ajout, activation, règles personnelles) et Réglages (serveurs DNS testés avant enregistrement, durée de conservation).
+  > La fenêtre parle à l'API d'AdGuard par le proxy de Desktroo (session du bureau) : aucun mot de passe, aucun port ouvert. L'interface complète d'AdGuard reste accessible depuis les Réglages.
+
 ## 2.50.1 — 16 octobre 2026
 
 ### Corrigé
