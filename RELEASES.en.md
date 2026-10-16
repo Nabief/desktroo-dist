@@ -3,6 +3,13 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.50.0 — 16 October 2026
+
+### New
+- **AdGuard Home in Desktroo Apps (testing).** A DNS server that blocks ads, trackers and dangerous sites for every device on the network: just set the NAS address as the DNS server in your router. Installed in one click, with no setup wizard and no second login.
+  > Unmodified official `adguard/adguardhome` image (GPL-3.0). New catalog field `host_ports`: an app can open ports on the local network (here 53, TCP and UDP); Desktroo checks the port is free before installing and says so clearly if not. Other fields: `cap_add` (NET_BIND_SERVICE only) and `seed` (starting configuration file, written once).
+- **App pages show the ports opened on the network and the free software used**, with a short explanation before installing.
+
 ## 2.49.1 — 16 October 2026
 
 ### Improved

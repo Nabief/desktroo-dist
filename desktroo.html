@@ -9294,6 +9294,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Desktroo à mettre à jour": "Desktroo needs an update",
 "Domaines indisponibles": "Domains unavailable",
 "Domaines publiés": "Published domains",
+"Ports ouverts sur le réseau": "Ports open on the network",
+"Pour l’utiliser": "To use it",
+"Logiciel libre": "Free software",
 "Valable {0} jours": "Valid for {0} days",
 "Expire aujourd’hui": "Expires today",
 "Délier NPMplus de Desktroo ?": "Unlink NPMplus from Desktroo?",
@@ -13046,6 +13049,7 @@ function dkStoreRenderDetail(body, a) {
     if (!inst) {
       h += '<div class="web-group-title">' + T('Qui pourra l’utiliser') + '</div><div class="web-group dks-pad">' + dkStoreUsersHtml([currentUser]) + '</div>';
       if (a.nas_access) h += dkStoreNasHtml(a, null);
+      h += dkStoreNetHtml(a, false) + dkStoreLicenseHtml(a);
       if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Cette app demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
       else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer une app.') + '</p>';
     } else {
@@ -13061,11 +13065,12 @@ function dkStoreRenderDetail(body, a) {
         + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateLabel(inst.state)) + '</dd>'
         + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
         + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd>'
+        + (a.host_ports && a.host_ports.length ? '<dt>' + T('Ports ouverts sur le réseau') + '</dt><dd>' + webEsc(dkStorePortsText(a)) + '</dd>' : '')
         + (a.nas && a.nas.mode === 'all' ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + T('Tous, en lecture seule') + '</dd>' : '')
         + (a.nas && a.nas.user ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + webEsc(a.nas.paths.join(', ')) + '<br><span class="dks-tag">'
             + webEsc(Tf('avec les droits de {0}, {1}', a.nas.user, a.nas.mode === 'rw' ? T('lecture et écriture') : T('lecture seule'))) + '</span></dd>' : '')
         + ((inst.standalone || a.standalone) ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(location.origin + '/a/' + a.id + '/') + '</span><button class="web-mini" onclick="dkStoreCopyUrl(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
-        + '</dl>'
+        + '</dl>' + dkStoreNetHtml(a, true) + dkStoreLicenseHtml(a)
         + (a.nas_access && a.nas_access.mode !== 'all' ? (_dkStore.nasEdit === a.id ? dkStoreNasHtml(a, a.nas) + '<div class="dks-acts"><button class="web-open" onclick="dkStoreAct(\'nas\',\'' + a.id + '\')">' + T('Enregistrer les accès aux dossiers') + '</button><button class="fs-btn" onclick="_dkStore.nasEdit=null;dkStoreRender()">' + T('Annuler') + '</button></div>' : '') : '')
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
         + (a.nas_access && a.nas_access.mode !== 'all' && _dkStore.nasEdit !== a.id ? wmRow('_dkStore.nasEdit=\'' + a.id + '\';dkStoreRender()', T('Changer les dossiers du NAS'), T('Le compte prêté à l’app et les dossiers qu’elle peut voir.')) : '')
@@ -13074,6 +13079,31 @@ function dkStoreRenderDetail(body, a) {
   }
   body.innerHTML = h;
   dkStoreLoadUsers();
+}
+// Ports qu'une app ouvre sur le réseau du NAS (DNS, par exemple) : texte court, puis explication et mise en route.
+function dkStorePortsText(a) {
+  return (a.host_ports || []).map(function(x) {
+    var pr = x.proto === 'both' ? 'TCP, UDP' : String(x.proto || 'tcp').toUpperCase(), lb = x.label ? dkStoreName(x.label) : '';
+    return x.port + ' (' + pr + (lb ? ' · ' + lb : '') + ')';
+  }).join(', ');
+}
+function dkStoreNetHtml(a, installed) {
+  if (!a.host_ports || !a.host_ports.length) return '';
+  var h = '';
+  if (!installed) {
+    h += '<div class="web-group-title">' + T('Ports ouverts sur le réseau') + '</div><div class="dks-sec dks-tag" style="max-width:680px;">'
+      + webEsc(a.network_why ? dkStoreName(a.network_why) : dkStorePortsText(a)) + '</div>';
+  } else if (a.setup_note) {
+    h += '<div class="web-group-title">' + T('Pour l’utiliser') + '</div><div class="dks-sec dks-tag" style="max-width:680px;">'
+      + webEsc(dkStoreName(a.setup_note).replace('{ip}', a.nas_ip || location.hostname)) + '</div>';
+  }
+  return h;
+}
+function dkStoreLicenseHtml(a) {
+  if (!a.license || !a.license.name) return '';
+  var u = /^https:\/\//.test(a.license.url || '') ? a.license.url : '';
+  return '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Logiciel libre') + ' : '
+    + (u ? '<a href="' + webEsc(u) + '" target="_blank" rel="noopener" style="color:inherit;">' + webEsc(a.license.name) + '</a>' : webEsc(a.license.name)) + '</div>';
 }
 // État d'une app TrueNAS, en mots (TrueNAS les donne en anglais et en capitales).
 function dkStoreStateLabel(st) {
@@ -18863,7 +18893,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.49.1';
+var DK_PAGE_VERSION = '2.50.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.49.1'
+APP_VERSION = '2.50.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9999,6 +9999,61 @@ def _store_timezone():
         return 'Europe/Paris'
 
 
+STORE_CAP_ALLOWED = ('NET_BIND_SERVICE',)   # seule capacité qu'une app peut demander (ports sous 1024)
+
+
+def _store_host_ports(app):
+    """Ports que l'app ouvre sur le réseau du NAS : [{port, proto: tcp|udp|both, label}], vérifiés."""
+    out = []
+    for x in (app.get('host_ports') or [])[:6]:
+        if not isinstance(x, dict):
+            continue
+        try:
+            port = int(x.get('port'))
+        except (TypeError, ValueError):
+            continue
+        proto = str(x.get('proto') or 'tcp').lower()
+        if 1 <= port <= 65535 and proto in ('tcp', 'udp', 'both') and port not in (22, 80, 443):
+            out.append({'port': port, 'proto': proto, 'label': x.get('label') or {}})
+    return out
+
+
+def _store_proto_list(x):
+    return ('tcp', 'udp') if x['proto'] == 'both' else (x['proto'],)
+
+
+def _store_ports_busy(specs):
+    """Ports (parmi ceux demandés) déjà pris sur le NAS, en TCP ou en UDP."""
+    out, _e, _c = _px_host("ss -Hltun 2>/dev/null | awk '{print $1, $5}'", timeout=30)
+    used = set()
+    for line in (out or '').splitlines():
+        parts = line.split()
+        m = re.search(r':(\d+)$', parts[1]) if len(parts) == 2 else None
+        if m:
+            used.add((parts[0], int(m.group(1))))
+    busy = []
+    for x in specs:
+        if any((pr, x['port']) in used for pr in _store_proto_list(x)) and x['port'] not in busy:
+            busy.append(x['port'])
+    return busy
+
+
+def _store_seed_cmds(app, owner):
+    """Fichiers de départ de l'app (configuration prête à l'emploi), écrits seulement s'ils n'existent pas encore."""
+    import base64
+    cmds, base = [], '/mnt/' + _store_dataset(app['id'])
+    vols = {str(v.get('name', '')) for v in app.get('volumes') or []}
+    for f in (app.get('seed') or [])[:6]:
+        vol, rel, text = str(f.get('volume', '')), str(f.get('path', '')), str(f.get('content', ''))
+        if vol not in vols or not re.match(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,80}(/[A-Za-z0-9][A-Za-z0-9._-]{0,80}){0,3}$', rel) or len(text) > 32768:
+            continue
+        path = '%s/%s/%s' % (base, vol, rel)
+        b64 = base64.b64encode(text.encode('utf-8')).decode('ascii')
+        cmds.append('[ -e {p} ] || {{ mkdir -p "$(dirname {p})" && printf %s {b} | base64 -d > {p} && chown {o} {p} "$(dirname {p})"; }}'.format(
+            p=shq(path), b=shq(b64), o=owner))
+    return cmds
+
+
 def store_compose(app):
     """Compose d'une app, fabriqué ici à partir du catalogue : l'utilisateur ne voit ni YAML ni port."""
     app_id = app['id']
@@ -10037,6 +10092,12 @@ def store_compose(app):
         svc['cpus'] = float(res['cpus'])
     if isinstance(app.get('command'), list) and app['command']:
         svc['command'] = [str(x) for x in app['command']]
+    hp = _store_host_ports(app)
+    if hp:   # services que l'app offre au réseau local (DNS, par exemple) : seuls ces ports sont ouverts
+        svc['ports'] = ['%d:%d/%s' % (x['port'], x['port'], pr) for x in hp for pr in _store_proto_list(x)]
+    caps = [c for c in (app.get('cap_add') or []) if c in STORE_CAP_ALLOWED]
+    if caps:
+        svc['cap_add'] = caps
     if _store_nas_all(app):
         _store_nas_apply_all(svc, env, app_id)
     elif app.get('nas_access'):
@@ -10083,6 +10144,7 @@ def _store_prepare_data(app):
             # Propriétaire changé (autre compte, ou passage en « tout le NAS ») : tout le contenu suit, sinon l'app
             # ne peut plus écrire dans ses propres fichiers.
             cmds.append('mkdir -p {p} && {{ [ "$(stat -c %u:%g {p})" = {o} ] || chown -R {o} {p}; }}'.format(p=shq(p), o=owner))
+    cmds += _store_seed_cmds(app, owner)
     if cmds:
         _o, err, code = _px_host(' && '.join(cmds), timeout=60)
         if code != 0:
@@ -10221,6 +10283,11 @@ def store_install(body, update=False):
         return 409, {'ok': False, 'error': 'App déjà installée.'}
     if _store_running(app_id):
         return 409, {'ok': False, 'error': 'Une opération est déjà en cours sur cette app.'}
+    if not update:
+        busy = _store_ports_busy(_store_host_ports(app)) if _store_host_ports(app) else []
+        if busy:
+            return 409, {'ok': False, 'error': 'Le port %s est déjà utilisé sur ce NAS%s. Arrêtez ce service avant d’installer cette app.' % (
+                ', '.join(str(x) for x in busy), ' (un autre serveur DNS, par exemple Pi-hole)' if 53 in busy else '')}
     users = body.get('users') if isinstance(body.get('users'), list) else None
     if users is not None:
         users = [str(u)[:64] for u in users if u][:50]
@@ -10333,6 +10400,8 @@ def store_view():
         a['job'] = store_job_get(a['id']) or None
         if a['id'] == STORE_NPM_ID:
             a['npm'] = store_npm_info()
+        if _store_host_ports(a):
+            a['nas_ip'] = _truenas_ip() or SSH_HOST
         if a.get('nas_access') and inst and _store_nas_all(a):
             a['nas'] = {'mode': 'all'}
         elif a.get('nas_access') and inst:
