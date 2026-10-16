@@ -3,6 +3,15 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.52.0 — 16 October 2026
+
+### New
+- **Connect an existing AdGuard Home** (on a box, a virtual machine, another computer): the same Desktroo window manages it remotely. Enter its address, username and password in the AdGuard Home page; an icon appears on the desktop.
+  > Credentials stay on the NAS (owner-only file); the browser never sees them. Only AdGuard `/control/…` paths are relayed; the NAS itself, loopback and internal addresses are refused; no redirect is followed.
+
+### Fixed
+- **Desktroo Pass with a domain already configured in NPMplus**: "This domain is already published" blocked step 1. The domain is now taken over (certificate kept). If it points elsewhere, Desktroo asks for confirmation before redirecting it to the vault.
+
 ## 2.51.0 — 16 October 2026
 
 ### New

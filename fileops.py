@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.51.0'
+APP_VERSION = '2.52.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9756,6 +9756,9 @@ _STORE_POST = {
     '/store/npm/job/clear': lambda b: store_npm_job_clear(b),
     '/store/npm/link': lambda b: store_npm_link(b),
     '/store/npm/unlink': lambda b: store_npm_unlink(b),
+    '/store/adguard/link': lambda b: store_adguard_link(b),
+    '/store/adguard/unlink': lambda b: store_adguard_unlink(b),
+    '/store/adguard/api': lambda b: store_adguard_api(b),
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
@@ -9962,6 +9965,10 @@ def store_installed_list():
                     'version': '', 'state': 'RUNNING' if running else 'STOPPED', 'users': None,
                     'container': linked.get('container'), 'remote': linked.get('url') if linked.get('remote') else '',
                     'ports': store_npm_settings()['ports']})
+    ag = store_ag_linked() if STORE_AG_ID not in reg else None
+    if ag:   # AdGuard Home relié : icône et fenêtre au bureau, sans que Desktroo Apps le gère
+        out.append({'id': STORE_AG_ID, 'name': {'fr': 'AdGuard Home', 'en': 'AdGuard Home'}, 'kind': 'app', 'linked': True,
+                    'version': ag.get('version') or '', 'state': 'RUNNING', 'users': None, 'remote': ag['url']})
     for app_id, rec in reg.items():
         r = dict(rec or {}); r['id'] = app_id
         r['state'] = states.get('dt-' + app_id, 'MISSING' if states else 'UNKNOWN')
@@ -10292,6 +10299,8 @@ def store_install(body, update=False):
             nas_cfg = store_nas_validate(app, (body or {}).get('nas'))
         except ValueError as e:
             return 400, {'ok': False, 'error': str(e)}
+    if app_id == STORE_AG_ID and not update and store_ag_linked():
+        return 409, {'ok': False, 'error': 'AdGuard Home est déjà relié (autre machine) : déliez-le d’abord pour l’installer ici.'}
     if app_id == STORE_WEB_ID and not update and store_webserver_legacy():
         return 409, {'ok': False, 'error': 'Le serveur web tourne encore dans Desktroo : il sera migré automatiquement.'}
     if app_id == STORE_NPM_ID and not update and app_id not in store_installed_get():
@@ -11220,7 +11229,7 @@ def store_npm_secret(_body=None):
 _NPM_DOMAIN_RE = re.compile(r'^(?=.{1,253}$)(\*\.)?([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$')
 
 
-def store_npm_host_add(body, advanced='', then=None):
+def store_npm_host_add(body, advanced='', then=None, adopt=False, replace=False):
     """Publie un domaine. « advanced » et « then » ne servent qu'aux modules (Desktroo Pass), jamais à la page."""
     doms = [str(d).strip().lower().rstrip('.') for d in (body.get('domains') or []) if str(d).strip()][:20]
     bad = [d for d in doms if not _NPM_DOMAIN_RE.match(d)]
@@ -11246,12 +11255,32 @@ def store_npm_host_add(body, advanced='', then=None):
         payload.update(certificate_id='new', ssl_forced=True)
     if advanced:
         payload['advanced_config'] = advanced
+    existing = None
+    if adopt:   # domaine déjà configuré dans NPMplus (à la main, ou par un essai précédent) : on le reprend au lieu d'échouer
+        try:
+            for hh in _npm_call('GET', '/nginx/proxy-hosts', None, timeout=30) or []:
+                if doms[0] in [str(x).lower() for x in (hh.get('domain_names') or [])]:
+                    existing = hh
+                    break
+        except Exception as e:
+            log.warning('NPMplus : liste des domaines illisible : %s', e)
+        if existing:
+            same = (int(existing.get('forward_port') or 0) == port
+                    and str(existing.get('forward_host') or '') in {host, '127.0.0.1', _truenas_ip() or host})
+            if not same and not replace:
+                return 409, {'ok': False, 'busy': True, 'error': 'DOMAIN_BUSY|%s:%s' % (existing.get('forward_host'), existing.get('forward_port'))}
+            if existing.get('certificate_id'):
+                payload.pop('certificate_id', None)   # certificat déjà en place : on le garde
+            log.info('NPMplus : %s déjà configuré, repris pour %s:%s', doms[0], host, port)
     _NPM_API['job'] = {'state': 'running', 'step': ('Demande du certificat pour ' if https else 'Publication de ') + doms[0], 'error': '',
                        'domain': doms[0], 'at': int(_st_time.time())}
 
     def run():
         try:
-            _npm_call('POST', '/nginx/proxy-hosts', payload, timeout=240)
+            if existing:
+                _npm_call('PUT', '/nginx/proxy-hosts/%s' % existing['id'], payload, timeout=240)
+            else:
+                _npm_call('POST', '/nginx/proxy-hosts', payload, timeout=240)
             if then:
                 then(doms[0])
             _NPM_API['job'].update(state='done', step='Publié', error='')
@@ -11413,6 +11442,141 @@ def store_npm_unlink(body=None):
     with _NPM_API_LOCK:
         _NPM_API.update(cookie='', until=0, fails=0)
     return 200, {'ok': True}
+
+
+# ── MDM-STORE-V1 · AdGuard Home sur une autre machine (box, VM…) : Desktroo ne parle qu'à son API ───────────
+# Les identifiants restent sur le NAS (data/store/adguard.json). Le navigateur ne les voit jamais : la fenêtre AdGuard
+# passe par /store/adguard/api, qui relaie la requête (chemins /control/... seulement) avec ces identifiants.
+STORE_AG_ID = 'adguard'
+STORE_AG_FILE = os.path.join(STORE_DIR, 'adguard.json')
+_AG_PATH_RE = re.compile(r'^/control/[a-z0-9_/]{1,80}(\?[A-Za-z0-9=&%._~:+-]{0,300})?$')
+
+
+def store_ag_linked():
+    l = (_lic_read_json(STORE_AG_FILE) or {}).get('linked')
+    return l if isinstance(l, dict) and l.get('url') else None
+
+
+def _ag_remote_url(raw):
+    """Adresse saisie → http(s)://hôte[:port], ou ValueError lisible."""
+    import urllib.parse as _up, ipaddress as _ip
+    t = str(raw or '').strip()
+    if not t:
+        raise ValueError('Indiquez l’adresse d’AdGuard Home (exemple : http://192.168.0.50:3000).')
+    if '://' not in t:
+        t = 'http://' + t
+    u = _up.urlsplit(t)
+    host = (u.hostname or '').lower()
+    if u.scheme not in ('http', 'https') or not host or u.username or u.password:
+        raise ValueError('Adresse invalide. Exemple : http://192.168.0.50:3000')
+    if host in ('localhost', '0.0.0.0') or host.endswith('.localhost'):
+        raise ValueError('Cette adresse désigne ce NAS. Pour un AdGuard installé ici, utilisez « Installer ».')
+    try:
+        ip = _ip.ip_address(host)
+        if ip.is_loopback or ip.is_unspecified or ip.is_link_local or ip.is_multicast:
+            raise ValueError('Adresse non autorisée : ' + host)
+    except ValueError as e:
+        if 'non autorisée' in str(e):
+            raise
+    try:
+        port = u.port
+    except ValueError:
+        raise ValueError('Port invalide.')
+    return '%s://%s%s' % (u.scheme, '[%s]' % host if ':' in host else host, ':%d' % port if port else '')
+
+
+def _ag_http(method, path, body=None, timeout=15, base=None, user='', password=''):
+    """Appel à l'API d'AdGuard (identifiants de la liaison par défaut). Rend (code, texte). Aucune redirection suivie."""
+    import ssl, urllib.request, urllib.error, base64
+    link = None if base else store_ag_linked()
+    if not base and not link:
+        raise RuntimeError('AdGuard Home n’est pas relié.')
+    base = base or link['url']
+    if link:
+        user, password = link.get('user') or '', link.get('password') or ''
+    ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect, urllib.request.HTTPSHandler(context=ctx))
+    data = json.dumps(body).encode('utf-8') if body is not None else None
+    req = urllib.request.Request(base + path, data=data, method=method)
+    req.add_header('Accept', 'application/json')
+    if data is not None:
+        req.add_header('Content-Type', 'application/json')
+    if user or password:
+        req.add_header('Authorization', 'Basic ' + base64.b64encode(('%s:%s' % (user, password)).encode('utf-8')).decode('ascii'))
+    try:
+        with opener.open(req, timeout=timeout) as r:
+            raw, code = r.read(4 * 1024 * 1024), r.status
+    except urllib.error.HTTPError as e:
+        raw, code = e.read(4 * 1024 * 1024), e.code
+    return code, raw.decode('utf-8', 'replace')
+
+
+def store_adguard_link(body):
+    gate = store_gate('install')
+    if not gate['ok']:
+        return 402, {'ok': False, 'error': 'Abonnement requis pour relier AdGuard Home.', 'gate': gate}
+    if STORE_AG_ID in store_installed_get():
+        return 409, {'ok': False, 'error': 'AdGuard Home est déjà installé sur ce NAS.'}
+    try:
+        url = _ag_remote_url((body or {}).get('url'))
+    except ValueError as e:
+        return 400, {'ok': False, 'error': str(e)}
+    user, pw = str((body or {}).get('user') or '').strip()[:128], str((body or {}).get('password') or '')[:256]
+    try:
+        code, txt = _ag_http('GET', '/control/status', timeout=10, base=url, user=user, password=pw)
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'Aucune réponse de %s : %s. Vérifiez l’adresse, le port et que cette machine est joignable depuis le NAS.' % (url, str(e)[:120])}
+    if code == 401:
+        return 403, {'ok': False, 'error': 'Identifiant ou mot de passe refusé par AdGuard Home.'}
+    try:
+        st = json.loads(txt)
+    except Exception:
+        st = None
+    if code in (301, 302, 303, 307, 308) or code == 404 or not isinstance(st, dict) or 'version' not in st:
+        return 502, {'ok': False, 'error': 'Ce n’est pas AdGuard Home, ou il n’est pas encore configuré (adresse, port, ou assistant de démarrage à terminer).'}
+    if code != 200:
+        return 502, {'ok': False, 'error': 'AdGuard Home a répondu %s.' % code}
+    os.makedirs(STORE_DIR, exist_ok=True)
+    try:
+        fd = os.open(STORE_AG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+            json.dump({'linked': {'url': url, 'user': user, 'password': pw, 'version': str(st.get('version') or ''), 'at': int(_st_time.time())}}, fh)
+        os.chmod(STORE_AG_FILE, 0o600)
+    except OSError as e:
+        return 500, {'ok': False, 'error': 'Impossible d’enregistrer la liaison : %s' % e}
+    log.info('AdGuard Home distant relié : %s', url)
+    return 200, {'ok': True}
+
+
+def store_adguard_unlink(body=None):
+    try:
+        if os.path.exists(STORE_AG_FILE):
+            os.remove(STORE_AG_FILE)   # les identifiants disparaissent avec la liaison
+    except OSError as e:
+        return 500, {'ok': False, 'error': str(e)}
+    return 200, {'ok': True}
+
+
+def store_adguard_api(body):
+    """Relaie une requête de la fenêtre AdGuard vers l'AdGuard relié : { method, path, body } → { status, text }."""
+    if not store_ag_linked():
+        return 409, {'ok': False, 'error': 'AdGuard Home n’est pas relié.'}
+    method, path = str((body or {}).get('method') or 'GET').upper(), str((body or {}).get('path') or '')
+    path = '/control/' + path.lstrip('/') if not path.startswith('/control/') else path
+    if method not in ('GET', 'POST', 'PUT') or not _AG_PATH_RE.match(path):
+        return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+    payload = (body or {}).get('body')
+    if payload is not None and not isinstance(payload, (dict, list)):
+        return 400, {'ok': False, 'error': 'Requête invalide.'}
+    try:
+        code, txt = _ag_http(method, path, payload, timeout=25)
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'AdGuard Home ne répond pas : ' + str(e)[:160]}
+    return 200, {'ok': True, 'status': code, 'text': txt}
 
 
 # ── MDM-STORE-V1 · module « Desktroo Pass » (dt-pass) : coffre de mots de passe compatible Bitwarden ──────
@@ -11665,7 +11829,7 @@ def store_pass_domain(body):
 
     # /admin n'est jamais servi sur Internet : l'administration passe par Desktroo.
     return store_npm_host_add({'domains': [dom], 'host': host, 'port': port, 'https': True},
-                              advanced='location /admin { return 404; }', then=then)
+                              advanced='location /admin { return 404; }', then=then, adopt=True, replace=bool((body or {}).get('replace')))
 
 
 # ── MDM-STORE-V1 · accès des apps aux dossiers du NAS (« nas_access » dans le catalogue) ────────────────

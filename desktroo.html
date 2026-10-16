@@ -9321,6 +9321,21 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Enregistrer mes règles": "Save my rules",
 "Indiquez au moins un serveur DNS.": "Enter at least one DNS server.",
 "Indiquez l’adresse de la liste (https://…).": "Enter the list address (https://…).",
+"AdGuard Home sur une autre machine": "AdGuard Home on another machine",
+"Relier un AdGuard Home existant": "Connect an existing AdGuard Home",
+"Installé sur une box, une machine virtuelle ou un autre ordinateur du réseau : Desktroo le pilote à distance, depuis la même fenêtre.": "Installed on a box, a virtual machine or another computer on the network: Desktroo manages it remotely, from the same window.",
+"Indiquez l’adresse de l’interface d’AdGuard Home et, s’il est protégé, son identifiant et son mot de passe. Desktroo garde ces identifiants sur le NAS. Le NAS doit pouvoir joindre cette machine.": "Enter the address of the AdGuard Home interface and, if it is protected, its username and password. Desktroo keeps these credentials on the NAS. The NAS must be able to reach that machine.",
+"Adresse d’AdGuard Home": "AdGuard Home address",
+"Identifiant (facultatif)": "Username (optional)",
+"Mot de passe (facultatif)": "Password (optional)",
+"AdGuard Home est relié : son icône est sur votre bureau.": "AdGuard Home is connected: its icon is on your desktop.",
+"Délier AdGuard Home de Desktroo ?": "Unlink AdGuard Home from Desktroo?",
+"Il continue de tourner et de filtrer. Seule la fenêtre Desktroo ne le pilote plus.": "It keeps running and filtering. Only the Desktroo window no longer manages it.",
+"Cet AdGuard Home tourne sur une autre machine. Desktroo ne parle qu’à son interface : vous le pilotez ici sans toucher à son installation. Ses mises à jour se font sur cette machine.": "This AdGuard Home runs on another machine. Desktroo only talks to its interface: you manage it here without touching its installation. It is updated on that machine.",
+"La fenêtre Desktroo ne pilote plus cet AdGuard Home. Lui continue de tourner et de filtrer.": "The Desktroo window no longer manages this AdGuard Home. It keeps running and filtering.",
+"Identifiants refusés : reliez à nouveau AdGuard Home.": "Credentials refused: connect AdGuard Home again.",
+"Pour l’utiliser, indiquez l’adresse IP de la machine qui héberge AdGuard Home comme serveur DNS, dans votre box ou sur vos appareils.": "To use it, set the IP address of the machine hosting AdGuard Home as the DNS server, in your box or on your devices.",
+"Ce domaine est déjà utilisé dans NPMplus, vers {0}. Le diriger vers le coffre à la place ?": "This domain is already used in NPMplus, pointing to {0}. Point it to the vault instead?",
 "Interface complète d’AdGuard": "Full AdGuard interface",
 "Journal des requêtes": "Query log",
 "Le filtrage est désactivé : rien n’est bloqué.": "Filtering is off: nothing is blocked.",
@@ -13062,7 +13077,7 @@ function dkStoreRenderDetail(body, a) {
   } else if (!running && inst) {
     acts += (inst.state === 'RUNNING' ? '<button class="web-open" onclick="dkStoreOpenInstalled(\'' + a.id + '\')">' + T('Ouvrir') + '</button>'
       : '<button class="web-open" onclick="dkStoreAct(\'start\',\'' + a.id + '\')">' + T('Démarrer') + '</button>');
-    if (inst.standalone || a.standalone) acts += '<button class="fs-btn" onclick="window.open(\'/a/' + a.id + '/\',\'_blank\',\'noopener\')">' + T('Ouvrir dans un onglet') + '</button>';
+    if (!inst.linked && (inst.standalone || a.standalone)) acts += '<button class="fs-btn" onclick="window.open(\'/a/' + a.id + '/\',\'_blank\',\'noopener\')">' + T('Ouvrir dans un onglet') + '</button>';
   } else if (!running && !inst && a.compatible && gateOk) {
     var npmF = a.npm && a.npm.foreign;
     var npmLinkable = npmF && /npmplus/i.test(npmF.image || '');
@@ -13137,6 +13152,14 @@ function dkStoreRenderDetail(body, a) {
       h += dkStoreNetHtml(a, false) + dkStoreLicenseHtml(a);
       if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Cette app demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
       else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer une app.') + '</p>';
+      if (a.id === 'adguard' && a.compatible && gateOk) h += dkAgRemoteHtml();
+    } else if (inst.linked) {
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Cet AdGuard Home tourne sur une autre machine. Desktroo ne parle qu’à son interface : vous le pilotez ici sans toucher à son installation. Ses mises à jour se font sur cette machine.') + '</div>'
+        + '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
+        + '<dt>' + T('Adresse de l’administration') + '</dt><dd class="mono">' + webEsc(inst.remote || '') + '</dd>'
+        + (inst.version ? '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version) + '</dd>' : '') + '</dl>'
+        + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
+        + wmRow('dkAgRemoteUnlink()', T('Délier'), T('La fenêtre Desktroo ne pilote plus cet AdGuard Home. Lui continue de tourner et de filtrer.'), 'danger') + '</div>';
     } else {
       if (a.update_available) {
         h += '<div class="web-group-title">' + T('Mise à jour') + '</div><div class="web-group">'
@@ -13243,6 +13266,37 @@ function dkStoreNasCollect() {
   if (!u || !u.value) { toast(T('Choisissez le compte dont l’app prendra les droits.')); return null; }
   if (!paths.length) { toast(T('Cochez au moins un dossier.')); return null; }
   return { user: u.value, paths: paths, readonly: !!(md && md.value === 'ro') };
+}
+// Relier un AdGuard Home qui tourne sur une AUTRE machine : Desktroo ne parle qu'à son interface, par le NAS.
+function dkAgRemoteHtml() {
+  if (!_dkStore.agRemote) return '<div class="web-group-title">' + T('AdGuard Home sur une autre machine') + '</div><div class="web-group">'
+    + wmRow('_dkStore.agRemote=true;dkStoreRender()', T('Relier un AdGuard Home existant'), T('Installé sur une box, une machine virtuelle ou un autre ordinateur du réseau : Desktroo le pilote à distance, depuis la même fenêtre.')) + '</div>';
+  return '<div class="web-group-title">' + T('Relier un AdGuard Home existant') + '</div><div class="web-group dks-pad" style="display:flex;flex-direction:column;gap:12px;max-width:520px;">'
+    + '<div class="dks-tag">' + T('Indiquez l’adresse de l’interface d’AdGuard Home et, s’il est protégé, son identifiant et son mot de passe. Desktroo garde ces identifiants sur le NAS. Le NAS doit pouvoir joindre cette machine.') + '</div>'
+    + formRow(T('Adresse d’AdGuard Home'), '<input id="dks-agr-url" style="' + iStyle() + '" placeholder="http://192.168.0.50:3000" autocomplete="off" spellcheck="false" value="' + webEsc(_dkStore.agRemoteUrl || '') + '">')
+    + formRow(T('Identifiant (facultatif)'), '<input id="dks-agr-us" style="' + iStyle() + '" autocomplete="off" spellcheck="false">')
+    + formRow(T('Mot de passe (facultatif)'), '<input id="dks-agr-pw" type="password" style="' + iStyle() + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')dkAgRemoteLink()">')
+    + '<div class="dks-acts" style="margin-top:0;"><button class="web-open" onclick="dkAgRemoteLink()">' + T('Relier') + '</button>'
+    + '<button class="fs-btn" onclick="_dkStore.agRemote=false;dkStoreRender()">' + T('Annuler') + '</button></div></div>';
+}
+async function dkAgRemoteLink() {
+  var url = (document.getElementById('dks-agr-url').value || '').trim();
+  _dkStore.agRemoteUrl = url;
+  try {
+    await fileops('POST', 'store/adguard/link', { url: url, user: document.getElementById('dks-agr-us').value, password: document.getElementById('dks-agr-pw').value });
+  } catch (e) { toast('⚠️ ' + (e.message || e), 9000); return; }
+  _dkStore.agRemote = false;
+  toast(T('AdGuard Home est relié : son icône est sur votre bureau.'), 6000);
+  try { var sc = getShortcuts(); if (sc.indexOf('dkapp-adguard') < 0) { sc.push('dkapp-adguard'); saveShortcuts(sc); } } catch (_) {}
+  await dkStoreLoad();
+  dkAgOpen();
+}
+async function dkAgRemoteUnlink() {
+  if (!(await showConfirm(T('Délier AdGuard Home de Desktroo ?') + '<br><span style="font-size:12px;">' + T('Il continue de tourner et de filtrer. Seule la fenêtre Desktroo ne le pilote plus.') + '</span>', { danger: true, ok: T('Délier') }))) return;
+  try { await fileops('POST', 'store/adguard/unlink', {}); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); return; }
+  dkStoreCloseApp('dkapp-adguard');
+  var w = document.getElementById('win-dkag'); if (w) w.classList.remove('visible');
+  await dkStoreLoad();
 }
 // Relier un NPMplus qui tourne sur une AUTRE machine (box, VM, Raspberry…) : Desktroo ne parle qu'à son API.
 function dkStoreNpmRemoteHtml() {
@@ -13388,9 +13442,10 @@ function dkAgCss() {
   document.head.appendChild(st);
 }
 async function dkAgOpen() {
-  var win = document.getElementById('win-dkag');
+  var win = document.getElementById('win-dkag'), ag = dkStoreApp('adguard');
+  _dkAg.linked = !!(ag && ag.installed && ag.installed.linked);
   if (win) { win.classList.add('visible'); bringToFront(win); dkAgLoad(); return; }
-  try { await dkStoreSession(true); }
+  try { if (!_dkAg.linked) await dkStoreSession(true); }
   catch (e) { toast(T('Impossible d\'ouvrir l\'app : ') + (e.message || e)); return; }
   dkStoreCss(); dkAgCss();
   win = dkStoreMakeWin('dkag', T('AdGuard Home'), 980, 660,
@@ -13403,6 +13458,17 @@ async function dkAgOpen() {
   dkAgLoad();
 }
 async function dkAgApi(method, path, body) {
+  if (_dkAg.linked) {   // AdGuard sur une autre machine : le NAS relaie la requête
+    var rr;
+    try { rr = await fileops('POST', 'store/adguard/api', { method: method, path: path, body: body }); }
+    catch (e) { var et = new Error(T('AdGuard ne répond pas pour le moment.')); et.transient = true; throw et; }
+    var rt = rr.text || '';
+    if (rr.status === 401) throw new Error(T('Identifiants refusés : reliez à nouveau AdGuard Home.'));
+    if (rr.status >= 500) { var e5 = new Error(T('AdGuard ne répond pas pour le moment.')); e5.transient = true; throw e5; }
+    if (rr.status >= 400) throw new Error(String(rt).replace(/<[^>]*>/g, ' ').trim().slice(0, 240) || ('HTTP ' + rr.status));
+    if (!rt) return {};
+    try { return JSON.parse(rt); } catch (_) { return { text: rt }; }
+  }
   var opt = { method: method, credentials: 'same-origin', headers: {} };
   if (body !== undefined) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
   var r = await fetch('/a/adguard/control/' + path, opt), t = await r.text();
@@ -13411,6 +13477,11 @@ async function dkAgApi(method, path, body) {
   if (!r.ok) throw new Error(String(t || '').replace(/<[^>]*>/g, ' ').trim().slice(0, 240) || ('HTTP ' + r.status));
   if (!t) return {};
   try { return JSON.parse(t); } catch (_) { return { text: t }; }
+}
+function dkAgFull() {
+  if (!_dkAg.linked) { window.open('/a/adguard/', '_blank', 'noopener'); return; }
+  var a = dkStoreApp('adguard'), u = a && a.installed && a.installed.remote;
+  if (u && /^https?:\/\//.test(u)) window.open(u, '_blank', 'noopener');
 }
 function dkAgGo(nav) { _dkAg.nav = nav; dkAgLoad(); }
 function dkAgSide() {
@@ -13454,6 +13525,7 @@ function dkAgRender() {
 function dkAgN(n) { return Number(n || 0).toLocaleString(); }
 function dkAgNote() {
   var a = dkStoreApp('adguard') || {};
+  if (_dkAg.linked) return T('Pour l’utiliser, indiquez l’adresse IP de la machine qui héberge AdGuard Home comme serveur DNS, dans votre box ou sur vos appareils.');
   return a.setup_note ? dkStoreName(a.setup_note).replace('{ip}', a.nas_ip || location.hostname) : '';
 }
 function dkAgTop(title, arr) {
@@ -13626,7 +13698,7 @@ function dkAgKeepSel(id, cur) {
 function dkAgRenderSettings(body) {
   var d = _dkAg.dns || {}, q = _dkAg.qcfg || {}, s = _dkAg.scfg || {}, st = _dkAg.st || {};
   wmHead('dkag', T('Réglages'), { sub: T('Serveurs DNS en amont, conservation des données') + (st.version ? ' · AdGuard Home ' + webEsc(st.version) : ''),
-    actions: '<button class="fs-btn" onclick="window.open(\'/a/adguard/\',\'_blank\',\'noopener\')">' + T('Interface complète d’AdGuard') + '</button>' });
+    actions: '<button class="fs-btn" onclick="dkAgFull()">' + T('Interface complète d’AdGuard') + '</button>' });
   var note = dkAgNote(), h = note ? '<div class="dkag-note" style="margin-top:0;">' + webEsc(note) + '</div>' : '';
   h += '<div class="dkag-form"><label for="dkag-up">' + T('Serveurs DNS en amont') + '</label>'
     + '<textarea id="dkag-up" spellcheck="false">' + webEsc((d.upstream_dns || []).join('\n')) + '</textarea>'
@@ -13961,7 +14033,16 @@ function dkPassRenderAccess(body, st) {
 async function dkPassSetDomain() {
   var d = (document.getElementById('dkpass-dom').value || '').trim();
   if (!d) { toast(T('Indiquez un nom de domaine.')); return; }
-  try { await fileops('POST', 'store/pass/domain', { domain: d }); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); return; }
+  var rep = false;
+  for (;;) {
+    try { await fileops('POST', 'store/pass/domain', { domain: d, replace: rep }); break; }
+    catch (e) {
+      var m = /DOMAIN_BUSY\|(\S+)/.exec(e && e.message || '');
+      if (m && !rep && await showConfirm(Tf('Ce domaine est déjà utilisé dans NPMplus, vers {0}. Le diriger vers le coffre à la place ?', webEsc(m[1])), { danger: true, ok: T('Remplacer') })) { rep = true; continue; }
+      if (!m) toast('⚠️ ' + (e.message || e), 8000);
+      return;
+    }
+  }
   dkPassLoad(true);
 }
 function dkPassStatus(u) {
@@ -19302,7 +19383,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.51.0';
+var DK_PAGE_VERSION = '2.52.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

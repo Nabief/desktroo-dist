@@ -3,6 +3,15 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.52.0 — 16 octobre 2026
+
+### Nouveau
+- **Relier un AdGuard Home existant** (sur une box, une machine virtuelle, un autre ordinateur) : la même fenêtre Desktroo le pilote à distance. Adresse, identifiant et mot de passe se saisissent dans la fiche d'AdGuard Home ; une icône apparaît au bureau.
+  > Les identifiants restent sur le NAS (fichier en lecture réservée) ; le navigateur n'y a jamais accès. Seuls les chemins `/control/…` d'AdGuard sont relayés ; adresses du NAS lui-même, boucle locale et adresses internes refusées ; aucune redirection suivie.
+
+### Corrigé
+- **Desktroo Pass avec un domaine déjà configuré dans NPMplus** : « Ce domaine est déjà publié » bloquait l'étape 1. Le domaine est maintenant repris (certificat conservé). S'il pointe vers autre chose, Desktroo demande confirmation avant de le rediriger vers le coffre.
+
 ## 2.51.0 — 16 octobre 2026
 
 ### Nouveau
