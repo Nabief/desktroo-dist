@@ -9336,6 +9336,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Identifiants refusés : reliez à nouveau AdGuard Home.": "Credentials refused: connect AdGuard Home again.",
 "Pour l’utiliser, indiquez l’adresse IP de la machine qui héberge AdGuard Home comme serveur DNS, dans votre box ou sur vos appareils.": "To use it, set the IP address of the machine hosting AdGuard Home as the DNS server, in your box or on your devices.",
 "Ce domaine est déjà utilisé dans NPMplus, vers {0}. Le diriger vers le coffre à la place ?": "This domain is already used in NPMplus, pointing to {0}. Point it to the vault instead?",
+"À renseigner avant l’installation": "To fill in before installing",
+"Compte administrateur": "Administrator account",
+"Indiquez : {0}.": "Enter: {0}.",
 "Interface complète d’AdGuard": "Full AdGuard interface",
 "Journal des requêtes": "Query log",
 "Le filtrage est désactivé : rien n’est bloqué.": "Filtering is off: nothing is blocked.",
@@ -13149,7 +13152,7 @@ function dkStoreRenderDetail(body, a) {
     if (!inst) {
       h += '<div class="web-group-title">' + T('Qui pourra l’utiliser') + '</div><div class="web-group dks-pad">' + dkStoreUsersHtml([currentUser]) + '</div>';
       if (a.nas_access) h += dkStoreNasHtml(a, null);
-      h += dkStoreNetHtml(a, false) + dkStoreLicenseHtml(a);
+      h += dkStoreFieldsHtml(a) + dkStoreNetHtml(a, false) + dkStoreLicenseHtml(a);
       if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Cette app demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
       else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer une app.') + '</p>';
       if (a.id === 'adguard' && a.compatible && gateOk) h += dkAgRemoteHtml();
@@ -13174,6 +13177,9 @@ function dkStoreRenderDetail(body, a) {
         + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
         + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd>'
         + (a.host_ports && a.host_ports.length ? '<dt>' + T('Ports ouverts sur le réseau') + '</dt><dd>' + webEsc(dkStorePortsText(a)) + '</dd>' : '')
+        + (a.install_fields || []).map(function(f) { var v = (a.fields || {})[f.key]; return v ? '<dt>' + webEsc(dkStoreName(f.label) || f.key) + '</dt><dd class="mono">' + webEsc(v) + '</dd>' : ''; }).join('')
+        + (a.credentials && a.credentials.password ? '<dt>' + T('Compte administrateur') + '</dt><dd><span class="mono">' + webEsc(a.credentials.user) + '</span> · <span class="mono">' + webEsc(a.credentials.password)
+          + '</span> <button class="web-mini" onclick="shareCopy(\'' + encodeURIComponent(a.credentials.password) + '\')">' + T('Copier') + '</button></dd>' : '')
         + (a.nas && a.nas.mode === 'all' ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + T('Tous, en lecture seule') + '</dd>' : '')
         + (a.nas && a.nas.user ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + webEsc(a.nas.paths.join(', ')) + '<br><span class="dks-tag">'
             + webEsc(Tf('avec les droits de {0}, {1}', a.nas.user, a.nas.mode === 'rw' ? T('lecture et écriture') : T('lecture seule'))) + '</span></dd>' : '')
@@ -13187,6 +13193,24 @@ function dkStoreRenderDetail(body, a) {
   }
   body.innerHTML = h;
   dkStoreLoadUsers();
+}
+// Réglages demandés avant l'installation (adresse publique d'un VPN, par exemple), déclarés par le catalogue.
+function dkStoreFieldsHtml(a) {
+  if (!a.install_fields || !a.install_fields.length) return '';
+  return '<div class="web-group-title">' + T('À renseigner avant l’installation') + '</div><div class="web-group dks-pad" style="display:flex;flex-direction:column;gap:12px;max-width:520px;">'
+    + a.install_fields.map(function(f) {
+      return formRow(dkStoreName(f.label) || f.key, '<input id="dks-f-' + webEsc(f.key) + '" style="' + iStyle() + '" placeholder="' + webEsc(f.placeholder || '') + '" autocomplete="off" spellcheck="false">'
+        + (f.help ? '<div class="dks-tag" style="margin-top:6px;">' + webEsc(dkStoreName(f.help)) + '</div>' : ''));
+    }).join('') + '</div>';
+}
+function dkStoreFieldsCollect(a) {
+  var out = {};
+  for (var i = 0; i < a.install_fields.length; i++) {
+    var f = a.install_fields[i], el = document.getElementById('dks-f-' + f.key), v = el ? (el.value || '').trim() : '';
+    if (!v && f.required !== false) { toast(Tf('Indiquez : {0}.', dkStoreName(f.label) || f.key)); if (el) el.focus(); return null; }
+    if (v) out[f.key] = v;
+  }
+  return out;
 }
 // Ports qu'une app ouvre sur le réseau du NAS (DNS, par exemple) : texte court, puis explication et mise en route.
 function dkStorePortsText(a) {
@@ -13330,6 +13354,7 @@ async function dkStoreAct(act, id) {
       var b = { id: id };
       if (act === 'install' && a.kind !== 'module') { b.users = dkStoreCheckedUsers(); if (!b.users.length) { toast(T('Choisissez au moins un utilisateur.')); return; } }
       if (act === 'install' && a.nas_access && a.nas_access.mode !== 'all') { b.nas = dkStoreNasCollect(); if (!b.nas) return; }
+      if (act === 'install' && a.install_fields && a.install_fields.length) { b.fields = dkStoreFieldsCollect(a); if (!b.fields) return; }
       await fileops('POST', 'store/' + act, b);
       dkStorePoll(id);
       await dkStoreLoad();
@@ -19383,7 +19408,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.52.0';
+var DK_PAGE_VERSION = '2.53.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

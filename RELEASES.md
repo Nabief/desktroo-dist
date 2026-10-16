@@ -3,6 +3,14 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.53.0 — 16 octobre 2026
+
+### Nouveau
+- **VPN (WireGuard), en test** : rejoignez votre NAS et votre réseau depuis l'extérieur. À l'installation, Desktroo demande l'adresse publique de votre box, puis génère le compte administrateur (visible dans la fiche). Une fenêtre Desktroo dédiée suivra.
+  > Moteur wg-easy (AGPL-3.0, image officielle figée par empreinte). Droits réseau étendus (NET_ADMIN, SYS_MODULE), transfert IP et dossier des modules du noyau en lecture seule ; port 51820 en UDP à rediriger vers le NAS.
+- **Réglages demandés avant l'installation** : une app du Magasin peut maintenant demander une valeur (adresse publique, par exemple), vérifiée avant de démarrer.
+  > Champs `install_fields` du catalogue ; valeurs gardées sur le NAS ; secrets dérivés propres à chaque installation (`@derive:`).
+
 ## 2.52.0 — 16 octobre 2026
 
 ### Nouveau

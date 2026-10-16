@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.52.0'
+APP_VERSION = '2.53.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10006,7 +10006,64 @@ def _store_timezone():
         return 'Europe/Paris'
 
 
-STORE_CAP_ALLOWED = ('NET_BIND_SERVICE',)   # seule capacité qu'une app peut demander (ports sous 1024)
+STORE_CAP_ALLOWED = ('NET_BIND_SERVICE', 'NET_ADMIN', 'SYS_MODULE')   # capacités qu'une app signée peut demander (ports < 1024 ; VPN)
+STORE_SYSCTL_ALLOWED = ('net.ipv4.ip_forward', 'net.ipv4.conf.all.src_valid_mark', 'net.ipv6.conf.all.disable_ipv6',
+                        'net.ipv6.conf.all.forwarding', 'net.ipv6.conf.default.forwarding')
+STORE_HOST_MOUNTS_ALLOWED = ('/lib/modules',)   # dossiers de l'hôte qu'une app peut voir, en lecture seule
+STORE_FIELDS_DIR = os.path.join(STORE_DIR, 'fields')
+_STORE_FIELD_KINDS = {
+    'host': re.compile(r'^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$|^\d{1,3}(?:\.\d{1,3}){3}$'),
+    'text': re.compile(r'^[^\r\n\x00]{1,120}$'),
+}
+
+
+def _store_install_fields(app):
+    """Réglages demandés avant l'installation (adresse publique d'un VPN, par exemple) : [{key, env, kind, required, ...}]."""
+    out = []
+    for f in (app.get('install_fields') or [])[:6]:
+        if (isinstance(f, dict) and re.match(r'^[a-z][a-z0-9_]{0,23}$', str(f.get('key') or ''))
+                and re.match(r'^[A-Z_][A-Z0-9_]*$', str(f.get('env') or '')) and f.get('kind') in _STORE_FIELD_KINDS):
+            out.append(f)
+    return out
+
+
+def _store_fields_get(app_id):
+    d = _lic_read_json(os.path.join(STORE_FIELDS_DIR, app_id + '.json'))
+    return d if isinstance(d, dict) else {}
+
+
+def _store_fields_set(app_id, vals):
+    p = os.path.join(STORE_FIELDS_DIR, app_id + '.json')
+    if vals is None:
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+        return
+    os.makedirs(STORE_FIELDS_DIR, exist_ok=True)
+    _lic_write_json(p, vals)
+
+
+def _store_fields_validate(app, raw):
+    """Valeurs saisies pour les champs d'installation ; ValueError avec un message lisible sinon."""
+    raw = raw if isinstance(raw, dict) else {}
+    out = {}
+    for f in _store_install_fields(app):
+        v = str(raw.get(f['key']) or '').strip()
+        lab = (f.get('label') or {}).get('fr') or f['key']
+        if not v:
+            if f.get('required', True):
+                raise ValueError('Indiquez : %s.' % lab)
+            continue
+        if not _STORE_FIELD_KINDS[f['kind']].match(v):
+            raise ValueError('Valeur invalide pour « %s ».' % lab)
+        out[f['key']] = v
+    return out
+
+
+def _store_derive(app_id, label):
+    """Valeur secrète propre à cette installation, recalculable (mot de passe d'une app, par exemple) : rien à mémoriser."""
+    return _st_hmac.new(_STORE_SECRET, ('app.%s.%s' % (app_id, label)).encode('utf-8'), _st_hashlib.sha256).hexdigest()[:32]
 
 
 def _store_host_ports(app):
@@ -10090,7 +10147,16 @@ def store_compose(app):
     env = {}
     for k, v in (app.get('env') or {}).items():
         if re.match(r'^[A-Z_][A-Z0-9_]*$', str(k)):
-            env[str(k)] = _store_timezone() if (v == '@host' and k == 'TZ') else str(v)
+            sv = str(v)
+            if v == '@host' and k == 'TZ':
+                sv = _store_timezone()
+            elif sv.startswith('@derive:') and re.match(r'^[a-z][a-z0-9-]{0,30}$', sv[8:]):
+                sv = _store_derive(app_id, sv[8:])
+            env[str(k)] = sv
+    fvals = _store_fields_get(app_id)
+    for f in _store_install_fields(app):
+        if fvals.get(f['key']):
+            env[f['env']] = str(fvals[f['key']])
     env['DESKTROO_APP_SECRET'] = store_app_secret(app_id)
     env['DESKTROO_APP_ID'] = app_id
     vols = []
@@ -10098,6 +10164,9 @@ def store_compose(app):
         name, mount = str(v.get('name', '')), str(v.get('mount', ''))
         if re.match(r'^[a-z0-9][a-z0-9_-]{0,30}$', name) and mount.startswith('/'):
             vols.append('%s/%s:%s' % (base, name, mount))
+    for hm in app.get('host_mounts') or []:   # dossier de l'hôte, toujours en lecture seule
+        if hm in STORE_HOST_MOUNTS_ALLOWED:
+            vols.append('%s:%s:ro' % (hm, hm))
     res = app.get('resources') or {}
     svc = {
         'image': '%s@%s' % (app['image'], app['digest']),
@@ -10127,6 +10196,9 @@ def store_compose(app):
     caps = [c for c in (app.get('cap_add') or []) if c in STORE_CAP_ALLOWED]
     if caps:
         svc['cap_add'] = caps
+    sysc = {str(k): str(v) for k, v in (app.get('sysctls') or {}).items() if k in STORE_SYSCTL_ALLOWED and str(v) in ('0', '1')}
+    if sysc:
+        svc['sysctls'] = sysc
     if _store_nas_all(app):
         _store_nas_apply_all(svc, env, app_id)
     elif app.get('nas_access'):
@@ -10299,6 +10371,12 @@ def store_install(body, update=False):
             nas_cfg = store_nas_validate(app, (body or {}).get('nas'))
         except ValueError as e:
             return 400, {'ok': False, 'error': str(e)}
+    fields_cfg = None
+    if _store_install_fields(app) and not update:
+        try:
+            fields_cfg = _store_fields_validate(app, (body or {}).get('fields'))
+        except ValueError as e:
+            return 400, {'ok': False, 'error': str(e)}
     if app_id == STORE_AG_ID and not update and store_ag_linked():
         return 409, {'ok': False, 'error': 'AdGuard Home est déjà relié (autre machine) : déliez-le d’abord pour l’installer ici.'}
     if app_id == STORE_WEB_ID and not update and store_webserver_legacy():
@@ -10326,6 +10404,8 @@ def store_install(body, update=False):
             return 400, {'ok': False, 'error': 'Choisissez au moins un utilisateur.'}
     if nas_cfg:
         _store_nas_set(app_id, nas_cfg)
+    if fields_cfg is not None:
+        _store_fields_set(app_id, fields_cfg)
     _store_job_set(app_id, action='update' if update else 'install', state='running', step='Démarrage', error='')
     _threading.Thread(target=_store_install_job, args=(app, users, update), name='store-' + app_id, daemon=True).start()
     return 202, {'ok': True, 'job': store_job_get(app_id)}
@@ -10350,6 +10430,7 @@ def store_uninstall(body):
             _store_midclt('pool.dataset.delete', _store_dataset(app_id), {'recursive': True}, timeout=300)
         reg = store_installed_get(); reg.pop(app_id, None); _store_installed_set(reg)
         _store_nas_set(app_id, None)
+        _store_fields_set(app_id, None)
         acl = store_access_get()
         if app_id in acl:
             acl.pop(app_id); _lic_write_json(STORE_ACCESS_FILE, acl)
@@ -10433,6 +10514,13 @@ def store_view():
             a['npm'] = store_npm_info()
         if _store_host_ports(a):
             a['nas_ip'] = _truenas_ip() or SSH_HOST
+        if inst and _store_install_fields(a):
+            a['fields'] = _store_fields_get(a['id'])
+        cr = a.get('credentials')
+        if inst and isinstance(cr, dict) and re.match(r'^[a-z][a-z0-9-]{0,30}$', str(cr.get('derive') or '')):
+            a['credentials'] = {'user': str(cr.get('user') or ''), 'password': _store_derive(a['id'], cr['derive'])}
+        else:
+            a.pop('credentials', None)
         if a.get('nas_access') and inst and _store_nas_all(a):
             a['nas'] = {'mode': 'all'}
         elif a.get('nas_access') and inst:
