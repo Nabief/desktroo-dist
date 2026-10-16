@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.48.0 — 15 octobre 2026
+
+### Nouveau
+- **Les apps de Desktroo Apps peuvent travailler sur vos dossiers du NAS**, quand elles en ont besoin. À l'installation, vous choisissez le compte du NAS dont l'app prend les droits et les dossiers qu'elle voit ; elle ne peut ouvrir que ce que ce compte peut ouvrir. Vous pouvez changer ce choix ensuite depuis sa fiche.
+  > Le conteneur tourne avec l'identifiant et les groupes du compte choisi ; chaque dossier est monté sous /nas, en lecture seule si vous le demandez.
+
 ## 2.47.1 — 15 octobre 2026
 
 ### Amélioré

@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.48.0 — 15 October 2026
+
+### New
+- **Desktroo Apps apps can work on your NAS folders** when they need to. At install time you choose the NAS account whose rights the app takes and the folders it sees; it can only open what that account can open. You can change this later from its page.
+  > The container runs with the chosen account's id and groups; each folder is mounted under /nas, read-only if you ask.
+
 ## 2.47.1 — 15 October 2026
 
 ### Improved

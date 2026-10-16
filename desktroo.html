@@ -9454,7 +9454,22 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Invitation envoyée à {0}.": "Invitation sent to {0}.",
 "Activation de l’envoi par e-mail… (le coffre redémarre quelques secondes)": "Turning on e-mail sending… (the vault restarts for a few seconds)",
 "Les invitations partiront depuis {0}.": "Invitations will be sent from {0}.",
-"Invitation renvoyée à {0}.": "Invitation resent to {0}."
+"Invitation renvoyée à {0}.": "Invitation resent to {0}.",
+"Dossiers du NAS": "NAS folders",
+"avec les droits de {0}, {1}": "with the rights of {0}, {1}",
+"lecture et écriture": "read and write",
+"Enregistrer les accès aux dossiers": "Save folder access",
+"Changer les dossiers du NAS": "Change the NAS folders",
+"Le compte prêté à l’app et les dossiers qu’elle peut voir.": "The account lent to the app and the folders it can see.",
+"Cette app a besoin de lire des dossiers du NAS.": "This app needs to read NAS folders.",
+"Elle les verra avec les droits du compte choisi : exactement ce que ce compte peut ouvrir, rien de plus.": "It will see them with the rights of the chosen account: exactly what this account can open, nothing more.",
+"Avec les droits de": "With the rights of",
+"Dossiers visibles par l’app": "Folders visible to the app",
+"Aucun dossier proposé sur ce NAS.": "No folder offered on this NAS.",
+"Lecture seule (l’app ne pourra rien modifier, ni mettre en quarantaine)": "Read only (the app cannot change anything, nor quarantine)",
+"Accès en lecture seule.": "Read-only access.",
+"Choisissez le compte dont l’app prendra les droits.": "Choose the account whose rights the app will take.",
+"Cochez au moins un dossier.": "Tick at least one folder."
 }
 </script>
 <script id="dk-i18n">
@@ -12968,6 +12983,7 @@ function dkStoreRenderDetail(body, a) {
   } else if (!running) {
     if (!inst) {
       h += '<div class="web-group-title">' + T('Qui pourra l’utiliser') + '</div><div class="web-group dks-pad">' + dkStoreUsersHtml([currentUser]) + '</div>';
+      if (a.nas_access) h += dkStoreNasHtml(a, null);
       if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Cette app demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
       else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer une app.') + '</p>';
     } else {
@@ -12983,9 +12999,13 @@ function dkStoreRenderDetail(body, a) {
         + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateLabel(inst.state)) + '</dd>'
         + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
         + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd>'
+        + (a.nas && a.nas.user ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + webEsc(a.nas.paths.join(', ')) + '<br><span class="dks-tag">'
+            + webEsc(Tf('avec les droits de {0}, {1}', a.nas.user, a.nas.mode === 'rw' ? T('lecture et écriture') : T('lecture seule'))) + '</span></dd>' : '')
         + ((inst.standalone || a.standalone) ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(location.origin + '/a/' + a.id + '/') + '</span><button class="web-mini" onclick="dkStoreCopyUrl(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
         + '</dl>'
+        + (a.nas_access ? (_dkStore.nasEdit === a.id ? dkStoreNasHtml(a, a.nas) + '<div class="dks-acts"><button class="web-open" onclick="dkStoreAct(\'nas\',\'' + a.id + '\')">' + T('Enregistrer les accès aux dossiers') + '</button><button class="fs-btn" onclick="_dkStore.nasEdit=null;dkStoreRender()">' + T('Annuler') + '</button></div>' : '') : '')
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
+        + (a.nas_access && _dkStore.nasEdit !== a.id ? wmRow('_dkStore.nasEdit=\'' + a.id + '\';dkStoreRender()', T('Changer les dossiers du NAS'), T('Le compte prêté à l’app et les dossiers qu’elle peut voir.')) : '')
         + wmRow('dkStoreAct(\'uninstall\',\'' + a.id + '\')', T('Désinstaller'), T('Retire l’app du NAS. Vous choisirez de garder ou non ses données.'), 'danger') + '</div>';
     }
   }
@@ -13008,6 +13028,40 @@ function dkStoreNpmFacts(a, inst) {
     + '<dt>' + T('Administration') + '</dt><dd><span class="mono">' + webEsc('https://' + location.hostname + ':' + p.admin + '/') + '</span></dd>'
     + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd></dl>';
 }
+// Accès aux dossiers du NAS : le compte TrueNAS dont l'app prend les droits, et les dossiers qu'elle voit.
+function dkStoreNasHtml(a, cur) {
+  var ch = _dkStore.nasChoices, w = a.nas_access || {};
+  if (!ch) { dkStoreNasLoad(); return '<div class="web-group-title">' + T('Dossiers du NAS') + '</div><div class="dks-tag">' + T('Chargement…') + '</div>'; }
+  cur = cur || {};
+  var sel = cur.user || (ch.users.some(function(u) { return u.username === currentUser; }) ? currentUser : (ch.users[0] || {}).username);
+  var h = '<div class="web-group-title">' + T('Dossiers du NAS') + '</div><div class="web-group dks-pad" id="dks-nas">'
+    + '<div class="dks-tag" style="margin-bottom:10px;">' + webEsc(dkStoreName(w.why) || T('Cette app a besoin de lire des dossiers du NAS.')) + ' '
+    + T('Elle les verra avec les droits du compte choisi : exactement ce que ce compte peut ouvrir, rien de plus.') + '</div>'
+    + formRow(T('Avec les droits de'), '<select id="dks-nas-user" style="' + iStyle() + '">' + ch.users.map(function(u) {
+        return '<option value="' + webEsc(u.username) + '"' + (u.username === sel ? ' selected' : '') + '>' + webEsc(u.username + (u.full_name ? ' (' + u.full_name + ')' : '')) + '</option>'; }).join('') + '</select>')
+    + '<div style="margin-top:10px;font-size:12px;color:var(--text-dim);">' + T('Dossiers visibles par l’app') + '</div>'
+    + '<div class="dks-users" style="max-height:220px;overflow:auto;margin-top:6px;">' + (ch.datasets.length ? ch.datasets.map(function(d) {
+        return '<label><input type="checkbox" class="dks-nas-path" value="' + webEsc(d.path) + '"' + ((cur.paths || []).indexOf(d.path) >= 0 ? ' checked' : '') + '> <span class="mono">' + webEsc(d.path) + '</span></label>'; }).join('')
+      : '<span class="dks-tag">' + T('Aucun dossier proposé sur ce NAS.') + '</span>') + '</div>'
+    + (w.mode === 'rw' ? '<label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;"><input type="checkbox" id="dks-nas-ro"' + (cur.mode === 'ro' ? ' checked' : '') + '> '
+        + T('Lecture seule (l’app ne pourra rien modifier, ni mettre en quarantaine)') + '</label>' : '<div class="dks-tag" style="margin-top:8px;">' + T('Accès en lecture seule.') + '</div>')
+    + '</div>';
+  return h;
+}
+async function dkStoreNasLoad() {
+  if (_dkStore.nasLoading) return;
+  _dkStore.nasLoading = true;
+  try { _dkStore.nasChoices = await fileops('GET', 'store/nas/choices'); } catch (e) { _dkStore.nasChoices = { users: [], datasets: [] }; }
+  _dkStore.nasLoading = false;
+  dkStoreRender();
+}
+function dkStoreNasCollect() {
+  var u = document.getElementById('dks-nas-user'), ro = document.getElementById('dks-nas-ro');
+  var paths = Array.prototype.slice.call(document.querySelectorAll('.dks-nas-path:checked')).map(function(x) { return x.value; });
+  if (!u || !u.value) { toast(T('Choisissez le compte dont l’app prendra les droits.')); return null; }
+  if (!paths.length) { toast(T('Cochez au moins un dossier.')); return null; }
+  return { user: u.value, paths: paths, readonly: !!(ro && ro.checked) };
+}
 async function dkStoreAct(act, id) {
   var a = dkStoreApp(id); if (!a) return;
   var name = dkStoreName(a.name) || id;
@@ -13015,7 +13069,14 @@ async function dkStoreAct(act, id) {
     if (act === 'install' || act === 'update') {
       var b = { id: id };
       if (act === 'install' && a.kind !== 'module') { b.users = dkStoreCheckedUsers(); if (!b.users.length) { toast(T('Choisissez au moins un utilisateur.')); return; } }
+      if (act === 'install' && a.nas_access) { b.nas = dkStoreNasCollect(); if (!b.nas) return; }
       await fileops('POST', 'store/' + act, b);
+      dkStorePoll(id);
+      await dkStoreLoad();
+    } else if (act === 'nas') {
+      var nas = dkStoreNasCollect(); if (!nas) return;
+      await fileops('POST', 'store/nas', Object.assign({ id: id }, nas));
+      _dkStore.nasEdit = null;
       dkStorePoll(id);
       await dkStoreLoad();
     } else if (act === 'link') {
@@ -18701,7 +18762,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.47.1';
+var DK_PAGE_VERSION = '2.48.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {

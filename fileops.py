@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.47.1'
+APP_VERSION = '2.48.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9706,6 +9706,9 @@ def _store_get(handler, path, qs):
         handler.end_headers()
         handler.wfile.write(body)
         return True
+    if path == '/store/nas/choices':
+        handler._json(200, store_nas_choices())
+        return True
     if path == '/store/pass/state':
         handler._json(200, store_pass_state())
         return True
@@ -9757,6 +9760,7 @@ _STORE_POST = {
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
     '/store/pass/mail': lambda b: store_pass_mail(b),
+    '/store/nas': lambda b: store_nas_update(b),
 }
 
 
@@ -10032,6 +10036,8 @@ def store_compose(app):
         svc['cpus'] = float(res['cpus'])
     if isinstance(app.get('command'), list) and app['command']:
         svc['command'] = [str(x) for x in app['command']]
+    if app.get('nas_access'):
+        _store_nas_apply(svc, env, app_id)
     return {'services': {'app': svc}, 'networks': {STORE_NET: {'external': True}}}
 
 
@@ -10058,6 +10064,9 @@ def _store_prepare_data(app):
         if code != 0 or not out.strip():
             _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
     owner = str(app.get('run_as') or '568:568')
+    nas = _store_nas_get(app['id']) if app.get('nas_access') else None
+    if nas:   # l'app tourne sous le compte prêté : ses propres données lui appartiennent
+        owner = '%d:%d' % (int(nas['uid']), int(nas['gid']))
     if not re.match(r'^\d+:\d+$', owner):
         raise RuntimeError('run_as invalide dans le catalogue.')
     base = '/mnt/' + ds
@@ -10186,8 +10195,12 @@ def store_install(body, update=False):
         return 404, {'ok': False, 'error': 'App absente du catalogue.'}
     if _store_vtuple(app.get('min_desktroo')) > _store_vtuple(APP_VERSION):
         return 409, {'ok': False, 'error': 'Cette app demande Desktroo %s ou plus récent : mettez Desktroo à jour.' % app.get('min_desktroo')}
-    if app.get('nas_access'):
-        return 409, {'ok': False, 'error': 'Cette app demande l’accès à des dossiers du NAS : prise en charge dans une prochaine version de Desktroo.'}
+    nas_cfg = None
+    if app.get('nas_access') and not update:
+        try:
+            nas_cfg = store_nas_validate(app, (body or {}).get('nas'))
+        except ValueError as e:
+            return 400, {'ok': False, 'error': str(e)}
     if app_id == STORE_WEB_ID and not update and store_webserver_legacy():
         return 409, {'ok': False, 'error': 'Le serveur web tourne encore dans Desktroo : il sera migré automatiquement.'}
     if app_id == STORE_NPM_ID and not update and app_id not in store_installed_get():
@@ -10206,6 +10219,8 @@ def store_install(body, update=False):
         users = [str(u)[:64] for u in users if u][:50]
         if not users:
             return 400, {'ok': False, 'error': 'Choisissez au moins un utilisateur.'}
+    if nas_cfg:
+        _store_nas_set(app_id, nas_cfg)
     _store_job_set(app_id, action='update' if update else 'install', state='running', step='Démarrage', error='')
     _threading.Thread(target=_store_install_job, args=(app, users, update), name='store-' + app_id, daemon=True).start()
     return 202, {'ok': True, 'job': store_job_get(app_id)}
@@ -10229,6 +10244,7 @@ def store_uninstall(body):
         if not keep and not module:
             _store_midclt('pool.dataset.delete', _store_dataset(app_id), {'recursive': True}, timeout=300)
         reg = store_installed_get(); reg.pop(app_id, None); _store_installed_set(reg)
+        _store_nas_set(app_id, None)
         acl = store_access_get()
         if app_id in acl:
             acl.pop(app_id); _lic_write_json(STORE_ACCESS_FILE, acl)
@@ -10310,6 +10326,9 @@ def store_view():
         a['job'] = store_job_get(a['id']) or None
         if a['id'] == STORE_NPM_ID:
             a['npm'] = store_npm_info()
+        if a.get('nas_access') and inst:
+            cfg = _store_nas_get(a['id']) or {}
+            a['nas'] = {'user': cfg.get('user'), 'mode': cfg.get('mode'), 'paths': [m['path'] for m in cfg.get('mounts') or []]}
         apps.append(a)
     # Une app installée mais retirée du catalogue reste visible : on peut toujours l'ouvrir et la désinstaller.
     known = {a['id'] for a in apps}
@@ -11461,6 +11480,142 @@ def store_pass_domain(body):
     # /admin n'est jamais servi sur Internet : l'administration passe par Desktroo.
     return store_npm_host_add({'domains': [dom], 'host': host, 'port': port, 'https': True},
                               advanced='location /admin { return 404; }', then=then)
+
+
+# ── MDM-STORE-V1 · accès des apps aux dossiers du NAS (« nas_access » dans le catalogue) ────────────────
+# Une app qui le déclare voit les dossiers que l'administrateur a cochés, sous /nas/<nom>, avec les droits d'un
+# utilisateur TrueNAS qu'il a choisi : le conteneur tourne sous son uid, son groupe et ses groupes secondaires.
+# Elle voit donc exactement ce que voit ce compte, ni plus ni moins, et aucune permission du NAS n'est modifiée.
+# Lecture seule ou lecture-écriture selon ce que l'app déclare ; l'administrateur peut imposer la lecture seule.
+STORE_NAS_DIR = os.path.join(STORE_DIR, 'nas')
+_STORE_NAS_SKIP = re.compile(r'(^|/)(\.system|ix-apps|\.ix-apps|ix-applications|desktroo-apps)(/|$)|^boot-pool')
+
+
+def _store_nas_get(app_id):
+    return _lic_read_json(os.path.join(STORE_NAS_DIR, app_id + '.json')) or None
+
+
+def _store_nas_set(app_id, cfg):
+    os.makedirs(STORE_NAS_DIR, exist_ok=True)
+    p = os.path.join(STORE_NAS_DIR, app_id + '.json')
+    if cfg is None:
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+    else:
+        _lic_write_json(p, cfg)
+
+
+def store_nas_choices():
+    """Comptes et dossiers proposés à la fiche d'une app qui demande l'accès au NAS."""
+    users = []
+    try:
+        rows = _store_midclt('user.query', [['builtin', '=', False], ['locked', '=', False]],
+                             {'select': ['username', 'full_name', 'uid']}, timeout=60) or []
+        users = [{'username': r['username'], 'full_name': r.get('full_name') or '', 'uid': r.get('uid')}
+                 for r in rows if isinstance(r, dict) and r.get('username')]
+    except Exception as e:
+        log.warning('Magasin : comptes du NAS illisibles : %s', e)
+    out, _e, _c = _px_host('zfs list -H -o name,mountpoint -t filesystem 2>/dev/null', timeout=60)
+    datasets = []
+    for line in (out or '').splitlines():
+        name, _s, mp = line.partition('\t')
+        name, mp = name.strip(), mp.strip()
+        if not mp.startswith('/mnt/') or _STORE_NAS_SKIP.search(name) or name.count('/') > 3 or '/' not in name:
+            continue
+        datasets.append({'name': name, 'path': mp})
+    datasets.sort(key=lambda d: d['path'].lower())
+    return {'users': users, 'datasets': datasets}
+
+
+def _store_nas_ids(username):
+    out, err, code = _px_host('id -u %s && id -g %s && id -G %s' % (shq(username), shq(username), shq(username)), timeout=20)
+    lines = (out or '').split()
+    if code != 0 or len(lines) < 3 or not all(x.isdigit() for x in lines):
+        raise ValueError('Compte introuvable sur le NAS : ' + username)
+    uid, gid = int(lines[0]), int(lines[1])
+    if uid == 0:
+        raise ValueError('Le compte root ne peut pas être prêté à une app.')
+    groups = sorted({int(x) for x in lines[2:]} - {gid})
+    return uid, gid, groups
+
+
+def store_nas_validate(app, body):
+    """Configuration d'accès à partir du choix de l'administrateur ; ValueError avec un message lisible sinon."""
+    want = (app or {}).get('nas_access') or {}
+    nas = body if isinstance(body, dict) else {}
+    user = str(nas.get('user') or '').strip()
+    paths = [str(p).rstrip('/') for p in (nas.get('paths') or []) if str(p).strip()][:20]
+    if not user:
+        raise ValueError('Choisissez le compte dont l’app prendra les droits.')
+    if not paths:
+        raise ValueError('Cochez au moins un dossier.')
+    ch = store_nas_choices()
+    if user not in [u['username'] for u in ch['users']]:
+        raise ValueError('Compte non proposé : ' + user)
+    allowed = {d['path'] for d in ch['datasets']}
+    bad = [p for p in paths if p not in allowed]
+    if bad:
+        raise ValueError('Dossier non proposé : ' + ', '.join(bad))
+    uid, gid, groups = _store_nas_ids(user)
+    mode = 'ro' if (str(want.get('mode') or 'ro') != 'rw' or nas.get('readonly')) else 'rw'
+    mounts, seen = [], set()
+    for p in paths:
+        base = re.sub(r'[^A-Za-z0-9_.-]', '_', p.rsplit('/', 1)[-1]) or 'dossier'
+        label, i = base, 2
+        while label.lower() in seen:
+            label = '%s-%d' % (base, i); i += 1
+        seen.add(label.lower())
+        mounts.append({'path': p, 'label': label, 'mount': '/nas/' + label})
+    return {'user': user, 'uid': uid, 'gid': gid, 'groups': groups, 'mode': mode, 'mounts': mounts,
+            'at': int(_st_time.time())}
+
+
+def _store_nas_apply(svc, env, app_id):
+    """Ajoute au service d'une app ses dossiers du NAS et l'identité du compte prêté."""
+    cfg = _store_nas_get(app_id)
+    if not cfg:
+        return None
+    svc['user'] = '%d:%d' % (int(cfg['uid']), int(cfg['gid']))
+    if cfg.get('groups'):
+        svc['group_add'] = [str(int(g)) for g in cfg['groups']]
+    flag = 'ro' if cfg.get('mode') != 'rw' else 'rw'
+    for m in cfg.get('mounts') or []:
+        svc['volumes'].append('%s:%s:%s' % (m['path'], m['mount'], flag))
+    env['DESKTROO_NAS'] = json.dumps([{'label': m['label'], 'mount': m['mount'], 'path': m['path'], 'mode': flag}
+                                      for m in cfg.get('mounts') or []], ensure_ascii=False)
+    env['DESKTROO_NAS_USER'] = cfg.get('user') or ''
+    return cfg
+
+
+def store_nas_update(body):
+    """Change le compte ou les dossiers d'une app installée, puis la redéploie."""
+    app_id = str((body or {}).get('id') or '')
+    reg = store_installed_get()
+    if not _STORE_ID_RE.match(app_id) or app_id not in reg:
+        return 404, {'ok': False, 'error': 'App non installée.'}
+    app = store_app_entry(app_id)
+    if not app or not app.get('nas_access'):
+        return 409, {'ok': False, 'error': 'Cette app n’utilise pas les dossiers du NAS.'}
+    if _store_running(app_id):
+        return 409, {'ok': False, 'error': 'Une opération est déjà en cours sur cette app.'}
+    try:
+        cfg = store_nas_validate(app, body)
+    except ValueError as e:
+        return 400, {'ok': False, 'error': str(e)}
+    _store_nas_set(app_id, cfg)
+    _store_job_set(app_id, action='nas', state='running', step='Application des nouveaux accès', error='')
+
+    def run():
+        try:
+            _store_prepare_data(app)
+            _store_midclt('app.update', 'dt-' + app_id, {'custom_compose_config': store_compose(app)}, job=True, timeout=900)
+            _store_job_set(app_id, state='done', step='Accès mis à jour', error='')
+        except Exception as e:
+            _store_job_set(app_id, state='error', error=_store_explain(e))
+    _threading.Thread(target=run, name='store-nas-' + app_id, daemon=True).start()
+    return 202, {'ok': True}
 
 
 # Kit des apps (servi sous /a/_sdk/ par nginx → fileops). Embarqué ici : rien à distribuer en plus.
