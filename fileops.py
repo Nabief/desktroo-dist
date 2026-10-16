@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.50.0'
+APP_VERSION = '2.50.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10014,27 +10014,47 @@ def _store_host_ports(app):
             continue
         proto = str(x.get('proto') or 'tcp').lower()
         if 1 <= port <= 65535 and proto in ('tcp', 'udp', 'both') and port not in (22, 80, 443):
-            out.append({'port': port, 'proto': proto, 'label': x.get('label') or {}})
+            out.append({'port': port, 'proto': proto, 'label': x.get('label') or {}, 'bind': 'all' if x.get('bind') == 'all' else 'lan'})
     return out
+
+
+def _store_bind_ip():
+    """Adresse du NAS sur le réseau local, pour n'ouvrir un port que là (et non sur toutes les adresses : le réseau
+    interne des machines virtuelles, par exemple, a déjà son propre serveur DNS). '' si elle est introuvable."""
+    for fn in (_truenas_ip, _nas_lan_ip):
+        try:
+            ip = str(fn() or '')
+        except Exception:
+            continue
+        if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', ip) and not ip.startswith(('127.', '0.')):
+            return ip
+    return ''
 
 
 def _store_proto_list(x):
     return ('tcp', 'udp') if x['proto'] == 'both' else (x['proto'],)
 
 
-def _store_ports_busy(specs):
-    """Ports (parmi ceux demandés) déjà pris sur le NAS, en TCP ou en UDP."""
-    out, _e, _c = _px_host("ss -Hltun 2>/dev/null | awk '{print $1, $5}'", timeout=30)
-    used = set()
+def _store_ports_busy(specs, ip=''):
+    """Ports (parmi ceux demandés) déjà pris sur le NAS, en TCP ou en UDP : {port: nom du programme ou ''}."""
+    out, _e, _c = _px_host("ss -Hltunp 2>/dev/null", timeout=30)
+    used = {}
     for line in (out or '').splitlines():
         parts = line.split()
-        m = re.search(r':(\d+)$', parts[1]) if len(parts) == 2 else None
+        if len(parts) < 5:
+            continue
+        m = re.search(r'^(.*):(\d+)$', parts[4])
         if m:
-            used.add((parts[0], int(m.group(1))))
-    busy = []
+            addr = m.group(1).strip('[]')
+            pm = re.search(r'users:\(\("([^"]+)"', line)
+            for x in specs:   # une adresse précise ailleurs que la nôtre ne gêne pas ; l'adresse « toutes » gêne toujours
+                if int(m.group(2)) == x['port'] and (x['bind'] == 'all' or not ip or addr in ('*', '0.0.0.0', '::', ip)):
+                    used[(parts[0], x['port'])] = pm.group(1) if pm else ''
+    busy = {}
     for x in specs:
-        if any((pr, x['port']) in used for pr in _store_proto_list(x)) and x['port'] not in busy:
-            busy.append(x['port'])
+        for pr in _store_proto_list(x):
+            if (pr, x['port']) in used and (x['port'] not in busy or not busy[x['port']]):
+                busy[x['port']] = used[(pr, x['port'])]
     return busy
 
 
@@ -10094,7 +10114,9 @@ def store_compose(app):
         svc['command'] = [str(x) for x in app['command']]
     hp = _store_host_ports(app)
     if hp:   # services que l'app offre au réseau local (DNS, par exemple) : seuls ces ports sont ouverts
-        svc['ports'] = ['%d:%d/%s' % (x['port'], x['port'], pr) for x in hp for pr in _store_proto_list(x)]
+        ip = _store_bind_ip()
+        svc['ports'] = [('%s:' % ip if (ip and x['bind'] == 'lan') else '') + '%d:%d/%s' % (x['port'], x['port'], pr)
+                        for x in hp for pr in _store_proto_list(x)]
     caps = [c for c in (app.get('cap_add') or []) if c in STORE_CAP_ALLOWED]
     if caps:
         svc['cap_add'] = caps
@@ -10284,10 +10306,10 @@ def store_install(body, update=False):
     if _store_running(app_id):
         return 409, {'ok': False, 'error': 'Une opération est déjà en cours sur cette app.'}
     if not update:
-        busy = _store_ports_busy(_store_host_ports(app)) if _store_host_ports(app) else []
+        busy = _store_ports_busy(_store_host_ports(app), _store_bind_ip()) if _store_host_ports(app) else {}
         if busy:
-            return 409, {'ok': False, 'error': 'Le port %s est déjà utilisé sur ce NAS%s. Arrêtez ce service avant d’installer cette app.' % (
-                ', '.join(str(x) for x in busy), ' (un autre serveur DNS, par exemple Pi-hole)' if 53 in busy else '')}
+            who = ', '.join('%d (%s)' % (k, v or 'programme inconnu') for k, v in sorted(busy.items()))
+            return 409, {'ok': False, 'error': 'Port déjà utilisé sur ce NAS : %s. Arrêtez ce service avant d’installer cette app.' % who}
     users = body.get('users') if isinstance(body.get('users'), list) else None
     if users is not None:
         users = [str(u)[:64] for u in users if u][:50]

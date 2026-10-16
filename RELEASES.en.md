@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.50.1 — 16 October 2026
+
+### Fixed
+- **An app that offers a network service (AdGuard Home) no longer clashes with the virtual machines' internal network.** Its DNS port is opened on the NAS address only, not on every address, so it coexists with TrueNAS's virtual-machine DNS server.
+- **When a requested port is really taken, Desktroo names the program using it** (for example "53 (pihole-FTL)").
+
 ## 2.50.0 — 16 October 2026
 
 ### New
