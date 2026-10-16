@@ -3,6 +3,18 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.49.0 — 16 October 2026
+
+### Improved
+- **The Antivirus needs no setup any more.** Install it: it scans every NAS folder, with no account to pick and no rights to check. It reads your files but cannot change them; when it finds a dangerous file, Desktroo moves it to quarantine, and puts it back if you ask.
+  > The app runs with no privilege except reading, each folder mounted read-only. It asks Desktroo for moves, and Desktroo checks its identity and the path first.
+- **A NPMplus installed on another machine can be linked to Desktroo** (box, virtual machine, other computer on the network). In Desktroo Apps, NPMplus page, "Link a remote NPMplus": its administration address and an administrator account. Your domains and certificates are then managed in the Domains window, like a local NPMplus; sites are sent to this NAS's address.
+  > Desktroo only talks to that NPMplus's API, without touching its installation. The account must not use two-factor authentication, and the machine must be able to reach the NAS.
+- **No need to go through TrueNAS to manage an account any more.** From Access rights, you edit the account (name, e-mail, groups, home folder), change its password and manage group members, in Desktroo's Users window.
+- **The read-only option can no longer be ticked by mistake**, for apps that ask to change your folders: access is chosen from a list right under the account.
+- **Widget shadows now fade into the desktop** instead of stopping in straight lines at the edges of the widget zones.
+- **Hidden NAS folders are no longer offered to apps** (container and virtual machine disks).
+
 ## 2.48.0 — 15 October 2026
 
 ### New

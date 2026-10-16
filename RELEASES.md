@@ -3,6 +3,18 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.49.0 — 16 octobre 2026
+
+### Amélioré
+- **L'Antivirus ne demande plus aucun réglage.** Installez-le : il analyse tous les dossiers du NAS, sans compte à choisir ni droits à vérifier. Il lit vos fichiers mais ne peut rien y modifier ; quand il trouve un fichier dangereux, c'est Desktroo qui le met en quarantaine, et qui le remet en place si vous le demandez.
+  > L'app tourne sans aucun privilège sauf celui de lire, chaque dossier monté en lecture seule. Elle demande les déplacements à Desktroo, qui vérifie son identité et le chemin avant d'agir.
+- **Un NPMplus installé sur une autre machine peut être relié à Desktroo** (box, machine virtuelle, autre ordinateur du réseau). Dans Desktroo Apps, fiche NPMplus, « Relier un NPMplus distant » : adresse de son administration et un compte administrateur. Vos domaines et certificats se gèrent ensuite dans la fenêtre Domaines, comme pour un NPMplus local ; les sites sont envoyés vers l'adresse de ce NAS.
+  > Desktroo ne parle qu'à l'API de ce NPMplus, sans toucher à son installation. Le compte ne doit pas avoir la double authentification, et la machine doit pouvoir joindre le NAS.
+- **Plus besoin de passer par TrueNAS pour gérer un compte.** Depuis Droits d'accès, vous modifiez le compte (nom, e-mail, groupes, dossier personnel), changez son mot de passe et gérez les membres d'un groupe, dans la fenêtre Utilisateurs de Desktroo.
+- **Le choix « lecture seule » ne se coche plus par mégarde**, pour les apps qui demandent à modifier vos dossiers : l'accès se choisit dans une liste, juste sous le compte.
+- **L'ombre des widgets se fond dans le bureau** au lieu de s'arrêter en lignes droites sur les bords des zones de widgets.
+- **Les dossiers cachés du NAS ne sont plus proposés aux apps** (disques des conteneurs et des machines virtuelles).
+
 ## 2.48.0 — 15 octobre 2026
 
 ### Nouveau

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.48.0'
+APP_VERSION = '2.49.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9955,12 +9955,13 @@ def store_installed_list():
     linked = (_lic_read_json(STORE_NPM_FILE) or {}).get('linked') if STORE_NPM_ID not in reg else None
     if linked:   # NPMplus relié : une icône « Domaines » au bureau, sans que Desktroo Apps le gère
         try:
-            running = _store_container_info(linked.get('container') or '')[1]
+            running = True if linked.get('remote') else _store_container_info(linked.get('container') or '')[1]
         except Exception:
             running = False
         out.append({'id': STORE_NPM_ID, 'name': {'fr': 'NPMplus', 'en': 'NPMplus'}, 'kind': 'module', 'linked': True,
                     'version': '', 'state': 'RUNNING' if running else 'STOPPED', 'users': None,
-                    'container': linked.get('container'), 'ports': store_npm_settings()['ports']})
+                    'container': linked.get('container'), 'remote': linked.get('url') if linked.get('remote') else '',
+                    'ports': store_npm_settings()['ports']})
     for app_id, rec in reg.items():
         r = dict(rec or {}); r['id'] = app_id
         r['state'] = states.get('dt-' + app_id, 'MISSING' if states else 'UNKNOWN')
@@ -10036,7 +10037,9 @@ def store_compose(app):
         svc['cpus'] = float(res['cpus'])
     if isinstance(app.get('command'), list) and app['command']:
         svc['command'] = [str(x) for x in app['command']]
-    if app.get('nas_access'):
+    if _store_nas_all(app):
+        _store_nas_apply_all(svc, env, app_id)
+    elif app.get('nas_access'):
         _store_nas_apply(svc, env, app_id)
     return {'services': {'app': svc}, 'networks': {STORE_NET: {'external': True}}}
 
@@ -10064,7 +10067,9 @@ def _store_prepare_data(app):
         if code != 0 or not out.strip():
             _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
     owner = str(app.get('run_as') or '568:568')
-    nas = _store_nas_get(app['id']) if app.get('nas_access') else None
+    nas = _store_nas_get(app['id']) if (app.get('nas_access') and not _store_nas_all(app)) else None
+    if _store_nas_all(app):
+        owner = '0:0'
     if nas:   # l'app tourne sous le compte prêté : ses propres données lui appartiennent
         owner = '%d:%d' % (int(nas['uid']), int(nas['gid']))
     if not re.match(r'^\d+:\d+$', owner):
@@ -10075,7 +10080,9 @@ def _store_prepare_data(app):
         name = str(v.get('name', ''))
         if re.match(r'^[a-z0-9][a-z0-9_-]{0,30}$', name):
             p = base + '/' + name
-            cmds.append('mkdir -p %s && chown %s %s' % (shq(p), owner, shq(p)))
+            # Propriétaire changé (autre compte, ou passage en « tout le NAS ») : tout le contenu suit, sinon l'app
+            # ne peut plus écrire dans ses propres fichiers.
+            cmds.append('mkdir -p {p} && {{ [ "$(stat -c %u:%g {p})" = {o} ] || chown -R {o} {p}; }}'.format(p=shq(p), o=owner))
     if cmds:
         _o, err, code = _px_host(' && '.join(cmds), timeout=60)
         if code != 0:
@@ -10196,7 +10203,7 @@ def store_install(body, update=False):
     if _store_vtuple(app.get('min_desktroo')) > _store_vtuple(APP_VERSION):
         return 409, {'ok': False, 'error': 'Cette app demande Desktroo %s ou plus récent : mettez Desktroo à jour.' % app.get('min_desktroo')}
     nas_cfg = None
-    if app.get('nas_access') and not update:
+    if app.get('nas_access') and not update and not _store_nas_all(app):
         try:
             nas_cfg = store_nas_validate(app, (body or {}).get('nas'))
         except ValueError as e:
@@ -10326,7 +10333,9 @@ def store_view():
         a['job'] = store_job_get(a['id']) or None
         if a['id'] == STORE_NPM_ID:
             a['npm'] = store_npm_info()
-        if a.get('nas_access') and inst:
+        if a.get('nas_access') and inst and _store_nas_all(a):
+            a['nas'] = {'mode': 'all'}
+        elif a.get('nas_access') and inst:
             cfg = _store_nas_get(a['id']) or {}
             a['nas'] = {'user': cfg.get('user'), 'mode': cfg.get('mode'), 'paths': [m['path'] for m in cfg.get('mounts') or []]}
         apps.append(a)
@@ -10950,15 +10959,21 @@ _NPM_API = {'cookie': '', 'until': 0, 'fails': 0, 'job': {}}
 _NPM_API_LOCK = _threading.Lock()
 
 
+def store_npm_remote():
+    """Adresse de l'API d'un NPMplus installé sur une autre machine (box, VM, Raspberry…), ou ''."""
+    lk = (_lic_read_json(STORE_NPM_FILE) or {}).get('linked') or {}
+    return str(lk.get('url') or '') if lk.get('remote') else ''
+
+
 def _npm_base():
-    return 'https://%s:%d' % (SSH_HOST, store_npm_settings()['ports']['admin'])
+    return store_npm_remote() or 'https://%s:%d' % (SSH_HOST, store_npm_settings()['ports']['admin'])
 
 
-def _npm_http(method, path, body=None, cookie='', timeout=30):
+def _npm_http(method, path, body=None, cookie='', timeout=30, base=None):
     import ssl, urllib.request, urllib.error
     ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
     data = json.dumps(body).encode('utf-8') if body is not None else None
-    req = urllib.request.Request(_npm_base() + '/api' + path, data=data, method=method)
+    req = urllib.request.Request((base or _npm_base()) + '/api' + path, data=data, method=method)
     req.add_header('Accept', 'application/json')
     if data is not None:
         req.add_header('Content-Type', 'application/json')
@@ -10981,8 +10996,8 @@ def _npm_err(out, code):
     return str(msg or 'NPMplus a répondu %s' % code)
 
 
-def _npm_login(email, password):
-    code, out, hdrs = _npm_http('POST', '/tokens', {'identity': email, 'secret': password}, timeout=20)
+def _npm_login(email, password, base=None):
+    code, out, hdrs = _npm_http('POST', '/tokens', {'identity': email, 'secret': password}, timeout=20, base=base)
     if code != 200:
         raise PermissionError(_npm_err(out, code))
     if isinstance(out, dict) and out.get('requires_2fa'):
@@ -11062,7 +11077,8 @@ def _npm_host_view(h):
 
 def store_npm_state():
     s = _lic_read_json(STORE_NPM_FILE) or {}
-    if s.get('linked') and STORE_NPM_ID not in store_installed_get():
+    remote = store_npm_remote()
+    if s.get('linked') and not remote and STORE_NPM_ID not in store_installed_get():
         try:   # NPMplus relié : ses ports peuvent changer de son côté (réglages de l'app TrueNAS)
             f = store_npm_foreign()
             if f and f.get('ports') and f['ports'] != s.get('ports'):
@@ -11072,7 +11088,8 @@ def store_npm_state():
     inst = STORE_NPM_ID in store_installed_get() or bool(s.get('linked'))
     ports = dict(STORE_NPM_DEFAULT_PORTS); ports.update(s.get('ports') or {})
     st = {'installed': inst, 'linked': bool(s.get('linked')), 'ports': ports, 'job': dict(_NPM_API['job']) or None, 'login': False, 'hosts': [],
-          'account': ((s.get('api') or {}).get('email') or '')}
+          'account': ((s.get('api') or {}).get('email') or ''), 'remote': remote,
+          'nas_host': (_truenas_ip() or SSH_HOST) if remote else ''}
     if not inst:
         return st
     try:
@@ -11124,6 +11141,8 @@ def store_npm_host_add(body, advanced='', then=None):
     except Exception:
         return 400, {'ok': False, 'error': 'Port invalide.'}
     host = str(body.get('host') or '127.0.0.1').strip()
+    if store_npm_remote() and host in ('127.0.0.1', 'localhost', '::1'):
+        host = _truenas_ip() or SSH_HOST    # NPMplus sur une autre machine : l'adresse du NAS sur le réseau
     if not re.match(r'^[A-Za-z0-9.\-:\[\]]{1,253}$', host):
         return 400, {'ok': False, 'error': 'Adresse de destination invalide.'}
     scheme = 'https' if body.get('scheme') == 'https' else 'http'
@@ -11155,6 +11174,9 @@ def store_npm_host_add(body, advanced='', then=None):
 def _npm_explain(t):
     if re.search(r'already in use', t, re.I):
         return 'Ce domaine est déjà publié.'
+    if re.search(r'letsencrypt|certbot|challenge|acme|unauthorized|connection|timeout|dns', t, re.I) and store_npm_remote():
+        return ('Le certificat n’a pas pu être obtenu. Vérifiez que le domaine pointe vers votre adresse publique et que la box '
+                'redirige le port 80 vers la machine qui héberge NPMplus. Détail : %s' % t[:200])
     if re.search(r'letsencrypt|certbot|challenge|acme|unauthorized|connection|timeout|dns', t, re.I):
         return ('Le certificat n’a pas pu être obtenu. Vérifiez que le domaine pointe vers votre adresse publique et que la box '
                 'redirige le port 80 vers ce NAS (port %d). Détail : %s' % (store_npm_settings()['ports']['http'], t[:200]))
@@ -11196,8 +11218,79 @@ def store_npm_linked():
     return (_lic_read_json(STORE_NPM_FILE) or {}).get('linked') or None
 
 
+def _npm_remote_url(raw):
+    """Adresse saisie → https://hôte:port, ou ValueError lisible. Admin de NPMplus : https, port 81 par défaut."""
+    import urllib.parse as _up, ipaddress as _ip
+    t = str(raw or '').strip()
+    if not t:
+        raise ValueError('Indiquez l’adresse de NPMplus (exemple : https://192.168.0.50:81).')
+    if '://' not in t:
+        t = 'https://' + t
+    u = _up.urlsplit(t)
+    host = (u.hostname or '').lower()
+    if u.scheme not in ('http', 'https') or not host or u.username or u.password:
+        raise ValueError('Adresse invalide. Exemple : https://192.168.0.50:81')
+    if host in ('localhost', '0.0.0.0') or host.endswith('.localhost'):
+        raise ValueError('Cette adresse désigne ce NAS. Pour un NPMplus installé ici, utilisez « Relier à Desktroo ».')
+    try:
+        ip = _ip.ip_address(host)
+        if ip.is_loopback or ip.is_unspecified or ip.is_link_local or ip.is_multicast:
+            raise ValueError('Adresse non autorisée : ' + host)
+    except ValueError as e:
+        if 'non autorisée' in str(e):
+            raise
+    try:
+        port = u.port or 81
+    except ValueError:
+        raise ValueError('Port invalide.')
+    hostpart = '[%s]' % host if ':' in host else host
+    return '%s://%s:%d' % (u.scheme, hostpart, port)
+
+
+def store_npm_link_remote(body):
+    """Relie un NPMplus installé sur une AUTRE machine (box, VM, Raspberry…) : Desktroo ne touche qu'à son API."""
+    gate = store_gate('install')
+    if not gate['ok']:
+        return 402, {'ok': False, 'error': 'Abonnement requis pour relier NPMplus.', 'gate': gate}
+    if STORE_NPM_ID in store_installed_get():
+        return 409, {'ok': False, 'error': 'NPMplus est déjà géré par Desktroo Apps.'}
+    try:
+        url = _npm_remote_url(body.get('url'))
+    except ValueError as e:
+        return 400, {'ok': False, 'error': str(e)}
+    email, pw = str(body.get('email') or '').strip(), str(body.get('password') or '')
+    if not email or not pw:
+        return 400, {'ok': False, 'error': 'Adresse e-mail et mot de passe d’un administrateur NPMplus requis.'}
+    try:
+        code, out, _h = _npm_http('GET', '/', timeout=10, base=url)
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'Aucune réponse de %s : %s. Vérifiez l’adresse, le port d’administration et que cette machine est joignable depuis le NAS.' % (url, str(e)[:120])}
+    if code != 200 or not isinstance(out, dict) or 'setup' not in out:
+        return 502, {'ok': False, 'error': 'Ce n’est pas l’administration d’un NPMplus (adresse ou port à vérifier).'}
+    if not out.get('setup'):
+        return 409, {'ok': False, 'error': 'Ce NPMplus n’a pas encore de compte administrateur : créez-le d’abord sur son interface, puis revenez ici.'}
+    try:
+        ck = _npm_login(email, pw, base=url)
+    except PermissionError as e:
+        return 403, {'ok': False, 'error': str(e)}
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'NPMplus ne répond pas : ' + str(e)[:200]}
+    s = store_npm_settings()
+    s['ports'] = {'http': 80, 'https': 443, 'admin': int(url.rsplit(':', 1)[-1])}
+    s['linked'] = {'remote': True, 'url': url, 'container': '', 'project': '', 'image': '', 'at': int(_st_time.time())}
+    s['api'] = {'email': email, 'password': pw, 'created_by': 'admin'}
+    s.pop('data', None)
+    _store_npm_settings_save(s)
+    with _NPM_API_LOCK:
+        _NPM_API.update(cookie=ck, until=_st_time.time() + 3000, fails=0)
+    log.info('NPMplus distant relié : %s', url)
+    return 200, {'ok': True}
+
+
 def store_npm_link(body=None):
     """Relie un NPMplus existant à la fenêtre Domaines, sans toucher à son installation."""
+    if isinstance(body, dict) and body.get('url'):
+        return store_npm_link_remote(body)
     gate = store_gate('install')
     if not gate['ok']:
         return 402, {'ok': False, 'error': 'Abonnement requis pour relier NPMplus.', 'gate': gate}
@@ -11207,6 +11300,8 @@ def store_npm_link(body=None):
     if not f or 'npmplus' not in str(f.get('image', '')).lower():
         return 404, {'ok': False, 'error': 'Aucun NPMplus à relier sur ce NAS.'}
     s = store_npm_settings()
+    if (s.get('linked') or {}).get('remote'):
+        s.pop('api', None)   # identifiants de l'ancien NPMplus distant : sans objet pour celui-ci
     s['ports'] = f['ports']
     s['linked'] = {'container': f['container'], 'project': f.get('project') or '', 'image': f.get('image') or '',
                    'at': int(_st_time.time())}
@@ -11522,7 +11617,8 @@ def store_nas_choices():
     for line in (out or '').splitlines():
         name, _s, mp = line.partition('\t')
         name, mp = name.strip(), mp.strip()
-        if not mp.startswith('/mnt/') or _STORE_NAS_SKIP.search(name) or name.count('/') > 3 or '/' not in name:
+        # Dossiers cachés (/mnt/.truenas_containers… : disques des conteneurs et machines virtuelles) : jamais proposés.
+        if not mp.startswith('/mnt/') or '/.' in mp or _STORE_NAS_SKIP.search(name) or name.count('/') > 3 or '/' not in name:
             continue
         datasets.append({'name': name, 'path': mp})
     datasets.sort(key=lambda d: d['path'].lower())
@@ -11589,6 +11685,110 @@ def _store_nas_apply(svc, env, app_id):
     return cfg
 
 
+def _store_nas_all(app):
+    """« Tout le NAS, sans réglage » (Antivirus) : l'app lit tous les dossiers, en lecture seule, et confie
+    à Desktroo les déplacements (quarantaine). Ni compte à choisir, ni dossiers à cocher, ni droits à vérifier."""
+    return str(((app or {}).get('nas_access') or {}).get('mode') or '') == 'all'
+
+
+def _store_nas_all_datasets():
+    """Tous les dossiers proposables du NAS (même filtre que le choix manuel), et ceux du plus haut niveau."""
+    ds = [d['path'] for d in store_nas_choices()['datasets'] if ':' not in d['path']]
+    tops = [p for p in ds if not any(p != q and p.startswith(q + '/') for q in ds)]
+    return ds, tops
+
+
+def _store_nas_apply_all(svc, env, app_id):
+    ds, tops = _store_nas_all_datasets()
+    # root dans le conteneur, mais sans aucun privilège sauf la lecture : CAP_DAC_READ_SEARCH lit tout fichier,
+    # et chaque dossier est monté en lecture seule (chacun explicitement, les sous-dossiers compris).
+    svc['user'] = '0:0'
+    svc['cap_add'] = ['DAC_READ_SEARCH']
+    for p in ds:
+        svc['volumes'].append('%s:/nas%s:ro' % (p, p[len('/mnt'):]))
+    seen, mounts = set(), []
+    for p in tops:
+        base = re.sub(r'[^A-Za-z0-9_.-]', '_', p.rsplit('/', 1)[-1]) or 'dossier'
+        label, i = base, 2
+        while label.lower() in seen:
+            label = '%s-%d' % (base, i); i += 1
+        seen.add(label.lower())
+        mounts.append({'label': label, 'mount': '/nas' + p[len('/mnt'):], 'path': p, 'mode': 'ro'})
+    env['DESKTROO_NAS'] = json.dumps(mounts, ensure_ascii=False)
+    env['DESKTROO_NAS_MODE'] = 'all'
+    env['DESKTROO_NAS_USER'] = ''
+    env['DESKTROO_FILEOPS'] = 'http://desktroo-fileops:%d' % PORT
+
+
+def _store_app_quarantine_dir(app):
+    for v in app.get('volumes') or []:
+        if str(v.get('mount', '')) == '/data' and re.match(r'^[a-z0-9][a-z0-9_-]{0,30}$', str(v.get('name', ''))):
+            return '/mnt/%s/%s/quarantine' % (_store_dataset(app['id']), v['name'])
+    return None
+
+
+def store_app_quarantine(handler):
+    """POST /store/app/quarantine, appelé par une app « tout le NAS » (jamais par le navigateur) :
+    { action: isolate|restore, qid, path }. L'app prouve son identité par son secret (X-Desktroo-Secret).
+    Desktroo déplace lui-même le fichier : l'app, elle, ne peut rien modifier sur le NAS."""
+    app_id = str(handler.headers.get('X-Desktroo-App', ''))
+    sec = str(handler.headers.get('X-Desktroo-Secret', ''))
+    if not _STORE_ID_RE.match(app_id) or not _login_hmac.compare_digest(sec.encode('utf-8'), store_app_secret(app_id).encode('utf-8')):
+        return 403, {'ok': False, 'error': 'Non autorisé.'}
+    app = store_app_entry(app_id)
+    if not app or not _store_nas_all(app) or app_id not in store_installed_get():
+        return 403, {'ok': False, 'error': 'Non autorisé.'}
+    try:
+        n = int(handler.headers.get('Content-Length', 0) or 0)
+        b = json.loads(handler.rfile.read(min(n, 16384)).decode('utf-8')) if n > 0 else {}
+    except Exception:
+        return 400, {'ok': False, 'error': 'Requête invalide.'}
+    qid, path, act = str(b.get('qid') or ''), str(b.get('path') or ''), str(b.get('action') or '')
+    if not re.match(r'^[0-9a-f]{32}$', qid):
+        return 400, {'ok': False, 'error': 'Identifiant invalide.'}
+    qdir = _store_app_quarantine_dir(app)
+    if not qdir:
+        return 409, {'ok': False, 'error': 'App sans dossier de données.'}
+    norm = os.path.normpath(path)
+    ds, _tops = _store_nas_all_datasets()
+    if not norm.startswith('/mnt/') or norm != path or not any(norm.startswith(d + '/') for d in ds):
+        return 400, {'ok': False, 'error': 'Fichier hors des dossiers du NAS.'}
+    if os.path.realpath(os.path.dirname(norm)) != os.path.dirname(norm):
+        return 400, {'ok': False, 'error': 'Chemin refusé (lien symbolique).'}
+    binp, meta = os.path.join(qdir, qid + '.bin'), os.path.join(qdir, qid + '.owner')
+    try:
+        if act == 'isolate':
+            if os.path.islink(norm) or not os.path.isfile(norm):
+                return 404, {'ok': False, 'error': 'Fichier introuvable.'}
+            st = os.lstat(norm)
+            os.makedirs(qdir, mode=0o700, exist_ok=True)
+            _sh_shutil.move(norm, binp)
+            os.chmod(binp, 0o600)
+            with open(meta, 'w') as f:
+                json.dump({'uid': st.st_uid, 'gid': st.st_gid, 'mode': st.st_mode & 0o7777}, f)
+            return 200, {'ok': True, 'size': st.st_size}
+        if act == 'restore':
+            if not os.path.isfile(binp):
+                return 404, {'ok': False, 'error': 'Élément de quarantaine introuvable.'}
+            if os.path.lexists(norm):
+                return 409, {'ok': False, 'error': 'Un fichier existe déjà à cet emplacement.'}
+            if not os.path.isdir(os.path.dirname(norm)):
+                return 409, {'ok': False, 'error': 'Le dossier d’origine n’existe plus.'}
+            _sh_shutil.move(binp, norm)
+            try:
+                with open(meta) as f:
+                    o = json.load(f)
+                os.chown(norm, int(o['uid']), int(o['gid'])); os.chmod(norm, int(o['mode']))
+                os.remove(meta)
+            except Exception:
+                pass
+            return 200, {'ok': True}
+        return 400, {'ok': False, 'error': 'Action inconnue.'}
+    except OSError as e:
+        log.warning('Quarantaine %s : %s', app_id, e)
+        return 500, {'ok': False, 'error': 'Déplacement impossible : ' + (e.strerror or str(e))}
+
+
 def store_nas_update(body):
     """Change le compte ou les dossiers d'une app installée, puis la redéploie."""
     app_id = str((body or {}).get('id') or '')
@@ -11598,6 +11798,8 @@ def store_nas_update(body):
     app = store_app_entry(app_id)
     if not app or not app.get('nas_access'):
         return 409, {'ok': False, 'error': 'Cette app n’utilise pas les dossiers du NAS.'}
+    if _store_nas_all(app):
+        return 409, {'ok': False, 'error': 'Cette app voit tout le NAS, en lecture seule : il n’y a rien à régler.'}
     if _store_running(app_id):
         return 409, {'ok': False, 'error': 'Une opération est déjà en cours sur cette app.'}
     try:
@@ -12470,6 +12672,9 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return self._auth_login()
         if urlparse(self.path).path.rstrip('/') == '/store/login':   # MDM-STORE-V1 : connexion directe aux apps
             return store_login(self)
+        if urlparse(self.path).path.rstrip('/') == '/store/app/quarantine':   # appel d'une app, authentifiée par son secret
+            code, resp = store_app_quarantine(self)
+            return self._json(code, resp)
         if not self._auth():
             return
         p    = urlparse(self.path)

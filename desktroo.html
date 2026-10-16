@@ -2646,16 +2646,24 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
 
   /* ===== WIDGETS : colonne défilante, widgets choisis dans le gestionnaire =====
      La colonne laisse passer les clics entre les widgets ; elle défile quand l'écran est trop court. */
+  /* L'ombre des widgets se fond dans le bureau au lieu d'être coupée net : la zone défile (donc rogne ce qui
+     dépasse), on l'agrandit de --wg-bleed de chaque côté, de quoi contenir toute l'ombre, et le remplissage
+     compense exactement : les widgets restent à leur place. La marge invisible ne capte aucun clic. */
+  :root { --wg-bleed:90px; }
   #widgets {
-    top:var(--wa-t); right:var(--wa-r); width:300px; max-height:calc(100vh - var(--wa-t) - var(--wa-b));
-    padding:16px 16px 28px 24px; overflow:hidden auto; scrollbar-width:none; pointer-events:none;
+    top:calc(var(--wa-t) - var(--wg-bleed)); right:calc(var(--wa-r) - var(--wg-bleed)); width:calc(300px + 2 * var(--wg-bleed));
+    max-height:calc(100vh - var(--wa-t) - var(--wa-b) + 2 * var(--wg-bleed));
+    padding:calc(16px + var(--wg-bleed)) calc(16px + var(--wg-bleed)) calc(28px + var(--wg-bleed)) calc(24px + var(--wg-bleed));
+    overflow:hidden auto; scrollbar-width:none; pointer-events:none;
   }
   #widgets::-webkit-scrollbar { display:none; }
   #widgets > .widget { pointer-events:auto; flex-shrink:0; }
   /* Deuxième zone de widgets, à gauche : mêmes règles que celle de droite, en miroir. Les icônes du bureau se décalent pour lui laisser la place. */
   #widgets-l {
-    position:fixed; top:var(--wa-t); left:var(--wa-l); z-index:10; display:flex; flex-direction:column; gap:12px; width:300px;
-    max-height:calc(100vh - var(--wa-t) - var(--wa-b)); padding:16px 24px 28px 16px; overflow:hidden auto; scrollbar-width:none; pointer-events:none;
+    position:fixed; top:calc(var(--wa-t) - var(--wg-bleed)); left:calc(var(--wa-l) - var(--wg-bleed)); z-index:10; display:flex; flex-direction:column; gap:12px;
+    width:calc(300px + 2 * var(--wg-bleed)); max-height:calc(100vh - var(--wa-t) - var(--wa-b) + 2 * var(--wg-bleed));
+    padding:calc(16px + var(--wg-bleed)) calc(24px + var(--wg-bleed)) calc(28px + var(--wg-bleed)) calc(16px + var(--wg-bleed));
+    overflow:hidden auto; scrollbar-width:none; pointer-events:none;
   }
   #widgets-l::-webkit-scrollbar { display:none; }
   #widgets-l > .widget { pointer-events:auto; flex-shrink:0; }
@@ -2667,7 +2675,7 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .widget.wg-drag { position:fixed; z-index:9000; margin:0; pointer-events:none; opacity:.95; box-shadow:0 26px 60px rgba(0,0,0,0.55); cursor:grabbing; }
   .wg-slot { flex-shrink:0; box-sizing:border-box; border:1.5px dashed rgba(var(--accent2-rgb),0.65); border-radius:var(--radius); background:rgba(var(--accent-rgb),0.08); }
   html.wg-dragging, html.wg-dragging * { cursor:grabbing !important; }
-  html.wg-dragging .wg-zone { display:flex !important; min-height:calc(100vh - var(--wa-t) - var(--wa-b)); box-sizing:border-box; }
+  html.wg-dragging .wg-zone { display:flex !important; min-height:calc(100vh - var(--wa-t) - var(--wa-b) + 2 * var(--wg-bleed)); box-sizing:border-box; }
   html.wg-dragging .wg-zone::before { content:''; position:fixed; top:calc(var(--wa-t) + 8px); bottom:calc(var(--wa-b) + 8px); width:284px; border:1.5px dashed rgba(255,255,255,0.16); border-radius:22px; pointer-events:none; }
   html.wg-dragging #widgets::before { right:calc(var(--wa-r) + 8px); }
   html.wg-dragging #widgets-l::before { left:calc(var(--wa-l) + 8px); }
@@ -9466,8 +9474,29 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Avec les droits de": "With the rights of",
 "Dossiers visibles par l’app": "Folders visible to the app",
 "Aucun dossier proposé sur ce NAS.": "No folder offered on this NAS.",
-"Lecture seule (l’app ne pourra rien modifier, ni mettre en quarantaine)": "Read only (the app cannot change anything, nor quarantine)",
 "Accès en lecture seule.": "Read-only access.",
+"Accès aux dossiers": "Folder access",
+"NPMplus sur une autre machine": "NPMplus on another machine",
+"Relier un NPMplus distant": "Link a remote NPMplus",
+"Installé sur une box, une machine virtuelle ou un autre ordinateur du réseau : Desktroo gère vos domaines à distance.": "Installed on a box, a virtual machine or another computer on the network: Desktroo manages your domains remotely.",
+"Indiquez l’adresse de l’administration de NPMplus (son port 81 par défaut) et un compte administrateur sans double authentification. Desktroo garde ces identifiants sur le NAS. La machine qui héberge NPMplus doit pouvoir joindre ce NAS : c’est vers lui que seront envoyés vos sites.": "Enter the address of NPMplus's administration (port 81 by default) and an administrator account without two-factor authentication. Desktroo keeps these credentials on the NAS. The machine hosting NPMplus must be able to reach this NAS: your sites will be sent to it.",
+"Adresse de NPMplus": "NPMplus address",
+"Ce NPMplus tourne sur une autre machine. Desktroo ne parle qu’à son API : il gère vos domaines et certificats sans toucher à son installation. Ses mises à jour se font sur cette machine.": "This NPMplus runs on another machine. Desktroo only talks to its API: it manages your domains and certificates without touching its installation. Its updates are done on that machine.",
+"Adresse de l’administration": "Administration address",
+"Avant de publier : le domaine doit pointer vers l’adresse publique de votre box, et la box rediriger les ports 80 et 443 vers la machine qui héberge NPMplus. Cette machine doit pouvoir joindre ce NAS.": "Before publishing: the domain must point to your box's public address, and the box must forward ports 80 and 443 to the machine hosting NPMplus. That machine must be able to reach this NAS.",
+"NPMplus distant": "Remote NPMplus",
+"Destination des sites": "Sites destination",
+"Nom, e-mail, groupes, dossier personnel": "Name, e-mail, groups, home folder",
+"Fiche du compte": "Account page",
+"Verrouiller, supprimer, double authentification": "Lock, delete, two-factor authentication",
+"Membres du groupe": "Group members",
+"Ajouter ou retirer des comptes": "Add or remove accounts",
+"Utilisateurs et groupes": "Users and groups",
+"Un dossier du NAS qui existe déjà. Vide : aucun dossier personnel.": "An existing NAS folder. Empty: no home folder.",
+"Dossier personnel : choisissez un dossier du NAS, sous /mnt/": "Home folder: choose a NAS folder under /mnt/",
+"Rien à régler : l’app lit tous les dossiers du NAS, sans pouvoir rien y modifier. Quand il faut déplacer un fichier, c’est Desktroo qui le fait.": "Nothing to set: the app reads every NAS folder without being able to change anything. When a file must be moved, Desktroo does it.",
+"Tous, en lecture seule": "All, read-only",
+"Lecture seule (l’app ne pourra rien modifier)": "Read only (the app cannot change anything)",
 "Choisissez le compte dont l’app prendra les droits.": "Choose the account whose rights the app will take.",
 "Cochez au moins un dossier.": "Tick at least one folder."
 }
@@ -12943,6 +12972,12 @@ function dkStoreRenderDetail(body, a) {
       h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + (inst.migration
         ? webEsc(T('Le serveur web tourne encore dans Desktroo. Il n’a pas pu être migré automatiquement : ') + inst.migration)
         : T('Le serveur web tourne encore dans Desktroo : il sera déplacé automatiquement vers ce module, sans toucher à vos sites.')) + '</div>';
+    } else if (inst && inst.linked && inst.remote) {
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Ce NPMplus tourne sur une autre machine. Desktroo ne parle qu’à son API : il gère vos domaines et certificats sans toucher à son installation. Ses mises à jour se font sur cette machine.') + '</div>'
+        + '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
+        + '<dt>' + T('Adresse de l’administration') + '</dt><dd class="mono">' + webEsc(inst.remote) + '</dd></dl>'
+        + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
+        + wmRow('dkStoreAct(\'unlink\',\'' + a.id + '\')', T('Délier'), T('La fenêtre Domaines ne gère plus ce NPMplus. Lui continue de tourner, avec tous ses domaines.'), 'danger') + '</div>';
     } else if (inst && inst.linked) {
       var lp = inst.ports || dkStoreNpmPorts(a);
       h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Ce NPMplus a été installé hors de Desktroo Apps. Il est relié à la fenêtre Domaines : Desktroo gère vos domaines et certificats, sans toucher à son installation. Ses mises à jour se font là où il a été installé.') + '</div>'
@@ -12974,10 +13009,12 @@ function dkStoreRenderDetail(body, a) {
           ? T('« Reprendre » le confie à Desktroo Apps : mêmes ports, mêmes domaines et certificats. Ses données sont copiées dans le dossier de Desktroo Apps ; l’original reste en place, en secours. Si quelque chose échoue, votre NPMplus repart comme avant.')
           : webEsc(f.why)) + '</div>';
       if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour reprendre un module.') + '</p>';
+      else h += dkStoreNpmRemoteHtml();
     } else if (a.id === 'pass' && a.compatible && gateOk) {
       h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Après l’installation, Desktroo Pass se publie sous un de vos domaines, en https, grâce à NPMplus : installez ou reliez NPMplus si ce n’est pas fait. Les comptes s’ouvrent ensuite sur invitation.') + '</div>';
     } else if (a.id === 'npmplus' && a.compatible && gateOk) {
-      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('TrueNAS garde les ports 80 et 443 pour son interface : NPMplus écoutera sur 8090 (http), 8453 (https) et 8181 (administration). Sur votre box, il faudra rediriger 80 vers 8090 et 443 vers 8453.') + '</div>';
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('TrueNAS garde les ports 80 et 443 pour son interface : NPMplus écoutera sur 8090 (http), 8453 (https) et 8181 (administration). Sur votre box, il faudra rediriger 80 vers 8090 et 443 vers 8453.') + '</div>'
+        + dkStoreNpmRemoteHtml();
     } else if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Ce module demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
     else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer un module.') + '</p>';
   } else if (!running) {
@@ -12999,13 +13036,14 @@ function dkStoreRenderDetail(body, a) {
         + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateLabel(inst.state)) + '</dd>'
         + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
         + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd>'
+        + (a.nas && a.nas.mode === 'all' ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + T('Tous, en lecture seule') + '</dd>' : '')
         + (a.nas && a.nas.user ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + webEsc(a.nas.paths.join(', ')) + '<br><span class="dks-tag">'
             + webEsc(Tf('avec les droits de {0}, {1}', a.nas.user, a.nas.mode === 'rw' ? T('lecture et écriture') : T('lecture seule'))) + '</span></dd>' : '')
         + ((inst.standalone || a.standalone) ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(location.origin + '/a/' + a.id + '/') + '</span><button class="web-mini" onclick="dkStoreCopyUrl(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
         + '</dl>'
-        + (a.nas_access ? (_dkStore.nasEdit === a.id ? dkStoreNasHtml(a, a.nas) + '<div class="dks-acts"><button class="web-open" onclick="dkStoreAct(\'nas\',\'' + a.id + '\')">' + T('Enregistrer les accès aux dossiers') + '</button><button class="fs-btn" onclick="_dkStore.nasEdit=null;dkStoreRender()">' + T('Annuler') + '</button></div>' : '') : '')
+        + (a.nas_access && a.nas_access.mode !== 'all' ? (_dkStore.nasEdit === a.id ? dkStoreNasHtml(a, a.nas) + '<div class="dks-acts"><button class="web-open" onclick="dkStoreAct(\'nas\',\'' + a.id + '\')">' + T('Enregistrer les accès aux dossiers') + '</button><button class="fs-btn" onclick="_dkStore.nasEdit=null;dkStoreRender()">' + T('Annuler') + '</button></div>' : '') : '')
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
-        + (a.nas_access && _dkStore.nasEdit !== a.id ? wmRow('_dkStore.nasEdit=\'' + a.id + '\';dkStoreRender()', T('Changer les dossiers du NAS'), T('Le compte prêté à l’app et les dossiers qu’elle peut voir.')) : '')
+        + (a.nas_access && a.nas_access.mode !== 'all' && _dkStore.nasEdit !== a.id ? wmRow('_dkStore.nasEdit=\'' + a.id + '\';dkStoreRender()', T('Changer les dossiers du NAS'), T('Le compte prêté à l’app et les dossiers qu’elle peut voir.')) : '')
         + wmRow('dkStoreAct(\'uninstall\',\'' + a.id + '\')', T('Désinstaller'), T('Retire l’app du NAS. Vous choisirez de garder ou non ses données.'), 'danger') + '</div>';
     }
   }
@@ -13031,6 +13069,8 @@ function dkStoreNpmFacts(a, inst) {
 // Accès aux dossiers du NAS : le compte TrueNAS dont l'app prend les droits, et les dossiers qu'elle voit.
 function dkStoreNasHtml(a, cur) {
   var ch = _dkStore.nasChoices, w = a.nas_access || {};
+  if (w.mode === 'all') return '<div class="web-group-title">' + T('Dossiers du NAS') + '</div><div class="web-group dks-pad"><div class="dks-tag">'
+    + webEsc(dkStoreName(w.why) || '') + ' ' + T('Rien à régler : l’app lit tous les dossiers du NAS, sans pouvoir rien y modifier. Quand il faut déplacer un fichier, c’est Desktroo qui le fait.') + '</div></div>';
   if (!ch) { dkStoreNasLoad(); return '<div class="web-group-title">' + T('Dossiers du NAS') + '</div><div class="dks-tag">' + T('Chargement…') + '</div>'; }
   cur = cur || {};
   var sel = cur.user || (ch.users.some(function(u) { return u.username === currentUser; }) ? currentUser : (ch.users[0] || {}).username);
@@ -13039,12 +13079,14 @@ function dkStoreNasHtml(a, cur) {
     + T('Elle les verra avec les droits du compte choisi : exactement ce que ce compte peut ouvrir, rien de plus.') + '</div>'
     + formRow(T('Avec les droits de'), '<select id="dks-nas-user" style="' + iStyle() + '">' + ch.users.map(function(u) {
         return '<option value="' + webEsc(u.username) + '"' + (u.username === sel ? ' selected' : '') + '>' + webEsc(u.username + (u.full_name ? ' (' + u.full_name + ')' : '')) + '</option>'; }).join('') + '</select>')
+    + (w.mode === 'rw' ? formRow(T('Accès aux dossiers'), '<select id="dks-nas-mode" style="' + iStyle() + '">'
+        + '<option value="rw"' + (cur.mode === 'ro' ? '' : ' selected') + '>' + T('Lecture et écriture') + '</option>'
+        + '<option value="ro"' + (cur.mode === 'ro' ? ' selected' : '') + '>' + T('Lecture seule (l’app ne pourra rien modifier)') + '</option></select>') : '')
     + '<div style="margin-top:10px;font-size:12px;color:var(--text-dim);">' + T('Dossiers visibles par l’app') + '</div>'
     + '<div class="dks-users" style="max-height:220px;overflow:auto;margin-top:6px;">' + (ch.datasets.length ? ch.datasets.map(function(d) {
         return '<label><input type="checkbox" class="dks-nas-path" value="' + webEsc(d.path) + '"' + ((cur.paths || []).indexOf(d.path) >= 0 ? ' checked' : '') + '> <span class="mono">' + webEsc(d.path) + '</span></label>'; }).join('')
       : '<span class="dks-tag">' + T('Aucun dossier proposé sur ce NAS.') + '</span>') + '</div>'
-    + (w.mode === 'rw' ? '<label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;"><input type="checkbox" id="dks-nas-ro"' + (cur.mode === 'ro' ? ' checked' : '') + '> '
-        + T('Lecture seule (l’app ne pourra rien modifier, ni mettre en quarantaine)') + '</label>' : '<div class="dks-tag" style="margin-top:8px;">' + T('Accès en lecture seule.') + '</div>')
+    + (w.mode === 'rw' ? '' : '<div class="dks-tag" style="margin-top:8px;">' + T('Accès en lecture seule.') + '</div>')
     + '</div>';
   return h;
 }
@@ -13056,11 +13098,35 @@ async function dkStoreNasLoad() {
   dkStoreRender();
 }
 function dkStoreNasCollect() {
-  var u = document.getElementById('dks-nas-user'), ro = document.getElementById('dks-nas-ro');
+  var u = document.getElementById('dks-nas-user'), md = document.getElementById('dks-nas-mode');
   var paths = Array.prototype.slice.call(document.querySelectorAll('.dks-nas-path:checked')).map(function(x) { return x.value; });
   if (!u || !u.value) { toast(T('Choisissez le compte dont l’app prendra les droits.')); return null; }
   if (!paths.length) { toast(T('Cochez au moins un dossier.')); return null; }
-  return { user: u.value, paths: paths, readonly: !!(ro && ro.checked) };
+  return { user: u.value, paths: paths, readonly: !!(md && md.value === 'ro') };
+}
+// Relier un NPMplus qui tourne sur une AUTRE machine (box, VM, Raspberry…) : Desktroo ne parle qu'à son API.
+function dkStoreNpmRemoteHtml() {
+  if (!_dkStore.npmRemote) return '<div class="web-group-title">' + T('NPMplus sur une autre machine') + '</div><div class="web-group">'
+    + wmRow('_dkStore.npmRemote=true;dkStoreRender()', T('Relier un NPMplus distant'), T('Installé sur une box, une machine virtuelle ou un autre ordinateur du réseau : Desktroo gère vos domaines à distance.')) + '</div>';
+  return '<div class="web-group-title">' + T('Relier un NPMplus distant') + '</div><div class="web-group dks-pad" style="display:flex;flex-direction:column;gap:12px;max-width:520px;">'
+    + '<div class="dks-tag">' + T('Indiquez l’adresse de l’administration de NPMplus (son port 81 par défaut) et un compte administrateur sans double authentification. Desktroo garde ces identifiants sur le NAS. La machine qui héberge NPMplus doit pouvoir joindre ce NAS : c’est vers lui que seront envoyés vos sites.') + '</div>'
+    + formRow(T('Adresse de NPMplus'), '<input id="dks-npmr-url" style="' + iStyle() + '" placeholder="https://192.168.0.50:81" autocomplete="off" spellcheck="false" value="' + webEsc(_dkStore.npmRemoteUrl || '') + '">')
+    + formRow(T('E-mail'), '<input id="dks-npmr-em" style="' + iStyle() + '" autocomplete="off">')
+    + formRow(T('Mot de passe'), '<input id="dks-npmr-pw" type="password" style="' + iStyle() + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')dkStoreNpmRemoteLink()">')
+    + '<div class="dks-acts" style="margin-top:0;"><button class="web-open" onclick="dkStoreNpmRemoteLink()">' + T('Relier') + '</button>'
+    + '<button class="fs-btn" onclick="_dkStore.npmRemote=false;dkStoreRender()">' + T('Annuler') + '</button></div></div>';
+}
+async function dkStoreNpmRemoteLink() {
+  var url = (document.getElementById('dks-npmr-url').value || '').trim();
+  _dkStore.npmRemoteUrl = url;
+  try {
+    await fileops('POST', 'store/npm/link', { url: url, email: document.getElementById('dks-npmr-em').value, password: document.getElementById('dks-npmr-pw').value });
+  } catch (e) { toast('⚠️ ' + (e.message || e), 9000); return; }
+  _dkStore.npmRemote = false;
+  toast(T('NPMplus est relié : ouvrez Domaines pour gérer vos domaines.'), 6000);
+  try { var sc = getShortcuts(); if (sc.indexOf('dkapp-npmplus') < 0) { sc.push('dkapp-npmplus'); saveShortcuts(sc); } } catch (_) {}
+  await dkStoreLoad();
+  dkNpmOpen();
 }
 async function dkStoreAct(act, id) {
   var a = dkStoreApp(id); if (!a) return;
@@ -13069,7 +13135,7 @@ async function dkStoreAct(act, id) {
     if (act === 'install' || act === 'update') {
       var b = { id: id };
       if (act === 'install' && a.kind !== 'module') { b.users = dkStoreCheckedUsers(); if (!b.users.length) { toast(T('Choisissez au moins un utilisateur.')); return; } }
-      if (act === 'install' && a.nas_access) { b.nas = dkStoreNasCollect(); if (!b.nas) return; }
+      if (act === 'install' && a.nas_access && a.nas_access.mode !== 'all') { b.nas = dkStoreNasCollect(); if (!b.nas) return; }
       await fileops('POST', 'store/' + act, b);
       dkStorePoll(id);
       await dkStoreLoad();
@@ -13185,7 +13251,7 @@ function dkNpmSide() {
   wmSide('dknpm', h);
 }
 function dkNpmPortsOf() { return (_dkNpm.st && _dkNpm.st.ports) || { http: 8090, https: 8453, admin: 8181 }; }
-function dkNpmAdvanced() { window.open('https://' + location.hostname + ':' + dkNpmPortsOf().admin + '/', '_blank', 'noopener'); }
+function dkNpmAdvanced() { var r = _dkNpm.st && _dkNpm.st.remote; window.open(r ? r + '/' : 'https://' + location.hostname + ':' + dkNpmPortsOf().admin + '/', '_blank', 'noopener'); }
 function dkNpmRender() {
   var body = wmBody('dknpm'); if (!body) return;
   var st = _dkNpm.st || {};
@@ -13210,7 +13276,8 @@ function dkNpmJobHtml(st) {
 }
 async function dkNpmClearJob() { try { await fileops('POST', 'store/npm/job/clear', {}); } catch (_) {} dkNpmLoad(true); }
 function dkNpmTarget(hst) {
-  var sites = _dkNpm.sites || [], local = /^(127\.0\.0\.1|localhost)$/.test(hst.host || '');
+  var nasHost = (_dkNpm.st && _dkNpm.st.nas_host) || '';
+  var sites = _dkNpm.sites || [], local = /^(127\.0\.0\.1|localhost)$/.test(hst.host || '') || (nasHost && hst.host === nasHost);
   var s = sites.filter(function(x) { return String(x.port) === String(hst.port) && (local || hst.host === location.hostname); })[0];
   if (s) return Tf('Site « {0} »', s.name || s.id);
   if (local && String(hst.port) === String(location.port || 8099)) return T('Desktroo (ce bureau)');
@@ -13293,7 +13360,8 @@ function dkNpmRenderAdd(body, st) {
     + '<div style="flex:1;">' + formRow(T('Adresse'), '<input id="dknpm-host" style="' + iStyle() + '" placeholder="192.168.1.20">') + '</div>'
     + '<div style="width:120px;">' + formRow(T('Port'), '<input id="dknpm-port" type="number" min="1" max="65535" style="' + iStyle() + '" placeholder="8080">') + '</div></div>'
     + '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;"><input type="checkbox" id="dknpm-https" checked style="margin-top:3px;"><span>' + T('Certificat https (Let’s Encrypt), renouvelé automatiquement') + '</span></label>'
-    + '<div class="dks-tag" style="max-width:560px;">' + Tf('Avant de publier : le domaine doit pointer vers l’adresse publique de votre box, et la box rediriger le port 80 vers {0} et le port 443 vers {1} de ce NAS.', p.http, p.https) + '</div>'
+    + '<div class="dks-tag" style="max-width:560px;">' + (st.remote ? T('Avant de publier : le domaine doit pointer vers l’adresse publique de votre box, et la box rediriger les ports 80 et 443 vers la machine qui héberge NPMplus. Cette machine doit pouvoir joindre ce NAS.')
+      : Tf('Avant de publier : le domaine doit pointer vers l’adresse publique de votre box, et la box rediriger le port 80 vers {0} et le port 443 vers {1} de ce NAS.', p.http, p.https)) + '</div>'
     + '<div class="dks-acts" style="margin-top:0;"><button class="web-open" onclick="dkNpmSubmit()">' + T('Publier') + '</button></div></div>';
 }
 async function dkNpmSubmit() {
@@ -13327,10 +13395,13 @@ async function dkNpmLogin() {
 function dkNpmRenderSettings(body, st) {
   var p = dkNpmPortsOf();
   wmHead('dknpm', T('Réglages'), { sub: 'NPMplus' });
-  body.innerHTML = '<div class="web-group-title">' + T('Ports') + '</div><dl class="web-facts">'
-    + '<dt>HTTP</dt><dd>' + p.http + ' — ' + T('la box redirige le port 80 ici') + '</dd>'
-    + '<dt>HTTPS</dt><dd>' + p.https + ' — ' + T('la box redirige le port 443 ici') + '</dd>'
-    + '<dt>' + T('Administration') + '</dt><dd class="mono">https://' + webEsc(location.hostname) + ':' + p.admin + '/</dd></dl>'
+  body.innerHTML = (st.remote ? '<div class="web-group-title">' + T('NPMplus distant') + '</div><dl class="web-facts">'
+      + '<dt>' + T('Administration') + '</dt><dd class="mono">' + webEsc(st.remote) + '/</dd>'
+      + '<dt>' + T('Destination des sites') + '</dt><dd class="mono">' + webEsc(st.nas_host || '?') + '</dd></dl>'
+      : '<div class="web-group-title">' + T('Ports') + '</div><dl class="web-facts">'
+      + '<dt>HTTP</dt><dd>' + p.http + ' — ' + T('la box redirige le port 80 ici') + '</dd>'
+      + '<dt>HTTPS</dt><dd>' + p.https + ' — ' + T('la box redirige le port 443 ici') + '</dd>'
+      + '<dt>' + T('Administration') + '</dt><dd class="mono">https://' + webEsc(location.hostname) + ':' + p.admin + '/</dd></dl>')
     + '<div class="web-group-title">' + T('Réglages avancés') + '</div>'
     + '<div class="dks-tag" style="max-width:600px;margin-bottom:10px;">' + T('En-têtes personnalisés, listes d’accès, redirections, flux TCP… se règlent dans l’interface de NPMplus, dans un onglet.') + '</div>'
     + '<dl class="web-facts"><dt>' + T('Compte') + '</dt><dd class="mono">' + webEsc(st.account || '?') + '</dd>'
@@ -18762,7 +18833,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.48.0';
+var DK_PAGE_VERSION = '2.49.0';
 function dkVerCmp(a, b) {
   var x = String(a || '').match(/\d+/g) || [], y = String(b || '').match(/\d+/g) || [];
   for (var i = 0; i < Math.max(x.length, y.length); i++) {
@@ -20234,6 +20305,8 @@ function deskCellAt(x, y) {
   var w = document.getElementById('widgets'), el = document.getElementById('desktop-icons');
   var wr = w && el ? w.getBoundingClientRect() : null;
   if (wr && wr.width > 0) {   // largeur nulle : panneau masqué
+    var bl = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wg-bleed'), 10) || 0;   // marge invisible de la zone
+    wr = { left: wr.left + bl, top: wr.top + bl, bottom: wr.bottom - bl };
     var er = el.getBoundingClientRect();
     while (c > 0 && er.left + c * DESK_CW + 88 > wr.left - 8 && er.top + r * DESK_CH < wr.bottom && er.top + (r + 1) * DESK_CH > wr.top) c--;
   }
@@ -25232,6 +25305,8 @@ function usUserForm(u) {
   if (!u) h += wmField(T('Mot de passe'), '<input class="wm-input" id="us-pw1" type="password" autocomplete="new-password">')
     + wmField(T('Mot de passe, une seconde fois'), '<input class="wm-input" id="us-pw2" type="password" autocomplete="new-password">');
   h += wmField(T('Groupes'), usGroupChecks(u));
+  if (u) h += wmField(T('Dossier personnel'), wmInput('us-home', u.home && !/^\/(var\/empty|nonexistent)/.test(u.home) ? u.home : '', 'placeholder="/mnt/…" class="wm-input mono"'),
+      T('Un dossier du NAS qui existe déjà. Vide : aucun dossier personnel.'));
   if (u) h += wmField(T('Ligne de commande (SSH)'), '<select class="wm-input" id="us-shell">' + usShellOptions(u.shell || '/usr/sbin/nologin') + '</select>');
   else h += '<div class="web-group">' + wmSwitch('us-smb', T('Partages Windows (SMB)'), T('Le compte peut ouvrir les dossiers partagés depuis un ordinateur'), true) + '</div>';
   h += '<div class="web-foot"><button class="fs-btn" onclick="' + back[1] + '">' + T('Annuler') + '</button><button class="fs-btn web-primary" id="us-save" onclick="usUserSave()">' + (u ? T('Enregistrer') : T('Créer le compte')) + '</button></div></div>';
@@ -25247,6 +25322,11 @@ async function usUserSave() {
     var hidden = ensureArray(u.groups).filter(function(g) { var x = usGroup(g); return x && x.builtin === true; });
     p.groups = groups.concat(hidden);
     p.shell = wmVal('us-shell') || u.shell;
+    var home = wmVal('us-home').replace(/\/+$/, ''), was = u.home && !/^\/(var\/empty|nonexistent)/.test(u.home) ? u.home : '';
+    if (home !== was) {
+      if (home && !/^\/mnt\/[^\/]+\/.+/.test(home)) { toast(T('Dossier personnel : choisissez un dossier du NAS, sous /mnt/')); return; }
+      p.home = home || '/var/empty';
+    }
     if (!p.full_name) p.full_name = u.username;
   } else {
     p.username = wmVal('us-username');
@@ -25371,6 +25451,13 @@ async function usGroupDelete(id) {
   try { await wsCall('group.delete', [g.id, { delete_users: false }], 120000); toast(T('✅ Groupe supprimé')); _us.nav = 'groups'; _us.sel = null; }
   catch (e) { wmToastErr(e); }
   loadUsers();
+}
+// Ouvre la fenêtre Utilisateurs sur un compte ou un groupe (depuis Droits d'accès) : plus besoin de passer par TrueNAS.
+function acManage(nav, id) {
+  var win = document.getElementById('win-users'), open = win && win.classList.contains('visible');
+  _us.nav = nav; _us.sel = id == null ? null : id;
+  openApp('users');
+  if (open || _us.loaded) loadUsers(true);
 }
 // Anciens noms, gardés pour les appels venus d'ailleurs.
 function userAddModal() { openApp('users'); usGo('newuser'); }
@@ -30532,7 +30619,8 @@ function wgDragMove(e) {
   var zone = wgDragZoneAt(e.clientX), zr = zone.getBoundingClientRect();
   Array.prototype.forEach.call(document.querySelectorAll('.wg-zone'), function(z) { z.classList.toggle('wg-over', z === zone); });
   // la pile défile quand on approche de son bord
-  if (e.clientY < zr.top + 44) zone.scrollTop -= 14; else if (e.clientY > zr.bottom - 44) zone.scrollTop += 14;
+  var bleed = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wg-bleed'), 10) || 0;   // marge invisible de la zone
+  if (e.clientY < zr.top + bleed + 44) zone.scrollTop -= 14; else if (e.clientY > zr.bottom - bleed - 44) zone.scrollTop += 14;
   var before = null, list = zone.querySelectorAll('.widget:not([hidden])');
   for (var i = 0; i < list.length; i++) { var wr = list[i].getBoundingClientRect(); if (e.clientY < wr.top + wr.height / 2) { before = list[i]; break; } }
   if (d.slot.parentNode !== zone || d.slot.nextElementSibling !== before) {
@@ -36320,7 +36408,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
           <div class="fs-loading" style="height:140px;"><div class="spinner"></div></div>
         </div>
         <div class="web-side-sep"></div>
-        <button class="web-nav" onclick="openTrueNASPage('/ui/credentials/users')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4"/></svg><span class="web-nav-name">Utilisateurs TrueNAS</span></button>
+        <button class="web-nav" onclick="acManage('users')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M21.5 20a6.5 6.5 0 00-4-6"/></svg><span class="web-nav-name">Utilisateurs et groupes</span></button>
       </nav>
       <section class="web-main">
         <header class="web-head">
@@ -39000,9 +39088,12 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       '<div class="web-group">' + items.join('') + '</div>' +
       '<p class="web-note">' + acEsc(note) + '</p>' +
       '<div class="web-group-title">' + T('Gérer') + '</div><div class="web-group">' +
-      '<button class="web-row line" onclick="openTrueNASPage(\'' + (isUser ? '/ui/credentials/users' : '/ui/credentials/groups') + '\')"><span class="web-row-text"><span class="web-row-name">' +
-      T('Modifier dans TrueNAS') + '</span><span class="web-row-desc">' + (isUser ? T('Mot de passe, groupes, dossier personnel') : T('Nom du groupe et membres')) +
-      '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button></div>';
+      (isUser
+        ? wmRow('acManage(\'edituser\',' + Number(principal.apiId) + ')', T('Modifier le compte'), T('Nom, e-mail, groupes, dossier personnel'))
+          + wmRow('acManage(\'pwd\',' + Number(principal.apiId) + ')', T('Changer le mot de passe'), T('Le nouveau mot de passe sert tout de suite, partages compris'))
+          + wmRow('acManage(\'user\',' + Number(principal.apiId) + ')', T('Fiche du compte'), T('Verrouiller, supprimer, double authentification'))
+        : wmRow('acManage(\'group\',' + Number(principal.apiId) + ')', T('Membres du groupe'), T('Ajouter ou retirer des comptes'))) +
+      '</div>';
   }
 
   async function accessSetService(service, enabled) {
