@@ -3,6 +3,22 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.33 — 17 octobre 2026
+
+### Nouveau
+- **Jellyfin : votre médiathèque familiale, depuis Desktroo Apps.** Jellyfin classe vos films, séries, musiques et vidéos du NAS, récupère les affiches et les résumés, et les diffuse sur la télé, le téléphone, la tablette ou le navigateur. Une fenêtre Desktroo remplace son interface d'administration : vos bibliothèques dans la colonne de gauche, un accueil avec les derniers ajouts de chacune, la recherche, la fiche détaillée de chaque titre (résumé, acteurs, saisons et épisodes) et vos favoris.
+  > Fiche `jellyfin` (image officielle fixée par empreinte, Jellyfin 12.2). Le NAS crée lui-même le compte administrateur au premier démarrage et pilote l'API de Jellyfin ; le mot de passe reste sur le NAS (`/store/jellyfin/api`).
+- **Regardez vos films dans la fenêtre Desktroo, sans ouvrir Jellyfin.** La lecture reprend là où vous vous étiez arrêté (même depuis un autre appareil), les épisodes s'enchaînent, et « Reprendre la lecture » et « Prochains épisodes » apparaissent sur l'accueil. Les formats que le navigateur ne lit pas (MKV, x265, son 5.1…) sont convertis à la volée.
+  > Flux relayé par une adresse signée et temporaire (`/store/jellyfin/stream/<billet>`, Range pris en charge) : le navigateur n'a ni jeton Jellyfin ni accès direct au réseau local. Lecture directe pour mp4/webm en h264/vp9/av1 + aac/mp3/opus, sinon `stream.mp4` transcodé (h264 + aac). Position enregistrée par `/Sessions/Playing*`.
+- **Comptes de la famille avec limite d'âge**, créés et réglés depuis la fenêtre : un compte enfant ne voit que les titres adaptés.
+- **Reprendre un ancien serveur Jellyfin.** Après une restauration de sauvegarde, la fenêtre repère les dossiers de bibliothèque devenus introuvables (ex. `/media/series`) et propose, en un clic, le dossier du NAS qui leur correspond.
+  > Action `repair` : correspondance par nom avec les dossiers `/nas/…` ; remplacement par `POST/DELETE /Library/VirtualFolders/Paths`, puis analyse.
+- **Publier Jellyfin sous un nom de domaine** depuis la fenêtre (onglet « Domaine »), avec NPMplus.
+
+### Corrigé
+- **Les liens « Ouvrir » des apps de Desktroo Apps mènent à l'adresse du NAS sur votre réseau**, et non plus au nom de domaine par lequel vous ouvrez Desktroo. C'est le cas de l'administration de NPMplus (port 8181), qui ne répondait pas par le domaine.
+  > Nouvel assistant `dkNasHost` : IP du NAS donnée par `nas_ip`, sinon `truenas_ip` ; le nom de domaine n'est qu'un dernier recours.
+
 ## 2.54.19 — 17 octobre 2026
 
 ### Corrigé

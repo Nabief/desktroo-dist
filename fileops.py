@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.19'
+APP_VERSION = '2.54.33'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -651,6 +651,9 @@ def _heal_nginx_conf():
         log.warning('nginx.conf : réparation impossible : %s', e)
 
 
+_TRUENAS_LAN_TRY = {'t': 0.0, 'ip': ''}
+
+
 def _truenas_ip():
     """Renvoie l'adresse IP LAN réelle du NAS, indépendante d'un nom de domaine
     configuré comme hôte SSH. On refuse toute IP publique : mieux vaut retomber
@@ -711,6 +714,18 @@ def _truenas_ip():
         _r = _socket.gethostbyname(host)
         if _is_private(_r):
             return _r
+    except Exception:
+        pass
+
+    # 3 bis) le NAS donne lui-même son adresse sur le réseau local (nom d'hôte qui vise l'adresse publique :
+    #        sans cela, « Ouvrir » enverrait vers le domaine, où les ports des apps ne sont pas ouverts).
+    try:
+        _now = _login_time.time()
+        if _now - _TRUENAS_LAN_TRY['t'] > 60 or _TRUENAS_LAN_TRY['ip']:
+            _TRUENAS_LAN_TRY['t'] = _now
+            _TRUENAS_LAN_TRY['ip'] = _nas_lan_ip() if _is_private(_nas_lan_ip()) else ''
+        if _TRUENAS_LAN_TRY['ip']:
+            return _TRUENAS_LAN_TRY['ip']
     except Exception:
         pass
 
@@ -9732,6 +9747,24 @@ def _store_get(handler, path, qs):
     if path == '/store/nas/choices':
         handler._json(200, store_nas_choices())
         return True
+    if path == '/store/jellyfin/img':
+        code, ctype, data = store_jellyfin_img(qs.get('i', ''), qs.get('s', ''))
+        handler.send_response(code)
+        handler.send_header('Content-Type', ctype)
+        handler.send_header('Cache-Control', 'private, max-age=3600' if code == 200 else 'no-store')
+        handler.send_header('Content-Length', str(len(data)))
+        handler.end_headers()
+        handler.wfile.write(data)
+        return True
+    if path == '/store/photoprism/img':
+        code, ctype, data = store_photoprism_img(qs.get('h', ''), qs.get('s', ''))
+        handler.send_response(code)
+        handler.send_header('Content-Type', ctype)
+        handler.send_header('Cache-Control', 'private, max-age=86400' if code == 200 else 'no-store')
+        handler.send_header('Content-Length', str(len(data)))
+        handler.end_headers()
+        handler.wfile.write(data)
+        return True
     if path == '/store/pass/state':
         handler._json(200, store_pass_state())
         return True
@@ -9785,6 +9818,7 @@ _STORE_POST = {
     '/store/wireguard/api': lambda b: store_wireguard_api(b),
     '/store/uptime-kuma/api': lambda b: store_uptimekuma_api(b),
     '/store/photoprism/api': lambda b: store_photoprism_api(b),
+    '/store/jellyfin/api': lambda b: store_jellyfin_api(b),
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
@@ -9839,6 +9873,9 @@ def _store_public_get(handler, path):
         handler.send_header('Cache-Control', 'no-store')
         handler.send_header('Content-Length', '0')
         handler.end_headers()
+        return True
+    if path.startswith('/store/jellyfin/stream/'):
+        _jf_stream_serve(handler, path[len('/store/jellyfin/stream/'):].split('/')[0])
         return True
     if path.startswith('/store/sdk/'):
         item = _STORE_SDK.get(path[len('/store/sdk/'):])
@@ -9899,15 +9936,6 @@ def _store_public_get(handler, path):
         handler.send_header('Content-Length', str(len(body)))
         handler.end_headers()
         handler.wfile.write(body)
-        return True
-    if path == '/store/photoprism/img':
-        code, ctype, data = store_photoprism_img(qs.get('h', ''), qs.get('s', ''))
-        handler.send_response(code)
-        handler.send_header('Content-Type', ctype)
-        handler.send_header('Cache-Control', 'private, max-age=86400' if code == 200 else 'no-store')
-        handler.send_header('Content-Length', str(len(data)))
-        handler.end_headers()
-        handler.wfile.write(data)
         return True
     if path == '/store/logout':
         handler.send_response(200)
@@ -10387,6 +10415,11 @@ def _store_install_job(app, users, update=False):
         if not (_store_pass_wait(pass_s) if pass_s else _store_npm_wait(npm_s) if npm_s else _store_web_wait_running() if is_module else _store_health(app)):
             _store_job_set(app_id, state='done', step='Installée, mais elle ne répond pas encore', error='')
             return
+        if app_id == STORE_JF_ID:
+            try:
+                _jf_setup()   # compte administrateur prêt : l'assistant de Jellyfin n'a pas à être suivi
+            except Exception as e:
+                log.warning('Jellyfin : configuration de départ non faite (reprise à l’ouverture de la fenêtre) : %s', e)
         _store_job_set(app_id, state='done', step='Installée', error='')
         log.info('Magasin : %s %s (%s)', 'mise à jour' if update else 'installation', app_id, app.get('version'))
     except Exception as e:
@@ -10574,7 +10607,7 @@ def store_view():
         a['job'] = j or None
         if a['id'] == STORE_NPM_ID:
             a['npm'] = store_npm_info()
-        if _store_host_ports(a):
+        if a['id'] == STORE_NPM_ID or _store_host_ports(a):
             a['nas_ip'] = _truenas_ip() or SSH_HOST
         if inst and _store_install_fields(a):
             a['fields'] = _store_fields_get(a['id'])
@@ -11918,7 +11951,7 @@ _PP_HASH = re.compile(r'^[a-f0-9]{8,64}$')
 _PP_UID = re.compile(r'^[a-z0-9]{8,32}$')
 
 
-def _pp_http(method, path, data=None, headers=None, timeout=30, limit=8 * 1024 * 1024):
+def _pp_http(method, path, data=None, headers=None, timeout=30, limit=8 * 1024 * 1024, base=None):
     """(code, type de contenu, octets) ; RuntimeError si PhotoPrism ne répond pas. Ni proxy ni redirection."""
     import urllib.request, urllib.error
     class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -11931,7 +11964,7 @@ def _pp_http(method, path, data=None, headers=None, timeout=30, limit=8 * 1024 *
     if data is not None:
         body = json.dumps(data).encode('utf-8')
         hd['Content-Type'] = 'application/json'
-    req = urllib.request.Request(_PP_BASE + path, data=body, headers=hd, method=method)
+    req = urllib.request.Request((base or _PP_BASE) + path, data=body, headers=hd, method=method)
     try:
         with opener.open(req, timeout=timeout) as r:
             return r.status, r.headers.get('Content-Type', ''), r.read(limit)
@@ -11992,6 +12025,51 @@ def _pp_get(path, params=None, limit=8 * 1024 * 1024):
             raise RuntimeError('HTTP %d' % st)
         return ct, raw
     raise RuntimeError('session refusée')
+
+
+def _pp_write(method, path, data=None):
+    """Écriture dans PhotoPrism (albums, favoris) → JSON ; une reconnexion si la session est refusée."""
+    for attempt in (0, 1):
+        hd, _prev = _pp_auth(force=bool(attempt))
+        st, _ct, raw = _pp_http(method, path, data if data is not None else ({} if method in ('POST', 'PUT') else None), hd, limit=1024 * 1024)
+        if st in (401, 403) and not attempt:
+            continue
+        if st in (401, 403):
+            raise ValueError('auth')
+        if st == 404:
+            raise ValueError('Élément introuvable dans PhotoPrism.')
+        if st not in (200, 201):
+            raise RuntimeError('HTTP %d' % st)
+        try:
+            return json.loads(raw.decode('utf-8', 'replace')) if raw else {}
+        except ValueError:
+            return {}
+    raise RuntimeError('session refusée')
+
+
+def _pp_original(uid, video_only=False):
+    """Chemin, sur le NAS, du fichier original d'une photo ou vidéo ; ValueError (message lisible) sinon."""
+    _ct, raw = _pp_get('/api/v1/photos/%s' % uid)
+    d = _pp_json(raw)
+    files = [x for x in ((d.get('Files') or d.get('files') or []) if isinstance(d, dict) else []) if isinstance(x, dict)]
+    def kind(x):
+        return str(_px_media_type(str(_pp_first(x, 'Name', 'name'))) or '')
+    pick = [x for x in files if kind(x).startswith('video/')] if video_only else \
+        ([x for x in files if _pp_first(x, 'Primary', 'primary')] or files)
+    if not pick:
+        raise ValueError('Fichier introuvable : il n’est pas lisible depuis Desktroo.')
+    name = str(_pp_first(pick[0], 'Name', 'name')).strip('/')
+    if any(seg in ('', '.', '..') for seg in name.split('/')):
+        raise ValueError('Fichier introuvable : il n’est pas lisible depuis Desktroo.')
+    for m in (_store_nas_get(STORE_PP_ID) or {}).get('mounts') or []:
+        lab = str(m.get('label') or '')
+        if lab and name.startswith(lab + '/'):
+            root = os.path.realpath(str(m.get('path') or ''))
+            cand = os.path.realpath(os.path.join(root, name[len(lab) + 1:]))
+            if cand.startswith(root + os.sep) and os.path.isfile(cand):
+                return cand
+            break
+    raise ValueError('Ce fichier n’est pas accessible depuis Desktroo.')
 
 
 def _pp_int(v):
@@ -12075,14 +12153,20 @@ def store_photoprism_img(h, s):
     try:
         for attempt in (0, 1):
             hd, prev = _pp_auth(force=bool(attempt))
+            hd = dict(hd)
+            hd['Accept'] = 'image/jpeg,image/png,image/*;q=0.8,*/*;q=0.5'
             st, ct, raw = _pp_http('GET', '/api/v1/t/%s/%s/%s' % (h, prev, s), headers=hd, timeout=60, limit=24 * 1024 * 1024)
-            if st in (401, 403) and not attempt:
-                continue
             if st == 200 and ct.lower().startswith('image/'):
                 return 200, ct.split(';')[0], raw
-            return (404 if st == 404 else 502), 'text/plain', b''
-    except (ValueError, RuntimeError):
-        pass
+            why = 'PhotoPrism : HTTP %s (%s) %s' % (st, ct.split(';')[0] or '?', raw[:120].decode('utf-8', 'replace') if st != 200 else '')
+            if not attempt:
+                continue   # PhotoPrism change de jeton d'aperçu à chaque redémarrage : une seule reconnexion, puis on réessaie
+            log.warning('Miniature PhotoPrism refusée : %s', why)
+            return (404 if st == 404 else 502), 'text/plain; charset=utf-8', why.encode('utf-8')
+    except ValueError:
+        return 502, 'text/plain; charset=utf-8', 'PhotoPrism : session refusée'.encode('utf-8')
+    except RuntimeError as e:
+        return 502, 'text/plain; charset=utf-8', ('PhotoPrism : ' + str(e)[:140]).encode('utf-8')
     return 502, 'text/plain', b''
 
 
@@ -12143,6 +12227,79 @@ def store_photoprism_api(body):
             t = _threading.Thread(target=_pp_index_run, args=(path,), daemon=True)
             t.start()
             return 200, {'ok': True, 'job': _pp_job_view()}
+        if action == 'fav':
+            uid = str(b.get('uid') or '')
+            if not _PP_UID.match(uid):
+                return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+            on = bool(b.get('on'))
+            for attempt in (0, 1):
+                hd, _prev = _pp_auth(force=bool(attempt))
+                st, _ct, _raw = _pp_http('POST' if on else 'DELETE', '/api/v1/photos/%s/like' % uid, headers=hd, limit=65536)
+                if st in (401, 403) and not attempt:
+                    continue
+                break
+            if st in (401, 403):
+                raise ValueError('auth')
+            if st != 200:
+                raise RuntimeError('HTTP %d' % st)
+            return 200, {'ok': True, 'fav': on}
+        if action in ('video', 'original'):
+            uid = str(b.get('uid') or '')
+            if not _PP_UID.match(uid):
+                return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+            host = _pp_original(uid, video_only=(action == 'video'))
+            try:
+                t = _px_media_ticket(host)
+            except ValueError as e:
+                return 400, {'ok': False, 'error': str(e)}
+            return 200, {'ok': True, 'url': '/media/' + t + '/' + _px_quote(os.path.basename(host)), 'type': _px_media_type(host),
+                         'name': os.path.basename(host)}
+        if action == 'info':
+            uid = str(b.get('uid') or '')
+            if not _PP_UID.match(uid):
+                return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+            _ct, raw = _pp_get('/api/v1/photos/%s' % uid)
+            d = _pp_json(raw) if raw else {}
+            d = d if isinstance(d, dict) else {}
+            files = [x for x in (d.get('Files') or d.get('files') or []) if isinstance(x, dict)]
+            fl = files[0] if files else {}
+            cam = ' '.join(x for x in (str(_pp_first(d, 'CameraMake', 'camera_make') or ''), str(_pp_first(d, 'CameraModel', 'camera_model') or '')) if x)
+            place = ', '.join(x for x in (str(_pp_first(d, 'PlaceCity', 'place_city') or ''), str(_pp_first(d, 'PlaceCountry', 'place_country') or '')) if x)
+            return 200, {'ok': True, 'info': {
+                'title': str(_pp_first(d, 'Title', 'title'))[:200], 'description': str(_pp_first(d, 'Description', 'description'))[:600],
+                'taken': str(_pp_first(d, 'TakenAtLocal', 'TakenAt', 'taken_at'))[:25], 'camera': cam[:80],
+                'lens': str(_pp_first(d, 'LensModel', 'lens_model') or '')[:80], 'iso': _pp_int(_pp_first(d, 'Iso', 'iso')),
+                'exposure': str(_pp_first(d, 'Exposure', 'exposure') or '')[:20], 'fnumber': _pp_first(d, 'FNumber', 'f_number') or 0,
+                'focal': _pp_int(_pp_first(d, 'FocalLength', 'focal_length')), 'place': place[:120],
+                'width': _pp_int(_pp_first(fl, 'Width', 'width')), 'height': _pp_int(_pp_first(fl, 'Height', 'height')),
+                'size': _pp_int(_pp_first(fl, 'Size', 'size')), 'file': str(_pp_first(fl, 'Name', 'name') or '')[:300],
+                'mime': str(_pp_first(fl, 'Mime', 'mime') or '')[:40]}}
+        if action == 'album_create':
+            title = str(b.get('title') or '').strip()[:120]
+            if not title:
+                return 400, {'ok': False, 'error': 'Donnez un nom à l’album.'}
+            d = _pp_write('POST', '/api/v1/albums', {'Title': title, 'Favorite': False})
+            auid = str(_pp_first(d, 'UID', 'uid'))
+            if not _PP_UID.match(auid):
+                raise RuntimeError('album non créé')
+            return 200, {'ok': True, 'uid': auid, 'title': title}
+        if action in ('album_rename', 'album_delete', 'album_add', 'album_remove'):
+            auid = str(b.get('uid') or '')
+            if not _PP_UID.match(auid):
+                return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+            if action == 'album_delete':
+                _pp_write('DELETE', '/api/v1/albums/%s' % auid)
+            elif action == 'album_rename':
+                title = str(b.get('title') or '').strip()[:120]
+                if not title:
+                    return 400, {'ok': False, 'error': 'Donnez un nom à l’album.'}
+                _pp_write('PUT', '/api/v1/albums/%s' % auid, {'Title': title})
+            else:
+                ph = [str(x) for x in (b.get('photos') or [])][:50]
+                if not ph or not all(_PP_UID.match(x) for x in ph):
+                    return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+                _pp_write('POST' if action == 'album_add' else 'DELETE', '/api/v1/albums/%s/photos' % auid, {'photos': ph})
+            return 200, {'ok': True}
         count = max(1, min(int(b.get('count') or 60), 120))
         offset = max(0, int(b.get('offset') or 0))
         if action == 'photos':
@@ -12167,7 +12324,10 @@ def store_photoprism_api(body):
             rows = [x for x in (_pp_photo(p) for p in (data if isinstance(data, list) else [])) if x]
             return 200, {'ok': True, 'photos': rows, 'more': isinstance(data, list) and len(data) >= count}
         if action == 'albums':
-            _ct, raw = _pp_get('/api/v1/albums', {'count': 300, 'offset': 0, 'type': 'album', 'order': 'newest'})
+            kind = str(b.get('kind') or 'album')
+            if kind not in ('album', 'moment', 'month', 'state'):
+                kind = 'album'
+            _ct, raw = _pp_get('/api/v1/albums', {'count': 300, 'offset': 0, 'type': kind, 'order': 'newest'})
             data = _pp_json(raw)
             rows = []
             for a in (data if isinstance(data, list) else []):
@@ -12175,7 +12335,27 @@ def store_photoprism_api(body):
                 rows.append({'uid': str(_pp_first(a, 'UID', 'uid')), 'title': str(_pp_first(a, 'Title', 'title'))[:120],
                               'count': _pp_int(_pp_first(a, 'PhotoCount', 'photo_count')),
                               'thumb': th if _PP_HASH.match(th) else ''})
-            return 200, {'ok': True, 'albums': [r for r in rows if _PP_UID.match(r['uid'])]}
+            rows = [r for r in rows if _PP_UID.match(r['uid'])]
+            if kind != 'album':
+                # Mois / moments : PhotoPrism tient mal leur décompte et leur vignette ; on vérifie avec la première photo,
+                # et on retire ceux qui ne contiennent rien (restes d'anciennes indexations).
+                keep, probes = [], 0
+                for r in rows:
+                    if r['count'] > 0 and r['thumb']:
+                        keep.append(r); continue
+                    if probes >= 60:
+                        continue
+                    probes += 1
+                    try:
+                        _c2, raw2 = _pp_get('/api/v1/photos', {'count': 1, 'offset': 0, 'merged': 'true', 'album': r['uid']})
+                        first = [x for x in (_pp_photo(p) for p in (_pp_json(raw2) if isinstance(_pp_json(raw2), list) else [])) if x]
+                    except (ValueError, RuntimeError):
+                        first = []
+                    if first:
+                        r['thumb'] = r['thumb'] or str(first[0].get('hash') or '')
+                        keep.append(r)
+                rows = keep
+            return 200, {'ok': True, 'albums': rows}
         if action == 'folders':
             import urllib.parse
             path = _pp_clean_path(b.get('path'))
@@ -12199,6 +12379,677 @@ def store_photoprism_api(body):
         return 400, {'ok': False, 'error': str(e)}
     except RuntimeError as e:
         return 502, {'ok': False, 'error': 'PhotoPrism ne répond pas : ' + str(e)}
+    return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+
+
+# ── MDM-STORE-V1 · fenêtre « Jellyfin » : le NAS parle à l'API de Jellyfin (bibliothèques, comptes, état) ──────────────
+# Le NAS crée lui-même le compte administrateur « admin » au premier démarrage (assistant de Jellyfin sauté), puis s'y
+# connecte avec son mot de passe propre à l'installation (ou celui que l'utilisateur a choisi depuis). Mot de passe et
+# jeton restent sur le NAS : le navigateur ne voit que des listes et des affiches.
+STORE_JF_ID = 'jellyfin'
+_JF_BASE = 'http://dt-jellyfin:8080'
+_JF_LOCK = _threading.Lock()
+_JF_SETUP_LOCK = _threading.Lock()
+_jf_sess = {}
+_JF_ID = re.compile(r'^[a-f0-9]{32}$')
+_JF_TYPES = ('movies', 'tvshows', 'music', 'homevideos', 'books')
+_JF_AUTH = 'MediaBrowser Client="Desktroo", Device="Desktroo NAS", DeviceId="desktroo-nas", Version="1.0"'
+
+
+def _jf_http(method, path, data=None, token=None, timeout=30, limit=4 * 1024 * 1024):
+    """(code, octets) ; RuntimeError si Jellyfin ne répond pas."""
+    hd = {'Authorization': _JF_AUTH + (', Token="%s"' % token if token else '')}
+    try:
+        st, _ct, raw = _pp_http(method, path, data, hd, timeout=timeout, limit=limit, base=_JF_BASE)
+    except RuntimeError:
+        raise
+    return st, raw
+
+
+def _jf_json(raw):
+    try:
+        return json.loads(raw.decode('utf-8', 'replace'))
+    except ValueError:
+        return None
+
+
+def _jf_password():
+    return str(_store_fields_get(STORE_JF_ID).get('password') or '') or _store_derive(STORE_JF_ID, 'jellyfin')
+
+
+def _jf_login(pw=None, user=None):
+    """Ouvre une session ; ValueError('auth') si le mot de passe est refusé, RuntimeError sinon."""
+    user = user or str(_store_fields_get(STORE_JF_ID).get('user') or '') or 'admin'
+    st, raw = _jf_http('POST', '/Users/AuthenticateByName', {'Username': user, 'Pw': _jf_password() if pw is None else pw})
+    if st in (400, 401, 403):
+        raise ValueError('auth')
+    d = _jf_json(raw) if st == 200 else None
+    if not isinstance(d, dict) or not d.get('AccessToken'):
+        raise RuntimeError('HTTP %d' % st)
+    uid = str((d.get('User') or {}).get('Id') or '').replace('-', '')
+    with _JF_LOCK:
+        _jf_sess.clear()
+        _jf_sess.update({'tok': str(d['AccessToken']), 'uid': uid, 'at': _st_time.time()})
+
+
+def _jf_token(force=False):
+    with _JF_LOCK:
+        ok = _jf_sess.get('tok') and _st_time.time() - _jf_sess.get('at', 0) < 1800
+    if force or not ok:
+        _jf_login()
+    with _JF_LOCK:
+        return _jf_sess['tok']
+
+
+def _jf_call(method, path, params=None, data=None, limit=4 * 1024 * 1024, expect=(200, 204)):
+    """Appel authentifié (une reconnexion si le jeton est refusé) → JSON ou None ; ValueError('auth'), RuntimeError."""
+    import urllib.parse
+    url = path + (('?' + urllib.parse.urlencode(params)) if params else '')
+    for attempt in (0, 1):
+        st, raw = _jf_http(method, url, data, token=_jf_token(force=bool(attempt)), limit=limit)
+        if st == 401 and not attempt:
+            continue
+        if st == 401:
+            raise ValueError('auth')
+        if st == 400 and raw:
+            d = _jf_json(raw)
+            raise ValueError(str(d if isinstance(d, str) else (d or {}).get('title') or raw[:160].decode('utf-8', 'replace'))[:160])
+        if st not in expect:
+            raise RuntimeError('HTTP %d' % st)
+        return _jf_json(raw) if raw else None
+    raise RuntimeError('session refusée')
+
+
+def _jf_setup():
+    """Premier démarrage : langue, pays et compte « admin » (assistant sauté). Sans effet si déjà fait."""
+    with _JF_SETUP_LOCK:
+        st, raw = _jf_http('GET', '/System/Info/Public')
+        d = _jf_json(raw) if st == 200 else None
+        if not isinstance(d, dict):
+            raise RuntimeError('HTTP %d' % st)
+        if d.get('StartupWizardCompleted'):
+            return False
+        pw = _jf_password()
+        steps = [('POST', '/Startup/Configuration', {'UICulture': 'fr', 'MetadataCountryCode': 'FR', 'PreferredMetadataLanguage': 'fr'}),
+                 ('GET', '/Startup/User', None),
+                 ('POST', '/Startup/User', {'Name': 'admin', 'Password': pw}),
+                 ('POST', '/Startup/RemoteAccess', {'EnableRemoteAccess': True, 'EnableAutomaticPortMapping': False}),
+                 ('POST', '/Startup/Complete', None)]
+        for m, p, body in steps:
+            s, _r = _jf_http(m, p, body)
+            if s not in (200, 204):
+                raise RuntimeError('assistant : %s HTTP %d' % (p, s))
+        log.info('Magasin : Jellyfin configuré (compte administrateur créé)')
+        return True
+
+
+def _jf_hexid(v):
+    return str(v or '').replace('-', '').lower()
+
+
+def _jf_clean_path(p, allow_root=False):
+    """Chemin sous /nas (les dossiers cochés pour l'app), sans « .. » ni dossier technique ; '' si refusé."""
+    p = '/' + str(p or '').strip().strip('/')
+    if p == '/' and allow_root:
+        return '/nas'
+    if not re.match(r'^/nas(/[^/\x00-\x1f]{1,255}){0,12}$', p) or '..' in p.split('/'):
+        return ''
+    if any(_PP_HIDE.match(seg) for seg in p.split('/')[2:]):
+        return ''
+    return p
+
+
+def _jf_item(x):
+    iid = _jf_hexid(x.get('Id'))
+    if not _JF_ID.match(iid):
+        return None
+    tags = x.get('ImageTags') if isinstance(x.get('ImageTags'), dict) else {}
+    return {'id': iid, 'name': str(x.get('Name') or '')[:120], 'type': str(x.get('Type') or '')[:20],
+            'series': str(x.get('SeriesName') or '')[:120], 'year': _pp_int(x.get('ProductionYear')),
+            'img': bool(tags.get('Primary'))}
+
+
+_JF_CNT = {}
+
+
+def _jf_libraries(busy=False):
+    """Bibliothèques et nombre de titres. Pendant une analyse Jellyfin est très sollicité : on réutilise le dernier
+    décompte (moins d'une minute) au lieu de l'interroger à chaque rafraîchissement."""
+    rows = []
+    for f in (_jf_call('GET', '/Library/VirtualFolders') or []):
+        iid = _jf_hexid(f.get('ItemId'))
+        typ = str(f.get('CollectionType') or '')
+        count = 0
+        incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo'}.get(typ)
+        if incl and _JF_ID.match(iid):
+            old = _JF_CNT.get(iid)
+            if busy and old and _st_time.time() - old[1] < 60:
+                count = old[0]
+            else:
+                try:
+                    r = _jf_call('GET', '/Items', {'ParentId': iid, 'Recursive': 'true', 'Limit': 0, 'IncludeItemTypes': incl})
+                    count = _pp_int((r or {}).get('TotalRecordCount'))
+                    _JF_CNT[iid] = (count, _st_time.time())
+                except (ValueError, RuntimeError):
+                    count = old[0] if old else 0
+        rows.append({'id': iid, 'name': str(f.get('Name') or '')[:80], 'type': typ,
+                     'paths': [str(x)[:300] for x in (f.get('Locations') or [])][:10], 'count': count})
+    return rows
+
+def _jf_dir_exists(path):
+    try:
+        _jf_call('GET', '/Environment/DirectoryContents', {'path': path, 'includeFiles': 'false', 'includeDirectories': 'true'})
+        return True
+    except ValueError:
+        return False
+    except RuntimeError as e:
+        if str(e).startswith('HTTP '):    # Jellyfin répond par une erreur (404, 500…) pour un dossier qui n'existe pas
+            return False
+        raise
+
+
+def _jf_repair_plan():
+    """Chemins de bibliothèque devenus introuvables (ex. /media/series d'un ancien serveur) et dossier /nas proposé."""
+    folders = []
+    try:
+        for f in (_jf_call('GET', '/Environment/DirectoryContents', {'path': '/nas', 'includeFiles': 'false', 'includeDirectories': 'true'}) or []):
+            p = str(f.get('Path') or '').rstrip('/')
+            if p.startswith('/nas/') and p.count('/') == 2 and _jf_clean_path(p):
+                folders.append(p)
+    except ValueError:
+        pass
+    except RuntimeError as e:
+        if not str(e).startswith('HTTP '):
+            raise
+    norm = lambda s: re.sub(r'[^a-z0-9]', '', str(s).lower())
+    plan = []
+    for lib in _jf_libraries(True):
+        for old in lib['paths']:
+            if old.startswith('/nas/') or old.startswith('/config/') or _jf_dir_exists(old):
+                continue
+            n = norm(old.rstrip('/').rsplit('/', 1)[-1])
+            cand = [f for f in folders if norm(f.rsplit('/', 1)[-1]) == n]
+            if not cand:
+                pre = [f for f in folders if n and norm(f.rsplit('/', 1)[-1]).startswith(n)]
+                cand = pre if len(pre) == 1 else []
+            plan.append({'library': lib['name'], 'old': old, 'new': cand[0] if len(cand) == 1 else ''})
+    return plan
+
+
+
+def _jf_scan_state():
+    for t in (_jf_call('GET', '/ScheduledTasks') or []):
+        if t.get('Key') == 'RefreshLibrary':
+            run = str(t.get('State') or '') == 'Running'
+            return {'running': run, 'pct': int(round(float(t.get('CurrentProgressPercentage') or 0))) if run else 0}
+    return {'running': False, 'pct': 0}
+
+
+def _jf_user_row(u):
+    pol = u.get('Policy') if isinstance(u.get('Policy'), dict) else {}
+    return {'id': _jf_hexid(u.get('Id')), 'name': str(u.get('Name') or '')[:60], 'admin': bool(pol.get('IsAdministrator')),
+            'disabled': bool(pol.get('IsDisabled')), 'rating': pol.get('MaxParentalRating') if isinstance(pol.get('MaxParentalRating'), int) else None,
+            'last': str(u.get('LastActivityDate') or '')[:25]}
+
+
+def _jf_set_policy(uid, disabled=None, rating='keep'):
+    u = _jf_call('GET', '/Users/' + uid)
+    pol = u.get('Policy') if isinstance(u, dict) and isinstance(u.get('Policy'), dict) else None
+    if pol is None:
+        raise RuntimeError('compte illisible')
+    if disabled is not None:
+        pol['IsDisabled'] = bool(disabled)
+    if rating != 'keep':
+        pol['MaxParentalRating'] = rating
+    _jf_call('POST', '/Users/%s/Policy' % uid, data=pol)
+
+
+def store_jellyfin_img(item_id, size='tile'):
+    """Affiche d'un élément : (code, type de contenu, octets). Jamais d'identifiant libre vers Jellyfin."""
+    iid = _jf_hexid(item_id)
+    if STORE_JF_ID not in store_installed_get() or not _JF_ID.match(iid):
+        return 404, 'text/plain', b''
+    h = 360 if size != 'big' else 900
+    try:
+        for attempt in (0, 1):
+            st, ct, raw = _pp_http('GET', '/Items/%s/Images/Primary?fillHeight=%d&quality=85' % (iid, h),
+                                   headers={'Authorization': _JF_AUTH + ', Token="%s"' % _jf_token(force=bool(attempt)),
+                                            'Accept': 'image/jpeg,image/png,image/webp,image/*;q=0.8,*/*;q=0.5'},
+                                   base=_JF_BASE, limit=4 * 1024 * 1024)
+            if st == 401 and not attempt:
+                continue
+            break
+    except (ValueError, RuntimeError):
+        return 502, 'text/plain', b''
+    if st != 200 or not str(ct).lower().startswith('image/'):
+        return 404, 'text/plain', b''
+    return 200, str(ct).split(';')[0], raw
+
+
+# ── Lecture dans la fenêtre : Jellyfin relayé par une adresse signée (le navigateur n'a ni jeton ni accès au réseau local) ──
+_JF_DIRECT_CONT = ('mp4', 'm4v', 'mov', 'webm')
+_JF_DIRECT_VID = ('h264', 'vp8', 'vp9', 'av1')
+_JF_DIRECT_AUD = ('aac', 'mp3', 'opus', 'vorbis', 'flac')
+
+
+def _jf_ticket(iid, mode, start=0, ttl=8 * 3600):
+    raw = json.dumps([iid, mode, int(start), int(_px_time.time()) + int(ttl)]).encode('utf-8')
+    sig = _px_hmac.new(_PX_MEDIA_KEY, b'jf' + raw, _px_hash.sha256).digest()[:16]
+    return _px_b64.urlsafe_b64encode(sig + raw).decode('ascii').rstrip('=')
+
+
+def _jf_ticket_parse(t):
+    try:
+        blob = _px_b64.urlsafe_b64decode(str(t) + '=' * (-len(str(t)) % 4))
+        sig, raw = blob[:16], blob[16:]
+        if not _px_hmac.compare_digest(sig, _px_hmac.new(_PX_MEDIA_KEY, b'jf' + raw, _px_hash.sha256).digest()[:16]):
+            return None
+        iid, mode, start, exp = json.loads(raw.decode('utf-8'))
+        if int(exp) < _px_time.time() or not _JF_ID.match(str(iid)) or mode not in ('direct', 'trans', 'audio'):
+            return None
+        return str(iid), str(mode), max(0, int(start))
+    except Exception:
+        return None
+
+
+def _jf_stream_path(iid, mode, start):
+    if mode == 'audio':
+        return '/Audio/%s/stream?static=true&MediaSourceId=%s' % (iid, iid)
+    if mode == 'direct':
+        return '/Videos/%s/stream?static=true&MediaSourceId=%s' % (iid, iid)
+    return ('/Videos/%s/stream.mp4?MediaSourceId=%s&VideoCodec=h264&AudioCodec=aac&MaxAudioChannels=2&TranscodingMaxAudioChannels=2'
+            '&VideoBitRate=8000000&AudioBitRate=192000&SubtitleMethod=Hide&DeviceId=desktroo-nas&StartTimeTicks=%d&PlaySessionId=dk%s'
+            % (iid, iid, int(start) * 10000000, _px_time.strftime('%H%M%S')))
+
+
+def _jf_stream_serve(handler, ticket):
+    """Relaie le flux Jellyfin (Range compris) vers le navigateur."""
+    import http.client
+    t = _jf_ticket_parse(ticket)
+    if not t or STORE_JF_ID not in store_installed_get():
+        handler.send_response(404); handler.send_header('Content-Length', '0'); handler.end_headers(); return
+    iid, mode, start = t
+    conn = None
+    try:
+        host, port = _JF_BASE.split('//', 1)[1].split(':')
+        r = None
+        for attempt in (0, 1):
+            hd = {'Authorization': _JF_AUTH + ', Token="%s"' % _jf_token(force=bool(attempt))}
+            if handler.headers.get('Range') and mode != 'trans':
+                hd['Range'] = handler.headers.get('Range')
+            conn = http.client.HTTPConnection(host, int(port), timeout=60)
+            conn.request('GET', _jf_stream_path(iid, mode, start), headers=hd)
+            r = conn.getresponse()
+            if r.status in (401, 403) and not attempt:
+                conn.close()
+                continue
+            break
+        if r.status not in (200, 206):
+            handler.send_response(502 if r.status >= 500 else 404); handler.send_header('Content-Length', '0'); handler.end_headers(); return
+        handler.send_response(r.status)
+        for k in ('Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges'):
+            if r.getheader(k):
+                handler.send_header(k, r.getheader(k))
+        if not r.getheader('Content-Length'):
+            handler.send_header('Connection', 'close')
+            handler.close_connection = True
+        handler.send_header('Cache-Control', 'private, no-store')
+        handler.send_header('X-Content-Type-Options', 'nosniff')
+        handler.end_headers()
+        while True:
+            chunk = r.read(256 * 1024)
+            if not chunk:
+                break
+            handler.wfile.write(chunk)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+    except Exception as e:
+        log.warning('lecture Jellyfin : %s', e)
+        try:
+            handler.send_response(502); handler.send_header('Content-Length', '0'); handler.end_headers()
+        except Exception:
+            pass
+    finally:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+
+
+def _jf_uid():
+    with _JF_LOCK:
+        uid = _jf_sess.get('uid') or ''
+    if not _JF_ID.match(uid):
+        _jf_token(force=True)
+        with _JF_LOCK:
+            uid = _jf_sess.get('uid') or ''
+    return uid
+
+
+def _jf_try(variants):
+    """Essaie plusieurs chemins (selon la version de Jellyfin) ; garde la première réponse acceptée."""
+    last = None
+    for m, p, prm, data in variants:
+        try:
+            return _jf_call(m, p, prm, data)
+        except RuntimeError as e:
+            last = e
+    raise last or RuntimeError('Jellyfin')
+
+
+def _jf_sec(ticks):
+    return int(_pp_int(ticks) / 10000000)
+
+
+def _jf_detail(iid):
+    uid = _jf_uid()
+    x = _jf_call('GET', '/Users/%s/Items/%s' % (uid, iid)) or {}
+    ud = x.get('UserData') if isinstance(x.get('UserData'), dict) else {}
+    typ = str(x.get('Type') or '')
+    srcs = [m for m in (x.get('MediaSources') or []) if isinstance(m, dict)]
+    ppl = [{'name': str(p.get('Name') or '')[:60], 'role': str(p.get('Role') or p.get('Type') or '')[:60]}
+           for p in (x.get('People') or []) if isinstance(p, dict) and p.get('Name')][:8]
+    out = {'id': iid, 'name': str(x.get('Name') or '')[:160], 'type': typ, 'year': _pp_int(x.get('ProductionYear')),
+           'rating': str(x.get('OfficialRating') or '')[:12], 'score': round(float(x.get('CommunityRating') or 0), 1),
+           'minutes': int(_jf_sec(x.get('RunTimeTicks')) / 60), 'overview': str(x.get('Overview') or '')[:1500],
+           'genres': [str(g)[:30] for g in (x.get('Genres') or [])][:6], 'people': ppl,
+           'series': str(x.get('SeriesName') or '')[:120], 'season': _pp_int(x.get('ParentIndexNumber')), 'ep': _pp_int(x.get('IndexNumber')),
+           'pos': _jf_sec(ud.get('PlaybackPositionTicks')), 'played': bool(ud.get('Played')), 'fav': bool(ud.get('IsFavorite')),
+           'img': bool((x.get('ImageTags') or {}).get('Primary')), 'playable': typ in ('Movie', 'Episode', 'Video', 'MusicVideo', 'Audio'),
+           'seriesId': _jf_hexid(x.get('SeriesId')), 'children': [], 'next': ''}
+    if typ == 'Series':
+        eps = (_jf_call('GET', '/Shows/%s/Episodes' % iid, {'userId': uid, 'Fields': 'Overview', 'Limit': 400}) or {}).get('Items') or []
+        seasons = {}
+        for e in eps:
+            if not isinstance(e, dict):
+                continue
+            eid = _jf_hexid(e.get('Id'))
+            if not _JF_ID.match(eid):
+                continue
+            eu = e.get('UserData') if isinstance(e.get('UserData'), dict) else {}
+            row = {'id': eid, 'name': str(e.get('Name') or '')[:120], 'n': _pp_int(e.get('IndexNumber')), 'played': bool(eu.get('Played')),
+                   'pos': _jf_sec(eu.get('PlaybackPositionTicks')), 'minutes': int(_jf_sec(e.get('RunTimeTicks')) / 60),
+                   'overview': str(e.get('Overview') or '')[:300]}
+            seasons.setdefault(_pp_int(e.get('ParentIndexNumber')), []).append(row)
+            if not out['next'] and (row['pos'] or not row['played']):
+                out['next'] = eid
+        out['children'] = [{'season': k, 'eps': v} for k, v in sorted(seasons.items())]
+    elif typ in ('MusicAlbum', 'Playlist'):
+        tr = (_jf_call('GET', '/Items', {'ParentId': iid, 'IncludeItemTypes': 'Audio', 'SortBy': 'ParentIndexNumber,IndexNumber', 'Limit': 200}) or {}).get('Items') or []
+        out['children'] = [{'season': 0, 'eps': [{'id': _jf_hexid(e.get('Id')), 'name': str(e.get('Name') or '')[:120], 'n': _pp_int(e.get('IndexNumber')),
+                                                  'played': False, 'pos': 0, 'minutes': int(_jf_sec(e.get('RunTimeTicks')) / 60), 'overview': ''}
+                                                 for e in tr if isinstance(e, dict) and _JF_ID.match(_jf_hexid(e.get('Id')))]}]
+    out['_src'] = srcs[0] if srcs else {}
+    return out
+
+
+def _jf_play(iid, force_trans=False, start=None):
+    d = _jf_detail(iid)
+    src = d.pop('_src', {})
+    if not d['playable']:
+        raise ValueError('Cet élément ne se lit pas directement.')
+    streams = [s for s in (src.get('MediaStreams') or []) if isinstance(s, dict)]
+    vid = next((str(s.get('Codec') or '').lower() for s in streams if s.get('Type') == 'Video'), '')
+    aud = next((str(s.get('Codec') or '').lower() for s in streams if s.get('Type') == 'Audio'), '')
+    cont = [c.strip().lower() for c in str(src.get('Container') or '').split(',')]
+    pos = d['pos'] if start is None else max(0, int(start))
+    if d['type'] == 'Audio':
+        mode = 'audio'
+    elif not force_trans and any(c in _JF_DIRECT_CONT for c in cont) and vid in _JF_DIRECT_VID and (not aud or aud in _JF_DIRECT_AUD):
+        mode = 'direct'
+    else:
+        mode = 'trans'
+    dur = _jf_sec(src.get('RunTimeTicks')) or d['minutes'] * 60
+    return {'id': iid, 'mode': mode, 'url': '/store/jellyfin/stream/' + _jf_ticket(iid, mode, pos if mode == 'trans' else 0),
+            'name': d['name'], 'series': d['series'], 'season': d['season'], 'ep': d['ep'], 'duration': dur, 'pos': pos,
+            'offset': pos if mode == 'trans' else 0, 'audio': mode == 'audio', 'vcodec': vid, 'acodec': aud, 'container': ','.join(cont)[:30]}
+
+
+def store_jellyfin_api(body):
+    """{ action: state | save_password | clear_password | overview | libraries | folders | library_add | library_remove |
+    scan | users | ratings | user_add | user_set | user_delete } → { ok, ... }."""
+    if STORE_JF_ID not in store_installed_get():
+        return 409, {'ok': False, 'error': 'Jellyfin n’est pas installé.'}
+    b = body if isinstance(body, dict) else {}
+    action = str(b.get('action') or '')
+    fields = _store_fields_get(STORE_JF_ID)
+    try:
+        if action == 'state':
+            _jf_setup()
+            try:
+                _jf_token(force=True)
+            except ValueError:
+                return 200, {'ok': True, 'denied': True, 'custom': bool(fields.get('password')), 'user': str(fields.get('user') or 'admin')}
+            return 200, {'ok': True, 'denied': False, 'custom': bool(fields.get('password')), 'user': str(fields.get('user') or 'admin')}
+        if action == 'clear_password':
+            fields.pop('password', None); fields.pop('user', None)
+            _store_fields_set(STORE_JF_ID, fields or None)
+            with _JF_LOCK:
+                _jf_sess.clear()
+            return 200, {'ok': True}
+        if action == 'save_password':
+            pw = str(b.get('password') or '')
+            user = str(b.get('user') or '').strip() or 'admin'
+            if not re.match(r'^[^\x00-\x1f]{1,40}$', user):
+                return 400, {'ok': False, 'error': 'Nom de compte invalide.'}
+            if not (8 <= len(pw) <= 72):
+                return 400, {'ok': False, 'error': 'Le mot de passe doit faire de 8 à 72 caractères.'}
+            try:
+                _jf_login(pw, user)
+            except ValueError:
+                return 400, {'ok': False, 'error': 'Jellyfin refuse ce compte ou ce mot de passe.'}
+            fields['password'] = pw
+            if user != 'admin':
+                fields['user'] = user
+            else:
+                fields.pop('user', None)
+            _store_fields_set(STORE_JF_ID, fields)
+            return 200, {'ok': True}
+        _jf_setup()
+        if action == 'overview':
+            def soft(fn, default):
+                try:
+                    return fn()
+                except RuntimeError:
+                    return default   # Jellyfin occupé (analyse en cours) : on garde le reste de l'écran
+            info = _jf_call('GET', '/System/Info') or {}
+            scan = soft(_jf_scan_state, {'running': False, 'pct': 0})
+            cnt = soft(lambda: _jf_call('GET', '/Items/Counts') or {}, {})
+            playing = []
+            for s in soft(lambda: _jf_call('GET', '/Sessions', {'activeWithinSeconds': 960}) or [], []):
+                npi = s.get('NowPlayingItem')
+                if isinstance(npi, dict):
+                    ps = s.get('PlayState') if isinstance(s.get('PlayState'), dict) else {}
+                    playing.append({'user': str(s.get('UserName') or '')[:60], 'device': str(s.get('DeviceName') or '')[:60],
+                                    'client': str(s.get('Client') or '')[:40], 'paused': bool(ps.get('IsPaused')),
+                                    'item': _jf_item(npi) or {'id': '', 'name': str(npi.get('Name') or '')[:120], 'series': '', 'img': False}})
+            latest = []
+            with _JF_LOCK:
+                uid = _jf_sess.get('uid') or ''
+            if _JF_ID.match(uid):
+                for x in soft(lambda: _jf_call('GET', '/Users/%s/Items/Latest' % uid, {'Limit': 24, 'Fields': 'PrimaryImageAspectRatio'}) or [], []):
+                    it = _jf_item(x) if isinstance(x, dict) else None
+                    if it and it['img']:
+                        latest.append(it)
+            libs = soft(lambda: _jf_libraries(scan.get('running')), [])
+            rails = []
+            if not scan.get('running') and _JF_ID.match(uid):   # une rangée de nouveautés par bibliothèque (pas pendant une analyse)
+                for l in libs[:5]:
+                    if not _JF_ID.match(l.get('id') or ''):
+                        continue
+                    rows = soft(lambda l=l: _jf_call('GET', '/Users/%s/Items/Latest' % uid, {'ParentId': l['id'], 'Limit': 16, 'Fields': 'PrimaryImageAspectRatio'}) or [], [])
+                    its = [it for it in (_jf_item(x) for x in rows if isinstance(x, dict)) if it and it['img']]
+                    if its:
+                        rails.append({'id': l['id'], 'name': l['name'], 'type': l['type'], 'items': its[:16]})
+            resume, nextup = [], []
+            if not scan.get('running') and _JF_ID.match(uid):
+                for x in soft(lambda: (_jf_call('GET', '/Users/%s/Items/Resume' % uid, {'Limit': 12, 'MediaTypes': 'Video', 'Fields': 'PrimaryImageAspectRatio'}) or {}).get('Items') or [], []):
+                    it = _jf_item(x) if isinstance(x, dict) else None
+                    ud = x.get('UserData') if isinstance(x.get('UserData'), dict) else {}
+                    rt = _pp_int(x.get('RunTimeTicks'))
+                    if it and it['img'] and rt:
+                        it['pct'] = max(1, min(99, int(100 * _pp_int(ud.get('PlaybackPositionTicks')) / rt)))
+                        resume.append(it)
+                for x in soft(lambda: (_jf_call('GET', '/Shows/NextUp', {'userId': uid, 'Limit': 10, 'Fields': 'PrimaryImageAspectRatio'}) or {}).get('Items') or [], []):
+                    it = _jf_item(x) if isinstance(x, dict) else None
+                    if it and it['img']:
+                        nextup.append(it)
+            return 200, {'ok': True, 'server': {'name': str(info.get('ServerName') or '')[:60], 'version': str(info.get('Version') or '')[:20]},
+                         'counts': {'movies': _pp_int(cnt.get('MovieCount')), 'series': _pp_int(cnt.get('SeriesCount')),
+                                    'episodes': _pp_int(cnt.get('EpisodeCount')), 'songs': _pp_int(cnt.get('SongCount')),
+                                    'albums': _pp_int(cnt.get('AlbumCount'))},
+                         'libraries': libs, 'scan': scan, 'playing': playing, 'latest': latest[:20], 'rails': rails,
+                         'resume': resume[:12], 'nextup': nextup[:10]}
+        if action in ('detail', 'play', 'report', 'mark'):
+            iid = _jf_hexid(b.get('id'))
+            if not _JF_ID.match(iid):
+                return 400, {'ok': False, 'error': 'Élément inconnu.'}
+            if action == 'detail':
+                d = _jf_detail(iid); d.pop('_src', None)
+                return 200, {'ok': True, 'item': d}
+            if action == 'play':
+                return 200, dict(_jf_play(iid, bool(b.get('transcode')), b.get('start')), ok=True)
+            if action == 'report':
+                st = str(b.get('state') or 'progress')
+                if st not in ('start', 'progress', 'stop'):
+                    return 400, {'ok': False, 'error': 'État inconnu.'}
+                body2 = {'ItemId': iid, 'MediaSourceId': iid, 'PositionTicks': max(0, int(b.get('pos') or 0)) * 10000000,
+                         'IsPaused': bool(b.get('paused')), 'CanSeek': True, 'PlayMethod': 'DirectStream' if b.get('mode') == 'direct' else 'Transcode'}
+                _jf_call('POST', {'start': '/Sessions/Playing', 'progress': '/Sessions/Playing/Progress', 'stop': '/Sessions/Playing/Stopped'}[st], None, body2)
+                return 200, {'ok': True}
+            uid = _jf_uid()
+            if 'fav' in b:
+                on = bool(b.get('fav'))
+                _jf_try([('POST' if on else 'DELETE', '/UserFavoriteItems/%s' % iid, {'userId': uid}, None),
+                         ('POST' if on else 'DELETE', '/Users/%s/FavoriteItems/%s' % (uid, iid), None, None)])
+            if 'played' in b:
+                on = bool(b.get('played'))
+                _jf_try([('POST' if on else 'DELETE', '/UserPlayedItems/%s' % iid, {'userId': uid}, None),
+                         ('POST' if on else 'DELETE', '/Users/%s/PlayedItems/%s' % (uid, iid), None, None)])
+            return 200, {'ok': True}
+        if action == 'browse':
+            lib = _jf_hexid(b.get('library'))
+            if not _JF_ID.match(lib):
+                return 400, {'ok': False, 'error': 'Bibliothèque inconnue.'}
+            typ = str(b.get('type') or '')
+            incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo'}.get(typ)
+            prm = {'ParentId': lib, 'Recursive': 'true', 'SortBy': 'SortName', 'SortOrder': 'Ascending',
+                   'Limit': max(1, min(int(b.get('limit') or 48), 72)), 'StartIndex': max(0, int(b.get('start') or 0)),
+                   'Fields': 'PrimaryImageAspectRatio', 'EnableImageTypes': 'Primary'}
+            if incl:
+                prm['IncludeItemTypes'] = incl
+            q = str(b.get('q') or '').strip()[:100]
+            if q:
+                prm['SearchTerm'] = q
+            r = _jf_call('GET', '/Items', prm) or {}
+            its = [it for it in (_jf_item(x) for x in (r.get('Items') or []) if isinstance(x, dict)) if it]
+            return 200, {'ok': True, 'items': its, 'total': _pp_int(r.get('TotalRecordCount'))}
+        if action == 'repair':
+            if not b.get('apply'):
+                return 200, {'ok': True, 'plan': _jf_repair_plan()}
+            libs = {l['name']: l['paths'] for l in _jf_libraries()}
+            done = 0
+            for it in (b.get('items') if isinstance(b.get('items'), list) else [])[:30]:
+                name, old, new = str(it.get('library') or ''), str(it.get('old') or ''), _jf_clean_path(it.get('new'))
+                if name not in libs or old not in libs[name] or not new or new == '/nas' or old.startswith('/nas/'):
+                    continue
+                if new not in libs[name]:
+                    _jf_call('POST', '/Library/VirtualFolders/Paths', {'refreshLibrary': 'false'}, {'Name': name, 'PathInfo': {'Path': new}})
+                _jf_call('DELETE', '/Library/VirtualFolders/Paths', {'name': name, 'path': old, 'refreshLibrary': 'false'})
+                done += 1
+            if done:
+                _jf_call('POST', '/Library/Refresh')
+            return 200, {'ok': True, 'done': done, 'libraries': _jf_libraries(), 'scan': _jf_scan_state()}
+        if action == 'libraries':
+            scan = _jf_scan_state()
+            return 200, {'ok': True, 'libraries': _jf_libraries(scan.get('running')), 'scan': scan}
+        if action == 'folders':
+            path = _jf_clean_path(b.get('path'), allow_root=True)
+            if not path:
+                return 400, {'ok': False, 'error': 'Dossier non autorisé.'}
+            try:
+                data = _jf_call('GET', '/Environment/DirectoryContents', {'path': path, 'includeFiles': 'false', 'includeDirectories': 'true'}) or []
+            except ValueError:
+                return 200, {'ok': True, 'path': path, 'folders': [], 'empty': 'Aucun dossier du NAS n’est accessible ici.'}
+            rows = []
+            for f in data:
+                p = str(f.get('Path') or '').rstrip('/')
+                nm = p.rsplit('/', 1)[-1]
+                if p.startswith(path + '/') and p.count('/') == path.count('/') + 1 and _jf_clean_path(p) and not nm.startswith('.'):
+                    rows.append({'name': nm[:120], 'path': p})
+            rows.sort(key=lambda r: r['name'].lower())
+            return 200, {'ok': True, 'path': path, 'folders': rows}
+        if action == 'library_add':
+            name = str(b.get('name') or '').strip()
+            typ = str(b.get('type') or '')
+            paths = [_jf_clean_path(p) for p in (b.get('paths') if isinstance(b.get('paths'), list) else [])][:10]
+            if not re.match(r'^[^\\/\x00-\x1f]{1,60}$', name):
+                return 400, {'ok': False, 'error': 'Nom de bibliothèque invalide (1 à 60 caractères, sans « / »).'}
+            if typ not in _JF_TYPES:
+                return 400, {'ok': False, 'error': 'Type de bibliothèque inconnu.'}
+            if not paths or not all(paths) or any(p == '/nas' for p in paths):
+                return 400, {'ok': False, 'error': 'Choisissez au moins un dossier de votre NAS (pas la racine).'}
+            if any(l['name'].lower() == name.lower() for l in _jf_libraries()):
+                return 400, {'ok': False, 'error': 'Une bibliothèque porte déjà ce nom.'}
+            opts = {'PathInfos': [{'Path': p} for p in paths], 'PreferredMetadataLanguage': 'fr', 'MetadataCountryCode': 'FR'}
+            _jf_call('POST', '/Library/VirtualFolders', {'name': name, 'collectionType': typ, 'refreshLibrary': 'true'}, {'LibraryOptions': opts})
+            return 200, {'ok': True, 'libraries': _jf_libraries(), 'scan': _jf_scan_state()}
+        if action == 'library_remove':
+            name = str(b.get('name') or '')
+            if not any(l['name'] == name for l in _jf_libraries()):
+                return 404, {'ok': False, 'error': 'Bibliothèque introuvable.'}
+            _jf_call('DELETE', '/Library/VirtualFolders', {'name': name, 'refreshLibrary': 'true'})
+            return 200, {'ok': True, 'libraries': _jf_libraries(), 'scan': _jf_scan_state()}
+        if action == 'scan':
+            _jf_call('POST', '/Library/Refresh')
+            return 200, {'ok': True, 'scan': {'running': True, 'pct': 0}}
+        if action == 'ratings':
+            rat = _jf_call('GET', '/Localization/ParentalRatings') or []
+            fr = [r for r in rat if str(r.get('Name') or '').startswith('FR-')] or [r for r in rat if str(r.get('Name') or '').startswith('US-')] or rat
+            seen, out = set(), []
+            for r in sorted(fr, key=lambda r: (_pp_int(r.get('Value')), str(r.get('Name')))):
+                v = r.get('Value')
+                if isinstance(v, int) and v not in seen:
+                    seen.add(v); out.append({'name': str(r.get('Name'))[:30], 'value': v})
+            return 200, {'ok': True, 'ratings': out[:14]}
+        if action == 'users':
+            return 200, {'ok': True, 'users': [_jf_user_row(u) for u in (_jf_call('GET', '/Users') or [])]}
+        if action == 'user_add':
+            name, pw = str(b.get('name') or '').strip(), str(b.get('password') or '')
+            if not re.match(r'^[^\x00-\x1f]{1,40}$', name) or name.lower() == 'admin':
+                return 400, {'ok': False, 'error': 'Nom invalide (1 à 40 caractères, différent de « admin »).'}
+            if not (4 <= len(pw) <= 72):
+                return 400, {'ok': False, 'error': 'Le mot de passe doit faire de 4 à 72 caractères.'}
+            if any(u['name'].lower() == name.lower() for u in [_jf_user_row(x) for x in (_jf_call('GET', '/Users') or [])]):
+                return 400, {'ok': False, 'error': 'Ce nom existe déjà.'}
+            u = _jf_call('POST', '/Users/New', data={'Name': name, 'Password': pw})
+            uid = _jf_hexid((u or {}).get('Id'))
+            rating = b.get('rating')
+            if isinstance(rating, int) and _JF_ID.match(uid):
+                _jf_set_policy(uid, rating=rating)
+            return 200, {'ok': True, 'users': [_jf_user_row(x) for x in (_jf_call('GET', '/Users') or [])]}
+        if action in ('user_set', 'user_delete'):
+            uid = _jf_hexid(b.get('id'))
+            if not _JF_ID.match(uid):
+                return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+            target = _jf_user_row(_jf_call('GET', '/Users/' + uid) or {})
+            if target['admin']:
+                return 400, {'ok': False, 'error': 'Les comptes administrateurs se gèrent dans Jellyfin.'}
+            if action == 'user_delete':
+                _jf_call('DELETE', '/Users/' + uid)
+            else:
+                rating = b.get('rating', 'keep')
+                if rating != 'keep' and rating is not None and not isinstance(rating, int):
+                    return 400, {'ok': False, 'error': 'Limite d’âge invalide.'}
+                _jf_set_policy(uid, disabled=b.get('disabled') if isinstance(b.get('disabled'), bool) else None, rating=rating)
+            return 200, {'ok': True, 'users': [_jf_user_row(x) for x in (_jf_call('GET', '/Users') or [])]}
+    except ValueError as e:
+        if str(e) == 'auth':
+            return 200, {'ok': True, 'denied': True}
+        return 400, {'ok': False, 'error': str(e)}
+    except RuntimeError as e:
+        return 502, {'ok': False, 'error': 'Jellyfin ne répond pas : ' + str(e)}
     return 400, {'ok': False, 'error': 'Requête non autorisée.'}
 
 

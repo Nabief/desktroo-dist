@@ -3,6 +3,22 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.33 — 17 October 2026
+
+### New
+- **Jellyfin: your family media library, from Desktroo Apps.** Jellyfin sorts your NAS movies, shows, music and videos, fetches posters and summaries, and streams them to the TV, phone, tablet or browser. A Desktroo window replaces its administration interface: your libraries in the left column, a home page with the latest additions of each, search, a detailed page for every title (summary, cast, seasons and episodes) and your favorites.
+  > `jellyfin` app page (official image pinned by digest, Jellyfin 12.2). The NAS creates the administrator account itself at first start and drives Jellyfin's API; the password stays on the NAS (`/store/jellyfin/api`).
+- **Watch your movies in the Desktroo window, without opening Jellyfin.** Playback resumes where you left off (even from another device), episodes play one after another, and “Continue watching” and “Next episodes” appear on the home page. Formats the browser cannot play (MKV, x265, 5.1 sound…) are converted on the fly.
+  > Stream relayed through a signed, temporary address (`/store/jellyfin/stream/<ticket>`, Range supported): the browser has neither a Jellyfin token nor direct access to the local network. Direct play for mp4/webm in h264/vp9/av1 + aac/mp3/opus, otherwise transcoded `stream.mp4` (h264 + aac). Position saved through `/Sessions/Playing*`.
+- **Family accounts with an age limit**, created and set from the window: a child account only sees suitable titles.
+- **Taking over an old Jellyfin server.** After restoring a backup, the window spots library folders that are no longer reachable (e.g. `/media/series`) and offers, in one click, the matching NAS folder.
+  > `repair` action: name matching against the `/nas/…` folders; replacement through `POST/DELETE /Library/VirtualFolders/Paths`, then a scan.
+- **Publish Jellyfin under a domain name** from the window (“Domain” tab), with NPMplus.
+
+### Fixed
+- **The “Open” links of Desktroo Apps apps lead to the NAS address on your network**, no longer to the domain name you use to open Desktroo. This is the case of the NPMplus administration (port 8181), which did not answer through the domain.
+  > New `dkNasHost` helper: NAS IP from `nas_ip`, otherwise `truenas_ip`; the domain name is only a last resort.
+
 ## 2.54.19 — 17 October 2026
 
 ### Fixed
