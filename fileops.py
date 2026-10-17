@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.46'
+APP_VERSION = '2.54.48'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -8603,13 +8603,113 @@ def _lic_write_json(path, obj):
         return False
 
 
-def _lic_trial_start():
-    rec = _lic_read_json(TRIAL_FILE)
-    if rec and isinstance(rec.get('start'), (int, float)):
-        return int(rec['start'])
+TRIAL_PROV_DAYS = int(os.environ.get('TRIAL_PROV_DAYS', '3'))   # essai provisoire si desktroo.fr est injoignable
+TRIAL_FP_FILE   = os.path.join(ACCESS_DATA_DIR, 'trial-fp.json')
+TRIAL_MARK_FILE = os.path.join(APP_DIR or ACCESS_DATA_DIR, '.dk-t0')   # 2e témoin : survit à la suppression de trial.json
+TRIAL_RETRY     = 600
+
+
+def _lic_fingerprint():
+    """Empreinte IRRÉVERSIBLE du NAS (SHA-256), stable après réinstallation de Desktroo.
+    Basée sur l'UUID matériel (DMI) quand il existe, sinon GUID du pool de démarrage + machine-id de l'hôte.
+    Seul ce hachage quitte le NAS. None si l'hôte est injoignable."""
+    c = _lic_read_json(TRIAL_FP_FILE)
+    if c and re.match(r'^[0-9a-f]{64}$', str(c.get('fp', ''))):
+        return c['fp']
+    key = ''
+    try:
+        out, _e, _c = _px_host("cat /sys/class/dmi/id/product_uuid 2>/dev/null; echo '|'; "
+                               "zpool get -H -o value guid boot-pool 2>/dev/null; echo '|'; "
+                               "cat /etc/machine-id 2>/dev/null", timeout=15)
+        parts = [x.strip() for x in (out or '').split('|')]
+        dmi = (parts[0] if parts else '').lower()
+        if re.match(r'^[0-9a-f-]{32,36}$', dmi) and len(set(dmi.replace('-', ''))) > 2:
+            key = 'dmi:' + dmi
+        elif len(parts) >= 3 and parts[1] and parts[2]:
+            key = 'zfs:' + parts[1] + ':' + parts[2]
+    except Exception:
+        key = ''
+    if not key:
+        return None
+    fp = _lic_hashlib.sha256(('desktroo-trial-v1|' + key).encode('utf-8')).hexdigest()
+    _lic_write_json(TRIAL_FP_FILE, {'fp': fp})
+    return fp
+
+
+def _lic_trial_token_ok(tok, fp):
+    p = _lic_verify(tok) if tok else None
+    if not p or p.get('kind') != 'trial' or not isinstance(p.get('start'), (int, float)):
+        return None
+    if fp and p.get('fingerprint') != fp:
+        return None
+    return p
+
+
+def _lic_trial_state(now):
+    """-> dict(start, exp, provisional, now). Gère jeton signé, mode provisoire et recul d'horloge."""
+    rec = _lic_read_json(TRIAL_FILE) or {}
+    mark = _lic_read_json(TRIAL_MARK_FILE) or {}
+    fp = _lic_fingerprint() if rec.get('tok') else None
+    changed = False
+    hw = max(int(rec.get('hw') or 0), int(mark.get('hw') or 0))
+    if now < hw:
+        now = hw                      # horloge reculée : on ne rend pas de temps
+    elif now - hw > 600:
+        rec['hw'] = mark['hw'] = now
+        changed = True
+    p = _lic_trial_token_ok(rec.get('tok'), fp)
+    if p:
+        out = {'start': int(p['start']), 'exp': int(p.get('exp') or int(p['start']) + TRIAL_DAYS * 86400),
+               'provisional': False, 'now': now}
+    else:
+        prov = int(rec.get('prov') or 0) or int(mark.get('prov') or 0)
+        if not prov:
+            prov = now
+        if rec.get('prov') != prov or mark.get('prov') != prov:
+            rec['prov'] = mark['prov'] = prov
+            changed = True
+        legacy = rec.get('start')
+        prov_end = prov + TRIAL_PROV_DAYS * 86400
+        if isinstance(legacy, (int, float)):       # installation antérieure : date locale non signée, plafonnée
+            exp = min(int(legacy) + TRIAL_DAYS * 86400, prov_end)
+            start = int(legacy)
+        else:
+            exp, start = prov_end, prov
+        out = {'start': start, 'exp': exp, 'provisional': True, 'now': now}
+    if changed:
+        _lic_write_json(TRIAL_FILE, rec)
+        _lic_write_json(TRIAL_MARK_FILE, mark)
+    return out
+
+
+def license_trial_sync(force=False):
+    """Enregistre / relit l'essai auprès de desktroo.fr. True si un jeton d'essai valide est en place."""
     now = int(_lic_time.time())
-    _lic_write_json(TRIAL_FILE, {'start': now})
-    return now
+    rec = _lic_read_json(TRIAL_FILE) or {}
+    fp = _lic_fingerprint()
+    if not fp:
+        return False
+    p = _lic_trial_token_ok(rec.get('tok'), fp)
+    if p and not force and now - int(rec.get('sync') or 0) < LIC_REFRESH_INTERVAL:
+        return True
+    if not force and now - int(rec.get('try') or 0) < TRIAL_RETRY:
+        return bool(p)
+    rec['try'] = now
+    _lic_write_json(TRIAL_FILE, rec)
+    body = {'install_id': _lic_install_id(), 'fingerprint': fp}
+    claim = rec.get('start') if isinstance(rec.get('start'), (int, float)) else (rec.get('prov') or 0)
+    if claim:
+        body['claim'] = int(claim)
+    resp = _lic_server_post('trial', body, timeout=6)
+    if resp and resp.get('ok') and resp.get('token'):
+        q = _lic_trial_token_ok(str(resp['token']), fp)
+        if q:
+            rec['tok'] = str(resp['token'])
+            rec['sync'] = now
+            rec['hw'] = max(int(rec.get('hw') or 0), int(q.get('iat') or 0), now)
+            _lic_write_json(TRIAL_FILE, rec)
+            return True
+    return bool(p)
 
 
 def license_status():
@@ -8618,6 +8718,8 @@ def license_status():
     rec = _lic_read_json(LICENSE_FILE)
     if rec and rec.get('token'):
         p = _lic_verify(rec['token'])
+        if p and p.get('kind') == 'trial':
+            p = None
         if p and int(p.get('exp', 0)) > now and (not p.get('install_id') or p.get('install_id') == install):
             exp = int(p['exp'])
             return {'state': 'active', 'plan': p.get('plan', 'monthly'), 'exp': exp,
@@ -8634,10 +8736,11 @@ def license_status():
             return {'state': 'expired', 'plan': p.get('plan', 'monthly'), 'exp': exp,
                     'days_left': 0, 'customer': p.get('customer', ''), 'readonly': True,
                     'install_id': install, 'price': LICENSE_PRICE}
-    start = _lic_trial_start()
-    exp = start + TRIAL_DAYS * 86400
+    ts = _lic_trial_state(now)
+    exp = ts['exp']
+    now = ts['now']
     if now < exp:
-        return {'state': 'trial', 'plan': 'trial', 'exp': exp,
+        return {'state': 'trial', 'plan': 'trial', 'exp': exp, 'provisional': ts['provisional'],
                 'days_left': max(0, (exp - now + 86399) // 86400), 'readonly': False,
                 'install_id': install, 'price': LICENSE_PRICE}
     return {'state': 'expired', 'plan': 'trial', 'exp': exp, 'days_left': 0,
@@ -8648,7 +8751,7 @@ def license_activate(token):
     now = int(_lic_time.time())
     install = _lic_install_id()
     p = _lic_verify(token)
-    if not p:
+    if not p or p.get('kind') == 'trial':
         return (400, {'ok': False, 'error': 'Jeton invalide (signature non reconnue).'})
     if int(p.get('exp', 0)) <= now:
         return (400, {'ok': False, 'error': 'Jeton expiré.'})
@@ -10103,8 +10206,36 @@ def _store_pool():
     return m.group(1)
 
 
+_STORE_DS_CACHE = {}
+_STORE_DS_RE = re.compile(r'^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+){1,4}$')
+
+
+def _store_apps_base():
+    """Dossier de données des apps Desktroo : <pool>/apps/desktroo quand le dataset « apps » du pool existe (là où TrueNAS
+    et l'utilisateur rangent déjà leurs apps), sinon l'ancien <pool>/desktroo-apps."""
+    pool = _store_pool()
+    if pool in _STORE_DS_CACHE:
+        return _STORE_DS_CACHE[pool]
+    try:
+        out, _e, code = _px_host('zfs list -H -o name ' + shq(pool + '/apps') + ' 2>/dev/null', timeout=30)
+        if code == 0 and (out or '').strip() == pool + '/apps':
+            _STORE_DS_CACHE[pool] = pool + '/apps/desktroo'
+            return _STORE_DS_CACHE[pool]
+    except Exception as e:
+        log.warning('Magasin : dataset « apps » illisible : %s', e)
+    return pool + '/desktroo-apps'          # pas mis en cache : on relira au prochain appel
+
+
 def _store_dataset(app_id):
-    return '%s/desktroo-apps/%s' % (_store_pool(), app_id)
+    """Dataset des données d'une app. Une app déjà installée garde celui que le registre a retenu ; des données gardées à la
+    désinstallation dans l'ancien dossier sont reprises ; une nouvelle installation va dans apps/desktroo/<app>."""
+    ds = str((store_installed_get().get(app_id) or {}).get('dataset') or '')
+    if _STORE_DS_RE.match(ds) and not any(part in ('.', '..') for part in ds.split('/')):
+        return ds
+    legacy = '%s/desktroo-apps/%s' % (_store_pool(), app_id)
+    if os.path.isdir('/mnt/' + legacy):
+        return legacy
+    return '%s/%s' % (_store_apps_base(), app_id)
 
 
 def _store_timezone():
@@ -10342,7 +10473,7 @@ def _store_prepare_data(app):
     for d in (parent, ds):
         out, _e, code = _px_host('zfs list -H -o name ' + shq(d) + ' 2>/dev/null', timeout=30)
         if code != 0 or not out.strip():
-            if d == ds and re.match(r'^[A-Za-z0-9_.-]+/desktroo-apps/[a-z0-9][a-z0-9-]{0,40}$', d):
+            if d == ds and re.match(r'^[A-Za-z0-9_.-]+/(desktroo-apps|apps/desktroo)/[a-z0-9][a-z0-9-]{0,40}$', d):
                 # Un dossier ordinaire porte déjà ce nom (reste d'une désinstallation, ou dossier recréé par Docker) : un dataset
                 # ne peut pas le remplacer. Vide de fichiers, on le retire pour créer le dataset ; sinon on garde son contenu.
                 p = '/mnt/' + d
@@ -13733,6 +13864,18 @@ STORE_NAS_DIR = os.path.join(STORE_DIR, 'nas')
 _STORE_NAS_SKIP = re.compile(r'(^|/)(\.system|ix-apps|\.ix-apps|ix-applications|desktroo-apps)(/|$)|^boot-pool')
 
 
+def _store_ds_private(name):
+    """Données des apps Desktroo (apps/desktroo) et dataset « apps » qui les contient : jamais proposés à une app, qui lirait
+    sinon les coffres et certificats des autres."""
+    try:
+        base = _store_apps_base()
+    except Exception:
+        return False
+    if not base.endswith('/apps/desktroo'):
+        return False
+    return name == base or name.startswith(base + '/') or name == base.rsplit('/', 1)[0]
+
+
 def _store_nas_get(app_id):
     return _lic_read_json(os.path.join(STORE_NAS_DIR, app_id + '.json')) or None
 
@@ -13766,6 +13909,8 @@ def store_nas_choices():
         name, mp = name.strip(), mp.strip()
         # Dossiers cachés (/mnt/.truenas_containers… : disques des conteneurs et machines virtuelles) : jamais proposés.
         if not mp.startswith('/mnt/') or '/.' in mp or _STORE_NAS_SKIP.search(name) or name.count('/') > 3 or '/' not in name:
+            continue
+        if _store_ds_private(name):
             continue
         datasets.append({'name': name, 'path': mp})
     datasets.sort(key=lambda d: d['path'].lower())
@@ -14194,6 +14339,11 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             try:
                 try:
                     license_maybe_refresh()   # refresh en ligne en tâche de fond (throttlé)
+                except Exception:
+                    pass
+                try:
+                    if not (_lic_read_json(LICENSE_FILE) or {}).get('token'):
+                        license_trial_sync()   # essai enregistré sur desktroo.fr (throttlé)
                 except Exception:
                     pass
                 st = license_status()

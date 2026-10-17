@@ -3,6 +3,19 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.48 — 18 octobre 2026
+
+### Corrigé
+- **L'essai de 30 jours ne peut plus être prolongé.** Le début de l'essai est désormais enregistré sur desktroo.fr, lié à une empreinte irréversible de votre NAS (un hachage : aucun identifiant matériel n'est transmis en clair). Supprimer un fichier ou reculer l'horloge ne rend plus de jours. Si desktroo.fr est injoignable au premier lancement, Desktroo vous laisse 3 jours provisoires, le temps de joindre le serveur ; l'essai passe ensuite à 30 jours à compter du premier lancement. Les installations existantes gardent leur date d'essai.
+  > Serveur : route `/trial` (plugin Desktroo Licenses 1.4.0), table `desktroo_trials`, jeton signé RSA `kind: trial`. NAS : `_lic_fingerprint` (UUID DMI, sinon GUID `boot-pool` + machine-id hôte), `_lic_trial_state` (jeton, mode provisoire, témoin `.dk-t0`, garde anti-recul d'horloge), `license_trial_sync`.
+
+## 2.54.47 — 18 octobre 2026
+
+### Amélioré
+- **Les données des nouvelles apps vont dans votre dataset « apps ».** Au lieu d'un dataset à part (`desktroo-apps`), une app installée depuis Desktroo Apps range ses données dans `<pool>/apps/desktroo/<app>`, avec vos autres apps. Les apps déjà installées ne bougent pas, et des données gardées à la désinstallation sont retrouvées là où elles sont. Sans dataset « apps » sur le pool, l'ancien emplacement est conservé.
+  > `_store_dataset` : le registre d'installation fait foi pour une app existante ; sinon `apps/desktroo/<app>` si `<pool>/apps` est un dataset ZFS. Création en cascade (`apps/desktroo`, puis l'app).
+- **Les données des apps ne sont jamais proposées à une autre app.** Le dossier `apps/desktroo` et le dataset `apps` qui le contient sont retirés du choix des dossiers du NAS : une app qui lit « tout le NAS » ne voit pas les coffres et certificats des autres.
+
 ## 2.54.46 — 18 octobre 2026
 
 ### Corrigé

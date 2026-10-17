@@ -3,6 +3,19 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.48 — 18 October 2026
+
+### Fixed
+- **The 30-day trial can no longer be extended.** The trial start is now registered on desktroo.fr, tied to an irreversible fingerprint of your NAS (a hash: no hardware identifier is sent in clear). Deleting a file or setting the clock back no longer gives days back. If desktroo.fr cannot be reached at first launch, Desktroo gives you 3 provisional days to reach the server; the trial then runs 30 days from the first launch. Existing installations keep their trial date.
+  > Server: `/trial` route (Desktroo Licenses plugin 1.4.0), `desktroo_trials` table, RSA-signed token `kind: trial`. NAS: `_lic_fingerprint` (DMI UUID, else `boot-pool` GUID + host machine-id), `_lic_trial_state` (token, provisional mode, `.dk-t0` witness, clock-rollback guard), `license_trial_sync`.
+
+## 2.54.47 — 18 October 2026
+
+### Improved
+- **New apps' data now goes in your “apps” dataset.** Instead of a separate dataset (`desktroo-apps`), an app installed from Desktroo Apps keeps its data in `<pool>/apps/desktroo/<app>`, next to your other apps. Apps already installed do not move, and data kept at uninstall is found where it is. Without an “apps” dataset on the pool, the old location is kept.
+  > `_store_dataset`: the install registry decides for an existing app; otherwise `apps/desktroo/<app>` if `<pool>/apps` is a ZFS dataset. Cascading creation (`apps/desktroo`, then the app).
+- **Apps' data is never offered to another app.** The `apps/desktroo` folder and the `apps` dataset that contains it are removed from the NAS folder choice: an app that reads “the whole NAS” does not see the other apps' vaults and certificates.
+
 ## 2.54.46 — 18 October 2026
 
 ### Fixed
