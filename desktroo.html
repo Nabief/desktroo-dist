@@ -9641,6 +9641,48 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Vu {0}": "Seen {0}",
 "Les téléphones et ordinateurs autorisés à se connecter à votre réseau": "The phones and computers allowed to connect to your network",
 "Administration complète": "Full administration",
+  "Indexation en cours : {0} (depuis {1} min). Les photos apparaissent au fur et à mesure.": "Indexing in progress: {0} ({1} min so far). Photos appear as they are processed.",
+  "L’indexation de {0} s’est arrêtée : {1}": "Indexing of {0} stopped: {1}",
+  "mot de passe refusé, voir « Connexion »": "password refused, see “Connection”",
+  "Indexation terminée.": "Indexing finished.",
+  "Indexer le dossier « {0} » ? PhotoPrism va analyser ses photos et vidéos : cela peut durer longtemps et utiliser beaucoup le processeur.": "Index the folder “{0}”? PhotoPrism will analyze its photos and videos: this can take a long time and use a lot of CPU.",
+  "Indexer": "Index",
+  "Indexation lancée.": "Indexing started.",
+  "Arrêter l’indexation en cours ? Les photos déjà analysées restent dans PhotoPrism.": "Stop the current indexing? Photos already analyzed stay in PhotoPrism.",
+  "Indexation arrêtée.": "Indexing stopped.",
+  "Indexer ce dossier": "Index this folder",
+  "Ouvrez un dossier de photos, puis cliquez sur « Indexer ce dossier » pour que PhotoPrism l’analyse.": "Open a photo folder, then click “Index this folder” so PhotoPrism analyzes it.",
+"PhotoPrism ne répond pas pour le moment.": "PhotoPrism is not responding right now.",
+"Favoris": "Favorites",
+"Vidéos": "Videos",
+"Dossiers": "Folders",
+"PhotoPrism indisponible": "PhotoPrism unavailable",
+"Vos albums PhotoPrism": "Your PhotoPrism albums",
+"Ouvrir PhotoPrism": "Open PhotoPrism",
+"Aucun album pour l’instant. Vos photos restent accessibles par « Photos » et « Dossiers ».": "No album yet. Your photos remain available under “Photos” and “Folders”.",
+"{0} élément(s)": "{0} item(s)",
+"Les dossiers de photos de votre NAS": "The photo folders of your NAS",
+"Lecture seule : vos originaux ne sont jamais modifiés.": "Read-only: your originals are never modified.",
+"Rechercher : lieu, date, couleur, personne…": "Search: place, date, colour, person…",
+"Afficher la suite": "Show more",
+"Aucun résultat.": "No results.",
+"Aucune photo ici pour l’instant.": "No photos here yet.",
+"PhotoPrism n’affiche que les photos qu’il a indexées : ouvrez-le, menu Bibliothèque puis Indexer, et choisissez un dossier de photos.": "PhotoPrism only shows the photos it has indexed: open it, go to Library then Index, and choose a photo folder.",
+"Retour": "Back",
+"Ouvrir dans PhotoPrism": "Open in PhotoPrism",
+"Précédente": "Previous",
+"Suivante": "Next",
+"Vidéo : ouvrez PhotoPrism pour la lire.": "Video: open PhotoPrism to play it.",
+"Le compte que Desktroo utilise pour lire PhotoPrism": "The account Desktroo uses to read PhotoPrism",
+"PhotoPrism refuse le mot de passe enregistré : vous l’avez sans doute changé. Saisissez le mot de passe actuel du compte « admin ».": "PhotoPrism refuses the saved password: you probably changed it. Enter the current password of the “admin” account.",
+"Desktroo se connecte à PhotoPrism avec le compte « admin » créé à l’installation. Si vous avez changé son mot de passe dans PhotoPrism, saisissez-le ici pour que la fenêtre continue de fonctionner.": "Desktroo signs in to PhotoPrism with the “admin” account created at installation. If you changed its password in PhotoPrism, enter it here so the window keeps working.",
+"Mot de passe de « admin »": "Password of “admin”",
+"Revenir au mot de passe d’origine": "Go back to the original password",
+"Le mot de passe reste sur le NAS et n’est jamais renvoyé au navigateur.": "The password stays on the NAS and is never sent back to the browser.",
+"Saisissez le mot de passe.": "Enter the password.",
+"Connecté à PhotoPrism.": "Connected to PhotoPrism.",
+"Revenir au mot de passe d’origine de l’installation ? Si vous l’avez changé dans PhotoPrism, la fenêtre ne pourra plus s’y connecter.": "Go back to the password set at installation? If you changed it in PhotoPrism, the window will no longer be able to sign in.",
+"Revenir": "Go back",
 "Ajouter un appareil": "Add a device",
 "Aucun appareil pour l’instant.": "No device yet.",
 "Ajouter mon premier appareil": "Add my first device",
@@ -14159,10 +14201,369 @@ async function dkUkForget() {
   try { await dkUkApi('clear_key'); _dkUk.data = null; _dkUk.nav = 'set'; dkUkLoad(); }
   catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
 }
+// ── MDM-STORE-V1 : fenêtre « PhotoPrism » en lecture seule : photos, vidéos, albums et dossiers, lus par le NAS via l'API de PhotoPrism ──
+var _dkPp = { nav: 'all', q: '', album: null, albumTitle: '', path: '', photos: [], more: false, data: null, view: -1,
+              urls: {}, order: [], queue: [], active: 0, io: null, gen: 0, job: null, jobTimer: null };
+function dkPpCss() {
+  if (document.getElementById('dkpp-css')) return;
+  var st = document.createElement('style');
+  st.id = 'dkpp-css';
+  st.textContent = '#win-dkpp .web-shell{position:relative}'
+    + '.dkpp-bar{display:flex;gap:8px;margin:0 0 12px}'
+    + '.dkpp-in{flex:1;max-width:420px;box-sizing:border-box;font-size:13px;color:var(--text);background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:8px 10px}'
+    + '.dkpp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:6px}'
+    + '.dkpp-t{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.06);border:0;padding:0;cursor:pointer;display:block;width:100%}'
+    + '.dkpp-t img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .2s}'
+    + '.dkpp-t img.ok{opacity:1}'
+    + '.dkpp-vid{position:absolute;right:6px;bottom:6px;font-size:10.5px;padding:1px 6px;border-radius:999px;background:rgba(0,0,0,0.65);color:#fff}'
+    + '.dkpp-alb{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px}'
+    + '.dkpp-ac{text-align:left;background:none;border:0;padding:0;cursor:pointer;color:var(--text);display:block}'
+    + '.dkpp-ac .dkpp-t{aspect-ratio:4/3;margin-bottom:6px}.dkpp-ac b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+    + '.dkpp-ac span{font-size:11.5px;color:var(--text-dim)}'
+    + '.dkpp-more{display:block;margin:14px auto 4px}'
+    + '.dkpp-view{position:absolute;inset:0;z-index:6;background:rgba(8,10,14,0.98);display:flex;flex-direction:column;color:#fff}'
+    + '.dkpp-vh{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px}.dkpp-vh .dkpp-vt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+    + '.dkpp-vb{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;position:relative;padding:0 8px 8px}'
+    + '.dkpp-vb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:4px}'
+    + '.dkpp-nv{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,0.14);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}'
+    + '.dkpp-nv svg{width:20px;height:20px}.dkpp-nv.l{left:10px}.dkpp-nv.r{right:10px}'
+    + '.dkpp-vn{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:12px;color:rgba(255,255,255,0.8)}'
+    + '.dkpp-set{max-width:560px;font-size:13px;line-height:1.6}.dkpp-pw{width:100%;max-width:360px;box-sizing:border-box;margin:6px 0 12px;font-size:13px;color:var(--text);background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:8px 10px}';
+  document.head.appendChild(st);
+}
+function dkPpClose() {
+  _dkPp.gen++; _dkPp.queue = []; _dkPp.view = -1; clearTimeout(_dkPp.jobTimer); _dkPp.jobTimer = null;
+  document.removeEventListener('keydown', dkPpKey, true);
+  if (_dkPp.io) { try { _dkPp.io.disconnect(); } catch (_) {} _dkPp.io = null; }
+  Object.keys(_dkPp.urls).forEach(function(k) { try { URL.revokeObjectURL(_dkPp.urls[k]); } catch (_) {} });
+  _dkPp.urls = {}; _dkPp.order = []; _dkPp.photos = [];
+}
+async function dkPpOpen() {
+  var win = document.getElementById('win-dkpp');
+  if (win) { win.classList.add('visible'); bringToFront(win); return; }
+  dkStoreCss(); dkPpCss();
+  win = dkStoreMakeWin('dkpp', 'PhotoPrism', 1000, 700,
+    '<div class="web-shell"><nav class="web-side" id="dkpp-side" aria-label="PhotoPrism"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dkpp-head"></header><div class="web-body" id="dkpp-body"></div></section></div>',
+    dkPpClose);
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('photoprism', 18) + '</span>');
+  _dkPp.nav = 'all'; _dkPp.q = ''; _dkPp.album = null; _dkPp.path = ''; _dkPp.data = null; _dkPp.photos = []; _dkPp.view = -1; _dkPp.io = null; _dkPp.job = null;
+  dkPpLoad();
+}
+async function dkPpApi(action, extra) {
+  var rr;
+  try { rr = await fileops('POST', 'store/photoprism/api', Object.assign({ action: action }, extra || {})); }
+  catch (e) { if (e && e.status && e.status < 500) throw e; var et = new Error(T('PhotoPrism ne répond pas pour le moment.')); et.transient = true; throw et; }
+  if (!rr || rr.ok === false) { var e5 = new Error((rr && rr.error) || T('PhotoPrism ne répond pas pour le moment.')); e5.transient = true; throw e5; }
+  return rr;
+}
+function dkPpFull(sub) {
+  var a = dkStoreApp('photoprism') || {};
+  var base = String(a.open_url || 'http://{ip}:2342').replace('{ip}', a.nas_ip || location.hostname);
+  window.open(base + (sub || ''), '_blank', 'noopener');
+}
+function dkPpGo(nav) {
+  _dkPp.nav = nav; _dkPp.album = null; _dkPp.albumTitle = ''; _dkPp.path = ''; _dkPp.view = -1;
+  if (nav !== 'all' && nav !== 'fav' && nav !== 'video') _dkPp.q = '';
+  dkPpLoad();
+}
+function dkPpSide() {
+  wmSide('dkpp', wmNav({ active: _dkPp.nav === 'all', call: 'dkPpGo(\'all\')', icon: 'grid', name: T('Photos') })
+    + wmNav({ active: _dkPp.nav === 'fav', call: 'dkPpGo(\'fav\')', icon: 'check', name: T('Favoris') })
+    + wmNav({ active: _dkPp.nav === 'video', call: 'dkPpGo(\'video\')', icon: 'play', name: T('Vidéos') })
+    + wmSep()
+    + wmNav({ active: _dkPp.nav === 'albums', call: 'dkPpGo(\'albums\')', icon: 'layers', name: T('Albums') })
+    + wmNav({ active: _dkPp.nav === 'folders', call: 'dkPpGo(\'folders\')', icon: 'folder', name: T('Dossiers') })
+    + wmSep()
+    + wmNav({ active: _dkPp.nav === 'set', call: 'dkPpGo(\'set\')', icon: 'key', name: T('Connexion') }));
+}
+// ── miniatures : récupérées par le NAS (jeton du bureau), mises en file, six à la fois ──
+function dkPpFetch(h, s) {
+  var k = h + '/' + s;
+  if (_dkPp.urls[k]) return Promise.resolve(_dkPp.urls[k]);
+  return new Promise(function(res, rej) { _dkPp.queue.push({ k: k, h: h, s: s, res: res, rej: rej }); dkPpPump(); });
+}
+function dkPpPump() {
+  while (_dkPp.active < 6 && _dkPp.queue.length) {
+    var j = _dkPp.queue.shift();
+    if (_dkPp.urls[j.k]) { j.res(_dkPp.urls[j.k]); continue; }
+    _dkPp.active++;
+    (function(j) {
+      fetch('/fileops/store/photoprism/img?h=' + encodeURIComponent(j.h) + '&s=' + encodeURIComponent(j.s),
+        { headers: { 'X-Fileops-Token': getFileopsToken(), 'X-Desktroo-User': encodeURIComponent(currentUser || '') } })
+        .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+        .then(function(b) {
+          var u = URL.createObjectURL(b);
+          _dkPp.urls[j.k] = u; _dkPp.order.push(j.k);
+          if (_dkPp.order.length > 600) { _dkPp.order.splice(0, 150).forEach(function(o) { try { URL.revokeObjectURL(_dkPp.urls[o]); } catch (_) {} delete _dkPp.urls[o]; }); }
+          j.res(u);
+        })
+        .catch(function(e) { j.rej(e); })
+        .then(function() { _dkPp.active--; dkPpPump(); });
+    })(j);
+  }
+}
+function dkPpLoadImg(img) {
+  var h = img.getAttribute('data-h'), s = img.getAttribute('data-s') || 'tile_224';
+  img.removeAttribute('data-h');
+  dkPpFetch(h, s).then(function(u) { img.src = u; img.classList.add('ok'); }).catch(function() {});
+}
+function dkPpObserve(root) {
+  if (!root) return;
+  var imgs = root.querySelectorAll('img[data-h]');
+  if (!('IntersectionObserver' in window)) { Array.prototype.forEach.call(imgs, dkPpLoadImg); return; }
+  if (!_dkPp.io) {
+    _dkPp.io = new IntersectionObserver(function(es) {
+      es.forEach(function(e) {
+        if (!e.isIntersecting) return;
+        _dkPp.io.unobserve(e.target);
+        if (e.target.getAttribute('data-h')) dkPpLoadImg(e.target);
+        else if (e.target.id === 'dkpp-more') dkPpMore();
+      });
+    }, { root: wmBody('dkpp'), rootMargin: '400px' });
+  }
+  Array.prototype.forEach.call(imgs, function(i) { _dkPp.io.observe(i); });
+  var more = document.getElementById('dkpp-more');
+  if (more) _dkPp.io.observe(more);
+}
+function dkPpTiles(list, from) {
+  return list.map(function(p, i) {
+    var n = from + i;
+    return '<button class="dkpp-t" onclick="dkPpOpenView(' + n + ')" title="' + webEsc(p.title) + '"><img alt="" data-h="' + p.hash + '" data-s="tile_224">'
+      + (p.type === 'video' ? '<span class="dkpp-vid">' + T('Vidéo') + '</span>' : '') + '</button>';
+  }).join('');
+}
+function dkPpKind() { return _dkPp.nav === 'fav' ? 'fav' : _dkPp.nav === 'video' ? 'video' : ''; }
+function dkPpQuery(offset) {
+  return { q: _dkPp.q, kind: dkPpKind(), album: _dkPp.album || '', path: _dkPp.nav === 'folders' ? _dkPp.path : '', offset: offset, count: 90 };
+}
+async function dkPpLoad() {
+  var nav = _dkPp.nav, gen = ++_dkPp.gen, body = wmBody('dkpp');
+  dkPpSide();
+  if (!_dkPp.jobTimer) dkPpJobPoll();
+  if (nav === 'set') {
+    if (!_dkPp.data) { try { _dkPp.data = await dkPpApi('state'); } catch (_) {} }
+    if (gen !== _dkPp.gen) return;
+    dkPpRenderSetup(body); return;
+  }
+  wmLoading('dkpp');
+  try {
+    if (nav === 'albums' && !_dkPp.album) {
+      var ra = await dkPpApi('albums');
+      if (gen !== _dkPp.gen) return;
+      if (ra.denied) { _dkPp.data = { denied: true }; dkPpRenderSetup(body); return; }
+      dkPpRenderAlbums(body, ra.albums || []); return;
+    }
+    var folders = [];
+    if (nav === 'folders') {
+      var rf = await dkPpApi('folders', { path: _dkPp.path });
+      if (gen !== _dkPp.gen) return;
+      if (rf.denied) { _dkPp.data = { denied: true }; dkPpRenderSetup(body); return; }
+      folders = rf.folders || [];
+    }
+    var rp = { photos: [], more: false };
+    if (nav !== 'folders' || _dkPp.path) {
+      rp = await dkPpApi('photos', dkPpQuery(0));
+      if (gen !== _dkPp.gen) return;
+      if (rp.denied) { _dkPp.data = { denied: true }; dkPpRenderSetup(body); return; }
+    }
+    _dkPp.photos = rp.photos || []; _dkPp.more = !!rp.more;
+    dkPpRenderGrid(body, folders);
+  } catch (e) {
+    if (gen === _dkPp.gen) wmFail('dkpp', T('PhotoPrism indisponible'), e, 'dkPpLoad()');
+  }
+}
+async function dkPpMore() {
+  var gen = _dkPp.gen, btn = document.getElementById('dkpp-more');
+  if (!_dkPp.more || !btn || btn.disabled) return;
+  btn.disabled = true;
+  try {
+    var rp = await dkPpApi('photos', dkPpQuery(_dkPp.photos.length));
+    if (gen !== _dkPp.gen) return;
+    var from = _dkPp.photos.length, add = rp.photos || [];
+    _dkPp.photos = _dkPp.photos.concat(add); _dkPp.more = !!rp.more && add.length > 0;
+    var grid = document.getElementById('dkpp-grid');
+    if (grid) { grid.insertAdjacentHTML('beforeend', dkPpTiles(add, from)); dkPpObserve(grid); }
+    if (!_dkPp.more && btn.parentNode) btn.parentNode.removeChild(btn);
+    else { btn.disabled = false; if (_dkPp.io) _dkPp.io.observe(btn); }
+  } catch (e) { btn.disabled = false; toast('⚠️ ' + (e.message || e), 6000); }
+}
+function dkPpSearch() {
+  var inp = document.getElementById('dkpp-q');
+  _dkPp.q = inp ? inp.value.trim() : '';
+  dkPpLoad();
+}
+function dkPpFolderGo(p) { _dkPp.path = decodeURIComponent(p); dkPpLoad(); }
+function dkPpFolderUp() {
+  var seg = _dkPp.path.split('/'); seg.pop(); _dkPp.path = seg.join('/'); dkPpLoad();
+}
+function dkPpAlbumGo(uid, title) { _dkPp.album = uid; _dkPp.albumTitle = decodeURIComponent(title); dkPpLoad(); }
+function dkPpRenderAlbums(body, list) {
+  if (!body) return;
+  wmHead('dkpp', T('Albums'), { sub: T('Vos albums PhotoPrism'), actions: '<button class="web-open" onclick="dkPpFull()">' + T('Ouvrir PhotoPrism') + '</button>' });
+  if (!list.length) {
+    body.innerHTML = '<div class="dks-empty">' + T('Aucun album pour l’instant. Vos photos restent accessibles par « Photos » et « Dossiers ».') + '</div>';
+    return;
+  }
+  body.innerHTML = '<div id="dkpp-job"></div><div class="dkpp-alb">' + list.map(function(a) {
+    return '<button class="dkpp-ac" onclick="dkPpAlbumGo(\'' + a.uid + '\',' + wmQ(a.title) + ')"><span class="dkpp-t">' + (a.thumb ? '<img alt="" data-h="' + a.thumb + '" data-s="tile_500">' : '') + '</span>'
+      + '<b>' + webEsc(a.title) + '</b><span>' + Tf('{0} élément(s)', a.count) + '</span></button>';
+  }).join('') + '</div>';
+  dkPpJobPaint(); dkPpObserve(body);
+}
+function dkPpRenderGrid(body, folders) {
+  if (!body) return;
+  var nav = _dkPp.nav, inFolder = nav === 'folders';
+  var title = _dkPp.album ? _dkPp.albumTitle : inFolder ? (_dkPp.path ? _dkPp.path.split('/').pop() : T('Dossiers')) : nav === 'fav' ? T('Favoris') : nav === 'video' ? T('Vidéos') : T('Photos');
+  var opts = { sub: inFolder ? webEsc(_dkPp.path || T('Les dossiers de photos de votre NAS')) : T('Lecture seule : vos originaux ne sont jamais modifiés.'),
+    actions: (inFolder && _dkPp.path ? '<button class="web-open" id="dkpp-idx" onclick="dkPpIndexAsk()">' + T('Indexer ce dossier') + '</button> ' : '')
+      + '<button class="fs-btn" onclick="dkPpFull()">' + T('Ouvrir PhotoPrism') + '</button>' };
+  if (_dkPp.album) opts.back = [T('Albums'), 'dkPpGo(\'albums\')'];
+  else if (inFolder && _dkPp.path) opts.back = [T('Dossier parent'), 'dkPpFolderUp()'];
+  wmHead('dkpp', title, opts);
+  var h = '<div id="dkpp-job"></div>';
+  if (!inFolder) {
+    h += '<div class="dkpp-bar"><input class="dkpp-in" id="dkpp-q" value="' + webEsc(_dkPp.q) + '" placeholder="' + webEsc(T('Rechercher : lieu, date, couleur, personne…')) + '" onkeydown="if(event.key===\'Enter\')dkPpSearch()">'
+      + '<button class="web-open" onclick="dkPpSearch()">' + T('Rechercher') + '</button></div>';
+  }
+  if (inFolder && !_dkPp.path) h += '<div class="dkag-note" style="margin:0 0 12px;">' + T('Ouvrez un dossier de photos, puis cliquez sur « Indexer ce dossier » pour que PhotoPrism l’analyse.') + '</div>';
+  if (folders.length) {
+    h += '<div class="web-group" style="margin-bottom:14px;">' + folders.map(function(f) {
+      return '<button class="web-row line" onclick="dkPpFolderGo(' + wmQ(f.path) + ')"><span class="web-row-text"><span class="web-row-name">' + webEsc(f.name) + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+    }).join('') + '</div>';
+  }
+  if (_dkPp.photos.length) {
+    h += '<div class="dkpp-grid" id="dkpp-grid">' + dkPpTiles(_dkPp.photos, 0) + '</div>'
+      + (_dkPp.more ? '<button class="web-open dkpp-more" id="dkpp-more" onclick="dkPpMore()">' + T('Afficher la suite') + '</button>' : '');
+  } else if (!folders.length) {
+    h += '<div class="dks-empty">' + (_dkPp.q ? T('Aucun résultat.') : T('Aucune photo ici pour l’instant.')
+      + '<div class="dkag-note" style="margin-top:10px;text-align:left;">' + T('PhotoPrism n’affiche que les photos qu’il a indexées : ouvrez-le, menu Bibliothèque puis Indexer, et choisissez un dossier de photos.') + '</div>'
+      + '<div class="dks-acts" style="justify-content:center;"><button class="web-open" onclick="dkPpFull()">' + T('Ouvrir PhotoPrism') + '</button></div>') + '</div>';
+  }
+  body.innerHTML = h;
+  dkPpJobPaint(); dkPpObserve(body);
+}
+// ── indexation d'un dossier choisi dans « Dossiers » : lancée sur le NAS, suivie ici ──
+function dkPpJobPaint() {
+  var el = document.getElementById('dkpp-job'), j = _dkPp.job, btn = document.getElementById('dkpp-idx');
+  if (btn) btn.disabled = !!(j && j.state === 'running');
+  if (!el) return;
+  if (!j || (j.state !== 'running' && j.state !== 'error')) { el.innerHTML = ''; return; }
+  if (j.state === 'running') {
+    el.innerHTML = '<div class="dkag-note" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;"><span class="spinner" style="width:14px;height:14px;flex:none;"></span>'
+      + '<span style="flex:1;">' + Tf('Indexation en cours : {0} (depuis {1} min). Les photos apparaissent au fur et à mesure.', webEsc(j.path), Math.floor((j.elapsed || 0) / 60)) + '</span>'
+      + '<button class="fs-btn" onclick="dkPpIndexStop()">' + T('Arrêter') + '</button></div>';
+  } else {
+    el.innerHTML = '<div class="dkag-note" style="margin:0 0 12px;">⚠️ ' + Tf('L’indexation de {0} s’est arrêtée : {1}', webEsc(j.path),
+      webEsc(j.error === 'auth' ? T('mot de passe refusé, voir « Connexion »') : j.error)) + '</div>';
+  }
+}
+async function dkPpJobPoll() {
+  clearTimeout(_dkPp.jobTimer); _dkPp.jobTimer = null;
+  if (!document.getElementById('win-dkpp')) return;
+  try {
+    var r = await dkPpApi('index_status'), prev = _dkPp.job;
+    _dkPp.job = r.job && r.job.state ? r.job : null;
+    dkPpJobPaint();
+    if (prev && prev.state === 'running' && _dkPp.job && _dkPp.job.state === 'done') { toast(T('Indexation terminée.'), 6000); dkPpLoad(); return; }
+    if (_dkPp.job && _dkPp.job.state === 'running') _dkPp.jobTimer = setTimeout(dkPpJobPoll, 5000);
+  } catch (_) {}
+}
+async function dkPpIndexAsk() {
+  var p = _dkPp.path;
+  if (!p) return;
+  if (!(await showConfirm(Tf('Indexer le dossier « {0} » ? PhotoPrism va analyser ses photos et vidéos : cela peut durer longtemps et utiliser beaucoup le processeur.', p), { ok: T('Indexer') }))) return;
+  try {
+    var r = await dkPpApi('index_start', { path: p });
+    _dkPp.job = r.job; dkPpJobPaint(); toast(T('Indexation lancée.'));
+    clearTimeout(_dkPp.jobTimer); _dkPp.jobTimer = setTimeout(dkPpJobPoll, 5000);
+  } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+async function dkPpIndexStop() {
+  if (!(await showConfirm(T('Arrêter l’indexation en cours ? Les photos déjà analysées restent dans PhotoPrism.'), { danger: true, ok: T('Arrêter') }))) return;
+  try { var r = await dkPpApi('index_cancel'); _dkPp.job = r.job; dkPpJobPaint(); toast(T('Indexation arrêtée.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+}
+// ── visionneuse ──
+function dkPpKey(e) {
+  if (_dkPp.view < 0) return;
+  if (e.key === 'Escape') { e.stopPropagation(); dkPpCloseView(); }
+  else if (e.key === 'ArrowLeft') { e.stopPropagation(); dkPpStep(-1); }
+  else if (e.key === 'ArrowRight') { e.stopPropagation(); dkPpStep(1); }
+}
+function dkPpOpenView(i) {
+  _dkPp.view = i;
+  document.removeEventListener('keydown', dkPpKey, true);
+  document.addEventListener('keydown', dkPpKey, true);
+  dkPpRenderView();
+}
+function dkPpCloseView() {
+  _dkPp.view = -1;
+  document.removeEventListener('keydown', dkPpKey, true);
+  var ov = document.getElementById('dkpp-view');
+  if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+}
+function dkPpStep(d) {
+  var n = _dkPp.view + d;
+  if (n < 0 || n >= _dkPp.photos.length) return;
+  _dkPp.view = n;
+  dkPpRenderView();
+  if (n >= _dkPp.photos.length - 6 && _dkPp.more) dkPpMore();
+}
+function dkPpRenderView() {
+  var win = document.getElementById('win-dkpp'), shell = win && win.querySelector('.web-shell');
+  var i = _dkPp.view, p = _dkPp.photos[i];
+  if (!shell || !p) return dkPpCloseView();
+  var ov = document.getElementById('dkpp-view');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'dkpp-view'; ov.className = 'dkpp-view'; shell.appendChild(ov); }
+  var d = p.taken ? new Date(p.taken) : null, when = d && !isNaN(d) ? d.toLocaleString() : '';
+  ov.innerHTML = '<div class="dkpp-vh"><button class="fs-btn" onclick="dkPpCloseView()">&lsaquo; ' + T('Retour') + '</button>'
+    + '<span class="dkpp-vt">' + webEsc(p.title || '') + (when ? ' · ' + webEsc(when) : '') + '</span>'
+    + '<button class="fs-btn" onclick="dkPpFull(\'/library/browse?q=uid%3A' + p.uid + '\')">' + T('Ouvrir dans PhotoPrism') + '</button></div>'
+    + '<div class="dkpp-vb"><img id="dkpp-vimg" alt="' + webEsc(p.title || '') + '">'
+    + (i > 0 ? '<button class="dkpp-nv l" onclick="dkPpStep(-1)" aria-label="' + webEsc(T('Précédente')) + '">' + webIcon('left') + '</button>' : '')
+    + (i < _dkPp.photos.length - 1 ? '<button class="dkpp-nv r" onclick="dkPpStep(1)" aria-label="' + webEsc(T('Suivante')) + '">' + webIcon('right') + '</button>' : '')
+    + (p.type === 'video' ? '<div class="dkpp-vn">' + T('Vidéo : ouvrez PhotoPrism pour la lire.') + '</div>' : '') + '</div>';
+  var img = document.getElementById('dkpp-vimg');
+  var small = _dkPp.urls[p.hash + '/tile_500'] || _dkPp.urls[p.hash + '/tile_224'];
+  if (small) img.src = small;
+  dkPpFetch(p.hash, 'fit_1280').then(function(u) { if (_dkPp.view === i && img.isConnected) img.src = u; }).catch(function() {});
+  var nx = _dkPp.photos[i + 1];
+  if (nx) dkPpFetch(nx.hash, 'fit_1280').catch(function() {});
+}
+// ── connexion ──
+function dkPpRenderSetup(body) {
+  if (!body) return;
+  var d = _dkPp.data || {};
+  wmHead('dkpp', T('Connexion'), { sub: T('Le compte que Desktroo utilise pour lire PhotoPrism') });
+  body.innerHTML = '<div class="dkpp-set">'
+    + (d.denied ? '<div class="dkag-note" style="margin-bottom:12px;">' + T('PhotoPrism refuse le mot de passe enregistré : vous l’avez sans doute changé. Saisissez le mot de passe actuel du compte « admin ».') + '</div>' : '')
+    + '<p>' + T('Desktroo se connecte à PhotoPrism avec le compte « admin » créé à l’installation. Si vous avez changé son mot de passe dans PhotoPrism, saisissez-le ici pour que la fenêtre continue de fonctionner.') + '</p>'
+    + '<input class="dkpp-pw" id="dkpp-pw" type="password" autocomplete="off" placeholder="' + webEsc(T('Mot de passe de « admin »')) + '">'
+    + '<div class="dks-acts" style="justify-content:flex-start;"><button class="web-open" id="dkpp-save" onclick="dkPpSave()">' + T('Enregistrer') + '</button>'
+    + '<button class="fs-btn" onclick="dkPpFull()">' + T('Ouvrir PhotoPrism') + '</button>'
+    + (d.custom ? '<button class="fs-btn" style="color:var(--danger);" onclick="dkPpForget()">' + T('Revenir au mot de passe d’origine') + '</button>' : '') + '</div>'
+    + '<div class="dkag-note" style="margin-top:14px;">' + T('Le mot de passe reste sur le NAS et n’est jamais renvoyé au navigateur.') + '</div></div>';
+}
+async function dkPpSave() {
+  var inp = document.getElementById('dkpp-pw'), b = document.getElementById('dkpp-save');
+  var pw = inp ? inp.value : '';
+  if (!pw) { toast(T('Saisissez le mot de passe.'), 4000); return; }
+  if (b) b.disabled = true;
+  try { await dkPpApi('save_password', { password: pw }); toast(T('Connecté à PhotoPrism.')); _dkPp.nav = 'all'; _dkPp.data = null; dkPpLoad(); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); if (b) b.disabled = false; }
+}
+async function dkPpForget() {
+  if (!(await showConfirm(T('Revenir au mot de passe d’origine de l’installation ? Si vous l’avez changé dans PhotoPrism, la fenêtre ne pourra plus s’y connecter.'), { danger: true, ok: T('Revenir') }))) return;
+  try { await dkPpApi('clear_password'); _dkPp.data = null; _dkPp.nav = 'all'; dkPpLoad(); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+}
 function dkStoreOpenInstalled(id) {
   if (id === 'adguard') return dkAgOpen();
   if (id === 'wireguard') return dkWgOpen();
   if (id === 'uptime-kuma') return dkUkOpen();
+  if (id === 'photoprism') return dkPpOpen();
   var a = dkStoreApp(id) || {};
   if (a.open_url) {   // app dont l'interface ne peut pas passer par le bureau : adresse directe sur le réseau local
     window.open(String(a.open_url).replace('{ip}', a.nas_ip || location.hostname), '_blank', 'noopener');
@@ -14566,9 +14967,9 @@ function dkStoreRegisterApps(list) {
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
     if (entry) { entry.label = label; return; }
     ALL_APPS.push({ id: key, label: label, store: true,
-      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : id === 'uptime-kuma' ? function() { dkUkOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
-      imgStyle: 'background:transparent;box-shadow:none;padding:0;overflow:hidden;',
-      svg: dkStoreIcon(id, 56) });
+      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : id === 'uptime-kuma' ? function() { dkUkOpen(); } : id === 'photoprism' ? function() { dkPpOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      imgStyle: 'background:transparent;box-shadow:none;padding:0;border-color:transparent;',
+      svg: dkStoreIcon(id, 52) });
   });
   for (var i = ALL_APPS.length - 1; i >= 0; i--) if (ALL_APPS[i].store && !want[ALL_APPS[i].id]) ALL_APPS.splice(i, 1);
   // Une app désinstallée retrouvera son icône si on la réinstalle.
@@ -19826,7 +20227,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.54.16b';
+var DK_PAGE_VERSION = '2.54.19';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();

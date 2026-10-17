@@ -3,6 +3,17 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.19 — 17 octobre 2026
+
+### Corrigé
+- **La pastille ✓ « Sur le bureau » n'est plus coupée** sur les icônes des apps de Desktroo Apps (Domaines, Authenticator, Desktroo Pass, Antivirus, Uptime Kuma…), dans le menu des applications.
+- **Les icônes de Desktroo Apps ont le même poids que celles du système** : dessins un peu plus petits et traits plus fins, au lieu d'icônes visiblement plus grosses et plus épaisses.
+  > Les icônes du magasin sont retravaillées (dessin réduit à 78 %, traits ×0,7) ; elles arrivent avec la publication du magasin.
+
+### Amélioré
+- **Desktroo Apps sait accueillir de nouveaux types d'apps** qui lisent vos dossiers du NAS en lecture seule tout en gardant leurs propres droits internes.
+  > Nouveau champ de fiche `nas_user_env` : le compte emprunté est transmis à l'app en variables d'environnement (UID/GID) au lieu de remplacer l'utilisateur du conteneur.
+
 ## 2.54.15 — 16 octobre 2026
 
 ### Nouveau

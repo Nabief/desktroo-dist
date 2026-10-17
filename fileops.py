@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.16b'
+APP_VERSION = '2.54.19'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9784,6 +9784,7 @@ _STORE_POST = {
     '/store/adguard/api': lambda b: store_adguard_api(b),
     '/store/wireguard/api': lambda b: store_wireguard_api(b),
     '/store/uptime-kuma/api': lambda b: store_uptimekuma_api(b),
+    '/store/photoprism/api': lambda b: store_photoprism_api(b),
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
@@ -9898,6 +9899,15 @@ def _store_public_get(handler, path):
         handler.send_header('Content-Length', str(len(body)))
         handler.end_headers()
         handler.wfile.write(body)
+        return True
+    if path == '/store/photoprism/img':
+        code, ctype, data = store_photoprism_img(qs.get('h', ''), qs.get('s', ''))
+        handler.send_response(code)
+        handler.send_header('Content-Type', ctype)
+        handler.send_header('Cache-Control', 'private, max-age=86400' if code == 200 else 'no-store')
+        handler.send_header('Content-Length', str(len(data)))
+        handler.end_headers()
+        handler.wfile.write(data)
         return True
     if path == '/store/logout':
         handler.send_response(200)
@@ -11892,6 +11902,303 @@ def store_uptimekuma_api(body):
         except RuntimeError as e:
             return 502, {'ok': False, 'error': 'Uptime Kuma ne répond pas : ' + str(e)}
         return 200, {'ok': True, 'configured': True, 'monitors': mons}
+    return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+
+
+# ── MDM-STORE-V1 · fenêtre « PhotoPrism » : le NAS parle à l'API de PhotoPrism et sert photos, albums et miniatures ──────
+# Le NAS se connecte à PhotoPrism avec le compte « admin » créé à l'installation (mot de passe propre à l'installation, ou
+# celui que l'utilisateur a choisi depuis). Le mot de passe et la session restent sur le NAS : le navigateur ne voit
+# que des photos. Tout est en lecture seule.
+STORE_PP_ID = 'photoprism'
+_PP_BASE = 'http://dt-photoprism:8080'
+_PP_LOCK = _threading.Lock()
+_pp_sess = {}
+_PP_SIZES = ('tile_224', 'tile_500', 'fit_720', 'fit_1280', 'fit_2048')
+_PP_HASH = re.compile(r'^[a-f0-9]{8,64}$')
+_PP_UID = re.compile(r'^[a-z0-9]{8,32}$')
+
+
+def _pp_http(method, path, data=None, headers=None, timeout=30, limit=8 * 1024 * 1024):
+    """(code, type de contenu, octets) ; RuntimeError si PhotoPrism ne répond pas. Ni proxy ni redirection."""
+    import urllib.request, urllib.error
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
+    hd = {'Accept': 'application/json'}
+    hd.update(headers or {})
+    body = None
+    if data is not None:
+        body = json.dumps(data).encode('utf-8')
+        hd['Content-Type'] = 'application/json'
+    req = urllib.request.Request(_PP_BASE + path, data=body, headers=hd, method=method)
+    try:
+        with opener.open(req, timeout=timeout) as r:
+            return r.status, r.headers.get('Content-Type', ''), r.read(limit)
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, e.headers.get('Content-Type', ''), e.read(65536)
+        except Exception:
+            return e.code, '', b''
+    except Exception as e:
+        raise RuntimeError(str(e)[:120])
+
+
+def _pp_password():
+    return str(_store_fields_get(STORE_PP_ID).get('password') or '') or _store_derive(STORE_PP_ID, 'photoprism')
+
+
+def _pp_login(pw=None):
+    """Ouvre une session ; ValueError('auth') si le mot de passe est refusé, RuntimeError sinon."""
+    st, _ct, raw = _pp_http('POST', '/api/v1/session', {'username': 'admin', 'password': _pp_password() if pw is None else pw})
+    if st in (401, 403):
+        raise ValueError('auth')
+    if st != 200:
+        raise RuntimeError('HTTP %d' % st)
+    try:
+        d = json.loads(raw.decode('utf-8', 'replace'))
+    except ValueError:
+        raise RuntimeError('réponse illisible')
+    cfg = d.get('config') if isinstance(d.get('config'), dict) else {}
+    sid = str(d.get('id') or d.get('session_id') or d.get('access_token') or '')
+    prev = str(cfg.get('previewToken') or d.get('previewToken') or '')
+    if not sid or not prev:
+        raise RuntimeError('session incomplète')
+    with _PP_LOCK:
+        _pp_sess.clear()
+        _pp_sess.update({'id': sid, 'prev': prev, 'at': _st_time.time()})
+
+
+def _pp_auth(force=False):
+    with _PP_LOCK:
+        ok = _pp_sess.get('id') and _st_time.time() - _pp_sess.get('at', 0) < 3000
+    if force or not ok:
+        _pp_login()
+    with _PP_LOCK:
+        return {'X-Auth-Token': _pp_sess['id'], 'X-Session-ID': _pp_sess['id']}, _pp_sess['prev']
+
+
+def _pp_get(path, params=None, limit=8 * 1024 * 1024):
+    import urllib.parse
+    url = path + (('?' + urllib.parse.urlencode(params)) if params else '')
+    for attempt in (0, 1):
+        hd, _prev = _pp_auth(force=bool(attempt))
+        st, ct, raw = _pp_http('GET', url, headers=hd, limit=limit)
+        if st in (401, 403) and not attempt:
+            continue
+        if st in (401, 403):
+            raise ValueError('auth')
+        if st != 200:
+            raise RuntimeError('HTTP %d' % st)
+        return ct, raw
+    raise RuntimeError('session refusée')
+
+
+def _pp_int(v):
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _pp_first(d, *keys):
+    for k in keys:
+        if k in d and d[k] is not None:
+            return d[k]
+    return ''
+
+
+def _pp_photo(p):
+    h = str(_pp_first(p, 'Hash', 'hash'))
+    if not _PP_HASH.match(h):
+        return None
+    return {'uid': str(_pp_first(p, 'UID', 'uid')), 'hash': h, 'title': str(_pp_first(p, 'Title', 'title'))[:160],
+            'taken': str(_pp_first(p, 'TakenAtLocal', 'TakenAt', 'taken_at'))[:25], 'type': str(_pp_first(p, 'Type', 'type')),
+            'w': _pp_int(_pp_first(p, 'Width', 'width')), 'h': _pp_int(_pp_first(p, 'Height', 'height')),
+            'fav': bool(_pp_first(p, 'Favorite', 'favorite'))}
+
+
+def _pp_json(raw):
+    try:
+        return json.loads(raw.decode('utf-8', 'replace'))
+    except ValueError:
+        raise RuntimeError('réponse illisible')
+
+
+def _pp_clean_path(p):
+    p = str(p or '').strip().strip('/')
+    if len(p) > 400 or '\x00' in p or any(seg in ('..', '.') for seg in p.split('/')):
+        raise ValueError('Dossier invalide.')
+    return p
+
+
+_pp_job = {}
+_PP_HIDE = re.compile(r'^(appdata_.*|files_trashbin|files_versions|files_encryption|cache|@eaDir|#recycle|\..*)$', re.I)
+
+
+def _pp_index_run(path):
+    """Fil d'arrière-plan : PhotoPrism ne répond à /api/v1/index qu'une fois l'indexation terminée."""
+    try:
+        st, _ct, raw = _pp_http('POST', '/api/v1/index', {'path': '/' + path, 'rescan': False, 'cleanup': False},
+                                headers=_pp_auth()[0], timeout=8 * 3600, limit=65536)
+        err = ''
+        if st in (401, 403):
+            err = 'auth'
+        elif st != 200:
+            try:
+                err = str(json.loads(raw.decode('utf-8', 'replace')).get('error') or '')[:200]
+            except ValueError:
+                err = ''
+            err = err or ('HTTP %d' % st)
+    except ValueError:
+        err = 'auth'
+    except RuntimeError as e:
+        err = str(e)[:200]
+    with _PP_LOCK:
+        if _pp_job.get('path') == path and _pp_job.get('state') == 'running':
+            _pp_job.update({'state': 'error' if err else 'done', 'error': err, 'ended': int(_st_time.time())})
+
+
+def _pp_job_view():
+    with _PP_LOCK:
+        j = dict(_pp_job)
+    if j.get('state') == 'running':
+        j['elapsed'] = max(0, int(_st_time.time()) - int(j.get('started') or 0))
+    return j
+
+
+def store_photoprism_img(h, s):
+    """(code, type, octets) d'une miniature ; l'adresse de PhotoPrism et son jeton ne sortent pas du NAS."""
+    h, s = str(h or ''), str(s or '')
+    if not _PP_HASH.match(h) or s not in _PP_SIZES:
+        return 400, 'text/plain', b''
+    try:
+        for attempt in (0, 1):
+            hd, prev = _pp_auth(force=bool(attempt))
+            st, ct, raw = _pp_http('GET', '/api/v1/t/%s/%s/%s' % (h, prev, s), headers=hd, timeout=60, limit=24 * 1024 * 1024)
+            if st in (401, 403) and not attempt:
+                continue
+            if st == 200 and ct.lower().startswith('image/'):
+                return 200, ct.split(';')[0], raw
+            return (404 if st == 404 else 502), 'text/plain', b''
+    except (ValueError, RuntimeError):
+        pass
+    return 502, 'text/plain', b''
+
+
+def store_photoprism_api(body):
+    """{ action: state | save_password | clear_password | photos | albums | folders } → { ok, ... }."""
+    if STORE_PP_ID not in store_installed_get():
+        return 409, {'ok': False, 'error': 'PhotoPrism n’est pas installé.'}
+    b = body if isinstance(body, dict) else {}
+    action = str(b.get('action') or '')
+    fields = _store_fields_get(STORE_PP_ID)
+    try:
+        if action == 'state':
+            try:
+                _pp_auth(force=True)
+            except ValueError:
+                return 200, {'ok': True, 'denied': True, 'custom': bool(fields.get('password'))}
+            return 200, {'ok': True, 'denied': False, 'custom': bool(fields.get('password'))}
+        if action == 'clear_password':
+            fields.pop('password', None)
+            _store_fields_set(STORE_PP_ID, fields or None)
+            with _PP_LOCK:
+                _pp_sess.clear()
+            return 200, {'ok': True}
+        if action == 'save_password':
+            pw = str(b.get('password') or '')
+            if not (8 <= len(pw) <= 72):
+                return 400, {'ok': False, 'error': 'Le mot de passe doit faire de 8 à 72 caractères.'}
+            try:
+                _pp_login(pw)
+            except ValueError:
+                return 400, {'ok': False, 'error': 'PhotoPrism refuse ce mot de passe pour le compte « admin ».'}
+            fields['password'] = pw
+            _store_fields_set(STORE_PP_ID, fields)
+            return 200, {'ok': True}
+        if action == 'index_status':
+            return 200, {'ok': True, 'job': _pp_job_view()}
+        if action == 'index_cancel':
+            try:
+                _pp_http('DELETE', '/api/v1/index', headers=_pp_auth()[0], limit=65536)
+            except (ValueError, RuntimeError):
+                pass
+            with _PP_LOCK:
+                if _pp_job.get('state') == 'running':
+                    _pp_job.update({'state': 'cancelled', 'ended': int(_st_time.time())})
+            return 200, {'ok': True, 'job': _pp_job_view()}
+        if action == 'index_start':
+            path = _pp_clean_path(b.get('path'))
+            if not path:
+                return 400, {'ok': False, 'error': 'Ouvrez d’abord un dossier précis : l’indexation de tout le NAS n’est pas proposée.'}
+            if any(_PP_HIDE.match(seg) for seg in path.split('/')):
+                return 400, {'ok': False, 'error': 'Ce dossier est un dossier technique : il ne contient pas vos photos.'}
+            _pp_auth()
+            with _PP_LOCK:
+                if _pp_job.get('state') == 'running':
+                    return 409, {'ok': False, 'error': 'Une indexation est déjà en cours.'}
+                _pp_job.clear()
+                _pp_job.update({'path': path, 'state': 'running', 'started': int(_st_time.time()), 'error': ''})
+            t = _threading.Thread(target=_pp_index_run, args=(path,), daemon=True)
+            t.start()
+            return 200, {'ok': True, 'job': _pp_job_view()}
+        count = max(1, min(int(b.get('count') or 60), 120))
+        offset = max(0, int(b.get('offset') or 0))
+        if action == 'photos':
+            prm = {'count': count, 'offset': offset, 'merged': 'true', 'order': 'newest'}
+            q = str(b.get('q') or '').strip()[:200]
+            if q:
+                prm['q'] = q
+            album = str(b.get('album') or '')
+            if album:
+                if not _PP_UID.match(album):
+                    return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+                prm['album'] = album
+            if b.get('path'):
+                prm['path'] = _pp_clean_path(b.get('path'))
+            kind = str(b.get('kind') or '')
+            if kind == 'video':
+                prm['type'] = 'video'
+            elif kind == 'fav':
+                prm['favorite'] = 'true'
+            _ct, raw = _pp_get('/api/v1/photos', prm)
+            data = _pp_json(raw)
+            rows = [x for x in (_pp_photo(p) for p in (data if isinstance(data, list) else [])) if x]
+            return 200, {'ok': True, 'photos': rows, 'more': isinstance(data, list) and len(data) >= count}
+        if action == 'albums':
+            _ct, raw = _pp_get('/api/v1/albums', {'count': 300, 'offset': 0, 'type': 'album', 'order': 'newest'})
+            data = _pp_json(raw)
+            rows = []
+            for a in (data if isinstance(data, list) else []):
+                th = str(_pp_first(a, 'Thumb', 'thumb'))
+                rows.append({'uid': str(_pp_first(a, 'UID', 'uid')), 'title': str(_pp_first(a, 'Title', 'title'))[:120],
+                              'count': _pp_int(_pp_first(a, 'PhotoCount', 'photo_count')),
+                              'thumb': th if _PP_HASH.match(th) else ''})
+            return 200, {'ok': True, 'albums': [r for r in rows if _PP_UID.match(r['uid'])]}
+        if action == 'folders':
+            import urllib.parse
+            path = _pp_clean_path(b.get('path'))
+            ep = '/api/v1/folders/originals' + (('/' + urllib.parse.quote(path)) if path else '')
+            _ct, raw = _pp_get(ep, {'recursive': 'false', 'uncached': 'true', 'count': 1000, 'offset': 0})
+            data = _pp_json(raw)
+            lst = data if isinstance(data, list) else (data.get('folders') or data.get('Folders') or []) if isinstance(data, dict) else []
+            rows = []
+            for f in lst:
+                p = str(_pp_first(f, 'Path', 'path')).strip('/')
+                if not p or p == path or _PP_HIDE.match(p.rsplit('/', 1)[-1]):
+                    continue
+                th = str(_pp_first(f, 'Thumb', 'thumb'))
+                rows.append({'path': p, 'name': str(_pp_first(f, 'Name', 'name') or p.rsplit('/', 1)[-1])[:120],
+                              'thumb': th if _PP_HASH.match(th) else ''})
+            rows.sort(key=lambda r: r['name'].lower())
+            return 200, {'ok': True, 'folders': rows}
+    except ValueError as e:
+        if str(e) == 'auth':
+            return 200, {'ok': True, 'denied': True}
+        return 400, {'ok': False, 'error': str(e)}
+    except RuntimeError as e:
+        return 502, {'ok': False, 'error': 'PhotoPrism ne répond pas : ' + str(e)}
     return 400, {'ok': False, 'error': 'Requête non autorisée.'}
 
 

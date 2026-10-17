@@ -3,6 +3,17 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.19 — 17 October 2026
+
+### Fixed
+- **The ✓ “On the desktop” badge is no longer cut off** on Desktroo Apps app icons (Domains, Authenticator, Desktroo Pass, Antivirus, Uptime Kuma…), in the applications menu.
+- **Desktroo Apps icons now have the same weight as system icons**: slightly smaller drawings and thinner strokes, instead of visibly bigger and thicker icons.
+  > Store icons were reworked (drawing scaled to 78%, strokes ×0.7); they arrive with the store publication.
+
+### Improved
+- **Desktroo Apps can host new kinds of apps** that read your NAS folders read-only while keeping their own internal rights.
+  > New app-page field `nas_user_env`: the borrowed account is passed to the app as environment variables (UID/GID) instead of replacing the container user.
+
 ## 2.54.15 — 16 October 2026
 
 ### New
