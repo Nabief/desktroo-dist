@@ -9,7 +9,14 @@
 <meta name="copyright" content="© 2026 Mdm-services.fr. Tous droits réservés.">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Desktroo</title>
-<link rel="manifest" href="/fileops/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="manifest" href="/fileops/manifest.webmanifest" crossorigin="use-credentials" id="dk-manifest">
+<script>/* Mode application : /?app=jellyfin ouvre la fenêtre de l'app seule, installable comme une application de l'ordinateur. */
+(function(){try{var m=/^[a-z0-9][a-z0-9-]{0,40}$/,pm=/^\/k\/([a-z0-9][a-z0-9-]{0,40})\/?$/.exec(location.pathname),a=pm?pm[1]:new URLSearchParams(location.search).get('app');
+if(a)a=a.replace(/^dkapp-/,'');
+if(a&&m.test(a)){window.DK_KIOSK=a;
+document.getElementById('dk-manifest').setAttribute('href','/fileops/store/kiosk-manifest/'+a);
+document.documentElement.classList.add('dk-kiosk');
+var l=document.createElement('link');l.rel='icon';l.href='/fileops/store/icon/'+a;l.onerror=function(){l.onerror=null;l.href='/fileops/store/sys-icon/'+a;};document.head.appendChild(l);}}catch(e){}})();</script>
 <meta name="theme-color" content="#0a1220">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Desktroo">
@@ -2263,6 +2270,17 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .look-mini svg { width:15px; height:15px; color:#0b1526; }
   .look-mini-pick:not(.active) { box-shadow:inset 0 0 0 1.5px rgba(128,140,160,0.7); color:var(--text-dim); font-size:17px; line-height:1; }
 
+
+  /* Mode application (/?app=…) : la fenêtre de l'app remplit la page, sans barre ni bureau autour. */
+  html.dk-kiosk #taskbar, html.dk-kiosk .window-titlebar, html.dk-kiosk .resize-handle { display:none !important; }
+  html.dk-kiosk .window { top:0 !important; left:0 !important; width:100vw !important; height:100vh !important; max-width:none !important; border-radius:0 !important; border:0 !important; }
+  html.dk-kiosk .window .window-body { border-radius:0 !important; }
+  html.dk-kiosk #desktop-icons, html.dk-kiosk #widgets, html.dk-kiosk #widgets-l { display:none !important; }
+  @keyframes dk-kspin { to { transform:rotate(360deg); } }
+  html.dk-kiosk body:not(:has(.window.visible)) #desktop::after { content:''; position:fixed; left:50%; top:50%; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; border:3px solid rgba(255,255,255,.18); border-top-color:#3ecf8e; animation:dk-kspin .8s linear infinite; }
+  #dk-kiosk-bar { position:fixed; left:50%; top:10px; transform:translateX(-50%); z-index:99999; display:none; align-items:center; gap:12px; max-width:92vw; padding:9px 12px 9px 16px; border-radius:999px; background:#161a22; color:#fff; border:1px solid rgba(255,255,255,.18); box-shadow:0 10px 36px rgba(0,0,0,.5); font-size:13px; }
+  #dk-kiosk-bar button { border:0; border-radius:999px; padding:6px 14px; cursor:pointer; font:inherit; font-weight:600; background:#3ecf8e; color:#06231a; }
+  #dk-kiosk-bar button.x { background:none; color:#9aa4b5; padding:4px 8px; }
   /* ===== THEME CLAIR ===== */
   [data-theme="light"] {
     /* Accent assombri : le vert de la charte n'est pas lisible en texte sur fond clair. */
@@ -9699,6 +9717,16 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Vus": "Watched",
 "Tous les genres": "All genres",
 "Albums": "Albums",
+"Installer Fichiers comme application de l'ordinateur": "Install Files as a computer app",
+"Application de l’ordinateur": "Computer app",
+"Ouvre l’app seule dans sa fenêtre, avec son icône sur le bureau Windows ou dans la barre des tâches.": "Opens the app on its own in its window, with its icon on the Windows desktop or taskbar.",
+"Ouvre Jellyfin seul dans sa fenêtre, avec son icône sur le bureau de l’ordinateur.": "Opens Jellyfin on its own in its window, with its icon on the computer desktop.",
+"Installer sur l’ordinateur": "Install on the computer",
+"Une application seule": "A single app",
+"Chaque application peut aussi s’installer seule, avec son icône et sa propre fenêtre : « Desktroo Fichiers », « Desktroo Jellyfin »…": "Each app can also be installed on its own, with its icon and its own window: “Desktroo Files”, “Desktroo Jellyfin”…",
+"⬇ Installer comme application": "⬇ Install as an app",
+"✅ Liste effacée": "✅ List cleared",
+"Effacer la liste": "Clear the list",
 "Administration complète": "Full administration",
   "Audio": "Audio",
   "Sous-titres": "Subtitles",
@@ -11280,6 +11308,8 @@ function initDesktop(sysInfo) {
   licStart();
   termsCheck();
   try { dkStoreBoot(); } catch (_) {}   // MDM-STORE-V1 : icône du Magasin et apps installées
+  try { dkKioskStart(); } catch (_) {}
+  setTimeout(function() { try { dkKioskIconSync(); } catch (_) {} }, 9000);
   tndLoadConfig();
   tndWatchStart();
   setupContextMenu();
@@ -11847,6 +11877,7 @@ function buildFsWindowHtml(wid, top, left) {
             <button class="fs-path-copy" onclick="setActiveFsWin('${wid}');fsCopyPath()" title="Copier le chemin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
           </div>
           <button class="fs-nav-btn" onclick="setActiveFsWin('${wid}');fsRefresh()" title="Actualiser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+          ${dkKioskCanInstall('filestation') ? `<button class="fs-nav-btn" onclick="dkKioskInstallOpen('filestation')" title="${T('Installer Fichiers comme application de l\'ordinateur')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 19h16"/></svg></button>` : ''}
           <div class="fs-searchbox" id="${wid}-fs-searchbox">
             <button class="fs-search-go" onclick="setActiveFsWin('${wid}');fsSearch()" title="Rechercher dans ce dossier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
             <input id="${wid}-fs-search" placeholder="Rechercher ici…" autocomplete="off" spellcheck="false" onkeydown="fsSearchKey(event,'${wid}')">
@@ -13489,6 +13520,8 @@ function dkStoreRenderDetail(body, a) {
         + (a.nas && a.nas.user ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + webEsc(a.nas.paths.join(', ')) + '<br><span class="dks-tag">'
             + webEsc(Tf('avec les droits de {0}, {1}', a.nas.user, a.nas.mode === 'rw' ? T('lecture et écriture') : T('lecture seule'))) + '</span></dd>' : '')
         + ((inst.standalone || a.standalone) ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(location.origin + '/a/' + a.id + '/') + '</span><button class="web-mini" onclick="dkStoreCopyUrl(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
+        + (dkKioskCanInstall(a.id) ? '<dt>' + T('Application de l’ordinateur') + '</dt><dd>' + T('Ouvre l’app seule dans sa fenêtre, avec son icône sur le bureau Windows ou dans la barre des tâches.') + ' <button class="web-mini" onclick="dkKioskInstallOpen(\'' + a.id + '\')">' + T('Installer') + '</button></dd>' : '')
+        + (!(inst.standalone || a.standalone) && a.open_url ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(dkStoreDirectUrl(a)) + '</span><button class="web-mini" onclick="dkStoreCopyDirect(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
         + '</dl>' + dkStoreNetHtml(a, true) + dkStoreLicenseHtml(a)
         + (a.nas_access && a.nas_access.mode !== 'all' ? (_dkStore.nasEdit === a.id ? dkStoreNasHtml(a, a.nas) + '<div class="dks-acts"><button class="web-open" onclick="dkStoreAct(\'nas\',\'' + a.id + '\')">' + T('Enregistrer les accès aux dossiers') + '</button><button class="fs-btn" onclick="_dkStore.nasEdit=null;dkStoreRender()">' + T('Annuler') + '</button></div>' : '') : '')
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
@@ -13733,6 +13766,14 @@ function dkStorePoll(id) {
   _dkStore.polls[id] = setTimeout(tick, 1200);
 }
 // Adresse directe d'une app : à ouvrir dans un onglet, en favori ou sur l'écran d'accueil du téléphone.
+// Apps qui s'ouvrent sur leur propre port (réseau local) : l'adresse est celle du NAS, jamais le nom de domaine du bureau.
+function dkStoreDirectUrl(a) { return String((a && a.open_url) || '').replace('{ip}', dkNasHost(a)); }
+function dkStoreCopyDirect(id) {
+  var url = dkStoreDirectUrl(dkStoreApp(id) || {});
+  var done = function() { toast(T('Adresse copiée : ') + url, 4000); };
+  try { navigator.clipboard.writeText(url).then(done, function() { prompt(T('Adresse de l’app :'), url); }); }
+  catch (_) { prompt(T('Adresse de l’app :'), url); }
+}
 function dkStoreCopyUrl(id) {
   var url = location.origin + '/a/' + id + '/';
   var done = function() { toast(T('Adresse copiée : ') + url, 4000); };
@@ -15610,7 +15651,8 @@ function dkJfScanNote(scan) {
 function dkJfRenderHome(body, r) {
   var c = r.counts || {}, libs = r.libraries || [];
   wmHead('dkjf', 'Jellyfin', { sub: r.server && r.server.version ? 'Jellyfin ' + webEsc(r.server.version) : '',
-    actions: '<button class="web-open" onclick="dkJfFull()">' + T('Ouvrir Jellyfin') + '</button>' });
+    actions: (dkKioskCanInstall('jellyfin') ? '<button class="fs-btn" onclick="dkKioskInstallOpen(\'jellyfin\')" title="' + webEsc(T('Ouvre Jellyfin seul dans sa fenêtre, avec son icône sur le bureau de l’ordinateur.')) + '">' + T('Installer sur l’ordinateur') + '</button> ' : '')
+      + '<button class="web-open" onclick="dkJfFull()">' + T('Ouvrir Jellyfin') + '</button>' });
   var h = dkJfScanNote(r.scan);
   if (!libs.length) {
     h += '<div class="dks-empty">' + T('Aucune bibliothèque pour l’instant.') + '<br>' + T('Ajoutez un dossier de films, de séries ou de musiques : Jellyfin le classe et récupère les affiches.')
@@ -21449,7 +21491,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.54.38';
+var DK_PAGE_VERSION = '2.54.44';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();
@@ -21927,10 +21969,22 @@ function jobsMerged() {
   _jobsPast.forEach(function(j) { if (!seen[j.id]) out.push(j); });
   return out;
 }
+// TrueNAS ne permet pas de supprimer l'historique des tâches : « Effacer la liste » le masque ici, sur ce navigateur.
+function jobsHiddenUpTo(k) { try { return Number(localStorage.getItem('dk-jobs-hid-' + k) || 0) || 0; } catch (_) { return 0; } }
+function jobsClearList(k) {
+  var mx = jobsHiddenUpTo(k);
+  jobsBuckets()[k].forEach(function(j) { if (Number(j.id) > mx) mx = Number(j.id); });
+  try { localStorage.setItem('dk-jobs-hid-' + k, String(mx)); } catch (_) {}
+  if (k === 'bad') jobsMarkBadSeen();
+  jobsRenderPopover(); jobsBadgeUpdate();
+  toast(T('✅ Liste effacée'));
+}
 function jobsBuckets() {
-  var b = { run: [], wait: [], bad: [], ok: [] };
+  var b = { run: [], wait: [], bad: [], ok: [] }, hb = jobsHiddenUpTo('bad'), ho = jobsHiddenUpTo('ok');
   jobsMerged().forEach(function(j) {
     var st = String(j.state || '').toUpperCase();
+    if ((st === 'FAILED' || st === 'ABORTED' || st === 'CANCELED') && Number(j.id) <= hb) return;
+    if (st === 'SUCCESS' && Number(j.id) <= ho) return;
     if (st === 'RUNNING') b.run.push(j);
     else if (st === 'WAITING' || st === 'PENDING') b.wait.push(j);
     else if (st === 'FAILED' || st === 'ABORTED' || st === 'CANCELED') b.bad.push(j);
@@ -22113,6 +22167,7 @@ function jobsRenderPopover() {
   if (!list.length) { box.innerHTML = h + '<div style="font-size:12px;color:var(--text-dim);padding:6px 0;">' + T('Aucune tâche dans cette liste') + '</div>'; return; }
   list.slice(0, 40).forEach(function(j) { h += jobsRow(j, tab); });
   if (list.length > 40) h += '<div style="font-size:11px;color:var(--text-dim);padding:7px 0 0;">' + Tf('et {0} de plus', list.length - 40) + '</div>';
+  if (tab === 'bad' || tab === 'ok') h += '<div style="padding:9px 0 0;"><button class="fs-btn" onclick="jobsClearList(\'' + tab + '\')" style="width:100%;justify-content:center;">' + T('Effacer la liste') + '</button></div>';
   if (tab === 'bad' || tab === 'ok') h += '<div style="font-size:10px;color:var(--text-dim);padding:7px 0 0;">' + Tf('Les {0} dernières tâches connues du NAS.', JOBS_HISTORY) + '</div>';
   box.innerHTML = h;
 }
@@ -23135,6 +23190,7 @@ function showDrawerCtx(e, app) {
     }, { once:true });
   }, 0);
 }
+function dctxKiosk() { if (_drawerCtxApp) { dkKioskInstallOpen(_drawerCtxApp.id); closeDrawer(); } }
 function dctxOpen()  { if (_drawerCtxApp) { _drawerCtxApp.action(); closeDrawer(); } }
 function dctxPin()   { if (_drawerCtxApp) { pinToDesktop(_drawerCtxApp.id); renderDrawer(document.getElementById('drawer-search').value || ''); } }
 function dctxUnpin() { if (_drawerCtxApp) { unpinFromDesktop(_drawerCtxApp.id); renderDrawer(document.getElementById('drawer-search').value || ''); } }
@@ -33851,9 +33907,85 @@ dkGlassApply();
 // Le navigateur (Chrome, Edge…) propose l'installation quand la page annonce un manifeste et qu'elle est servie
 // en https ; il nous confie alors un événement, qu'on rejoue quand la personne clique sur « Installer ».
 // ===========================
+// ── Mode application : « Desktroo Jellyfin » comme application de l'ordinateur ──
+// Les apps du Magasin portent « dkapp-<id> » dans le tiroir ; l'adresse et le manifeste n'utilisent que <id>.
+function dkKioskNorm(id) { return String(id || '').replace(/^dkapp-/, ''); }
+function dkKioskOpenFn(id) {
+  id = dkKioskNorm(id);
+  return { jellyfin: dkJfOpen, photoprism: dkPpOpen, adguard: dkAgOpen, wireguard: dkWgOpen, 'uptime-kuma': dkUkOpen, npmplus: dkNpmOpen }[id]
+    || (function() { var a = drawerApp(id); return a && !a.store ? a.action : null; })()
+    || function() { dkStoreOpenInstalled(id); };
+}
+function dkKioskUrl(id) { return location.origin + '/k/' + encodeURIComponent(dkKioskNorm(id)) + '/'; }
+// Windows ne sait pas fabriquer le raccourci d'une icône SVG (il met une lettre) : on dessine ici des PNG nets
+// à partir de l'icône de l'app, et le NAS les range pour les manifestes.
+async function dkKioskRender(svg, size) {
+  var url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  try {
+    var img = new Image();
+    await new Promise(function(ok, ko) { img.onload = ok; img.onerror = ko; img.src = url; });
+    var c = document.createElement('canvas'); c.width = c.height = size;
+    c.getContext('2d').drawImage(img, 0, 0, size, size);
+    return c.toDataURL('image/png').split(',')[1];
+  } finally { URL.revokeObjectURL(url); }
+}
+async function dkKioskIconUpload(id) {
+  var r = await fetch('/fileops/store/icon/' + encodeURIComponent(id), { cache: 'no-cache' });
+  if (!r.ok) r = await fetch('/fileops/store/sys-icon/' + encodeURIComponent(id), { cache: 'no-cache' });
+  if (!r.ok) throw new Error('icon');
+  var svg = await r.text();
+  await fileops('POST', 'store/kiosk-icon', { id: id, png192: await dkKioskRender(svg, 192), png512: await dkKioskRender(svg, 512) });
+}
+var _dkKioskSyncing = false;
+async function dkKioskIconSync() {
+  if (window.DK_KIOSK || _dkKioskSyncing) return;
+  _dkKioskSyncing = true;
+  try {
+    var have = (await fileops('GET', 'store/kiosk-icons')).ids || [], todo = ALL_APPS.map(function(a) { return a.id; }).filter(function(i) { return have.indexOf(i) < 0; });
+    for (var k = 0; k < todo.length && k < 80; k++) { try { await dkKioskIconUpload(todo[k]); } catch (_) {} }
+  } catch (_) {}
+  _dkKioskSyncing = false;
+}
+async function dkKioskInstallOpen(id) {
+  id = dkKioskNorm(id);
+  var w = null; try { w = window.open('', '_blank'); } catch (_) {}
+  try { await dkKioskIconUpload(id); } catch (_) {}
+  var url = dkKioskUrl(id) + '?install=1';
+  if (w) { try { w.opener = null; } catch (_) {} w.location.href = url; } else window.open(url, '_blank', 'noopener');
+}
+function dkKioskCanInstall(id) { id = dkKioskNorm(id); return !window.DK_KIOSK && !dkInstalled() && !!dkKioskOpenFn(id); }
+function dkKioskBar(html) {
+  var b = document.getElementById('dk-kiosk-bar');
+  if (!b) { b = document.createElement('div'); b.id = 'dk-kiosk-bar'; document.body.appendChild(b); }
+  b.innerHTML = html; b.style.display = html ? 'flex' : 'none';
+}
+function dkKioskBarRefresh() {
+  var id = window.DK_KIOSK; if (!id || dkInstalled()) return dkKioskBar('');
+  var wanted = /[?&]install=1/.test(location.search);
+  var sysA = drawerApp(id), name = sysA && !sysA.store ? sysA.label : (dkStoreName((dkStoreApp(id) || {}).name) || id);
+  if (_dkInstall) dkKioskBar('<span>' + webEsc(Tf('Installer « Desktroo {0} » comme application sur cet ordinateur ?', name)) + '</span><button onclick="dkInstallApp()">' + T('Installer') + '</button><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
+  else if (wanted) dkKioskBar('<span>' + webEsc(Tf('Menu du navigateur (⋮), puis « Installer Desktroo {0} » ou « Enregistrer et partager ».', name)) + '</span><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
+}
+function dkKioskStart() {
+  var id = window.DK_KIOSK; if (!id) return;
+  var tries = 0;
+  (function go() {
+    var sys = drawerApp(id); sys = sys && !sys.store ? sys : null;
+    var fn = dkKioskOpenFn(id), a = dkStoreApp(id);
+    if (!a && !sys && tries++ < 40) return setTimeout(go, 250);
+    // La fenêtre Fichiers est construite un peu après le démarrage : on attend qu'elle existe.
+    if (id === 'filestation' && !document.getElementById('win-fs1') && tries++ < 40) return setTimeout(go, 250);
+    if (fn) { try { fn(); } catch (_) {} }
+    // Rien d'ouvert (fenêtre pas encore prête, ou ouverture ratée) : on réessaie quelques fois.
+    if (!document.querySelector('.window.visible') && tries++ < 12) return setTimeout(go, 400);
+    document.title = 'Desktroo ' + (sys ? sys.label : (dkStoreName((a || {}).name) || id));
+    setTimeout(dkKioskBarRefresh, 1500); setTimeout(dkKioskBarRefresh, 6000);
+  })();
+}
 var _dkInstall = null;
 function dkInstalled() { return !!((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true); }
 function dkInstallRefresh() {
+  try { dkKioskBarRefresh(); } catch (_) {}
   var it = document.getElementById('user-install-item');
   if (it) it.style.display = _dkInstall && !dkInstalled() ? '' : 'none';
   if (wmVisible('control') && _cp.nav === 'install') loadControl();
@@ -33877,6 +34009,10 @@ function cpInstallView() {
     + T('Les navigateurs n\'installent une application que depuis une adresse en https. Ouvrez Desktroo par son adresse sécurisée, puis revenez ici.') + '</div>';
   else h += '<div class="cp-note"><strong>' + T('Le navigateur ne propose pas encore l\'installation.') + '</strong> '
     + T('Chrome et Edge la proposent après quelques instants passés sur la page ; elle se trouve aussi dans leur menu, ou à droite de la barre d\'adresse.') + '</div>';
+  if (!window.DK_KIOSK && !dkInstalled()) {
+    h += '<div class="web-group-title">' + T('Une application seule') + '</div>' + note(T('Chaque application peut aussi s\u2019installer seule, avec son icône et sa propre fenêtre : « Desktroo Fichiers », « Desktroo Jellyfin »…'))
+      + '<div class="web-group">' + ALL_APPS.map(function(a) { return wmRow('dkKioskInstallOpen(\'' + a.id + '\')', a.label, T('Installer comme application')); }).join('') + '</div>';
+  }
   var words = function(t) { return '<span style="word-break:normal;overflow-wrap:break-word;">' + t + '</span>'; };   // ces lignes sont des phrases : pas de coupure au milieu d'un mot
   h += '<div class="web-group-title">' + T('Selon le navigateur') + '</div>'
     + netFacts([
@@ -39360,6 +39496,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
   <div class="dctx-item" id="dctx-pin"   onclick="dctxPin()">&#x1F4CC; Épingler au bureau</div>
   <div class="dctx-item" id="dctx-unpin" onclick="dctxUnpin()">&#x1F4CC; Retirer du bureau</div>
   <div class="dctx-item"                 onclick="dctxOpen()">&#x25B6; Ouvrir</div>
+  <div class="dctx-item" id="dctx-kiosk" onclick="dctxKiosk()">&#x2B07; Installer comme application</div>
 </div>
 
 

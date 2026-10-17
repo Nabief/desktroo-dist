@@ -3,6 +3,23 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.44 — 17 octobre 2026
+
+### Nouveau
+- **Chaque application Desktroo s'installe comme une vraie application de l'ordinateur.** « Desktroo Fichiers », « Desktroo Jellyfin », « Desktroo Antivirus »… : une fenêtre à elle, son icône sur le bureau Windows et dans la barre des tâches, sans onglet ni barre d'adresse autour. Un clic droit sur une application du tiroir, le bouton d'installation de la barre d'adresse de Fichiers, ou la liste « Une application seule » du Panneau de configuration, ouvre la page d'installation.
+  > Adresse `/k/<app>/` avec son propre manifeste (`/fileops/store/kiosk-manifest/<app>`) : l'`id` et la portée sont propres à chaque application, ce qui évite qu'une application installée « capture » les autres. Les applications du tiroir (`dkapp-<id>`) sont ramenées à `<id>`.
+- **De belles icônes d'application.** Windows ne sait pas fabriquer un raccourci à partir d'une icône SVG (il affichait un carré gris avec une lettre) : Desktroo dessine des icônes PNG nettes à partir de celles de chaque application et le NAS les range pour les manifestes.
+  > PNG 192 et 512 générés par le navigateur (canvas) et envoyés à `/store/kiosk-icon`, cache `kiosk-icons`.
+- **En mode application, rien d'autre que l'application.** Le bureau, ses icônes et ses widgets sont masqués ; un petit rond de chargement s'affiche le temps de la connexion, puis l'application s'ouvre seule.
+- **Tâches : « Effacer la liste ».** Dans la fenêtre des tâches (onglets Échecs et Terminées), un bouton masque les tâches déjà vues et remet le compteur à zéro. Un nouvel échec réapparaît normalement.
+  > TrueNAS ne permet pas de supprimer l'historique des tâches : le masquage est mémorisé dans ce navigateur.
+- **Adresse directe des applications.** Les applications qui s'ouvrent dans leur propre adresse affichent une ligne « Adresse directe » avec un bouton pour la copier.
+- **Antivirus : quarantaine plus lisible.** La liste montre la taille et le dossier d'origine de chaque fichier, et la confirmation se fait sur place (nouvelle version 1.0.3 de l'application).
+
+### Corrigé
+- **Fichiers s'ouvre bien seul en mode application.** La fenêtre était demandée avant d'être construite et restait fermée.
+- **Jellyfin : texte illisible sur le thème clair** dans la fiche d'un titre.
+
 ## 2.54.38 — 17 octobre 2026
 
 ### Nouveau

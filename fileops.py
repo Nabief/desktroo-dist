@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.38'
+APP_VERSION = '2.54.44'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9747,6 +9747,9 @@ def _store_get(handler, path, qs):
     if path == '/store/nas/choices':
         handler._json(200, store_nas_choices())
         return True
+    if path == '/store/kiosk-icons':
+        handler._json(200, {'ok': True, 'ids': store_kiosk_icon_ids()})
+        return True
     if path == '/store/jellyfin/img':
         code, ctype, data = store_jellyfin_img(qs.get('i', ''), qs.get('s', ''))
         handler.send_response(code)
@@ -9797,6 +9800,7 @@ def _store_get(handler, path, qs):
 
 
 _STORE_POST = {
+    '/store/kiosk-icon': lambda b: store_kiosk_icon_put(b),
     '/store/install': lambda b: store_install(b),
     '/store/update': lambda b: store_install(b, update=True),
     '/store/uninstall': lambda b: store_uninstall(b),     # lambdas : les fonctions sont définies plus bas
@@ -9879,6 +9883,44 @@ def _store_public_get(handler, path):
         return True
     if path.startswith('/store/jellyfin/sub/'):
         _jf_stream_serve(handler, path[len('/store/jellyfin/sub/'):].split('/')[0])
+        return True
+    if path.startswith('/store/kiosk-icon/'):
+        m = _KIOSK_ICON_NAME.match(path[len('/store/kiosk-icon/'):])
+        body = b''
+        if m:
+            try:
+                with open(os.path.join(KIOSK_ICON_DIR, m.group(0)), 'rb') as f:
+                    body = f.read()
+            except OSError:
+                body = b''
+        handler.send_response(200 if body else 404)
+        if body:
+            handler.send_header('Content-Type', 'image/png')
+        handler.send_header('Cache-Control', 'public, max-age=3600')
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path.startswith('/store/sys-icon/'):
+        body = store_sys_icon(path[len('/store/sys-icon/'):]) or b''
+        handler.send_response(200 if body else 404)
+        if body:
+            handler.send_header('Content-Type', 'image/svg+xml')
+        handler.send_header('Cache-Control', 'public, max-age=86400')
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return True
+    if path.startswith('/store/kiosk-manifest/'):
+        man = store_kiosk_manifest(path[len('/store/kiosk-manifest/'):])
+        body = json.dumps(man, ensure_ascii=False).encode('utf-8') if man else b''
+        handler.send_response(200 if man else 404)
+        if man:
+            handler.send_header('Content-Type', 'application/manifest+json; charset=utf-8')
+        handler.send_header('Cache-Control', 'no-cache')
+        handler.send_header('Content-Length', str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
         return True
     if path.startswith('/store/sdk/'):
         item = _STORE_SDK.get(path[len('/store/sdk/'):])
@@ -10728,6 +10770,95 @@ def store_login(handler):
     return reply(200, {'ok': True, 'next': nxt or ''}, store_cookie_header(handler, store_cookie_make(name, ttl), ttl))
 
 
+# Toute app installée peut s'installer comme une application de l'ordinateur (adresse /?app=<id>, sans le bureau autour).
+# Applications du bureau Desktroo (Fichiers, Stockage, Terminal…) : mêmes adresses /?app=<id>, icône dessinée ici.
+_KIOSK_SYS = json.loads(r'''{"filestation": {"l": "Fichiers", "a": "#1e7fe8", "b": "#0ea5e9", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z\"/></svg>"}, "storage": {"l": "Stockage", "a": "#7c3aed", "b": "#a855f7", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"/><path d=\"M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5\"/></svg>"}, "apps": {"l": "Applications", "a": "#059669", "b": "#10b981", "s": "<svg viewBox=\"0 0 24 24\" fill=\"rgba(255,255,255,0.95)\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/></svg>"}, "docker": {"l": "Conteneurs", "a": "#0ea5e9", "b": "#38bdf8", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z\"/><polyline points=\"3.27 6.96 12 12.01 20.73 6.96\"/><line x1=\"12\" y1=\"22.08\" x2=\"12\" y2=\"12\"/></svg>"}, "catalog": {"l": "Catalogue d’applications", "a": "#c026d3", "b": "#f0abfc", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\" y=\"3\" width=\"9\" height=\"9\" rx=\"1.5\"/><rect x=\"13\" y=\"3\" width=\"9\" height=\"9\" rx=\"1.5\"/><rect x=\"2\" y=\"13\" width=\"9\" height=\"9\" rx=\"1.5\"/><rect x=\"13\" y=\"13\" width=\"9\" height=\"9\" rx=\"1.5\"/></svg>"}, "control": {"l": "Panneau de configuration", "a": "#dc2626", "b": "#f87171", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"4\" y1=\"6\" x2=\"20\" y2=\"6\"/><line x1=\"4\" y1=\"12\" x2=\"20\" y2=\"12\"/><line x1=\"4\" y1=\"18\" x2=\"20\" y2=\"18\"/><circle cx=\"8\" cy=\"6\" r=\"2\" fill=\"rgba(255,255,255,0.95)\" stroke=\"none\"/><circle cx=\"16\" cy=\"12\" r=\"2\" fill=\"rgba(255,255,255,0.95)\" stroke=\"none\"/><circle cx=\"10\" cy=\"18\" r=\"2\" fill=\"rgba(255,255,255,0.95)\" stroke=\"none\"/></svg>"}, "sysinfo": {"l": "Informations système", "a": "#334155", "b": "#64748b", "s": "<svg viewBox=\"0 0 24 24\" fill=\"rgba(255,255,255,0.95)\"><rect x=\"3\" y=\"13\" width=\"4\" height=\"8\" rx=\"1\"/><rect x=\"10\" y=\"8\" width=\"4\" height=\"13\" rx=\"1\"/><rect x=\"17\" y=\"4\" width=\"4\" height=\"17\" rx=\"1\"/></svg>"}, "network": {"l": "Réseau", "a": "#0d9488", "b": "#2dd4bf", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"5\" r=\"2.4\"/><circle cx=\"5\" cy=\"18\" r=\"2.4\"/><circle cx=\"19\" cy=\"18\" r=\"2.4\"/><line x1=\"12\" y1=\"7.2\" x2=\"6.2\" y2=\"15.9\"/><line x1=\"12\" y1=\"7.2\" x2=\"17.8\" y2=\"15.9\"/><line x1=\"7.4\" y1=\"18\" x2=\"16.6\" y2=\"18\"/></svg>"}, "update": {"l": "Mises à jour TrueNAS", "a": "#d97706", "b": "#fbbf24", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><polyline points=\"16 12 12 8 8 12\"/><line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"8\"/></svg>"}, "notifs": {"l": "Alertes", "a": "#e11d48", "b": "#fb7185", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9\"/><path d=\"M13.73 21a2 2 0 01-3.46 0\"/></svg>"}, "reports": {"l": "Rapports", "a": "#4f46e5", "b": "#22d3ee", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"20\" x2=\"18\" y2=\"10\"/><line x1=\"12\" y1=\"20\" x2=\"12\" y2=\"4\"/><line x1=\"6\" y1=\"20\" x2=\"6\" y2=\"14\"/></svg>"}, "users": {"l": "Utilisateurs", "a": "#2563eb", "b": "#60a5fa", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M23 21v-2a4 4 0 00-3-3.87\"/><path d=\"M16 3.13a4 4 0 010 7.75\"/></svg>"}, "sharing": {"l": "Partages", "a": "#ea580c", "b": "#fb923c", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"18\" cy=\"5\" r=\"3\"/><circle cx=\"6\" cy=\"12\" r=\"3\"/><circle cx=\"18\" cy=\"19\" r=\"3\"/><line x1=\"8.59\" y1=\"13.51\" x2=\"15.42\" y2=\"17.49\"/><line x1=\"15.41\" y1=\"6.51\" x2=\"8.59\" y2=\"10.49\"/></svg>"}, "websites": {"l": "Sites Web", "a": "#0ea5e9", "b": "#22c55e", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><line x1=\"3\" y1=\"12\" x2=\"21\" y2=\"12\"/><path d=\"M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z\"/></svg>"}, "downloads": {"l": "Téléchargements", "a": "#4f46e5", "b": "#818cf8", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg>"}, "license": {"l": "Licence", "a": "#f59e0b", "b": "#fbbf24", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"7.5\" cy=\"15.5\" r=\"3.5\"/><path d=\"M10 13l6-6\"/><path d=\"M14.5 4.5l4 0 0 4\"/><path d=\"M15 9l2.5 2.5\"/></svg>"}, "services": {"l": "Services", "a": "#475569", "b": "#94a3b8", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M20 12h-2M6 12H4M19.07 19.07l-1.41-1.41M5.34 6.34L3.93 4.93M12 20v-2M12 6V4\"/></svg>"}, "certs": {"l": "Certificats", "a": "#b45309", "b": "#facc15", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7a5 5 0 0110 0v4\"/></svg>"}, "health": {"l": "Bilan de santé", "a": "#0a8451", "b": "#3ecf8e", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 12h4l2.5-7 4 14 2.5-7H21\"/></svg>"}, "activity": {"l": "Journal d'activité", "a": "#0f766e", "b": "#5eead4", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"22 12 18 12 15 20 9 4 6 12 2 12\"/></svg>"}, "dataprotect": {"l": "Protection des données", "a": "#15803d", "b": "#4ade80", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg>"}, "terminal": {"l": "Terminal", "a": "#0f172a", "b": "#1e293b", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"4 17 10 11 4 5\"/><line x1=\"12\" y1=\"19\" x2=\"20\" y2=\"19\"/></svg>"}, "about": {"l": "À propos", "a": "#6366f1", "b": "#a855f7", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"/></svg>"}, "vms": {"l": "VMs TrueNAS (ancien)", "a": "#0369a1", "b": "#0ea5e9", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8M12 17v4\"/><path d=\"M7 8l2 2-2 2M13 10h4\"/></svg>"}, "cron": {"l": "Tâches planifiées", "a": "#0ea5e9", "b": "#6366f1", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><polyline points=\"12 7 12 12 15 14\"/></svg>"}, "bootenv": {"l": "Environnements de démarrage", "a": "#f59e0b", "b": "#ef4444", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3v8\"/><path d=\"M6.8 6.4a8 8 0 1 0 10.4 0\"/></svg>"}, "snapshots": {"l": "Snapshots ZFS", "a": "#8b5cf6", "b": "#06b6d4", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3 2 8l10 5 10-5-10-5z\"/><path d=\"M2 12l10 5 10-5\"/><path d=\"M2 16l10 5 10-5\"/></svg>"}, "maintenance": {"l": "Disques & Scrub", "a": "#14b8a6", "b": "#0ea5e9", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><ellipse cx=\"12\" cy=\"6\" rx=\"8\" ry=\"3\"/><path d=\"M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6\"/><path d=\"M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6\"/></svg>"}, "libvirt": {"l": "VMs QEMU/KVM", "a": "#0369a1", "b": "#0ea5e9", "s": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgba(255,255,255,0.95)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8M12 17v4\"/><circle cx=\"7\" cy=\"8\" r=\"1.5\" fill=\"rgba(255,255,255,0.95)\"/><circle cx=\"12\" cy=\"8\" r=\"1.5\" fill=\"rgba(255,255,255,0.95)\"/><circle cx=\"17\" cy=\"8\" r=\"1.5\" fill=\"rgba(255,255,255,0.95)\"/></svg>"}}''')
+
+
+def store_sys_icon(app_id):
+    d = _KIOSK_SYS.get(app_id)
+    if not d or not re.match(r'^#[0-9a-fA-F]{3,6}$', d['a']) or not re.match(r'^#[0-9a-fA-F]{3,6}$', d['b']):
+        return None
+    glyph = d['s'].replace('<svg ', '<svg x="116" y="116" width="280" height="280" ', 1)
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+            '<stop offset="0" stop-color="%s"/><stop offset="1" stop-color="%s"/></linearGradient></defs>'
+            '<rect width="512" height="512" rx="112" fill="url(#g)"/>%s</svg>' % (d['a'], d['b'], glyph)).encode('utf-8')
+
+
+# Icônes PNG des apps installables (Windows ne fabrique pas le raccourci d'une SVG : il met une simple lettre).
+# Le navigateur de la personne les dessine à partir des icônes SVG et les dépose ici ; elles servent dans les manifestes.
+KIOSK_ICON_DIR = os.path.join(STORE_DIR, 'kiosk-icons')
+_KIOSK_ICON_NAME = re.compile(r'^([a-z0-9][a-z0-9-]{0,40})-(192|512)\.png$')
+
+
+def store_kiosk_icon_put(b):
+    import base64 as _b64
+    b = b if isinstance(b, dict) else {}
+    app = str(b.get('id') or '')
+    if not re.match(r'^[a-z0-9][a-z0-9-]{0,40}$', app) or not (app in _KIOSK_SYS or app in store_installed_get()):
+        return 400, {'ok': False, 'error': 'App inconnue.'}
+    os.makedirs(KIOSK_ICON_DIR, exist_ok=True)
+    saved = 0
+    for size in (192, 512):
+        try:
+            data = _b64.b64decode(str(b.get('png%d' % size) or ''), validate=True)
+        except Exception:
+            continue
+        if len(data) > 300000 or len(data) < 70 or not data.startswith(b'\x89PNG\r\n\x1a\n'):
+            continue
+        if struct.unpack('>II', data[16:24]) != (size, size):
+            continue
+        path = os.path.join(KIOSK_ICON_DIR, '%s-%d.png' % (app, size))
+        with open(path + '.tmp', 'wb') as f:
+            f.write(data)
+        os.replace(path + '.tmp', path)
+        saved += 1
+    return 200, {'ok': True, 'saved': saved}
+
+
+def store_kiosk_icon_ids():
+    try:
+        have = set(os.listdir(KIOSK_ICON_DIR))
+    except OSError:
+        return []
+    return sorted(i for i in {m.group(1) for m in (_KIOSK_ICON_NAME.match(n) for n in have) if m}
+                  if ('%s-192.png' % i) in have and ('%s-512.png' % i) in have)
+
+
+def _kiosk_png_icons(app_id):
+    out = []
+    for size in (192, 512):
+        p = os.path.join(KIOSK_ICON_DIR, '%s-%d.png' % (app_id, size))
+        try:
+            v = int(os.path.getmtime(p))
+        except OSError:
+            return []
+        out.append({'src': '/fileops/store/kiosk-icon/%s-%d.png?v=%d' % (app_id, size, v), 'sizes': '%dx%d' % (size, size), 'type': 'image/png', 'purpose': 'any'})
+    return out
+
+
+def store_kiosk_manifest(app_id):
+    """Manifeste « Desktroo <app> » : la fenêtre de l'app, seule, dans sa propre fenêtre Windows/Mac/Linux."""
+    if not _STORE_ID_RE.match(app_id or ''):
+        return None
+    inst = store_installed_get().get(app_id)
+    if not inst and app_id in _KIOSK_SYS:
+        d = _KIOSK_SYS[app_id]
+        return {'name': 'Desktroo ' + d['l'], 'short_name': d['l'][:12], 'id': '/k/' + app_id + '/', 'start_url': '/k/' + app_id + '/',
+                'scope': '/k/' + app_id + '/', 'display': 'standalone', 'background_color': '#0a1220', 'theme_color': '#0a1220',
+                'icons': _kiosk_png_icons(app_id) + [{'src': '/fileops/store/sys-icon/' + app_id, 'sizes': 'any', 'type': 'image/svg+xml', 'purpose': 'any'}]}
+    if not inst:
+        return None
+    name = inst.get('name')
+    if isinstance(name, dict):
+        name = name.get('fr') or name.get('en')
+    name = str(name or app_id)
+    p, ctype = store_icon_path(app_id)
+    icons = _kiosk_png_icons(app_id) + ([{'src': '/fileops/store/icon/' + app_id, 'sizes': 'any', 'type': ctype, 'purpose': 'any'}] if p else [])
+    return {'name': 'Desktroo ' + name, 'short_name': name[:12], 'id': '/k/' + app_id + '/', 'start_url': '/k/' + app_id + '/',
+            'scope': '/k/' + app_id + '/', 'display': 'standalone', 'background_color': '#0a1220', 'theme_color': '#0a1220', 'icons': icons}
+
+
 def store_manifest(app_id):
     """Manifeste d'une app « standalone » : elle s'installe comme une application sur le téléphone ou l'ordinateur."""
     inst = store_installed_get().get(app_id)
@@ -10737,7 +10868,7 @@ def store_manifest(app_id):
     if isinstance(name, dict):
         name = name.get('fr') or name.get('en')
     p, ctype = store_icon_path(app_id)
-    icons = [{'src': '/fileops/store/icon/' + app_id, 'sizes': 'any', 'type': ctype, 'purpose': 'any'}] if p else []
+    icons = _kiosk_png_icons(app_id) + ([{'src': '/fileops/store/icon/' + app_id, 'sizes': 'any', 'type': ctype, 'purpose': 'any'}] if p else [])
     return {'name': str(name or app_id), 'short_name': str(name or app_id)[:12], 'id': '/a/%s/' % app_id,
             'start_url': '/a/%s/' % app_id, 'scope': '/a/%s/' % app_id, 'display': 'standalone',
             'background_color': '#0a1220', 'theme_color': '#0a1220', 'icons': icons}
