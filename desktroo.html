@@ -9641,6 +9641,10 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Vu {0}": "Seen {0}",
 "Les téléphones et ordinateurs autorisés à se connecter à votre réseau": "The phones and computers allowed to connect to your network",
 "Administration complète": "Full administration",
+  "Audio": "Audio",
+  "Sous-titres": "Subtitles",
+  "incrusté": "burned in",
+  "Audio et sous-titres": "Audio and subtitles",
   "Tous les dossiers des bibliothèques sont accessibles.": "All library folders are reachable.",
   "Vérifier les chemins": "Check paths",
   "{0} dossier(s) de bibliothèque introuvable(s)": "{0} library folder(s) not found",
@@ -14817,6 +14821,7 @@ async function dkPpForget() {
 var _dkJf = { nav: 'home', gen: 0, data: null, libs: null, users: null, ratings: null, timer: null, urls: {}, libList: [], lib: null, dom: null,
               form: { name: '', type: 'movies', sel: [], path: '/nas', folders: null, pwd: false } };
 function dkJfCss() {
+  dkJfIcons();
   if (document.getElementById('dkjf-css')) return;
   var st = document.createElement('style');
   st.id = 'dkjf-css';
@@ -14834,6 +14839,7 @@ function dkJfCss() {
     + '.dkjf-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 6px 3px 10px;margin:0 6px 6px 0;border-radius:999px;background:rgba(var(--accent-rgb),0.12);border:1px solid rgba(var(--accent-rgb),0.35);font-size:12px}'
     + '.dkjf-chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0 4px}'
     + '.dkjf-badge{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--glass-border);color:var(--text-dim);margin-left:6px;vertical-align:1px}'
+    + '.dkjf-pop{position:absolute;right:14px;top:56px;z-index:11;width:300px;max-height:70%;overflow:auto;background:#161a22;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;box-shadow:0 12px 40px rgba(0,0,0,.5)}.dkjf-pop .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#9aa4b5;padding:8px 10px 4px}.dkjf-pop button{display:block;width:100%;text-align:left;background:none;border:0;color:#fff;padding:8px 10px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer}.dkjf-pop button:hover{background:rgba(255,255,255,.08)}'
     + '.dkjf-view{position:absolute;inset:0;z-index:7;background:var(--bg, #10131a);display:flex;flex-direction:column;min-height:0}#dkjf-player{z-index:9;background:#000}'
     + '.dkjf-vh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--glass-border);flex:none}.dkjf-vt{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
     + '.dkjf-vb{flex:1;overflow:auto;padding:18px 20px}.dkjf-pb{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}.dkjf-pc{display:flex;gap:8px;align-items:center;padding:10px 14px;flex:none;background:rgba(255,255,255,.05)}'
@@ -14891,13 +14897,16 @@ async function dkJfApi(action, extra) {
 }
 function dkJfFull() { window.open(dkJfBase(), '_blank', 'noopener'); }
 function dkJfGo(nav) { _dkJf.nav = nav; if (nav === 'libadd') { _dkJf.form = { name: '', type: 'movies', sel: [], path: '/nas', folders: null }; } dkJfLoad(); }
-WEB_ICONS.film = '<rect x="2" y="2" width="20" height="20" rx="2.2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>';
-WEB_ICONS.tv = '<rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/>';
-WEB_ICONS.music = '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>';
-WEB_ICONS.camcorder = '<path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/>';
-WEB_ICONS.smile = '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>';
-WEB_ICONS.book = '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>';
-WEB_ICONS.stack = '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 12 10 5 10-5M2 17l10 5 10-5"/>';
+// Les icônes sont posées à l'ouverture de la fenêtre : WEB_ICONS (const) n'existe pas encore quand ce code est lu.
+function dkJfIcons() {
+  WEB_ICONS.film = '<rect x="2" y="2" width="20" height="20" rx="2.2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>';
+  WEB_ICONS.tv = '<rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/>';
+  WEB_ICONS.music = '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>';
+  WEB_ICONS.camcorder = '<path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/>';
+  WEB_ICONS.smile = '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>';
+  WEB_ICONS.book = '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>';
+  WEB_ICONS.stack = '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 12 10 5 10-5M2 17l10 5 10-5"/>';
+}
 // Icône d'une bibliothèque : d'après son type, et son nom pour les bibliothèques « mixtes ».
 function dkJfLibIcon(l) {
   var n = String(l.name || '').toLowerCase();
@@ -15161,6 +15170,8 @@ async function dkJfPlay(id, o) {
   var r;
   try {
     var q = { id: id }; if (o.start != null) q.start = Math.max(0, Math.floor(o.start)); if (o.transcode) q.transcode = true;
+    if (o.audio != null) q.audio = o.audio; else if (_dkJf.alang) q.alang = _dkJf.alang;
+    if (o.sub != null) q.sub = o.sub; else if (_dkJf.slang) q.slang = _dkJf.slang;
     r = await dkJfApi('play', q);
   } catch (e) {
     if (gen !== _dkJf.playGen) return;
@@ -15172,6 +15183,7 @@ async function dkJfPlay(id, o) {
   var trans = r.mode === 'trans';
   ov.innerHTML = '<div class="dkjf-vh"><button class="fs-btn" onclick="dkJfPlayClose()">&lsaquo; ' + T('Retour') + '</button><span class="dkjf-vt">' + webEsc(title) + '</span>'
     + (trans ? '<span class="dkjf-badge" title="' + webEsc(T('Le format de ce fichier est converti à la volée.')) + '">' + T('Conversion') + '</span>' : '')
+    + (((r.tracks_a || []).length > 1 || (r.tracks_s || []).length) ? '<button class="fs-btn" onclick="dkJfTracks()">&#128483; ' + T('Audio et sous-titres') + '</button>' : '')
     + '<button class="fs-btn" onclick="dkJfFs()">&#9974; ' + T('Plein écran') + '</button></div>'
     + '<div class="dkjf-pb" id="dkjf-stage"></div>'
     + (trans ? '<div class="dkjf-pc"><button class="fs-btn" id="dkjf-pp" onclick="dkJfPP()">&#10074;&#10074;</button><button class="fs-btn" onclick="dkJfSkip(-10)">&minus;10 s</button>'
@@ -15179,7 +15191,8 @@ async function dkJfPlay(id, o) {
       + '<span id="dkjf-tm" style="font-size:12px;min-width:92px;text-align:right;">' + dkJfT(r.pos) + ' / ' + dkJfT(r.duration) + '</span></div>' : '');
   var v = document.createElement('video');
   v.playsInline = true; v.autoplay = true; v.controls = !trans; v.style.cssText = 'max-width:100%;max-height:100%;width:100%;height:100%;background:#000;object-fit:contain;';
-  var p = _dkJf.pl = { id: id, mode: r.mode, offset: r.offset, duration: r.duration, v: v, started: false, ended: false, retried: !!o.transcode, timer: null };
+  var p = _dkJf.pl = { id: id, mode: r.mode, offset: r.offset, duration: r.duration, v: v, started: false, ended: false, retried: !!o.transcode, timer: null,
+    tracks_a: r.tracks_a || [], tracks_s: r.tracks_s || [], aidx: r.aidx, sidx: r.sidx };
   v.addEventListener('loadedmetadata', function() { if (!trans && r.pos > 5 && (!r.duration || r.pos < r.duration - 30)) v.currentTime = r.pos; });
   v.addEventListener('playing', function() { if (!p.started) { p.started = true; dkJfReport('start'); p.timer = setInterval(function() { dkJfReport('progress'); }, 10000); } var b = document.getElementById('dkjf-pp'); if (b) b.innerHTML = '&#10074;&#10074;'; });
   v.addEventListener('pause', function() { var b = document.getElementById('dkjf-pp'); if (b) b.innerHTML = '&#9654;'; if (p.started && !v.ended) dkJfReport('progress'); });
@@ -15198,9 +15211,52 @@ async function dkJfPlay(id, o) {
     else toast('⚠️ ' + T('Lecture impossible : ouvrez le titre dans Jellyfin.'), 8000);
   });
   v.src = '/fileops' + r.url;
+  dkJfApplySub();
   document.getElementById('dkjf-stage').innerHTML = '';
   document.getElementById('dkjf-stage').appendChild(v);
   var pr = v.play(); if (pr && pr.catch) pr.catch(function() {});
+}
+// ── Langue audio et sous-titres ──
+function dkJfApplySub() {
+  var p = _dkJf.pl; if (!p) return;
+  Array.prototype.slice.call(p.v.querySelectorAll('track')).forEach(function(t) { if (t.parentNode) t.parentNode.removeChild(t); });
+  var t = (p.tracks_s || []).filter(function(x) { return x.i === p.sidx && x.url; })[0];
+  if (!t) return;
+  var tr = document.createElement('track');
+  tr.kind = 'subtitles'; tr.label = t.label; tr.srclang = t.lang || 'und'; tr.src = '/fileops' + t.url; tr.default = true;
+  p.v.appendChild(tr);
+  try { tr.track.mode = 'showing'; } catch (_) {}
+}
+function dkJfTracksClose() { var x = document.getElementById('dkjf-pop'); if (x && x.parentNode) x.parentNode.removeChild(x); }
+function dkJfTracks() {
+  var p = _dkJf.pl, ov = document.getElementById('dkjf-player'); if (!p || !ov) return;
+  if (document.getElementById('dkjf-pop')) return dkJfTracksClose();
+  var h = '';
+  if ((p.tracks_a || []).length > 1) {
+    h += '<div class="t">' + T('Audio') + '</div>' + p.tracks_a.map(function(t) {
+      return '<button onclick="dkJfPickAudio(' + t.i + ')">' + (t.i === p.aidx ? '✓ ' : '') + webEsc(t.label) + '</button>'; }).join('');
+  }
+  if ((p.tracks_s || []).length) {
+    h += '<div class="t">' + T('Sous-titres') + '</div><button onclick="dkJfPickSub(-1)">' + (p.sidx < 0 ? '✓ ' : '') + T('Aucun') + '</button>'
+      + p.tracks_s.map(function(t) {
+        return '<button onclick="dkJfPickSub(' + t.i + ')">' + (t.i === p.sidx ? '✓ ' : '') + webEsc(t.label) + (t.text ? '' : ' <span style="opacity:.6">(' + T('incrusté') + ')</span>') + '</button>'; }).join('');
+  }
+  var d = document.createElement('div'); d.id = 'dkjf-pop'; d.className = 'dkjf-pop'; d.innerHTML = h; ov.appendChild(d);
+}
+function dkJfPickAudio(i) {
+  var p = _dkJf.pl; if (!p) return; dkJfTracksClose();
+  if (i === p.aidx) return;
+  var t = p.tracks_a.filter(function(x) { return x.i === i; })[0]; _dkJf.alang = t ? t.lang : '';
+  dkJfPlay(p.id, { audio: i, sub: p.sidx, start: dkJfPlayPos(), keepQueue: true });
+}
+function dkJfPickSub(i) {
+  var p = _dkJf.pl; if (!p) return; dkJfTracksClose();
+  var t = p.tracks_s.filter(function(x) { return x.i === i; })[0], cur = p.tracks_s.filter(function(x) { return x.i === p.sidx; })[0];
+  _dkJf.slang = i < 0 ? 'off' : (t ? t.lang : '');
+  if (i === p.sidx) return;
+  // une image incrustée (PGS, VobSub…) se règle dans la vidéo : on relance la lecture à la même position
+  if ((t && !t.text) || (cur && !cur.text)) { dkJfPlay(p.id, { audio: p.aidx, sub: i, start: dkJfPlayPos(), keepQueue: true }); return; }
+  p.sidx = i; dkJfApplySub();
 }
 function dkJfPP() { var p = _dkJf.pl; if (!p) return; if (p.v.paused) { var pr = p.v.play(); if (pr && pr.catch) pr.catch(function() {}); } else p.v.pause(); }
 function dkJfFs() { var s = document.getElementById('dkjf-stage'); if (s && s.requestFullscreen) s.requestFullscreen().catch(function() {}); }
@@ -21064,7 +21120,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.54.33';
+var DK_PAGE_VERSION = '2.54.35b';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();

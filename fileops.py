@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.33'
+APP_VERSION = '2.54.35b'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9877,6 +9877,9 @@ def _store_public_get(handler, path):
     if path.startswith('/store/jellyfin/stream/'):
         _jf_stream_serve(handler, path[len('/store/jellyfin/stream/'):].split('/')[0])
         return True
+    if path.startswith('/store/jellyfin/sub/'):
+        _jf_stream_serve(handler, path[len('/store/jellyfin/sub/'):].split('/')[0])
+        return True
     if path.startswith('/store/sdk/'):
         item = _STORE_SDK.get(path[len('/store/sdk/'):])
         if not item:
@@ -12510,6 +12513,7 @@ def _jf_item(x):
 
 
 _JF_CNT = {}
+_JF_IDENT = {}      # derniers résultats de recherche d'identification, par élément (le navigateur ne renvoie jamais leur contenu)
 
 
 def _jf_libraries(busy=False):
@@ -12589,10 +12593,17 @@ def _jf_user_row(u):
     pol = u.get('Policy') if isinstance(u.get('Policy'), dict) else {}
     return {'id': _jf_hexid(u.get('Id')), 'name': str(u.get('Name') or '')[:60], 'admin': bool(pol.get('IsAdministrator')),
             'disabled': bool(pol.get('IsDisabled')), 'rating': pol.get('MaxParentalRating') if isinstance(pol.get('MaxParentalRating'), int) else None,
-            'last': str(u.get('LastActivityDate') or '')[:25]}
+            'last': str(u.get('LastActivityDate') or '')[:25],
+            'all_folders': bool(pol.get('EnableAllFolders', True)),
+            'folders': [_jf_hexid(x) for x in (pol.get('EnabledFolders') or []) if _JF_ID.match(_jf_hexid(x))]}
 
 
-def _jf_set_policy(uid, disabled=None, rating='keep'):
+def _jf_guid(h):
+    import uuid
+    return str(uuid.UUID(str(h)))
+
+
+def _jf_set_policy(uid, disabled=None, rating='keep', folders='keep'):
     u = _jf_call('GET', '/Users/' + uid)
     pol = u.get('Policy') if isinstance(u, dict) and isinstance(u.get('Policy'), dict) else None
     if pol is None:
@@ -12601,7 +12612,27 @@ def _jf_set_policy(uid, disabled=None, rating='keep'):
         pol['IsDisabled'] = bool(disabled)
     if rating != 'keep':
         pol['MaxParentalRating'] = rating
+    if folders != 'keep':          # None = toutes les bibliothèques ; liste = seulement celles-ci
+        if folders is None:
+            pol['EnableAllFolders'] = True; pol['EnabledFolders'] = []
+        else:
+            pol['EnableAllFolders'] = False; pol['EnabledFolders'] = [_jf_guid(x) for x in folders]
     _jf_call('POST', '/Users/%s/Policy' % uid, data=pol)
+
+
+def _jf_folders_arg(v):
+    """'keep' si absent ; None (toutes) ou liste d'identifiants de bibliothèques existantes ; ValueError sinon."""
+    if v == 'keep':
+        return 'keep'
+    if v is None:
+        return None
+    if not isinstance(v, list):
+        raise ValueError('Bibliothèques invalides.')
+    known = {l['id'] for l in _jf_libraries(True)}
+    ids = [_jf_hexid(x) for x in v][:50]
+    if not all(i in known for i in ids):
+        raise ValueError('Bibliothèque inconnue.')
+    return ids
 
 
 def store_jellyfin_img(item_id, size='tile'):
@@ -12632,34 +12663,46 @@ _JF_DIRECT_VID = ('h264', 'vp8', 'vp9', 'av1')
 _JF_DIRECT_AUD = ('aac', 'mp3', 'opus', 'vorbis', 'flac')
 
 
-def _jf_ticket(iid, mode, start=0, ttl=8 * 3600):
-    raw = json.dumps([iid, mode, int(start), int(_px_time.time()) + int(ttl)]).encode('utf-8')
+def _jf_ticket(iid, mode, start=0, ttl=8 * 3600, audio=None, sub=None, burn=False):
+    raw = json.dumps({'i': iid, 'm': mode, 's': int(start), 'e': int(_px_time.time()) + int(ttl),
+                      'a': audio, 'u': sub, 'b': bool(burn)}).encode('utf-8')
     sig = _px_hmac.new(_PX_MEDIA_KEY, b'jf' + raw, _px_hash.sha256).digest()[:16]
     return _px_b64.urlsafe_b64encode(sig + raw).decode('ascii').rstrip('=')
 
 
 def _jf_ticket_parse(t):
+    """→ (id, mode, début en s, index audio ou None, index sous-titre ou None, incrustation) ou None."""
     try:
         blob = _px_b64.urlsafe_b64decode(str(t) + '=' * (-len(str(t)) % 4))
         sig, raw = blob[:16], blob[16:]
         if not _px_hmac.compare_digest(sig, _px_hmac.new(_PX_MEDIA_KEY, b'jf' + raw, _px_hash.sha256).digest()[:16]):
             return None
-        iid, mode, start, exp = json.loads(raw.decode('utf-8'))
-        if int(exp) < _px_time.time() or not _JF_ID.match(str(iid)) or mode not in ('direct', 'trans', 'audio'):
+        d = json.loads(raw.decode('utf-8'))
+        iid, mode = str(d['i']), str(d['m'])
+        if int(d['e']) < _px_time.time() or not _JF_ID.match(iid) or mode not in ('direct', 'trans', 'audio', 'vtt'):
             return None
-        return str(iid), str(mode), max(0, int(start))
+        ai = d.get('a') if isinstance(d.get('a'), int) and 0 <= d.get('a') < 1000 else None
+        si = d.get('u') if isinstance(d.get('u'), int) and 0 <= d.get('u') < 1000 else None
+        return iid, mode, max(0, int(d['s'])), ai, si, bool(d.get('b'))
     except Exception:
         return None
 
 
-def _jf_stream_path(iid, mode, start):
+def _jf_stream_path(iid, mode, start, audio=None, sub=None, burn=False):
     if mode == 'audio':
         return '/Audio/%s/stream?static=true&MediaSourceId=%s' % (iid, iid)
     if mode == 'direct':
         return '/Videos/%s/stream?static=true&MediaSourceId=%s' % (iid, iid)
+    if mode == 'vtt':
+        return '/Videos/%s/%s/Subtitles/%d/%d/Stream.vtt' % (iid, iid, sub or 0, int(start) * 10000000)
+    extra = ('&AudioStreamIndex=%d' % audio) if audio is not None else ''
+    if burn and sub is not None:
+        extra += '&SubtitleStreamIndex=%d&SubtitleMethod=Encode' % sub
+    else:
+        extra += '&SubtitleMethod=Hide'
     return ('/Videos/%s/stream.mp4?MediaSourceId=%s&VideoCodec=h264&AudioCodec=aac&MaxAudioChannels=2&TranscodingMaxAudioChannels=2'
-            '&VideoBitRate=8000000&AudioBitRate=192000&SubtitleMethod=Hide&DeviceId=desktroo-nas&StartTimeTicks=%d&PlaySessionId=dk%s'
-            % (iid, iid, int(start) * 10000000, _px_time.strftime('%H%M%S')))
+            '&VideoBitRate=8000000&AudioBitRate=192000&DeviceId=desktroo-nas&StartTimeTicks=%d&PlaySessionId=dk%s%s'
+            % (iid, iid, int(start) * 10000000, _px_time.strftime('%H%M%S'), extra))
 
 
 def _jf_stream_serve(handler, ticket):
@@ -12668,7 +12711,7 @@ def _jf_stream_serve(handler, ticket):
     t = _jf_ticket_parse(ticket)
     if not t or STORE_JF_ID not in store_installed_get():
         handler.send_response(404); handler.send_header('Content-Length', '0'); handler.end_headers(); return
-    iid, mode, start = t
+    iid, mode, start, aud, sub, burn = t
     conn = None
     try:
         host, port = _JF_BASE.split('//', 1)[1].split(':')
@@ -12678,7 +12721,7 @@ def _jf_stream_serve(handler, ticket):
             if handler.headers.get('Range') and mode != 'trans':
                 hd['Range'] = handler.headers.get('Range')
             conn = http.client.HTTPConnection(host, int(port), timeout=60)
-            conn.request('GET', _jf_stream_path(iid, mode, start), headers=hd)
+            conn.request('GET', _jf_stream_path(iid, mode, start, aud, sub, burn), headers=hd)
             r = conn.getresponse()
             if r.status in (401, 403) and not attempt:
                 conn.close()
@@ -12686,6 +12729,11 @@ def _jf_stream_serve(handler, ticket):
             break
         if r.status not in (200, 206):
             handler.send_response(502 if r.status >= 500 else 404); handler.send_header('Content-Length', '0'); handler.end_headers(); return
+        if mode == 'vtt':        # sous-titres : petit fichier texte, envoyé d'un bloc
+            body = r.read(4 * 1024 * 1024)
+            handler.send_response(200); handler.send_header('Content-Type', 'text/vtt; charset=utf-8')
+            handler.send_header('Content-Length', str(len(body))); handler.send_header('Cache-Control', 'private, max-age=600')
+            handler.send_header('X-Content-Type-Options', 'nosniff'); handler.end_headers(); handler.wfile.write(body); return
         handler.send_response(r.status)
         for k in ('Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges'):
             if r.getheader(k):
@@ -12757,7 +12805,7 @@ def _jf_detail(iid):
            'series': str(x.get('SeriesName') or '')[:120], 'season': _pp_int(x.get('ParentIndexNumber')), 'ep': _pp_int(x.get('IndexNumber')),
            'pos': _jf_sec(ud.get('PlaybackPositionTicks')), 'played': bool(ud.get('Played')), 'fav': bool(ud.get('IsFavorite')),
            'img': bool((x.get('ImageTags') or {}).get('Primary')), 'playable': typ in ('Movie', 'Episode', 'Video', 'MusicVideo', 'Audio'),
-           'seriesId': _jf_hexid(x.get('SeriesId')), 'children': [], 'next': ''}
+           'seriesId': _jf_hexid(x.get('SeriesId')), 'albumId': _jf_hexid(x.get('AlbumId')), 'children': [], 'next': ''}
     if typ == 'Series':
         eps = (_jf_call('GET', '/Shows/%s/Episodes' % iid, {'userId': uid, 'Fields': 'Overview', 'Limit': 400}) or {}).get('Items') or []
         seasons = {}
@@ -12780,30 +12828,98 @@ def _jf_detail(iid):
         out['children'] = [{'season': 0, 'eps': [{'id': _jf_hexid(e.get('Id')), 'name': str(e.get('Name') or '')[:120], 'n': _pp_int(e.get('IndexNumber')),
                                                   'played': False, 'pos': 0, 'minutes': int(_jf_sec(e.get('RunTimeTicks')) / 60), 'overview': ''}
                                                  for e in tr if isinstance(e, dict) and _JF_ID.match(_jf_hexid(e.get('Id')))]}]
+    if typ in ('MusicAlbum', 'Playlist') and out['children'] and out['children'][0]['eps']:
+        out['next'] = out['children'][0]['eps'][0]['id']
+        out['playable'] = False
     out['_src'] = srcs[0] if srcs else {}
     return out
 
 
-def _jf_play(iid, force_trans=False, start=None):
+def _jf_tracks(src):
+    """Pistes audio et sous-titres d'une source : [{i, label, lang, ...}]."""
+    au, sb = [], []
+    for st in (src.get('MediaStreams') or []):
+        if not isinstance(st, dict) or not isinstance(st.get('Index'), int):
+            continue
+        lang = str(st.get('Language') or '')[:8].lower()
+        label = str(st.get('DisplayTitle') or st.get('Title') or lang or ('Piste %d' % st['Index']))[:80]
+        if st.get('Type') == 'Audio':
+            au.append({'i': st['Index'], 'label': label, 'lang': lang, 'default': bool(st.get('IsDefault')), 'codec': str(st.get('Codec') or '')[:12].lower()})
+        elif st.get('Type') == 'Subtitle':
+            sb.append({'i': st['Index'], 'label': label, 'lang': lang, 'default': bool(st.get('IsDefault')), 'forced': bool(st.get('IsForced')),
+                       'text': bool(st.get('IsTextSubtitleStream'))})
+    return au, sb
+
+
+def _jf_play(iid, force_trans=False, start=None, audio=None, sub=None, alang='', slang=''):
     d = _jf_detail(iid)
     src = d.pop('_src', {})
     if not d['playable']:
         raise ValueError('Cet élément ne se lit pas directement.')
-    streams = [s for s in (src.get('MediaStreams') or []) if isinstance(s, dict)]
-    vid = next((str(s.get('Codec') or '').lower() for s in streams if s.get('Type') == 'Video'), '')
-    aud = next((str(s.get('Codec') or '').lower() for s in streams if s.get('Type') == 'Audio'), '')
+    streams = [x for x in (src.get('MediaStreams') or []) if isinstance(x, dict)]
+    vid = next((str(x.get('Codec') or '').lower() for x in streams if x.get('Type') == 'Video'), '')
+    tracks_a, tracks_s = _jf_tracks(src)
+    aud = tracks_a[0]['codec'] if tracks_a else ''
+    # piste audio : choix explicite, sinon langue souhaitée, sinon celle par défaut de Jellyfin
+    a_idx = None
+    if isinstance(audio, int) and any(t['i'] == audio for t in tracks_a):
+        a_idx = audio
+    elif alang:
+        a_idx = next((t['i'] for t in tracks_a if t['lang'] == alang), None)
+    if a_idx is None and tracks_a:
+        a_idx = next((t['i'] for t in tracks_a if t['default']), tracks_a[0]['i'])
+    a_first = (not tracks_a) or a_idx == tracks_a[0]['i']
+    a_codec = next((t['codec'] for t in tracks_a if t['i'] == a_idx), aud)
+    # sous-titres : choix explicite (-1 = aucun), sinon langue souhaitée, sinon aucun
+    s_idx = None
+    if isinstance(sub, int):
+        s_idx = sub if any(t['i'] == sub for t in tracks_s) else None
+    elif slang and slang != 'off':
+        s_idx = next((t['i'] for t in tracks_s if t['lang'] == slang and not t['forced']), None)
+        if s_idx is None:
+            s_idx = next((t['i'] for t in tracks_s if t['lang'] == slang), None)
+    s_trk = next((t for t in tracks_s if t['i'] == s_idx), None)
+    burn = bool(s_trk and not s_trk['text'])     # image (PGS, VobSub…) : incrustée dans la vidéo
     cont = [c.strip().lower() for c in str(src.get('Container') or '').split(',')]
     pos = d['pos'] if start is None else max(0, int(start))
     if d['type'] == 'Audio':
         mode = 'audio'
-    elif not force_trans and any(c in _JF_DIRECT_CONT for c in cont) and vid in _JF_DIRECT_VID and (not aud or aud in _JF_DIRECT_AUD):
+    elif (not force_trans and not burn and a_first and any(c in _JF_DIRECT_CONT for c in cont) and vid in _JF_DIRECT_VID
+          and (not a_codec or a_codec in _JF_DIRECT_AUD)):
         mode = 'direct'
     else:
         mode = 'trans'
+    off = pos if mode == 'trans' else 0
     dur = _jf_sec(src.get('RunTimeTicks')) or d['minutes'] * 60
-    return {'id': iid, 'mode': mode, 'url': '/store/jellyfin/stream/' + _jf_ticket(iid, mode, pos if mode == 'trans' else 0),
+    subs_out = []
+    for t in tracks_s:
+        row = {'i': t['i'], 'label': t['label'], 'lang': t['lang'], 'text': t['text'], 'forced': t['forced']}
+        if t['text']:
+            row['url'] = '/store/jellyfin/sub/' + _jf_ticket(iid, 'vtt', off, 8 * 3600, None, t['i'])
+        subs_out.append(row)
+    # générique / récap (segments Jellyfin 10.10+) et épisode suivant : facultatifs, jamais bloquants
+    segs, next_id = [], ''
+    if d['type'] == 'Episode':
+        try:
+            sg = _jf_call('GET', '/MediaSegments/%s' % iid) or {}
+            for z in (sg.get('Items') if isinstance(sg, dict) else []) or []:
+                if isinstance(z, dict) and str(z.get('Type') or '') in ('Intro', 'Outro', 'Recap', 'Preview'):
+                    segs.append({'type': str(z['Type']), 'start': _jf_sec(z.get('StartTicks')), 'end': _jf_sec(z.get('EndTicks'))})
+        except (ValueError, RuntimeError):
+            pass
+        if _JF_ID.match(d.get('seriesId') or ''):
+            try:
+                eps = (_jf_call('GET', '/Shows/%s/Episodes' % d['seriesId'], {'userId': _jf_uid(), 'Limit': 600}) or {}).get('Items') or []
+                ids = [_jf_hexid(e.get('Id')) for e in eps if isinstance(e, dict)]
+                if iid in ids and ids.index(iid) + 1 < len(ids) and _JF_ID.match(ids[ids.index(iid) + 1]):
+                    next_id = ids[ids.index(iid) + 1]
+            except (ValueError, RuntimeError):
+                pass
+    return {'id': iid, 'mode': mode, 'url': '/store/jellyfin/stream/' + _jf_ticket(iid, mode, off, 8 * 3600, a_idx if mode == 'trans' else None, s_idx if burn else None, burn),
             'name': d['name'], 'series': d['series'], 'season': d['season'], 'ep': d['ep'], 'duration': dur, 'pos': pos,
-            'offset': pos if mode == 'trans' else 0, 'audio': mode == 'audio', 'vcodec': vid, 'acodec': aud, 'container': ','.join(cont)[:30]}
+            'offset': off, 'audio': mode == 'audio', 'vcodec': vid, 'acodec': a_codec, 'container': ','.join(cont)[:30],
+            'tracks_a': [{'i': t['i'], 'label': t['label'], 'lang': t['lang']} for t in tracks_a], 'tracks_s': subs_out,
+            'aidx': a_idx, 'sidx': s_idx if s_idx is not None else -1, 'segments': segs[:12], 'next_id': next_id, 'album_id': d.get('albumId', '')}
 
 
 def store_jellyfin_api(body):
@@ -12909,7 +13025,10 @@ def store_jellyfin_api(body):
                 d = _jf_detail(iid); d.pop('_src', None)
                 return 200, {'ok': True, 'item': d}
             if action == 'play':
-                return 200, dict(_jf_play(iid, bool(b.get('transcode')), b.get('start')), ok=True)
+                def _ix(v):
+                    return v if isinstance(v, int) and not isinstance(v, bool) and -1 <= v < 1000 else None
+                return 200, dict(_jf_play(iid, bool(b.get('transcode')), b.get('start'), _ix(b.get('audio')), _ix(b.get('sub')),
+                                          re.sub(r'[^a-z]', '', str(b.get('alang') or '').lower())[:8], re.sub(r'[^a-z]', '', str(b.get('slang') or '').lower())[:8]), ok=True)
             if action == 'report':
                 st = str(b.get('state') or 'progress')
                 if st not in ('start', 'progress', 'stop'):
@@ -12929,22 +13048,182 @@ def store_jellyfin_api(body):
                          ('POST' if on else 'DELETE', '/Users/%s/PlayedItems/%s' % (uid, iid), None, None)])
             return 200, {'ok': True}
         if action == 'browse':
+            view = str(b.get('view') or '')
             lib = _jf_hexid(b.get('library'))
-            if not _JF_ID.match(lib):
-                return 400, {'ok': False, 'error': 'Bibliothèque inconnue.'}
+            uid = _jf_uid()
             typ = str(b.get('type') or '')
-            incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo'}.get(typ)
-            prm = {'ParentId': lib, 'Recursive': 'true', 'SortBy': 'SortName', 'SortOrder': 'Ascending',
-                   'Limit': max(1, min(int(b.get('limit') or 48), 72)), 'StartIndex': max(0, int(b.get('start') or 0)),
-                   'Fields': 'PrimaryImageAspectRatio', 'EnableImageTypes': 'Primary'}
-            if incl:
-                prm['IncludeItemTypes'] = incl
+            prm = {'userId': uid, 'Recursive': 'true', 'Limit': max(1, min(int(b.get('limit') or 48), 72)),
+                   'StartIndex': max(0, int(b.get('start') or 0)), 'Fields': 'PrimaryImageAspectRatio', 'EnableImageTypes': 'Primary'}
+            sortmap = {'name': ('SortName', 'Ascending'), 'added': ('DateCreated,SortName', 'Descending'),
+                       'year': ('PremiereDate,ProductionYear,SortName', 'Descending'), 'rating': ('CommunityRating,SortName', 'Descending'),
+                       'played': ('DatePlayed', 'Descending')}
+            sk = str(b.get('sort') or 'name')
+            prm['SortBy'], prm['SortOrder'] = sortmap.get(sk, sortmap['name'])
+            if view == 'fav':
+                prm['Filters'] = 'IsFavorite'; prm['IncludeItemTypes'] = 'Movie,Series,Episode,MusicAlbum,Audio'
+            elif view == 'history':
+                prm['Filters'] = 'IsPlayed'; prm['IncludeItemTypes'] = 'Movie,Episode'; prm['SortBy'], prm['SortOrder'] = sortmap['played']
+            elif view == 'playlists':
+                prm['IncludeItemTypes'] = 'Playlist'
+            elif view == 'search':
+                prm['IncludeItemTypes'] = 'Movie,Series,Episode,MusicAlbum,Audio'
+                if not str(b.get('q') or '').strip():
+                    return 400, {'ok': False, 'error': 'Saisissez un mot à chercher.'}
+            else:
+                if not _JF_ID.match(lib):
+                    return 400, {'ok': False, 'error': 'Bibliothèque inconnue.'}
+                prm['ParentId'] = lib
+                incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo'}.get(typ)
+                if incl:
+                    prm['IncludeItemTypes'] = incl
+            flt = str(b.get('filter') or '')
+            if flt in ('unplayed', 'played', 'fav') and view not in ('fav', 'history'):
+                prm['Filters'] = {'unplayed': 'IsUnplayed', 'played': 'IsPlayed', 'fav': 'IsFavorite'}[flt]
+            genre = str(b.get('genre') or '').strip()[:60]
+            if genre and '|' not in genre:
+                prm['Genres'] = genre
             q = str(b.get('q') or '').strip()[:100]
             if q:
                 prm['SearchTerm'] = q
             r = _jf_call('GET', '/Items', prm) or {}
             its = [it for it in (_jf_item(x) for x in (r.get('Items') or []) if isinstance(x, dict)) if it]
             return 200, {'ok': True, 'items': its, 'total': _pp_int(r.get('TotalRecordCount'))}
+        if action == 'genres':
+            lib = _jf_hexid(b.get('library'))
+            prm = {'userId': _jf_uid(), 'Recursive': 'true', 'SortBy': 'SortName'}
+            if _JF_ID.match(lib):
+                prm['ParentId'] = lib
+            r = _jf_call('GET', '/Genres', prm) or {}
+            return 200, {'ok': True, 'genres': [str(g.get('Name') or '')[:60] for g in (r.get('Items') or []) if isinstance(g, dict) and g.get('Name')][:80]}
+        if action in ('backup_list', 'backup_create', 'backup_restore'):
+            def _bk_list():
+                try:
+                    rows = _jf_call('GET', '/Backup') or []
+                except RuntimeError as e:
+                    if 'HTTP 404' in str(e):
+                        raise ValueError('Cette version de Jellyfin n’a pas de sauvegarde intégrée (il faut la 10.11 ou plus récente).')
+                    raise
+                out = []
+                for r in (rows if isinstance(rows, list) else []):
+                    if not isinstance(r, dict):
+                        continue
+                    nm = str(r.get('Path') or '').replace('\\', '/').rsplit('/', 1)[-1]
+                    if re.match(r'^[A-Za-z0-9][A-Za-z0-9_.\-]{0,120}\.zip$', nm):
+                        opt = r.get('Options') if isinstance(r.get('Options'), dict) else {}
+                        out.append({'file': nm, 'date': str(r.get('DateCreated') or '')[:25], 'version': str(r.get('ServerVersion') or '')[:20],
+                                    'metadata': bool(opt.get('Metadata')), 'database': bool(opt.get('Database', True))})
+                out.sort(key=lambda x: x['date'], reverse=True)
+                return out
+            if action == 'backup_list':
+                return 200, {'ok': True, 'backups': _bk_list()}
+            if action == 'backup_create':
+                _jf_call('POST', '/Backup/Create', data={'Metadata': bool(b.get('metadata')), 'Trickplay': False, 'Subtitles': True, 'Database': True})
+                return 200, {'ok': True, 'backups': _bk_list()}
+            name = str(b.get('file') or '')
+            if name not in [x['file'] for x in _bk_list()]:
+                return 404, {'ok': False, 'error': 'Sauvegarde introuvable.'}
+            _jf_call('POST', '/Backup/Restore', data={'ArchiveFileName': name})
+            with _JF_LOCK:
+                _jf_sess.clear()
+            return 200, {'ok': True, 'restarting': True}
+        if action == 'activity':
+            def soft2(fn, default):
+                try:
+                    return fn()
+                except (ValueError, RuntimeError):
+                    return default
+            sess = []
+            for x in soft2(lambda: _jf_call('GET', '/Sessions', {'activeWithinSeconds': 960}) or [], []):
+                if not isinstance(x, dict):
+                    continue
+                sid = _jf_hexid(x.get('Id'))
+                if not _JF_ID.match(sid) or x.get('Client') == 'Desktroo':
+                    continue
+                npi = x.get('NowPlayingItem') if isinstance(x.get('NowPlayingItem'), dict) else None
+                ps = x.get('PlayState') if isinstance(x.get('PlayState'), dict) else {}
+                sess.append({'id': sid, 'user': str(x.get('UserName') or '')[:60], 'device': str(x.get('DeviceName') or '')[:60], 'client': str(x.get('Client') or '')[:40],
+                             'playing': ((str(npi.get('SeriesName') or '') + ' · ') if npi and npi.get('SeriesName') else '') + str(npi.get('Name') or '')[:120] if npi else '',
+                             'paused': bool(ps.get('IsPaused')), 'pos': _jf_sec(ps.get('PositionTicks')) if npi else 0})
+            devs = []
+            dd = soft2(lambda: _jf_call('GET', '/Devices') or {}, {})
+            for x in (dd.get('Items') if isinstance(dd, dict) else []) or []:
+                did = str(x.get('Id') or '')
+                if isinstance(x, dict) and re.match(r'^[A-Za-z0-9._\-]{1,128}$', did) and did != 'desktroo-nas':
+                    devs.append({'id': did, 'name': str(x.get('Name') or '')[:60], 'app': str(x.get('AppName') or '')[:40],
+                                 'user': str(x.get('LastUserName') or '')[:60], 'last': str(x.get('DateLastActivity') or '')[:25]})
+            devs.sort(key=lambda x: x['last'], reverse=True)
+            ev = []
+            ae = soft2(lambda: _jf_call('GET', '/System/ActivityLog/Entries', {'limit': 40}) or {}, {})
+            for x in (ae.get('Items') if isinstance(ae, dict) else []) or []:
+                if isinstance(x, dict):
+                    ev.append({'name': str(x.get('Name') or '')[:200], 'detail': str(x.get('ShortOverview') or '')[:200],
+                               'date': str(x.get('Date') or '')[:25], 'level': str(x.get('Severity') or '')[:12]})
+            return 200, {'ok': True, 'sessions': sess[:30], 'devices': devs[:40], 'events': ev[:40]}
+        if action == 'session_stop':
+            sid = _jf_hexid(b.get('id'))
+            if not _JF_ID.match(sid):
+                return 400, {'ok': False, 'error': 'Séance inconnue.'}
+            _jf_call('POST', '/Sessions/%s/Playing/Stop' % sid)
+            return 200, {'ok': True}
+        if action == 'device_delete':
+            did = str(b.get('id') or '')
+            if not re.match(r'^[A-Za-z0-9._\-]{1,128}$', did) or did == 'desktroo-nas':
+                return 400, {'ok': False, 'error': 'Appareil inconnu.'}
+            _jf_call('DELETE', '/Devices', {'id': did})
+            return 200, {'ok': True}
+        if action == 'errors':
+            files = _jf_call('GET', '/System/Logs') or []
+            names = sorted([str(f.get('Name') or '') for f in files if isinstance(f, dict) and re.match(r'^log_[0-9]{8}[A-Za-z0-9_.\-]*\.log$', str(f.get('Name') or ''))], reverse=True)
+            lines = []
+            if names:
+                import urllib.parse
+                st, raw = _jf_http('GET', '/System/Logs/Log?' + urllib.parse.urlencode({'name': names[0]}), token=_jf_token(), limit=3 * 1024 * 1024)
+                if st == 200:
+                    lines = [ln[:400] for ln in raw.decode('utf-8', 'replace').splitlines() if '[ERR]' in ln or '[WRN]' in ln][-60:]
+            return 200, {'ok': True, 'lines': lines, 'file': names[0] if names else ''}
+        if action in ('refresh', 'identify', 'identify_apply', 'playlist_add'):
+            iid = _jf_hexid(b.get('id'))
+            if not _JF_ID.match(iid):
+                return 400, {'ok': False, 'error': 'Élément inconnu.'}
+            if action == 'refresh':
+                _jf_call('POST', '/Items/%s/Refresh' % iid, {'Recursive': 'true', 'ImageRefreshMode': 'FullRefresh', 'MetadataRefreshMode': 'FullRefresh',
+                                                              'ReplaceAllImages': 'false', 'ReplaceAllMetadata': 'false'})
+                return 200, {'ok': True}
+            if action == 'identify':
+                it = _jf_call('GET', '/Users/%s/Items/%s' % (_jf_uid(), iid)) or {}
+                kind = {'Movie': 'Movie', 'Series': 'Series'}.get(str(it.get('Type') or ''))
+                if not kind:
+                    return 400, {'ok': False, 'error': 'Seuls les films et les séries peuvent être identifiés.'}
+                nm = str(b.get('name') or it.get('Name') or '').strip()[:120]
+                yr = _pp_int(b.get('year')) or None
+                res = _jf_call('POST', '/Items/RemoteSearch/' + kind, data={'SearchInfo': {'Name': nm, 'Year': yr}, 'ItemId': _jf_guid(iid)}) or []
+                res = [r for r in (res if isinstance(res, list) else []) if isinstance(r, dict)][:12]
+                _JF_IDENT.clear() if len(_JF_IDENT) > 20 else None
+                _JF_IDENT[iid] = res
+                return 200, {'ok': True, 'results': [{'n': i, 'name': str(r.get('Name') or '')[:120], 'year': _pp_int(r.get('ProductionYear')),
+                                                      'overview': str(r.get('Overview') or '')[:220], 'provider': str(r.get('SearchProviderName') or '')[:30],
+                                                      'img': str(r.get('ImageUrl') or '')[:300] if str(r.get('ImageUrl') or '').startswith('https://') else ''}
+                                                     for i, r in enumerate(res)], 'name': nm}
+            if action == 'identify_apply':
+                n = b.get('n')
+                res = _JF_IDENT.get(iid) or []
+                if not isinstance(n, int) or isinstance(n, bool) or not (0 <= n < len(res)):
+                    return 400, {'ok': False, 'error': 'Relancez la recherche.'}
+                _jf_call('POST', '/Items/RemoteSearch/Apply/%s' % iid, {'ReplaceAllImages': 'true'}, res[n])
+                return 200, {'ok': True}
+            # playlist_add : ajoute l'élément à une liste existante (list) ou à une nouvelle (name)
+            uid = _jf_uid()
+            it = _jf_call('GET', '/Users/%s/Items/%s' % (uid, iid)) or {}
+            media = 'Audio' if str(it.get('Type') or '') in ('Audio', 'MusicAlbum') else 'Video'
+            pid = _jf_hexid(b.get('list'))
+            if _JF_ID.match(pid):
+                _jf_call('POST', '/Playlists/%s/Items' % pid, {'Ids': _jf_guid(iid), 'UserId': _jf_guid(uid)})
+                return 200, {'ok': True}
+            nm = str(b.get('name') or '').strip()[:80]
+            if not nm:
+                return 400, {'ok': False, 'error': 'Donnez un nom à la liste.'}
+            _jf_call('POST', '/Playlists', data={'Name': nm, 'Ids': [_jf_guid(iid)], 'UserId': _jf_guid(uid), 'MediaType': media})
+            return 200, {'ok': True}
         if action == 'repair':
             if not b.get('apply'):
                 return 200, {'ok': True, 'plan': _jf_repair_plan()}
@@ -13026,8 +13305,9 @@ def store_jellyfin_api(body):
             u = _jf_call('POST', '/Users/New', data={'Name': name, 'Password': pw})
             uid = _jf_hexid((u or {}).get('Id'))
             rating = b.get('rating')
-            if isinstance(rating, int) and _JF_ID.match(uid):
-                _jf_set_policy(uid, rating=rating)
+            fol = _jf_folders_arg(b.get('folders', 'keep'))
+            if _JF_ID.match(uid) and (isinstance(rating, int) or fol != 'keep'):
+                _jf_set_policy(uid, rating=rating if isinstance(rating, int) else 'keep', folders=fol)
             return 200, {'ok': True, 'users': [_jf_user_row(x) for x in (_jf_call('GET', '/Users') or [])]}
         if action in ('user_set', 'user_delete'):
             uid = _jf_hexid(b.get('id'))
@@ -13042,7 +13322,14 @@ def store_jellyfin_api(body):
                 rating = b.get('rating', 'keep')
                 if rating != 'keep' and rating is not None and not isinstance(rating, int):
                     return 400, {'ok': False, 'error': 'Limite d’âge invalide.'}
-                _jf_set_policy(uid, disabled=b.get('disabled') if isinstance(b.get('disabled'), bool) else None, rating=rating)
+                fol = _jf_folders_arg(b.get('folders', 'keep'))
+                _jf_set_policy(uid, disabled=b.get('disabled') if isinstance(b.get('disabled'), bool) else None, rating=rating, folders=fol)
+                if b.get('password') is not None:
+                    npw = str(b.get('password'))
+                    if not (4 <= len(npw) <= 72):
+                        return 400, {'ok': False, 'error': 'Le mot de passe doit faire de 4 à 72 caractères.'}
+                    _jf_try([('POST', '/Users/%s/Password' % uid, None, {'NewPw': npw, 'ResetPassword': False}),
+                             ('POST', '/Users/Password', {'userId': uid}, {'NewPw': npw, 'ResetPassword': False})])
             return 200, {'ok': True, 'users': [_jf_user_row(x) for x in (_jf_call('GET', '/Users') or [])]}
     except ValueError as e:
         if str(e) == 'auth':
