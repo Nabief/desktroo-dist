@@ -9640,6 +9640,65 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Jamais connecté": "Never connected",
 "Vu {0}": "Seen {0}",
 "Les téléphones et ordinateurs autorisés à se connecter à votre réseau": "The phones and computers allowed to connect to your network",
+"Rechercher partout…": "Search everywhere…",
+"Listes de lecture": "Playlists",
+"Activité": "Activity",
+"Recherche : {0}": "Search: {0}",
+"Aucun favori pour l’instant. Ajoutez-en depuis la fiche d’un titre.": "No favourites yet. Add some from a title's page.",
+"Rien n’a encore été regardé.": "Nothing watched yet.",
+"Aucune liste de lecture. Créez-en une depuis la fiche d’un titre avec « Ajouter à une liste ».": "No playlists. Create one from a title's page with “Add to a playlist”.",
+"Comptes, réglages et historique de lecture de Jellyfin": "Jellyfin accounts, settings and watch history",
+"Sauvegarder maintenant": "Back up now",
+"Inclure aussi les affiches et les descriptions (fichier plus gros)": "Also include posters and descriptions (larger file)",
+"La sauvegarde est enregistrée sur le NAS, dans le dossier de configuration de Jellyfin. Elle ne contient ni vos films ni vos musiques.": "The backup is saved on the NAS, in Jellyfin's configuration folder. It does not contain your films or music.",
+"avec affiches": "with posters",
+"Aucune sauvegarde pour l’instant.": "No backups yet.",
+"Sauvegarde créée.": "Backup created.",
+"Restaurer la sauvegarde du {0} ? Jellyfin va redémarrer et retrouver les comptes, les réglages et l’historique de cette date. Ce qui a été fait depuis sera perdu. Vos films et musiques ne sont pas touchés.": "Restore the backup from {0}? Jellyfin will restart with the accounts, settings and history from that date. Anything done since will be lost. Your films and music are not touched.",
+"Jellyfin redémarre avec la sauvegarde…": "Jellyfin is restarting with the backup…",
+"Sauvegarde restaurée. Si Jellyfin redemande un mot de passe, saisissez celui de la sauvegarde dans « Connexion ».": "Backup restored. If Jellyfin asks for a password again, enter the one from the backup under “Connection”.",
+"Qui regarde quoi, appareils connectés et journal du serveur": "Who is watching what, connected devices and the server log",
+"Connecté, rien en lecture": "Connected, nothing playing",
+"Arrêter la lecture": "Stop playback",
+"Personne n’est connecté.": "Nobody is connected.",
+"Révoquer": "Revoke",
+"Aucun appareil enregistré.": "No registered devices.",
+"Journal d’activité": "Activity log",
+"Rien à signaler.": "Nothing to report.",
+"Erreurs du serveur": "Server errors",
+"Afficher les dernières erreurs": "Show the latest errors",
+"Aucune erreur dans le journal du jour.": "No errors in today's log.",
+"Lecture arrêtée.": "Playback stopped.",
+"Révoquer l’appareil « {0} » ? Il devra se reconnecter avec un mot de passe.": "Revoke the device “{0}”? It will have to sign in again with a password.",
+"Appareil révoqué.": "Device revoked.",
+"Ajouter à une liste": "Add to a playlist",
+"Nouvelle liste…": "New playlist…",
+"Ajouté à la liste.": "Added to the playlist.",
+"Nom de la nouvelle liste": "Name of the new playlist",
+"Liste créée.": "Playlist created.",
+"Actualisation lancée : les informations se mettent à jour dans un instant.": "Refresh started: the information will update in a moment.",
+"Corriger l’identification": "Fix identification",
+"Chercher un autre titre…": "Search for another title…",
+"Titre à chercher": "Title to search for",
+"Remplacer l’identification par « {0} » ? L’affiche et la description seront récupérées de nouveau.": "Replace the identification with “{0}”? The poster and description will be fetched again.",
+"Identification corrigée.": "Identification fixed.",
+"Épisode suivant": "Next episode",
+"Passer": "Skip",
+"Passer le résumé": "Skip recap",
+"Passer le générique": "Skip intro",
+"Bibliothèques que ce compte peut voir": "Libraries this account can see",
+"Cochez au moins une bibliothèque.": "Tick at least one library.",
+"Nouveau mot de passe pour « {0} » (4 caractères minimum)": "New password for “{0}” (at least 4 characters)",
+"Le mot de passe doit faire au moins 4 caractères.": "The password must be at least 4 characters long.",
+"Mot de passe modifié.": "Password changed.",
+"Ajoutés récemment": "Recently added",
+"Année": "Year",
+"Note": "Rating",
+"Dernière lecture": "Last played",
+"Non vus": "Unwatched",
+"Vus": "Watched",
+"Tous les genres": "All genres",
+"Albums": "Albums",
 "Administration complète": "Full administration",
   "Audio": "Audio",
   "Sous-titres": "Subtitles",
@@ -14822,6 +14881,7 @@ var _dkJf = { nav: 'home', gen: 0, data: null, libs: null, users: null, ratings:
               form: { name: '', type: 'movies', sel: [], path: '/nas', folders: null, pwd: false } };
 function dkJfCss() {
   dkJfIcons();
+  if (!_dkJf.keys) { _dkJf.keys = true; document.addEventListener('keydown', dkJfKey); }
   if (document.getElementById('dkjf-css')) return;
   var st = document.createElement('style');
   st.id = 'dkjf-css';
@@ -14840,14 +14900,15 @@ function dkJfCss() {
     + '.dkjf-chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0 4px}'
     + '.dkjf-badge{display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--glass-border);color:var(--text-dim);margin-left:6px;vertical-align:1px}'
     + '.dkjf-pop{position:absolute;right:14px;top:56px;z-index:11;width:300px;max-height:70%;overflow:auto;background:#161a22;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px;box-shadow:0 12px 40px rgba(0,0,0,.5)}.dkjf-pop .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#9aa4b5;padding:8px 10px 4px}.dkjf-pop button{display:block;width:100%;text-align:left;background:none;border:0;color:#fff;padding:8px 10px;border-radius:8px;font:inherit;font-size:13px;cursor:pointer}.dkjf-pop button:hover{background:rgba(255,255,255,.08)}'
-    + '.dkjf-view{position:absolute;inset:0;z-index:7;background:var(--bg, #10131a);display:flex;flex-direction:column;min-height:0}#dkjf-player{z-index:9;background:#000}'
+    + '.dkjf-view{position:absolute;inset:0;z-index:7;background:var(--bg, #10131a);display:flex;flex-direction:column;min-height:0}#dkjf-player{z-index:9;background:#000;color:#fff;--text:#fff;--text-dim:#9aa4b5;--glass-border:rgba(255,255,255,.18)}'
+    + '[data-theme="light"] .dkjf-view{background:#e2eefc}[data-theme="light"] #dkjf-player{background:#000}[data-theme="light"] #dkjf-player .fs-btn{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.2)}'
     + '.dkjf-vh{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--glass-border);flex:none}.dkjf-vt{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
     + '.dkjf-vb{flex:1;overflow:auto;padding:18px 20px}.dkjf-pb{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}.dkjf-pc{display:flex;gap:8px;align-items:center;padding:10px 14px;flex:none;background:rgba(255,255,255,.05)}'
     + '.dkjf-dt{display:flex;gap:22px;flex-wrap:wrap}.dkjf-dp{flex:none;width:200px;aspect-ratio:2/3;border-radius:10px;background:rgba(255,255,255,.06);overflow:hidden}.dkjf-dp img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .2s}.dkjf-dp img.ok{opacity:1}'
     + '.dkjf-di{flex:1;min-width:240px}.dkjf-di h3{margin:0 0 6px;font-size:21px}.dkjf-m{font-size:12.5px;color:var(--text-dim);margin:3px 0}'
     + '.dkjf-pg{height:3px;background:rgba(255,255,255,.25);margin-top:-3px;position:relative;border-radius:0 0 8px 8px;overflow:hidden}.dkjf-pg i{display:block;height:100%;background:rgb(var(--accent-rgb))}'
     + '.dkjf-form{max-width:620px}.dkjf-set{max-width:560px;font-size:13px;line-height:1.6}'
-    + '.dkjf-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}';
+    + '.dkjf-view .dkjf-pb{position:relative}.dkjf-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}';
   document.head.appendChild(st);
 }
 function dkJfClose() {
@@ -14899,6 +14960,7 @@ function dkJfFull() { window.open(dkJfBase(), '_blank', 'noopener'); }
 function dkJfGo(nav) { _dkJf.nav = nav; if (nav === 'libadd') { _dkJf.form = { name: '', type: 'movies', sel: [], path: '/nas', folders: null }; } dkJfLoad(); }
 // Les icônes sont posées à l'ouverture de la fenêtre : WEB_ICONS (const) n'existe pas encore quand ce code est lu.
 function dkJfIcons() {
+  WEB_ICONS.star = WEB_ICONS.star || '<polygon points="12 2 15.1 8.6 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.6"/>';
   WEB_ICONS.film = '<rect x="2" y="2" width="20" height="20" rx="2.2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/>';
   WEB_ICONS.tv = '<rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/>';
   WEB_ICONS.music = '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>';
@@ -14922,26 +14984,264 @@ function dkJfLibIcon(l) {
   if (/film|cin[ée]ma|vid[ée]o/.test(n)) return 'film';
   return 'folder';
 }
+// ── Lot 2.54.36b : favoris, historique, listes, recherche, sauvegardes, activité, lecteur ──
 function dkJfSide() {
   var n = _dkJf.nav, libs = _dkJf.libList || [];
-  var s = wmNav({ active: n === 'home', call: 'dkJfGo(\'home\')', icon: 'grid', name: T('Accueil') });
+  var s = '<div style="padding:2px 6px 8px;"><input class="dkjf-in" style="margin:0;max-width:none;" id="dkjf-gq" placeholder="' + webEsc(T('Rechercher partout…')) + '" value="' + webEsc(_dkJf.sq || '') + '" onkeydown="if(event.key===\'Enter\')dkJfSearch()"></div>'
+    + wmNav({ active: n === 'home', call: 'dkJfGo(\'home\')', icon: 'grid', name: T('Accueil') })
+    + wmNav({ active: n === 'fav', call: 'dkJfGo(\'fav\')', icon: 'star', name: T('Favoris') })
+    + wmNav({ active: n === 'hist', call: 'dkJfGo(\'hist\')', icon: 'history', name: T('Historique') })
+    + wmNav({ active: n === 'pls', call: 'dkJfGo(\'pls\')', icon: 'list', name: T('Listes de lecture') });
   if (libs.length) {
     s += wmSep();
     libs.forEach(function(l, i) {
-      s += wmNav({ active: n === 'lib' && _dkJf.lib && _dkJf.lib.i === i, call: 'dkJfLib(' + i + ')', name: l.name,
-        icon: dkJfLibIcon(l) });
+      s += wmNav({ active: n === 'lib' && _dkJf.lib && _dkJf.lib.i === i, call: 'dkJfLib(' + i + ')', name: l.name, icon: dkJfLibIcon(l) });
     });
   }
   wmSide('dkjf', s + wmSep()
     + wmNav({ active: n === 'libs' || n === 'libadd', call: 'dkJfGo(\'libs\')', icon: 'sliders', name: T('Gérer les bibliothèques') })
     + wmNav({ active: n === 'users', call: 'dkJfGo(\'users\')', icon: 'users', name: T('Comptes') })
+    + wmNav({ active: n === 'act', call: 'dkJfGo(\'act\')', icon: 'activity', name: T('Activité') })
+    + wmNav({ active: n === 'bk', call: 'dkJfGo(\'bk\')', icon: 'save', name: T('Sauvegardes') })
     + wmNav({ active: n === 'dom', call: 'dkJfGo(\'dom\')', icon: 'globe', name: T('Domaine') })
     + wmSep()
     + wmNav({ active: n === 'set', call: 'dkJfGo(\'set\')', icon: 'key', name: T('Connexion') }));
 }
+function dkJfSearch() {
+  var q = document.getElementById('dkjf-gq'), v = q ? q.value.trim() : '';
+  if (!v) return;
+  _dkJf.sq = v; dkJfGo('search');
+}
+function dkJfLibQ(L, start) { return { library: L.id, type: L.type, start: start, q: L.q, sort: L.sort, filter: L.filter, genre: L.genre }; }
+function dkJfLibOpt() {
+  var L = _dkJf.lib; if (!L) return;
+  var g = function(id) { var e = document.getElementById(id); return e ? e.value : ''; };
+  L.sort = g('dkjf-sort') || 'name'; L.filter = g('dkjf-flt'); L.genre = g('dkjf-gen');
+  dkJfLoad();
+}
+function dkJfViewTitle() {
+  return { fav: T('Favoris'), hist: T('Historique'), pls: T('Listes de lecture'), search: Tf('Recherche : {0}', _dkJf.sq || '') }[_dkJf.nav] || '';
+}
+function dkJfRenderView(body) {
+  var items = _dkJf.vi || [], n = _dkJf.nav;
+  wmHead('dkjf', dkJfViewTitle(), { sub: Tf('{0} éléments', _dkJf.vt || 0) });
+  var empty = { fav: T('Aucun favori pour l’instant. Ajoutez-en depuis la fiche d’un titre.'), hist: T('Rien n’a encore été regardé.'),
+    pls: T('Aucune liste de lecture. Créez-en une depuis la fiche d’un titre avec « Ajouter à une liste ».'), search: T('Aucun résultat.') }[n];
+  body.innerHTML = items.length
+    ? '<div class="dkjf-grid">' + items.map(dkJfPoster).join('') + '</div>'
+      + (items.length < (_dkJf.vt || 0) ? '<div style="text-align:center;margin:16px 0;"><button class="fs-btn" onclick="dkJfViewMore()">' + T('Afficher plus') + '</button></div>' : '')
+    : '<div class="dks-empty">' + empty + '</div>';
+  dkJfImgs(body);
+}
+function dkJfViewArgs(start) {
+  var n = _dkJf.nav;
+  return { view: { fav: 'fav', hist: 'history', pls: 'playlists', search: 'search' }[n], q: n === 'search' ? (_dkJf.sq || '') : '', start: start, sort: n === 'fav' ? 'name' : undefined };
+}
+async function dkJfViewMore() {
+  try { var r = await dkJfApi('browse', dkJfViewArgs((_dkJf.vi || []).length)); _dkJf.vi = (_dkJf.vi || []).concat(r.items || []); _dkJf.vt = r.total || _dkJf.vt; dkJfRenderView(wmBody('dkjf')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+function dkJfFmtDate(s) { var d = new Date(s); return isNaN(d) ? String(s || '') : d.toLocaleString(); }
+function dkJfRenderBk(body) {
+  var d = _dkJf.bk || { backups: [] };
+  wmHead('dkjf', T('Sauvegardes'), { sub: T('Comptes, réglages et historique de lecture de Jellyfin'),
+    actions: '<button class="web-open" id="dkjf-bkb" onclick="dkJfBkCreate()">' + T('Sauvegarder maintenant') + '</button>' });
+  var h = '<div class="dkjf-set" style="margin-bottom:14px;"><label style="font-size:13px;"><input type="checkbox" id="dkjf-bkm"' + (_dkJf.bkm ? ' checked' : '') + ' onchange="_dkJf.bkm=this.checked"> '
+    + T('Inclure aussi les affiches et les descriptions (fichier plus gros)') + '</label>'
+    + '<div class="dkjf-m" style="margin-top:6px;">' + T('La sauvegarde est enregistrée sur le NAS, dans le dossier de configuration de Jellyfin. Elle ne contient ni vos films ni vos musiques.') + '</div></div>';
+  h += d.backups.length ? '<div class="web-group">' + d.backups.map(function(b, i) {
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(dkJfFmtDate(b.date)) + (b.metadata ? '<span class="dkjf-badge">' + T('avec affiches') + '</span>' : '') + '</span>'
+      + '<span class="web-row-desc">Jellyfin ' + webEsc(b.version) + ' · ' + webEsc(b.file) + '</span></span>'
+      + '<button class="fs-btn" onclick="dkJfBkRestore(' + i + ')">' + T('Restaurer') + '</button></div>';
+  }).join('') + '</div>' : '<div class="dks-empty">' + T('Aucune sauvegarde pour l’instant.') + '</div>';
+  body.innerHTML = h;
+}
+async function dkJfBkCreate() {
+  var b = document.getElementById('dkjf-bkb'); if (b) b.disabled = true;
+  try { var r = await dkJfApi('backup_create', { metadata: !!_dkJf.bkm }); _dkJf.bk = { backups: r.backups || [] }; toast(T('Sauvegarde créée.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+  dkJfRenderBk(wmBody('dkjf'));
+}
+async function dkJfBkRestore(i) {
+  var b = ((_dkJf.bk || {}).backups || [])[i]; if (!b) return;
+  if (!(await showConfirm(Tf('Restaurer la sauvegarde du {0} ? Jellyfin va redémarrer et retrouver les comptes, les réglages et l’historique de cette date. Ce qui a été fait depuis sera perdu. Vos films et musiques ne sont pas touchés.', dkJfFmtDate(b.date)), { danger: true, ok: T('Restaurer') }))) return;
+  try { await dkJfApi('backup_restore', { file: b.file }); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); return; }
+  var body = wmBody('dkjf'); if (body) body.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div> ' + T('Jellyfin redémarre avec la sauvegarde…') + '</div>';
+  var gen = ++_dkJf.gen;
+  for (var k = 0; k < 60; k++) {
+    await new Promise(function(ok) { setTimeout(ok, 3000); });
+    if (gen !== _dkJf.gen) return;
+    try { await dkJfApi('state'); break; } catch (_) {}
+  }
+  _dkJf.libList = null; dkJfSideLibs(); toast(T('Sauvegarde restaurée. Si Jellyfin redemande un mot de passe, saisissez celui de la sauvegarde dans « Connexion ».'), 10000);
+  dkJfGo('home');
+}
+function dkJfRenderAct(body) {
+  var d = _dkJf.act || { sessions: [], devices: [], events: [] };
+  wmHead('dkjf', T('Activité'), { sub: T('Qui regarde quoi, appareils connectés et journal du serveur') });
+  var h = '<div class="dkjf-h" style="margin-top:0;">' + T('En ce moment') + '</div>';
+  h += d.sessions.length ? '<div class="web-group">' + d.sessions.map(function(s) {
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(s.user) + ' · ' + webEsc(s.device || s.client) + '</span><span class="web-row-desc">'
+      + (s.playing ? webEsc(s.playing) + (s.paused ? ' · ' + T('en pause') : '') + ' · ' + dkJfT(s.pos) : T('Connecté, rien en lecture')) + '</span></span>'
+      + (s.playing ? '<button class="fs-btn" onclick="dkJfSessStop(\'' + s.id + '\')">' + T('Arrêter la lecture') + '</button>' : '') + '</div>';
+  }).join('') + '</div>' : '<div class="dkjf-m">' + T('Personne n’est connecté.') + '</div>';
+  h += '<div class="dkjf-h">' + T('Appareils') + '</div>';
+  h += d.devices.length ? '<div class="web-group">' + d.devices.map(function(x, i) {
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(x.name) + (x.app ? ' <span class="dkjf-badge">' + webEsc(x.app) + '</span>' : '') + '</span><span class="web-row-desc">'
+      + webEsc(x.user) + ' · ' + webEsc(dkJfFmtDate(x.last)) + '</span></span><button class="fs-btn" style="color:var(--danger);" onclick="dkJfDevDel(' + i + ')">' + T('Révoquer') + '</button></div>';
+  }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucun appareil enregistré.') + '</div>';
+  h += '<div class="dkjf-h">' + T('Journal d’activité') + '</div>';
+  h += d.events.length ? '<div class="web-group">' + d.events.map(function(x) {
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(x.name) + '</span><span class="web-row-desc">' + webEsc(dkJfFmtDate(x.date)) + (x.detail ? ' · ' + webEsc(x.detail) : '') + '</span></span></div>';
+  }).join('') + '</div>' : '<div class="dkjf-m">' + T('Rien à signaler.') + '</div>';
+  h += '<div class="dkjf-h">' + T('Erreurs du serveur') + '</div><div class="dkjf-acts"><button class="fs-btn" onclick="dkJfErrors()">' + (_dkJf.errs ? T('Actualiser') : T('Afficher les dernières erreurs')) + '</button></div>';
+  if (_dkJf.errs) h += '<pre style="margin:10px 0 0;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.35);font-size:11.5px;line-height:1.5;max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;">'
+    + (_dkJf.errs.lines.length ? webEsc(_dkJf.errs.lines.join('\n')) : T('Aucune erreur dans le journal du jour.')) + '</pre>';
+  body.innerHTML = h;
+  clearTimeout(_dkJf.timer); _dkJf.timer = setTimeout(function() { if (_dkJf.nav === 'act') dkJfLoad(true); }, 10000);
+}
+async function dkJfErrors() {
+  try { _dkJf.errs = await dkJfApi('errors'); dkJfRenderAct(wmBody('dkjf')); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+async function dkJfSessStop(id) {
+  try { await dkJfApi('session_stop', { id: id }); toast(T('Lecture arrêtée.')); dkJfLoad(true); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+async function dkJfDevDel(i) {
+  var x = ((_dkJf.act || {}).devices || [])[i]; if (!x) return;
+  if (!(await showConfirm(Tf('Révoquer l’appareil « {0} » ? Il devra se reconnecter avec un mot de passe.', x.name), { danger: true, ok: T('Révoquer') }))) return;
+  try { await dkJfApi('device_delete', { id: x.id }); toast(T('Appareil révoqué.')); dkJfLoad(true); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+function dkJfPopOpen(title) {
+  var ov = document.getElementById('dkjf-detail'); if (!ov) return null;
+  dkJfTracksClose();
+  var d = document.createElement('div'); d.id = 'dkjf-pop'; d.className = 'dkjf-pop';
+  d.innerHTML = '<div class="t">' + webEsc(title) + '</div><div class="spinner" style="margin:14px auto;"></div>'; ov.appendChild(d); return d;
+}
+async function dkJfPlAdd() {
+  var x = _dkJf.item; if (!x) return;
+  if (document.getElementById('dkjf-pop')) return dkJfTracksClose();
+  if (!dkJfPopOpen(T('Ajouter à une liste'))) return;
+  var ls = []; try { ls = (await dkJfApi('browse', { view: 'playlists', start: 0 })).items || []; } catch (_) {}
+  var pop = document.getElementById('dkjf-pop'); if (!pop) return;
+  pop.innerHTML = '<div class="t">' + T('Ajouter à une liste') + '</div>' + ls.map(function(l) { return '<button onclick="dkJfPlDo(\'' + l.id + '\')">' + webEsc(l.name) + '</button>'; }).join('')
+    + '<button onclick="dkJfPlNew()">＋ ' + T('Nouvelle liste…') + '</button>';
+}
+async function dkJfPlDo(list) {
+  var x = _dkJf.item; dkJfTracksClose(); if (!x) return;
+  try { await dkJfApi('playlist_add', { id: x.id, list: list }); toast(T('Ajouté à la liste.')); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+async function dkJfPlNew() {
+  var x = _dkJf.item; dkJfTracksClose(); if (!x) return;
+  var n = await showPrompt(T('Nom de la nouvelle liste'), ''); if (!n || !n.trim()) return;
+  try { await dkJfApi('playlist_add', { id: x.id, name: n.trim() }); toast(T('Liste créée.')); } catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+async function dkJfRefresh() {
+  var x = _dkJf.item; if (!x) return;
+  try { await dkJfApi('refresh', { id: x.id }); toast(T('Actualisation lancée : les informations se mettent à jour dans un instant.'), 6000); setTimeout(function() { if (_dkJf.item && _dkJf.item.id === x.id) dkJfDetail(x.id); }, 5000); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+async function dkJfIdent(name) {
+  var x = _dkJf.item; if (!x) return;
+  if (!name && document.getElementById('dkjf-pop')) return dkJfTracksClose();
+  if (!dkJfPopOpen(T('Corriger l’identification'))) return;
+  var r;
+  try { r = await dkJfApi('identify', { id: x.id, name: name || x.name, year: name ? null : x.year }); } catch (e) { dkJfTracksClose(); toast('⚠️ ' + (e.message || e), 8000); return; }
+  _dkJf.ident = r.results || [];
+  var pop = document.getElementById('dkjf-pop'); if (!pop) return;
+  pop.innerHTML = '<div class="t">' + T('Corriger l’identification') + '</div>'
+    + (_dkJf.ident.length ? _dkJf.ident.map(function(c) {
+      return '<button onclick="dkJfIdentApply(' + c.n + ')">' + webEsc(c.name) + (c.year ? ' (' + c.year + ')' : '') + (c.provider ? ' <span style="opacity:.55">· ' + webEsc(c.provider) + '</span>' : '')
+        + (c.overview ? '<br><span style="font-size:11px;opacity:.65;">' + webEsc(c.overview.slice(0, 110)) + '…</span>' : '') + '</button>'; }).join('')
+      : '<div class="dkjf-m" style="padding:8px 10px;">' + T('Aucun résultat.') + '</div>')
+    + '<button onclick="dkJfIdentName()">🔎 ' + T('Chercher un autre titre…') + '</button>';
+}
+async function dkJfIdentName() {
+  var x = _dkJf.item; dkJfTracksClose(); if (!x) return;
+  var n = await showPrompt(T('Titre à chercher'), x.name); if (n && n.trim()) dkJfIdent(n.trim());
+}
+async function dkJfIdentApply(n) {
+  var x = _dkJf.item, c = (_dkJf.ident || []).filter(function(z) { return z.n === n; })[0]; dkJfTracksClose(); if (!x || !c) return;
+  if (!(await showConfirm(Tf('Remplacer l’identification par « {0} » ? L’affiche et la description seront récupérées de nouveau.', c.name), { ok: T('Remplacer') }))) return;
+  try { await dkJfApi('identify_apply', { id: x.id, n: n }); toast(T('Identification corrigée.')); setTimeout(function() { if (_dkJf.item && _dkJf.item.id === x.id) dkJfDetail(x.id); }, 3000); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+}
+function dkJfSpeed(d) {
+  var L = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2], i = L.indexOf(_dkJf.rate || 1); if (i < 0) i = 2;
+  i = d ? Math.max(0, Math.min(L.length - 1, i + d)) : (i + 1) % L.length;
+  _dkJf.rate = L[i];
+  var p = _dkJf.pl; if (p && p.v) p.v.playbackRate = _dkJf.rate;
+  var b = document.getElementById('dkjf-sp'); if (b) b.textContent = _dkJf.rate + '×';
+}
+function dkJfNext() {
+  var p = _dkJf.pl; if (!p) return;
+  var nx = (_dkJf.queue || []).shift() || p.next;
+  if (nx) dkJfPlay(nx, { keepQueue: true });
+}
+function dkJfSegTick() {
+  var p = _dkJf.pl, b = document.getElementById('dkjf-skipb'); if (!p || !b) return;
+  var pos = dkJfPlayPos(), s = null;
+  (p.segs || []).forEach(function(z) { if (!s && pos >= z.start - 1 && pos < z.end - 2) s = z; });
+  if (!s) { b.style.display = 'none'; p.seg = null; return; }
+  p.seg = s;
+  var out = s.type === 'Outro' || s.type === 'Preview', hasNext = !!(p.next || (_dkJf.queue || []).length);
+  b.textContent = out ? (hasNext ? T('Épisode suivant') : T('Passer')) : (s.type === 'Recap' ? T('Passer le résumé') : T('Passer le générique'));
+  b.style.display = '';
+}
+function dkJfSkipSeg() {
+  var p = _dkJf.pl; if (!p || !p.seg) return;
+  var s = p.seg, out = s.type === 'Outro' || s.type === 'Preview';
+  if (out && (p.next || (_dkJf.queue || []).length)) return dkJfNext();
+  dkJfSeekTo(s.end);
+}
+function dkJfKey(e) {
+  var p = _dkJf.pl, win = document.getElementById('win-dkjf');
+  if (!p || !win || !win.classList.contains('visible') || !document.getElementById('dkjf-player')) return;
+  var t = e.target;
+  if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+  if (t && t.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  var k = e.key, h = true;
+  if (k === ' ' || k === 'k') dkJfPP();
+  else if (k === 'ArrowRight') dkJfSkip(10);
+  else if (k === 'ArrowLeft') dkJfSkip(-10);
+  else if (k === 'f' || k === 'F') dkJfFs();
+  else if (k === 'm' || k === 'M') p.v.muted = !p.v.muted;
+  else if (k === 'n' || k === 'N') dkJfNext();
+  else if (k === 'ArrowUp') p.v.volume = Math.min(1, p.v.volume + 0.1);
+  else if (k === 'ArrowDown') p.v.volume = Math.max(0, p.v.volume - 0.1);
+  else if (k === '>' || k === '.') dkJfSpeed(1);
+  else if (k === '<' || k === ',') dkJfSpeed(-1);
+  else if (k === 'Escape') { if (!document.fullscreenElement) dkJfPlayClose(); }
+  else h = false;
+  if (h) e.preventDefault();
+}
+function dkJfUserAccess(i) { _dkJf.uopen = _dkJf.uopen === i ? null : i; dkJfRenderUsers(wmBody('dkjf')); }
+function dkJfUserPanel(u, i) {
+  if (_dkJf.uopen !== i || u.admin) return '';
+  var libs = _dkJf.libList || [];
+  return '<div style="padding:10px 16px 14px;border-bottom:1px solid var(--glass-border);font-size:13px;"><div class="dkjf-m" style="margin:0 0 8px;">' + T('Bibliothèques que ce compte peut voir') + '</div>'
+    + (libs.length ? libs.map(function(l) {
+      return '<label style="display:block;margin:4px 0;"><input type="checkbox" class="dkjf-ua" value="' + l.id + '"' + (u.all_folders || (u.folders || []).indexOf(l.id) >= 0 ? ' checked' : '') + '> ' + webEsc(l.name) + '</label>'; }).join('')
+      : '<div class="dkjf-m">' + T('Aucune bibliothèque pour l’instant.') + '</div>')
+    + '<div class="dkjf-acts" style="margin-top:10px;"><button class="web-open" onclick="dkJfUserAccessSave(' + i + ')">' + T('Enregistrer') + '</button><button class="fs-btn" onclick="dkJfUserAccess(' + i + ')">' + T('Annuler') + '</button></div></div>';
+}
+async function dkJfUserAccessSave(i) {
+  var u = _dkJf.users[i]; if (!u) return;
+  var all = document.querySelectorAll('.dkjf-ua'), sel = [];
+  Array.prototype.forEach.call(all, function(c) { if (c.checked) sel.push(c.value); });
+  if (!sel.length) { toast(T('Cochez au moins une bibliothèque.'), 4000); return; }
+  var ok = await dkJfUsersDo('user_set', { id: u.id, folders: sel.length === all.length ? null : sel }, T('Accès enregistrés.'));
+  if (ok) _dkJf.uopen = null; dkJfRenderUsers(wmBody('dkjf'));
+}
+async function dkJfUserPw(i) {
+  var u = _dkJf.users[i]; if (!u) return;
+  var p = await showPrompt(Tf('Nouveau mot de passe pour « {0} » (4 caractères minimum)', u.name), ''); if (!p) return;
+  if (p.length < 4) { toast(T('Le mot de passe doit faire au moins 4 caractères.'), 5000); return; }
+  dkJfUsersDo('user_set', { id: u.id, password: p }, T('Mot de passe modifié.'));
+}
 function dkJfLib(i) {
   var l = (_dkJf.libList || [])[i]; if (!l) return;
-  _dkJf.nav = 'lib'; _dkJf.lib = { i: i, id: l.id, name: l.name, type: l.type, items: [], total: 0, q: '' };
+  _dkJf.nav = 'lib'; _dkJf.lib = { i: i, id: l.id, name: l.name, type: l.type, items: [], total: 0, q: '', sort: 'name', filter: '', genre: '', genres: null };
   dkJfLoad();
 }
 function dkJfDenied(body) { _dkJf.data = { denied: true }; _dkJf.nav = 'set'; dkJfSide(); dkJfRenderSetup(body); }
@@ -14961,10 +15261,18 @@ async function dkJfLoad(quiet) {
     if (nav === 'libs') { r = await dkJfApi('libraries'); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body); _dkJf.libs = r; dkJfRenderLibs(body); return; }
     if (nav === 'libadd') { r = await dkJfApi('folders', { path: _dkJf.form.path }); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body); _dkJf.form.folders = r; dkJfRenderAdd(body); return; }
     if (nav === 'lib' && _dkJf.lib) {
-      var L = _dkJf.lib; r = await dkJfApi('browse', { library: L.id, type: L.type, start: 0, q: L.q });
+      var L = _dkJf.lib;
+      if (L.genres === null) { try { L.genres = (await dkJfApi('genres', { library: L.id })).genres || []; } catch (_) { L.genres = []; } if (gen !== _dkJf.gen) return; }
+      r = await dkJfApi('browse', dkJfLibQ(L, 0));
       if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body);
       L.items = r.items || []; L.total = r.total || 0; dkJfRenderLib(body); return;
     }
+    if (nav === 'fav' || nav === 'hist' || nav === 'pls' || nav === 'search') {
+      r = await dkJfApi('browse', dkJfViewArgs(0)); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body);
+      _dkJf.vi = r.items || []; _dkJf.vt = r.total || 0; dkJfRenderView(body); return;
+    }
+    if (nav === 'bk') { r = await dkJfApi('backup_list'); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body); _dkJf.bk = { backups: r.backups || [] }; dkJfRenderBk(body); return; }
+    if (nav === 'act') { r = await dkJfApi('activity'); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body); _dkJf.act = r; dkJfRenderAct(body); return; }
     if (nav === 'dom') { await dkJfDomLoad(); if (gen !== _dkJf.gen) return; dkJfRenderDom(body); return; }
     if (nav === 'users') {
       r = await dkJfApi('users'); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body);
@@ -15026,10 +15334,16 @@ function dkJfRail(title, items, k, libIdx) {
 }
 function dkJfStrip(k, d) { var s = document.getElementById('dkjf-strip-' + k); if (s) s.scrollBy({ left: d * Math.max(240, s.clientWidth * 0.8), behavior: 'smooth' }); }
 function dkJfWheel(e, k) { var s = document.getElementById('dkjf-strip-' + k); if (!s || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return; s.scrollLeft += e.deltaY; e.preventDefault(); }
+function dkJfSelOpt(id, cur, list) {
+  return '<select class="dkjf-in" style="margin:0;width:auto;max-width:150px;padding:5px 8px;" id="' + id + '" onchange="dkJfLibOpt()">' + list.map(function(o) { return '<option value="' + webEsc(o[0]) + '"' + (o[0] === cur ? ' selected' : '') + '>' + webEsc(o[1]) + '</option>'; }).join('') + '</select>';
+}
 function dkJfRenderLib(body) {
   var L = _dkJf.lib; if (!L || !body) return;
   wmHead('dkjf', L.name, { sub: Tf('{0} éléments', L.total) + ' · ' + dkJfTypeName(L.type),
-    actions: '<input class="dkjf-in" style="margin:0;max-width:230px;" id="dkjf-q" placeholder="' + webEsc(T('Rechercher dans cette bibliothèque…')) + '" value="' + webEsc(L.q) + '" onkeydown="if(event.key===\'Enter\')dkJfLibSearch()">' });
+    actions: dkJfSelOpt('dkjf-sort', L.sort, [['name', T('Nom')], ['added', T('Ajoutés récemment')], ['year', T('Année')], ['rating', T('Note')], ['played', T('Dernière lecture')]])
+      + dkJfSelOpt('dkjf-flt', L.filter, [['', T('Tout')], ['unplayed', T('Non vus')], ['played', T('Vus')], ['fav', T('Favoris')]])
+      + ((L.genres || []).length ? dkJfSelOpt('dkjf-gen', L.genre, [['', T('Tous les genres')]].concat(L.genres.map(function(g) { return [g, g]; }))) : '')
+      + '<input class="dkjf-in" style="margin:0;max-width:200px;" id="dkjf-q" placeholder="' + webEsc(T('Rechercher dans cette bibliothèque…')) + '" value="' + webEsc(L.q) + '" onkeydown="if(event.key===\'Enter\')dkJfLibSearch()">' });
   body.innerHTML = L.items.length
     ? '<div class="dkjf-grid">' + L.items.map(dkJfPoster).join('') + '</div>'
       + (L.items.length < L.total ? '<div style="text-align:center;margin:16px 0;"><button class="fs-btn" onclick="dkJfLibMore()">' + T('Afficher plus') + '</button></div>' : '')
@@ -15040,7 +15354,7 @@ function dkJfLibSearch() { var q = document.getElementById('dkjf-q'); if (_dkJf.
 async function dkJfLibMore() {
   var L = _dkJf.lib; if (!L) return;
   try {
-    var r = await dkJfApi('browse', { library: L.id, type: L.type, start: L.items.length, q: L.q });
+    var r = await dkJfApi('browse', dkJfLibQ(L, L.items.length));
     L.items = L.items.concat(r.items || []); L.total = r.total || L.total; dkJfRenderLib(wmBody('dkjf'));
   } catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
 }
@@ -15103,6 +15417,10 @@ function dkJfRenderDetail() {
   } else if (x.next) {
     acts += '<button class="web-open" onclick="dkJfPlay(\'' + x.next + '\',{queue:true})">&#9654; ' + T('Lire la suite') + '</button> ';
   }
+  acts += '<div style="margin-top:10px;">';
+  if (x.playable || x.type === 'MusicAlbum' || x.type === 'Playlist') acts += '<button class="fs-btn" onclick="dkJfPlAdd()">＋ ' + T('Ajouter à une liste') + '</button> ';
+  if (x.type === 'Movie' || x.type === 'Series') acts += '<button class="fs-btn" onclick="dkJfIdent()">' + T('Corriger l’identification') + '</button> ';
+  acts += '<button class="fs-btn" onclick="dkJfRefresh()">' + T('Actualiser') + '</button></div>';
   var h = '<div class="dkjf-vh"><button class="fs-btn" onclick="dkJfViewClose()">&lsaquo; ' + T('Retour') + '</button><span class="dkjf-vt">' + webEsc(x.name) + '</span>'
     + '<button class="fs-btn" onclick="dkJfMark(\'fav\')">' + (x.fav ? '★ ' + T('Favori') : '☆ ' + T('Favori')) + '</button>'
     + (x.playable ? '<button class="fs-btn" onclick="dkJfMark(\'played\')">' + (x.played ? '✓ ' + T('Vu') : T('Marquer comme vu')) + '</button>' : '')
@@ -15184,15 +15502,18 @@ async function dkJfPlay(id, o) {
   ov.innerHTML = '<div class="dkjf-vh"><button class="fs-btn" onclick="dkJfPlayClose()">&lsaquo; ' + T('Retour') + '</button><span class="dkjf-vt">' + webEsc(title) + '</span>'
     + (trans ? '<span class="dkjf-badge" title="' + webEsc(T('Le format de ce fichier est converti à la volée.')) + '">' + T('Conversion') + '</span>' : '')
     + (((r.tracks_a || []).length > 1 || (r.tracks_s || []).length) ? '<button class="fs-btn" onclick="dkJfTracks()">&#128483; ' + T('Audio et sous-titres') + '</button>' : '')
+    + ((r.next_id || (_dkJf.queue || []).length) ? '<button class="fs-btn" onclick="dkJfNext()" title="N">' + T('Suivant') + ' &rsaquo;&rsaquo;</button>' : '')
+    + '<button class="fs-btn" id="dkjf-sp" onclick="dkJfSpeed()" title="&lt; &gt;">' + (_dkJf.rate || 1) + '×</button>'
     + '<button class="fs-btn" onclick="dkJfFs()">&#9974; ' + T('Plein écran') + '</button></div>'
     + '<div class="dkjf-pb" id="dkjf-stage"></div>'
+    + '<button class="web-open" id="dkjf-skipb" style="position:absolute;right:18px;bottom:84px;display:none;z-index:3;" onclick="dkJfSkipSeg()"></button>'
     + (trans ? '<div class="dkjf-pc"><button class="fs-btn" id="dkjf-pp" onclick="dkJfPP()">&#10074;&#10074;</button><button class="fs-btn" onclick="dkJfSkip(-10)">&minus;10 s</button>'
       + '<button class="fs-btn" onclick="dkJfSkip(30)">+30 s</button><input type="range" id="dkjf-seek" min="0" max="' + Math.max(1, r.duration) + '" value="' + r.pos + '" style="flex:1;" oninput="dkJfSeekLab()" onchange="dkJfSeekGo()">'
       + '<span id="dkjf-tm" style="font-size:12px;min-width:92px;text-align:right;">' + dkJfT(r.pos) + ' / ' + dkJfT(r.duration) + '</span></div>' : '');
   var v = document.createElement('video');
   v.playsInline = true; v.autoplay = true; v.controls = !trans; v.style.cssText = 'max-width:100%;max-height:100%;width:100%;height:100%;background:#000;object-fit:contain;';
   var p = _dkJf.pl = { id: id, mode: r.mode, offset: r.offset, duration: r.duration, v: v, started: false, ended: false, retried: !!o.transcode, timer: null,
-    tracks_a: r.tracks_a || [], tracks_s: r.tracks_s || [], aidx: r.aidx, sidx: r.sidx };
+    tracks_a: r.tracks_a || [], tracks_s: r.tracks_s || [], aidx: r.aidx, sidx: r.sidx, segs: r.segments || [], next: r.next_id || '', seg: null };
   v.addEventListener('loadedmetadata', function() { if (!trans && r.pos > 5 && (!r.duration || r.pos < r.duration - 30)) v.currentTime = r.pos; });
   v.addEventListener('playing', function() { if (!p.started) { p.started = true; dkJfReport('start'); p.timer = setInterval(function() { dkJfReport('progress'); }, 10000); } var b = document.getElementById('dkjf-pp'); if (b) b.innerHTML = '&#10074;&#10074;'; });
   v.addEventListener('pause', function() { var b = document.getElementById('dkjf-pp'); if (b) b.innerHTML = '&#9654;'; if (p.started && !v.ended) dkJfReport('progress'); });
@@ -15200,9 +15521,10 @@ async function dkJfPlay(id, o) {
     var sk = document.getElementById('dkjf-seek'), tm = document.getElementById('dkjf-tm');
     if (sk && !sk.matches(':active')) sk.value = dkJfPlayPos();
     if (tm) tm.textContent = dkJfT(dkJfPlayPos()) + ' / ' + dkJfT(p.duration);
+    dkJfSegTick();
   });
   v.addEventListener('ended', function() {
-    p.ended = true; var nx = (_dkJf.queue || []).shift();
+    p.ended = true; var nx = (_dkJf.queue || []).shift() || p.next;
     if (nx) { dkJfPlayStop(); dkJfPlay(nx, { keepQueue: true }); } else dkJfPlayClose();
   });
   v.addEventListener('error', function() {
@@ -15210,10 +15532,16 @@ async function dkJfPlay(id, o) {
     if (!p.retried && p.mode !== 'audio') { toast(T('Format non pris en charge par ce navigateur : conversion en cours…'), 5000); var at = dkJfPlayPos(); dkJfPlay(id, { transcode: true, start: at, keepQueue: true }); }
     else toast('⚠️ ' + T('Lecture impossible : ouvrez le titre dans Jellyfin.'), 8000);
   });
+  v.defaultPlaybackRate = v.playbackRate = _dkJf.rate || 1;
   v.src = '/fileops' + r.url;
   dkJfApplySub();
-  document.getElementById('dkjf-stage').innerHTML = '';
-  document.getElementById('dkjf-stage').appendChild(v);
+  var stg = document.getElementById('dkjf-stage'); stg.innerHTML = '';
+  if (r.audio) {
+    var wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;';
+    wrap.innerHTML = '<img alt="" data-i="' + (r.album_id || id) + '" onerror="this.style.display=\'none\'" style="width:min(300px,60%);aspect-ratio:1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06);">';
+    v.style.cssText = 'width:min(560px,92%);height:54px;'; v.controls = true;
+    wrap.appendChild(v); stg.appendChild(wrap); dkJfImgs(wrap);
+  } else stg.appendChild(v);
   var pr = v.play(); if (pr && pr.catch) pr.catch(function() {});
 }
 // ── Langue audio et sous-titres ──
@@ -15427,8 +15755,9 @@ function dkJfRenderUsers(body) {
       + (u.admin ? '<span class="dkjf-badge">' + T('Administrateur') + '</span>' : '') + (u.disabled ? '<span class="dkjf-badge">' + T('Désactivé') + '</span>' : '') + '</span></span>'
       + (u.admin ? '' : '<select class="dkjf-in" style="width:auto;margin:0;padding:5px 8px;" onchange="dkJfUserRating(' + i + ',this.value)" title="' + webEsc(T('Limite d’âge')) + '">'
         + dkJfRatingOpts(u.rating, T('Aucune limite')) + '</select>'
+        + '<button class="fs-btn" onclick="dkJfUserAccess(' + i + ')">' + T('Accès') + '</button><button class="fs-btn" onclick="dkJfUserPw(' + i + ')">' + T('Mot de passe') + '</button>'
         + '<button class="fs-btn" onclick="dkJfUserToggle(' + i + ')">' + (u.disabled ? T('Réactiver') : T('Désactiver')) + '</button>'
-        + '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfUserDel(' + i + ')">' + T('Supprimer') + '</button>') + '</div>';
+        + '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfUserDel(' + i + ')">' + T('Supprimer') + '</button>') + '</div>' + dkJfUserPanel(u, i);
   }).join('') + '</div>';
   body.innerHTML = h;
 }
@@ -21120,7 +21449,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.54.35b';
+var DK_PAGE_VERSION = '2.54.37b';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();
