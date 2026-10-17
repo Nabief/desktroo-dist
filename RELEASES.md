@@ -3,6 +3,17 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.46 — 18 octobre 2026
+
+### Corrigé
+- **Connexion depuis un téléphone Android.** L'autoremplissage du téléphone pouvait recopier le mot de passe dans le champ « Clé API » : la clé, prioritaire, faisait refuser la connexion (« Identifiants TrueNAS incorrects »). Ce champ n'est plus rempli automatiquement, il est ignoré s'il reproduit le mot de passe, et une clé refusée alors qu'un mot de passe est saisi est remplacée par un second essai avec le mot de passe.
+  > Champ `login-apikey` : `type="text"` masqué par `-webkit-text-security`, `autocomplete="off"` et attributs d'exclusion des gestionnaires de mots de passe.
+- **Collage d'identifiants plus tolérant.** Les caractères invisibles et les espaces en bout de mot de passe, fréquents après un copier-coller, sont retirés ; si TrueNAS refuse, Desktroo retente une fois avec le texte exactement collé. Le clavier n'ajoute plus de majuscule ni de correction automatique dans ces champs.
+
+### Amélioré
+- **Desktroo Apps affiche sa version** : la version de Desktroo et la date du catalogue, en bas de la colonne de gauche.
+- **Installer une app seule : une explication au lieu d'une page d'erreur** quand Desktroo est lui-même ouvert comme une application installée. Chrome ne permet pas l'installation depuis ce type de fenêtre : il faut ouvrir Desktroo dans le navigateur.
+
 ## 2.54.44 — 17 octobre 2026
 
 ### Nouveau

@@ -9727,6 +9727,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "⬇ Installer comme application": "⬇ Install as an app",
 "✅ Liste effacée": "✅ List cleared",
 "Effacer la liste": "Clear the list",
+"Catalogue du": "Catalog of",
+"Pour installer cette app seule, ouvrez Desktroo dans le navigateur (et non dans l’application Desktroo).": "To install this app on its own, open Desktroo in the browser (not in the Desktroo app).",
+"Un caractère de l’identifiant ou du mot de passe n’est pas pris en charge (accents courants admis, pas les symboles exotiques).": "A character in the username or password is not supported (common accents are fine, exotic symbols are not).",
 "Administration complète": "Full administration",
   "Audio": "Audio",
   "Sous-titres": "Subtitles",
@@ -10487,11 +10490,11 @@ html[lang="en"].dk-phone .web-tr > [data-l]::before { content:attr(data-l) ':'; 
     <div class="login-url" id="login-url-display" translate="no"></div>
     <div class="form-group">
       <label>Nom d'utilisateur</label>
-      <input type="text" id="login-user" placeholder="Utilisateur" autocomplete="username" />
+      <input type="text" id="login-user" placeholder="Utilisateur" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
     </div>
     <div class="form-group">
       <label>Mot de passe</label>
-      <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••" />
+      <input type="password" id="login-pass" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="••••••••" />
     </div>
     <div class="form-group" id="login-otp-group" style="display:none;">
       <label>Code de double authentification</label>
@@ -10499,7 +10502,7 @@ html[lang="en"].dk-phone .web-tr > [data-l]::before { content:attr(data-l) ':'; 
     </div>
     <div class="form-group">
       <label>Clé API (optionnel — remplace le mot de passe)</label>
-      <input type="password" id="login-apikey" placeholder="1-xxxxxxxxxxxx" />
+      <input type="text" id="login-apikey" name="dk-api-key" placeholder="1-xxxxxxxxxxxx" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" style="-webkit-text-security:disc;" data-bwignore="true" data-lpignore="true" data-1p-ignore="true" />
     </div>
     <button class="btn-login" id="login-btn">Se connecter</button>
     <div class="login-error" id="login-error"></div>
@@ -11192,10 +11195,20 @@ function errHtml(msg) {
 document.getElementById('login-btn').addEventListener('click', doLogin);
 document.addEventListener('keydown', e => { if(e.key === 'Enter') { if(!document.getElementById('login-screen').classList.contains('fade-out')) doLogin(); }});
 
-async function doLogin() {
-  const user = document.getElementById('login-user').value.trim();
-  const pass = document.getElementById('login-pass').value;
-  const key  = document.getElementById('login-apikey').value.trim();
+// Un collage depuis un gestionnaire de mots de passe (surtout sur téléphone) peut embarquer des caractères invisibles
+// ou une espace en bout : on les retire, et si TrueNAS refuse, on retente une fois avec le texte exactement collé.
+function dkLoginClean(v) { return String(v || '').replace(/[\u200B-\u200D\u2060\uFEFF\r\n]/g, ''); }
+function dkLoginBasic(user, pass) {
+  var raw = user + ':' + pass;
+  try { return btoa(raw); } catch (_) { throw new Error(T('Un caractère de l’identifiant ou du mot de passe n’est pas pris en charge (accents courants admis, pas les symboles exotiques).')); }
+}
+async function doLogin(_asTyped) {
+  const user = dkLoginClean(document.getElementById('login-user').value).replace(/[\u00A0]/g, ' ').trim();
+  const typedPass = document.getElementById('login-pass').value;
+  const pass = _asTyped === true ? typedPass : dkLoginClean(typedPass).replace(/^[ \u00A0]+|[ \u00A0]+$/g, '');
+  let key  = document.getElementById('login-apikey').value.trim();
+  // L'autoremplissage d'un téléphone recopie parfois le mot de passe dans le champ « Clé API » : la clé, prioritaire, ferait échouer la connexion.
+  if (key && key === pass) { key = ''; document.getElementById('login-apikey').value = ''; }
   const err  = document.getElementById('login-error');
 
   err.textContent = '';
@@ -11217,7 +11230,7 @@ async function doLogin() {
       }
 
       apiKey = null;
-      basicAuth = btoa(`${user}:${pass}`);
+      basicAuth = dkLoginBasic(user, pass);
       authToken = null;
       wsOtpMark(false); wsTokenDrop();
       _wsOtp = String((document.getElementById('login-otp') || {}).value || '').replace(/\s+/g, '') || null;
@@ -11254,6 +11267,17 @@ async function doLogin() {
     enterDesktop(info);
     if (fileopsRefus) setTimeout(function() { toast(T('⚠️ Service de fichiers indisponible : ') + fileopsRefus, 9000); }, 4200);
   } catch (e) {
+    if (key && user && pass && !(e && e.otpRequired)) {   // clé refusée alors qu'un mot de passe est saisi : on retente avec le mot de passe
+      wsOtpMark(false); wsTokenDrop(); wsDisconnect(); apiKey = null; basicAuth = null; authToken = null;
+      sessionStorage.removeItem('tn_apikey'); sessionStorage.removeItem('tn_basic');
+      document.getElementById('login-apikey').value = '';
+      return doLogin(_asTyped);
+    }
+    if (!key && _asTyped !== true && pass !== typedPass && !(e && e.otpRequired) && !/[^\u0000-\u00ff]/.test(typedPass) === true) {   // le nettoyage a changé le texte : on retente tel que collé
+      wsOtpMark(false); wsTokenDrop(); wsDisconnect(); apiKey = null; basicAuth = null; authToken = null;
+      sessionStorage.removeItem('tn_apikey'); sessionStorage.removeItem('tn_basic');
+      return doLogin(true);
+    }
     err.textContent = '⚠️ ' + (e.message || T('Identifiants incorrects ou NAS inaccessible.'));
     if (!key && e && e.otpRequired) { err.textContent = '🔐 ' + e.message; dkLoginOtp(true, true); }
     else if (!key && _wsLegacyAuth) dkLoginOtp(true, false);
@@ -13325,6 +13349,8 @@ function dkStoreSide() {
         meta: a.update_available ? T('Mise à jour disponible') : dkStoreStateLabel(st) });
     });
   }
+  h += '<div style="margin-top:auto;padding:12px 14px;font-size:10px;color:var(--text-dim);line-height:1.5;">Desktroo ' + webEsc(window.DK_PAGE_VERSION || '')
+    + (_dkStore.view && _dkStore.view.published ? '<br>' + T('Catalogue du') + ' ' + webEsc(String(_dkStore.view.published).slice(0, 10)) : '') + '</div>';
   wmSide('dkstore', h);
 }
 async function dkStoreLoad(refresh) {
@@ -13520,6 +13546,7 @@ function dkStoreRenderDetail(body, a) {
         + (a.nas && a.nas.user ? '<dt>' + T('Dossiers du NAS') + '</dt><dd>' + webEsc(a.nas.paths.join(', ')) + '<br><span class="dks-tag">'
             + webEsc(Tf('avec les droits de {0}, {1}', a.nas.user, a.nas.mode === 'rw' ? T('lecture et écriture') : T('lecture seule'))) + '</span></dd>' : '')
         + ((inst.standalone || a.standalone) ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(location.origin + '/a/' + a.id + '/') + '</span><button class="web-mini" onclick="dkStoreCopyUrl(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
+        + (!window.DK_KIOSK && dkInstalled() ? '<dt>' + T('Application de l’ordinateur') + '</dt><dd>' + T('Pour installer cette app seule, ouvrez Desktroo dans le navigateur (et non dans l’application Desktroo).') + '</dd>' : '')
         + (dkKioskCanInstall(a.id) ? '<dt>' + T('Application de l’ordinateur') + '</dt><dd>' + T('Ouvre l’app seule dans sa fenêtre, avec son icône sur le bureau Windows ou dans la barre des tâches.') + ' <button class="web-mini" onclick="dkKioskInstallOpen(\'' + a.id + '\')">' + T('Installer') + '</button></dd>' : '')
         + (!(inst.standalone || a.standalone) && a.open_url ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(dkStoreDirectUrl(a)) + '</span><button class="web-mini" onclick="dkStoreCopyDirect(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
         + '</dl>' + dkStoreNetHtml(a, true) + dkStoreLicenseHtml(a)
@@ -21491,7 +21518,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.54.44';
+var DK_PAGE_VERSION = '2.54.46';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();
@@ -23190,7 +23217,11 @@ function showDrawerCtx(e, app) {
     }, { once:true });
   }, 0);
 }
-function dctxKiosk() { if (_drawerCtxApp) { dkKioskInstallOpen(_drawerCtxApp.id); closeDrawer(); } }
+function dctxKiosk() {
+  if (!_drawerCtxApp) return;
+  if (!window.DK_KIOSK && dkInstalled()) { toast(T('Pour installer cette app seule, ouvrez Desktroo dans le navigateur (et non dans l’application Desktroo).'), 7000); closeDrawer(); return; }
+  dkKioskInstallOpen(_drawerCtxApp.id); closeDrawer();
+}
 function dctxOpen()  { if (_drawerCtxApp) { _drawerCtxApp.action(); closeDrawer(); } }
 function dctxPin()   { if (_drawerCtxApp) { pinToDesktop(_drawerCtxApp.id); renderDrawer(document.getElementById('drawer-search').value || ''); } }
 function dctxUnpin() { if (_drawerCtxApp) { unpinFromDesktop(_drawerCtxApp.id); renderDrawer(document.getElementById('drawer-search').value || ''); } }

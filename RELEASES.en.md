@@ -3,6 +3,17 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.46 — 18 October 2026
+
+### Fixed
+- **Signing in from an Android phone.** The phone's autofill could copy the password into the “API key” field: the key, which takes priority, made the sign-in fail (“Incorrect TrueNAS credentials”). This field is no longer autofilled, it is ignored if it repeats the password, and a key refused while a password is entered is replaced by a second attempt with the password.
+  > `login-apikey` field: `type="text"` masked with `-webkit-text-security`, `autocomplete="off"` and password-manager exclusion attributes.
+- **More forgiving credential pasting.** Invisible characters and spaces at the end of a password, common after copy-paste, are removed; if TrueNAS refuses, Desktroo tries once more with the text exactly as pasted. The keyboard no longer adds capital letters or autocorrect in these fields.
+
+### Improved
+- **Desktroo Apps shows its version**: the Desktroo version and the catalog date, at the bottom of the left column.
+- **Installing a single app: an explanation instead of an error page** when Desktroo itself is open as an installed application. Chrome does not allow installation from that kind of window: Desktroo has to be opened in the browser.
+
 ## 2.54.44 — 17 October 2026
 
 ### New
