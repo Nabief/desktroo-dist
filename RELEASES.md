@@ -3,7 +3,7 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.54.33 — 17 octobre 2026
+## 2.54.37 — 17 octobre 2026
 
 ### Nouveau
 - **Jellyfin : votre médiathèque familiale, depuis Desktroo Apps.** Jellyfin classe vos films, séries, musiques et vidéos du NAS, récupère les affiches et les résumés, et les diffuse sur la télé, le téléphone, la tablette ou le navigateur. Une fenêtre Desktroo remplace son interface d'administration : vos bibliothèques dans la colonne de gauche, un accueil avec les derniers ajouts de chacune, la recherche, la fiche détaillée de chaque titre (résumé, acteurs, saisons et épisodes) et vos favoris.
@@ -13,6 +13,15 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 - **Comptes de la famille avec limite d'âge**, créés et réglés depuis la fenêtre : un compte enfant ne voit que les titres adaptés.
 - **Reprendre un ancien serveur Jellyfin.** Après une restauration de sauvegarde, la fenêtre repère les dossiers de bibliothèque devenus introuvables (ex. `/media/series`) et propose, en un clic, le dossier du NAS qui leur correspond.
   > Action `repair` : correspondance par nom avec les dossiers `/nas/…` ; remplacement par `POST/DELETE /Library/VirtualFolders/Paths`, puis analyse.
+- **Sous-titres et pistes audio** dans le lecteur : choix de la langue du son et des sous-titres en cours de lecture, et Desktroo retient votre langue préférée. Les sous-titres image (PGS, VobSub) sont incrustés dans la vidéo.
+  > Sous-titres texte relayés en WebVTT (`/store/jellyfin/sub/<billet>`) ; piste audio ou sous-titre image : relance en conversion à la même position.
+- **Lecteur plus complet** : vitesse de lecture, bouton « Épisode suivant », « Passer le générique » et « Passer le résumé » quand Jellyfin les a repérés, raccourcis clavier (espace, flèches, F, M, N, Échap) et, pour la musique, la pochette de l'album.
+- **Favoris, Historique, Listes de lecture et recherche partout** dans la colonne de gauche ; dans chaque bibliothèque, tri, filtre (vus, non vus, favoris) et filtre par genre.
+- **Fiche d'un titre** : « Ajouter à une liste », « Corriger l'identification » (choix du bon titre parmi les résultats) et « Actualiser » les informations.
+- **Sauvegardes de Jellyfin depuis la fenêtre** : créer une sauvegarde à la demande, voir la liste et restaurer (comptes, réglages, historique).
+  > Sauvegarde intégrée de Jellyfin 10.11+ (`/Backup`).
+- **Activité** : séances en cours (avec arrêt de la lecture), appareils connectés (révocation), journal d'activité et dernières erreurs du serveur.
+- **Comptes** : choix des bibliothèques visibles par chaque compte et changement de mot de passe.
 - **Publier Jellyfin sous un nom de domaine** depuis la fenêtre (onglet « Domaine »), avec NPMplus.
 
 ### Corrigé

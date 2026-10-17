@@ -3,7 +3,7 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.54.33 — 17 October 2026
+## 2.54.37 — 17 October 2026
 
 ### New
 - **Jellyfin: your family media library, from Desktroo Apps.** Jellyfin sorts your NAS movies, shows, music and videos, fetches posters and summaries, and streams them to the TV, phone, tablet or browser. A Desktroo window replaces its administration interface: your libraries in the left column, a home page with the latest additions of each, search, a detailed page for every title (summary, cast, seasons and episodes) and your favorites.
@@ -14,6 +14,15 @@ the grey line underneath gives the technical detail, when there is one.
 - **Taking over an old Jellyfin server.** After restoring a backup, the window spots library folders that are no longer reachable (e.g. `/media/series`) and offers, in one click, the matching NAS folder.
   > `repair` action: name matching against the `/nas/…` folders; replacement through `POST/DELETE /Library/VirtualFolders/Paths`, then a scan.
 - **Publish Jellyfin under a domain name** from the window (“Domain” tab), with NPMplus.
+- **Subtitles and audio tracks** in the player: pick the sound and subtitle language during playback, and Desktroo remembers your preferred language. Image subtitles (PGS, VobSub) are burned into the video.
+  > Text subtitles relayed as WebVTT (`/store/jellyfin/sub/<ticket>`); an audio track or image subtitle restarts the conversion at the same position.
+- **A fuller player**: playback speed, a “Next episode” button, “Skip intro” and “Skip recap” when Jellyfin has detected them, keyboard shortcuts (space, arrows, F, M, N, Esc) and, for music, the album cover.
+- **Favourites, History, Playlists and search everywhere** in the left column; in each library, sorting, a filter (watched, unwatched, favourites) and a genre filter.
+- **Title page**: “Add to a playlist”, “Fix identification” (pick the right title from the results) and “Refresh” the information.
+- **Jellyfin backups from the window**: create a backup on demand, see the list and restore (accounts, settings, history).
+  > Uses Jellyfin 10.11+ built-in backup (`/Backup`).
+- **Activity**: current sessions (with stop playback), connected devices (revoke), activity log and the latest server errors.
+- **Accounts**: choose which libraries each account can see, and change its password.
 
 ### Fixed
 - **The “Open” links of Desktroo Apps apps lead to the NAS address on your network**, no longer to the domain name you use to open Desktroo. This is the case of the NPMplus administration (port 8181), which did not answer through the domain.
