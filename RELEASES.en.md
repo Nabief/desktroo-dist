@@ -3,7 +3,7 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.54.37 — 17 October 2026
+## 2.54.38 — 17 October 2026
 
 ### New
 - **Jellyfin: your family media library, from Desktroo Apps.** Jellyfin sorts your NAS movies, shows, music and videos, fetches posters and summaries, and streams them to the TV, phone, tablet or browser. A Desktroo window replaces its administration interface: your libraries in the left column, a home page with the latest additions of each, search, a detailed page for every title (summary, cast, seasons and episodes) and your favorites.
