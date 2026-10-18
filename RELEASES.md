@@ -3,6 +3,21 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.0 — 18 octobre 2026
+
+### Nouveau
+- **Vos documents Word, Excel et PowerPoint s'ouvrent dans le bureau.** Installez OnlyOffice depuis Desktroo Apps (canal test pour l'instant) : un double-clic sur un document dans Fichiers l'ouvre dans une fenêtre de Desktroo, sans autre onglet. Il s'enregistre tout seul sur le NAS, à sa place, et plusieurs personnes peuvent le modifier en même temps. Les formats OpenDocument (odt, ods, odp) s'ouvrent aussi ; les anciens formats (doc, xls, ppt) en lecture seule.
+  > Le serveur de documents tourne dans le conteneur dt-onlyoffice (réseau des apps, port 80), servi sous /a/onlyoffice/ derrière la session du bureau (bloc nginx V4, X-Forwarded-Host avec le chemin). fileops signe la configuration de l'éditeur (JWT HS256, secret propre à l'installation), sert le fichier sur une adresse signée et reçoit l'enregistrement (/office/file, /office/save), remplacé de façon atomique en gardant propriétaire et droits. Deux ouvertures du même fichier rejoignent la même séance (coédition).
+- **Créer un document, un classeur ou une présentation.** L'app OnlyOffice du bureau propose trois boutons et la liste de vos documents récents ; dans Fichiers, un clic droit dans un dossier ajoute « Nouveau document Word », « Nouveau classeur Excel » et « Nouvelle présentation PowerPoint ».
+  > Modèles vides générés par fileops (Office Open XML, A4), donnés au propriétaire du dossier. Route POST /office/new.
+
+### Amélioré
+- **On voit la corbeille se vider.** Les éléments sont supprimés l'un après l'autre : celui en cours est signalé, la liste se vide au fur et à mesure, une barre et l'en-tête donnent l'avancement (« Suppression : 2 sur 7, 11,2 Go libérés »). À la fin, la place libérée est annoncée.
+  > Un appel /trash/purge par élément au lieu d'un seul pour tout : un gros dossier peut demander plusieurs secondes, l'utilisateur sait lequel.
+
+### Corrigé
+- **Dates et nombres sur un navigateur à la langue mal décrite.** Une langue de navigateur que le système de dates ne reconnaît pas (« en-US@posix ») faisait échouer l'affichage de certaines fenêtres ; le format en-GB est alors utilisé.
+
 ## 2.59.0 — 18 octobre 2026
 
 ### Nouveau

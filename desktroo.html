@@ -1892,6 +1892,12 @@ html:not(.dk-phone):not(.dk-kiosk) .window:has(.web-shell) { min-width:min(640px
   .fsx-name .fs-ic { width:26px; height:26px; flex-shrink:0; }
   .fsx-name .cron-two { flex:1; }
   .fsx-acts { display:flex; justify-content:flex-end; gap:6px; overflow:visible !important; }
+  /* Vidage de la corbeille : un élément après l'autre, avec l'avancement */
+  .fsx-prog { height:4px; border-radius:99px; background:rgba(128,140,160,0.18); overflow:hidden; margin:0 0 12px; }
+  .fsx-prog > span { display:block; height:100%; border-radius:inherit; background:var(--accent); transition:width .3s ease; }
+  .fsx-purging { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); white-space:nowrap; }
+  .fsx-purging .spinner { width:14px; height:14px; }
+  .web-tr.is-purging { background:rgba(var(--accent-rgb),0.07); }
   .web-mini:disabled { opacity:.45; cursor:default; pointer-events:none; }
   .web-mini.fsx-del { display:grid; place-items:center; width:26px; padding:3px 0; }
   .web-mini.fsx-del svg { width:13px; height:13px; }
@@ -4207,6 +4213,33 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"OnlyOffice ne répond pas encore : s’il vient de démarrer, réessayez dans une minute.": "OnlyOffice isn't responding yet: if it has just started, try again in a minute.",
+"Ouverture du document…": "Opening the document…",
+"Aucune suite bureautique n’est installée : ajoutez OnlyOffice depuis Desktroo Apps.": "No office suite is installed: add OnlyOffice from Desktroo Apps.",
+"OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.": "OnlyOffice is stopped: start it in Desktroo Apps.",
+"Ouverture impossible.": "Could not open it.",
+"Erreur de l’éditeur": "Editor error",
+"Impossible d’ouvrir le document": "Could not open the document",
+"Ouvert en lecture seule (format ancien ou fichier protégé).": "Opened read-only (older format or protected file).",
+"Document fermé : ses modifications sont enregistrées sur le NAS dans quelques secondes.": "Document closed: its changes are saved to the NAS within a few seconds.",
+"Document": "Document",
+"Classeur": "Spreadsheet",
+"Ouvrir un fichier…": "Open a file…",
+"Ouvrir Fichiers": "Open Files",
+"Documents récents": "Recent documents",
+"Vos documents s’enregistrent tout seuls sur le NAS.": "Your documents save themselves to the NAS.",
+"Vider la liste": "Clear the list",
+"Nouveau classeur": "New spreadsheet",
+"Nouvelle présentation": "New presentation",
+"Aucun document récent": "No recent documents",
+"Créez un document ci-dessus, ou double-cliquez sur un fichier Word, Excel ou PowerPoint dans Fichiers : il s’ouvre ici, dans une fenêtre du bureau.": "Create a document above, or double-click a Word, Excel or PowerPoint file in Files: it opens here, in a desktop window.",
+"Choisir un document": "Choose a document",
+"Nom du fichier :": "File name:",
+"Nouveau document Word": "New Word document",
+"Nouveau classeur Excel": "New Excel spreadsheet",
+"Nouvelle présentation PowerPoint": "New PowerPoint presentation",
+"Suppression : {0} sur {1}, {2} libérés": "Deleting: {0} of {1}, {2} freed",
+"Corbeille vidée : {0} libérés": "Bin emptied: {0} freed",
 "Photo du profil": "Profile picture",
 "Elle s’affiche dans la barre des tâches, pour ce compte, sur tous les navigateurs.": "It is shown in the taskbar, for this account, on every browser.",
 "Photo personnelle": "Personal photo",
@@ -10185,6 +10218,33 @@ select option{ background:#101b2e; color:#e9eef7; }
      au dictionnaire anglais doit l'être ici aussi (« node tools/i18n/i18n.js check » compte ce qui manque). -->
 <script type="application/json" id="dk-i18n-es">
 {
+"OnlyOffice ne répond pas encore : s’il vient de démarrer, réessayez dans une minute.": "OnlyOffice aún no responde: si acaba de arrancar, vuelve a intentarlo en un minuto.",
+"Ouverture du document…": "Abriendo el documento…",
+"Aucune suite bureautique n’est installée : ajoutez OnlyOffice depuis Desktroo Apps.": "No hay ninguna suite ofimática instalada: añade OnlyOffice desde Desktroo Apps.",
+"OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.": "OnlyOffice está detenido: inícialo en Desktroo Apps.",
+"Ouverture impossible.": "No se ha podido abrir.",
+"Erreur de l’éditeur": "Error del editor",
+"Impossible d’ouvrir le document": "No se ha podido abrir el documento",
+"Ouvert en lecture seule (format ancien ou fichier protégé).": "Abierto en modo de solo lectura (formato antiguo o archivo protegido).",
+"Document fermé : ses modifications sont enregistrées sur le NAS dans quelques secondes.": "Documento cerrado: sus cambios se guardan en el NAS en unos segundos.",
+"Document": "Documento",
+"Classeur": "Hoja de cálculo",
+"Ouvrir un fichier…": "Abrir un archivo…",
+"Ouvrir Fichiers": "Abrir Archivos",
+"Documents récents": "Documentos recientes",
+"Vos documents s’enregistrent tout seuls sur le NAS.": "Tus documentos se guardan solos en el NAS.",
+"Vider la liste": "Vaciar la lista",
+"Nouveau classeur": "Nueva hoja de cálculo",
+"Nouvelle présentation": "Nueva presentación",
+"Aucun document récent": "Ningún documento reciente",
+"Créez un document ci-dessus, ou double-cliquez sur un fichier Word, Excel ou PowerPoint dans Fichiers : il s’ouvre ici, dans une fenêtre du bureau.": "Crea un documento arriba, o haz doble clic en un archivo de Word, Excel o PowerPoint en Archivos: se abre aquí, en una ventana del escritorio.",
+"Choisir un document": "Elegir un documento",
+"Nom du fichier :": "Nombre del archivo:",
+"Nouveau document Word": "Nuevo documento de Word",
+"Nouveau classeur Excel": "Nueva hoja de cálculo de Excel",
+"Nouvelle présentation PowerPoint": "Nueva presentación de PowerPoint",
+"Suppression : {0} sur {1}, {2} libérés": "Eliminando: {0} de {1}, {2} liberados",
+"Corbeille vidée : {0} libérés": "Papelera vaciada: {0} liberados",
 "Photo du profil": "Foto del perfil",
 "Elle s’affiche dans la barre des tâches, pour ce compte, sur tous les navigateurs.": "Se muestra en la barra de tareas, para esta cuenta, en todos los navegadores.",
 "Photo personnelle": "Foto personal",
@@ -16340,10 +16400,12 @@ var DK_LANG = dkDetectLang();
 if (DK_PACKS[DK_LANG]) { DK_PACK = dkLoadPack(DK_LANG); if (!DK_PACK && !DK_BUILTIN[DK_LANG]) DK_LANG = 'en'; }
 /* Locale des dates et des nombres : celle du navigateur s'il parle la langue affichée (pour
    l'anglais, en-GB sinon : jour avant le mois, 24 h), sinon celle que donne le fichier. */
+// Locale reconnue par le navigateur (« en-US@posix » et autres formes exotiques sont refusées par Intl)
+function dkLocaleOk(loc) { try { return Intl.DateTimeFormat.supportedLocalesOf([loc]).length > 0; } catch (_) { return false; } }
 function dkLocaleFor(lang) {
   var nav = navigator.language || '', loc;
   if (lang === 'fr') return 'fr-FR';
-  if (lang === 'en') return /^en\b/i.test(nav) ? nav : 'en-GB';
+  if (lang === 'en') return /^en\b/i.test(nav) && dkLocaleOk(nav) ? nav : 'en-GB';
   loc = nav.toLowerCase().split('-')[0] === lang.split('-')[0] ? nav
       : ((DK_PACK && DK_PACK._desktroo && DK_PACK._desktroo.locale) || (DK_PACKS[lang] && DK_PACKS[lang].locale) || DK_BUILTIN_LOCALE[lang] || lang);
   try { return Intl.DateTimeFormat.supportedLocalesOf([loc]).length ? loc : 'en-GB'; } catch (_) { return 'en-GB'; }
@@ -18431,6 +18493,9 @@ function buildFsWindowHtml(wid, top, left) {
         <hr class="ctx-separator fsctx-new-sep">
         <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsMkdirPrompt()">Nouveau dossier</div>
         <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsNewFile()">Nouveau document</div>
+        <div class="ctx-item fsctx-office" style="display:none;" onclick="setActiveFsWin('${wid}');dkOfficeNew('docx',currentFsPath)">Nouveau document Word</div>
+        <div class="ctx-item fsctx-office" style="display:none;" onclick="setActiveFsWin('${wid}');dkOfficeNew('xlsx',currentFsPath)">Nouveau classeur Excel</div>
+        <div class="ctx-item fsctx-office" style="display:none;" onclick="setActiveFsWin('${wid}');dkOfficeNew('pptx',currentFsPath)">Nouvelle présentation PowerPoint</div>
         <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsUploadPrompt()">Uploader ici</div>
         <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsRefresh()">Actualiser</div>
         <div class="ctx-item" onclick="openNewFsWindow()">Nouvelle fenêtre</div>
@@ -19014,6 +19079,7 @@ function fsRenderEntries(el, items) {
     if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
     if (sep) sep.style.display = _fsClipboard ? '' : 'none';
     fsxCtxSync(null, false);
+    dkOfficeCtxSync(ctx);
     fsCtxPlace(ctx, e);
   };
   if (!items.length) {
@@ -19147,6 +19213,7 @@ function fsRerender() {
 function fsOpenEntry(entry) {
   if (!entry) return;
   if (entry.type === 'DIRECTORY') { fsNavigate(entry.path); return; }
+  if (dkOfficeKind(entry.name) && dkOfficeInstalled()) { dkOfficeOpen(entry.path); return; }
   if (mvKind(entry.name) && mvOpen(entry, _fsEntries)) return;
   var k = fsKind(entry.name, false);
   if (k === 'script' || k === 'config' || k === 'text' || (k === 'file' && (entry.size || 0) <= 524288)) { fsEditFile(entry.path, entry.name); return; }
@@ -19389,6 +19456,7 @@ function fsShowCtx(e, item) {
   var pasteEl = ctx.querySelector('.fsctx-paste');
   if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
   fsxCtxSync(item, multi);
+  dkOfficeCtxSync(ctx);
   // Positionner
   fsCtxPlace(ctx, e);
 }
@@ -19611,6 +19679,7 @@ async function dkStoreOpenApp(id, title, opts) {
   id = String(id || '');
   if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(id)) throw new Error(T('Identifiant d\'app invalide : ') + id);
   opts = opts || {};
+  if (DK_OFFICE_IDS.indexOf(id) >= 0 && !opts.raw) return dkOfficeHome();
   var wid = 'dkapp-' + id;
   var win = document.getElementById('win-' + wid);
   if (win) { win.classList.add('visible'); bringToFront(win); return win; }
@@ -19643,6 +19712,209 @@ async function dkStoreOpenApp(id, title, opts) {
   addTaskbarBtn(wid, win, title || id);
   dkStoreWatchTheme();
   return win;
+}
+// ── MDM-OFFICE-V1 : bureautique du Magasin (OnlyOffice) dans les fenêtres du bureau ─────────────────────────────
+// Le serveur de documents est servi sous /a/<app>/ (session des apps). fileops signe la configuration de chaque
+// document et reçoit lui-même les enregistrements : rien ne passe par un autre onglet. Une fenêtre par document ;
+// l'icône « OnlyOffice » du bureau ouvre l'accueil (nouveau document, documents récents).
+var DK_OFFICE_IDS = ['onlyoffice', 'eurooffice'];
+var DK_OFFICE_KINDS = { docx:'word', docm:'word', dotx:'word', odt:'word', ott:'word', doc:'word', rtf:'word',
+  xlsx:'cell', xlsm:'cell', xltx:'cell', ods:'cell', ots:'cell', xls:'cell',
+  pptx:'slide', pptm:'slide', potx:'slide', odp:'slide', otp:'slide', ppt:'slide' };
+var DK_OFFICE_COLORS = { word:'#2b6cb0', cell:'#1d7a55', slide:'#d9622b' };
+var _dkOffice = { st: null, at: 0, api: {}, eds: {} };
+function dkOfficeKind(name) { var m = /\.([a-z0-9]+)$/i.exec(String(name || '')); return m ? (DK_OFFICE_KINDS[m[1].toLowerCase()] || '') : ''; }
+function dkOfficeUsable() { var st = _dkOffice.st; return !!(st && st.app && st.running); }
+function dkOfficeInstalled() { var st = _dkOffice.st; return !!(st && st.app); }
+async function dkOfficeStatus(force) {
+  if (!force && _dkOffice.st && Date.now() - _dkOffice.at < 30000) return _dkOffice.st;
+  try { _dkOffice.st = await fileops('GET', 'office/status' + (force ? '?force=1' : '')); }
+  catch (e) { _dkOffice.st = _dkOffice.st || { ok: false, app: '', installed: false, running: false }; }
+  _dkOffice.at = Date.now();
+  return _dkOffice.st;
+}
+function dkOfficeId(p) { var h = 5381; p = String(p || ''); for (var i = 0; i < p.length; i++) h = ((h * 33) ^ p.charCodeAt(i)) >>> 0; return h.toString(36); }
+function dkOfficeDocIcon(kind, size) {
+  var c = DK_OFFICE_COLORS[kind] || '#64748b', z = size || 18;
+  var mark = kind === 'cell' ? '<path d="M8 12h8M8 15h8M8 18h8M12 12v6" stroke="#fff" stroke-width="1.4" fill="none"/>'
+    : kind === 'slide' ? '<rect x="8" y="12" width="8" height="5.5" rx=".8" fill="none" stroke="#fff" stroke-width="1.4"/>'
+    : '<path d="M8 12h8M8 15h8M8 18h5" stroke="#fff" stroke-width="1.4" stroke-linecap="round" fill="none"/>';
+  return '<svg width="' + z + '" height="' + z + '" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="' + c + '"/>'
+    + '<path d="M14 2v5h5" fill="rgba(255,255,255,.4)"/>' + mark + '</svg>';
+}
+function dkOfficeCss() {
+  if (document.getElementById('dkoff-css')) return;
+  var st = document.createElement('style'); st.id = 'dkoff-css';
+  st.textContent = '.dkoff-host{flex:1;min-height:0;position:relative;background:var(--window-bg,#fff);}'
+    + '.dkoff-host > iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}'
+    + '.dkoff-wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text-dim);font-size:13px;z-index:1;pointer-events:none;}'
+    + '.dkoff-host .dk-wait{position:absolute;inset:0;}'
+    + '.dkoff-row > svg{flex-shrink:0;margin-right:12px;}'
+    + '.dkoff-new{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:0 0 22px;}'
+    + '.dkoff-new button{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.04);color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-align:left;}'
+    + '.dkoff-new button:hover{border-color:rgba(var(--accent-rgb),0.45);background:rgba(var(--accent-rgb),0.1);}'
+    + '[data-theme="light"] .dkoff-new button{background:#fff;}';
+  document.head.appendChild(st);
+}
+// Le script de l'éditeur vient du serveur de documents. Une page d'erreur (serveur pas encore prêt) se charge aussi :
+// sans DocsAPI après chargement, on le dit et on permet de réessayer.
+function dkOfficeLoadApi(app, src) {
+  if (window.DocsAPI && _dkOffice.api[app] === 'ok') return Promise.resolve();
+  if (_dkOffice.api[app] && _dkOffice.api[app].then) return _dkOffice.api[app];
+  var p = new Promise(function(res, rej) {
+    var sc = document.createElement('script');
+    sc.src = src || ('/a/' + app + '/web-apps/apps/api/documents/api.js');
+    function fail() { delete _dkOffice.api[app]; sc.remove(); rej(new Error(T('OnlyOffice ne répond pas encore : s’il vient de démarrer, réessayez dans une minute.'))); }
+    sc.onload = function() { if (window.DocsAPI && window.DocsAPI.DocEditor) { _dkOffice.api[app] = 'ok'; res(); } else fail(); };
+    sc.onerror = fail;
+    document.head.appendChild(sc);
+  });
+  _dkOffice.api[app] = p;
+  return p;
+}
+function dkOfficeRecent() { try { var r = JSON.parse(localStorage.getItem('dk_office_recent') || '[]'); return Array.isArray(r) ? r : []; } catch (_) { return []; } }
+function dkOfficeRecentAdd(path) {
+  var r = dkOfficeRecent().filter(function(x) { return x && x.p !== path; });
+  r.unshift({ p: path, t: Date.now() });
+  try { localStorage.setItem('dk_office_recent', JSON.stringify(r.slice(0, 15))); } catch (_) {}
+  dkOfficeHomeRender();
+}
+function dkOfficeRecentClear() { try { localStorage.removeItem('dk_office_recent'); } catch (_) {} dkOfficeHomeRender(); }
+function dkOfficeOpenQ(p) { dkOfficeOpen(decodeURIComponent(p)); }
+async function dkOfficeOpen(path) {
+  path = String(path || '');
+  if (!path) return;
+  var name = path.split('/').pop(), kind = dkOfficeKind(name), wid = 'dkoff-' + dkOfficeId(path);
+  var win = document.getElementById('win-' + wid);
+  if (win) { win.classList.add('visible'); bringToFront(win); return; }
+  dkOfficeCss();
+  win = dkStoreMakeWin(wid, name, 1120, 780,
+    '<div class="dkoff-host"><div class="dkoff-wait"><div class="spinner"></div><span>' + T('Ouverture du document…') + '</span></div><div id="' + wid + '-ed"></div></div>',
+    function() { dkOfficeClosed(wid); });
+  win.classList.add('dk-app-win');
+  var ti = win.querySelector('.window-title');
+  if (ti) ti.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;">' + dkOfficeDocIcon(kind, 18) + '</span>');
+  try {
+    var st = await dkOfficeStatus(true);
+    if (!st.app) throw new Error(T('Aucune suite bureautique n’est installée : ajoutez OnlyOffice depuis Desktroo Apps.'));
+    if (!st.running) throw new Error(T('OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.'));
+    await dkStoreSession(true);
+    var r = await fileops('POST', 'office/open', { path: path, lang: DK_LANG,
+      theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark', close_text: T('Fermer') });
+    if (!r || !r.ok || !r.config) throw new Error((r && r.error) || T('Ouverture impossible.'));
+    await dkOfficeLoadApi(r.app, r.api);
+    if (!document.getElementById('win-' + wid)) return;   // fenêtre fermée pendant le chargement
+    var cfg = r.config;
+    function ready() { var w = win.querySelector('.dkoff-wait'); if (w) w.remove(); }
+    cfg.width = '100%'; cfg.height = '100%';
+    cfg.type = document.documentElement.classList.contains('dk-phone') ? 'mobile' : 'desktop';
+    cfg.events = {
+      onAppReady: ready, onDocumentReady: ready,
+      onRequestClose: function() { var b = win.querySelector('.win-btn.cls'); if (b) b.click(); },
+      onError: function(ev) { ready(); toast('❌ ' + String((ev && ev.data && ev.data.errorDescription) || T('Erreur de l’éditeur')), 8000); }
+    };
+    _dkOffice.eds[wid] = { ed: new DocsAPI.DocEditor(wid + '-ed', cfg), path: path, edit: !!r.editable };
+    if (!r.editable) toast(T('Ouvert en lecture seule (format ancien ou fichier protégé).'), 6000);
+    dkOfficeRecentAdd(path);
+    dkStoreWatchTheme();
+  } catch (e) {
+    var host = win.querySelector('.dkoff-host');
+    if (host) host.innerHTML = dkWaitHtml('error', T('Impossible d’ouvrir le document'), webEsc(dkErrText(e)),
+      '<button class="web-open" onclick="dkOfficeRetry(' + wmQ(path) + ',\'' + wid + '\')">' + T('Réessayer') + '</button>');
+  }
+}
+function dkOfficeRetry(p, wid) {
+  var b = document.querySelector('#win-' + wid + ' .win-btn.cls');
+  if (b) b.click();
+  dkOfficeOpen(decodeURIComponent(p));
+}
+function dkOfficeClosed(wid) {
+  var e = _dkOffice.eds[wid];
+  if (!e) return;
+  delete _dkOffice.eds[wid];
+  try { e.ed.destroyEditor(); } catch (_) {}
+  if (e.edit) toast(T('Document fermé : ses modifications sont enregistrées sur le NAS dans quelques secondes.'), 5000);
+  setTimeout(function() { if (typeof fsRefresh === 'function') try { fsRefresh(); } catch (_) {} }, 12000);
+}
+// Accueil : créer un document, rouvrir un document récent.
+function dkOfficeHome() {
+  var win = document.getElementById('win-dkoffice');
+  if (win) { win.classList.add('visible'); bringToFront(win); dkOfficeHomeRender(); return win; }
+  dkStoreCss(); dkOfficeCss();
+  win = dkStoreMakeWin('dkoffice', 'OnlyOffice', 900, 620,
+    '<div class="web-shell"><nav class="web-side" id="dkoffice-side" aria-label="OnlyOffice"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dkoffice-head"></header><div class="web-body" id="dkoffice-body"></div></section></div>');
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('onlyoffice', 18) + '</span>');
+  dkOfficeHomeRender();
+  dkOfficeStatus(true).then(dkOfficeHomeRender);
+  return win;
+}
+function dkOfficeHomeRender() {
+  if (!document.getElementById('win-dkoffice')) return;
+  var newBtn = function(kind, ext, label) { return wmNav({ call: 'dkOfficeNew(\'' + ext + '\')', lead: dkOfficeDocIcon(kind, 18), name: label }); };
+  wmSide('dkoffice', wmSideTitle(T('Nouveau'))
+    + newBtn('word', 'docx', T('Document')) + newBtn('cell', 'xlsx', T('Classeur')) + newBtn('slide', 'pptx', T('Présentation'))
+    + wmSep()
+    + wmNav({ call: 'dkOfficePick()', icon: 'out', name: T('Ouvrir un fichier…') })
+    + wmNav({ call: 'openNewFsWindow()', icon: 'storage', name: T('Ouvrir Fichiers') }));
+  var st = _dkOffice.st, rec = dkOfficeRecent();
+  var sub = (st && st.app && !st.running) ? '<span style="color:var(--warning)">' + webEsc(T('OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.')) + '</span>'
+    : webEsc(T('Vos documents s’enregistrent tout seuls sur le NAS.'));
+  wmHead('dkoffice', T('Documents récents'), { sub: sub, keepScroll: true,
+    actions: rec.length ? '<button class="web-mini" onclick="dkOfficeRecentClear()">' + T('Vider la liste') + '</button>' : '' });
+  var body = wmBody('dkoffice');
+  if (!body) return;
+  var h = '<div class="dkoff-new">'
+    + [['word', 'docx', T('Nouveau document')], ['cell', 'xlsx', T('Nouveau classeur')], ['slide', 'pptx', T('Nouvelle présentation')]].map(function(x) {
+      return '<button onclick="dkOfficeNew(\'' + x[1] + '\')">' + dkOfficeDocIcon(x[0], 26) + '<span>' + x[2] + '</span></button>';
+    }).join('') + '</div>';
+  if (!rec.length) {
+    h += '<div class="web-empty" style="padding:6px 2px;"><b>' + T('Aucun document récent') + '</b><div style="color:var(--text-dim);margin-top:4px;">'
+      + T('Créez un document ci-dessus, ou double-cliquez sur un fichier Word, Excel ou PowerPoint dans Fichiers : il s’ouvre ici, dans une fenêtre du bureau.') + '</div></div>';
+  } else {
+    h += rec.map(function(x) {
+      var nm = String(x.p).split('/').pop(), dir = String(x.p).slice(0, -nm.length - 1) || '/';
+      var when = x.t ? new Date(x.t).toLocaleString(dkLocaleFor(DK_LANG), { dateStyle: 'medium', timeStyle: 'short' }) : '';
+      return '<button class="web-row line dkoff-row" onclick="dkOfficeOpenQ(' + wmQ(x.p) + ')" title="' + webEsc(x.p) + '">' + dkOfficeDocIcon(dkOfficeKind(nm), 28)
+        + '<span class="web-row-text"><span class="web-row-name">' + webEsc(nm) + '</span><span class="web-row-desc">' + webEsc(dir + (when ? ' · ' + when : '')) + '</span></span>'
+        + '<span class="web-row-chev" aria-hidden="true">&rsaquo;</span></button>';
+    }).join('');
+  }
+  body.innerHTML = h;
+}
+function dkOfficeDir() { try { return localStorage.getItem('dk_office_dir') || ''; } catch (_) { return ''; } }
+function dkOfficePick() {
+  var exts = Object.keys(DK_OFFICE_KINDS).map(function(x) { return '.' + x; });
+  var last = dkOfficeRecent()[0];
+  openFilePicker(null, exts, dkOfficeDir() || (last ? String(last.p).replace(/\/[^\/]*$/, '') : '/mnt'));
+  _fpCallback = function(p) { dkOfficeOpen(p); };
+  var t = document.getElementById('fp-title'); if (t) t.textContent = T('Choisir un document');
+}
+// Nouveau document : dans « dir » (menu de Fichiers), sinon dans un dossier choisi.
+function dkOfficeNew(kind, dir) {
+  if (dir) return dkOfficeNewIn(kind, dir);
+  fsPickFolder(dkOfficeDir() || '/mnt', function(d) { dkOfficeNewIn(kind, d); });
+}
+async function dkOfficeNewIn(kind, dir) {
+  var def = { docx: T('Nouveau document'), xlsx: T('Nouveau classeur'), pptx: T('Nouvelle présentation') }[kind] || 'document';
+  var name = await showPrompt(T('Nom du fichier :'), def);
+  name = String(name || '').trim();
+  if (!name) return;
+  try {
+    var r = await fileops('POST', 'office/new', { dir: dir, name: name, kind: kind, lang: DK_LANG });
+    if (!r || !r.ok) throw new Error((r && r.error) || T('Ouverture impossible.'));
+    try { localStorage.setItem('dk_office_dir', dir); } catch (_) {}
+    if (typeof fsRefresh === 'function') try { fsRefresh(); } catch (_) {}
+    dkOfficeOpen(r.path);
+  } catch (e) { toast('❌ ' + dkErrText(e), 7000); }
+}
+// Menu de Fichiers : les trois « Nouveau … » n'apparaissent que si la bureautique est installée.
+function dkOfficeCtxSync(ctx) {
+  if (!ctx) return;
+  var on = dkOfficeInstalled();
+  ctx.querySelectorAll('.fsctx-office').forEach(function(x) { x.style.display = on ? '' : 'none'; });
+  if (!_dkOffice.st || Date.now() - _dkOffice.at > 60000) dkOfficeStatus();
 }
 function dkStoreCloseApp(wid) {
   var win = document.getElementById('win-' + wid);
@@ -22704,6 +22976,8 @@ function dkPassRenderSettings(body, st) {
 // Icônes du bureau et du menu : une par app installée, plus le Magasin.
 function dkStoreRegisterApps(list) {
   if (typeof ALL_APPS === 'undefined') return;
+  if ((list || []).some(function(a) { return DK_OFFICE_IDS.indexOf(a.id) >= 0; })) dkOfficeStatus(true);
+  else _dkOffice.st = { ok: true, app: '', installed: false, running: false };
   var want = {};
   dkStoreWebToggle((list || []).some(function(a) { return a.id === 'webserver'; }));
   (list || []).forEach(function(a) {
@@ -28196,7 +28470,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.59.0';
+var DK_PAGE_VERSION = '2.60.0';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -32857,8 +33131,10 @@ function fsxTrashRender() {
   // la somme des tailles, précédée de « ≥ » si un gros dossier n'est pas encore mesuré en entier.
   var some = list.some(function(it) { return it.size_complete === false && it.present !== false; });
   var size = _fsx.disk != null ? Tf('{0} sur le disque', mntFmtSize(_fsx.disk)) : ((some ? '≥ ' : '') + mntFmtSize(_fsx.total) + (_fsx.pending ? ' · ' + T('calcul en cours…') : ''));
-  dkSheetHead(T('Corbeille'), n ? webEsc((n > 1 ? Tf('{0} éléments', n) : T('1 élément')) + ', ' + size) + ' · ' + webEsc(Tf('Chaque élément est supprimé pour de bon {0} après y être entré.', fsxDays(conf.days))) : '');
-  var h = '';
+  var pg = _fsx.purge;
+  if (pg) dkSheetHead(T('Corbeille'), webEsc(Tf('Suppression : {0} sur {1}, {2} libérés', pg.done + 1 > pg.total ? pg.total : pg.done + 1, pg.total, mntFmtSize(pg.freed))));
+  else dkSheetHead(T('Corbeille'), n ? webEsc((n > 1 ? Tf('{0} éléments', n) : T('1 élément')) + ', ' + size) + ' · ' + webEsc(Tf('Chaque élément est supprimé pour de bon {0} après y être entré.', fsxDays(conf.days))) : '');
+  var h = pg ? '<div class="fsx-prog" role="progressbar" aria-valuemin="0" aria-valuemax="' + pg.total + '" aria-valuenow="' + pg.done + '"><span style="width:' + Math.round(100 * pg.done / Math.max(1, pg.total)) + '%"></span></div>' : '';
   if (!conf.enabled) h += '<p class="web-note dk-sheet-warn">' + T('La corbeille est désactivée : ce que vous supprimez depuis Fichiers disparaît tout de suite.') + '</p>';
   if (!n) {
     h += '<div class="fs-empty dk-sheet-empty">' + webIcon('trash') + '<div class="fs-empty-title">' + T('La corbeille est vide') + '</div><div>'
@@ -32867,11 +33143,13 @@ function fsxTrashRender() {
     h += '<div class="web-table fsx-trash"><div class="web-tr head"><span>' + T('Nom') + '</span><span class="num">' + T('Taille') + '</span><span>' + T('Supprimé') + '</span><span></span></div>';
     list.forEach(function(it, i) {
       var from = String(it.path || '').replace(/\/[^\/]*$/, '') || '/';
-      h += '<div class="web-tr' + (it.present === false ? ' is-off' : '') + '"><span class="fsx-name">' + fsIcon(it.name, !!it.is_dir) + '<span class="cron-two"><strong title="' + webEsc(it.name) + '">' + webEsc(it.name) + '</strong><span class="dim mono" title="' + webEsc(from) + '">' + webEsc(from) + '</span></span></span>'
+      var purging = !!(pg && pg.cur === it.id);
+      h += '<div class="web-tr' + (it.present === false ? ' is-off' : '') + (purging ? ' is-purging' : '') + '"><span class="fsx-name">' + fsIcon(it.name, !!it.is_dir) + '<span class="cron-two"><strong title="' + webEsc(it.name) + '">' + webEsc(it.name) + '</strong><span class="dim mono" title="' + webEsc(from) + '">' + webEsc(from) + '</span></span></span>'
         + '<span class="num">' + (it.size != null ? webEsc((it.size_complete === false ? '≥ ' : '') + mntFmtSize(Number(it.size) || 0)) : '—') + '</span>'
         + '<span class="cron-two"><span title="' + webEsc(fsFmtDate(it.deleted_at)) + '">' + webEsc(fsFmtWhen(it.deleted_at)) + (it.by ? ' · ' + webEsc(it.by) : '') + '</span><span class="dim">' + webEsc(fsxTrashLeft(it)) + '</span></span>'
-        + '<span class="fsx-acts"><button class="web-mini" data-tr="' + i + '"' + (busy || it.present === false ? ' disabled' : '') + '>' + T('Restaurer') + '</button>'
-        + '<button class="web-mini fsx-del" data-tp="' + i + '"' + (busy ? ' disabled' : '') + ' title="' + webEsc(T('Supprimer définitivement')) + '" aria-label="' + webEsc(T('Supprimer définitivement')) + '">' + webIcon('trash') + '</button></span></div>';
+        + (purging ? '<span class="fsx-acts"><span class="fsx-purging"><span class="spinner"></span>' + T('Suppression…') + '</span></span></div>'
+          : '<span class="fsx-acts"><button class="web-mini" data-tr="' + i + '"' + (busy || it.present === false ? ' disabled' : '') + '>' + T('Restaurer') + '</button>'
+          + '<button class="web-mini fsx-del" data-tp="' + i + '"' + (busy ? ' disabled' : '') + ' title="' + webEsc(T('Supprimer définitivement')) + '" aria-label="' + webEsc(T('Supprimer définitivement')) + '">' + webIcon('trash') + '</button></span></div>');
     });
     h += '</div>';
   }
@@ -32908,14 +33186,28 @@ async function fsxTrashPurge(items) {
   if (!n) return;
   var msg = all ? T('Vider la corbeille ?') : Tf('Supprimer définitivement {0} ?', '<strong>' + webEsc(items[0].name) + '</strong>');
   if (!await showConfirm(msg + '<br><span style="font-size:12px;color:var(--danger);">' + (all ? webEsc(Tf('{0} seront libérés. Cette action est irréversible.', mntFmtSize(_fsx.total))) : T('Cette action est irréversible.')) + '</span>', { danger: true, ok: all ? T('Vider la corbeille') : T('Supprimer définitivement') })) return;
-  _fsx.busy = T('Suppression…'); fsxTrashRender();
-  try {
-    var r = await fileops('POST', 'trash/purge', all ? { all: true } : { items: items.map(function(i) { return { root: i.root, id: i.id }; }) });
-    var failed = ensureArray(r.failed);
-    if (failed.length) toast('❌ ' + String(failed[0].error || ''), 9000);
-    else toast('✅ ' + (all ? T('Corbeille vidée') : T('Supprimé définitivement')));
-  } catch (e) { wmToastErr(e); }
-  _fsx.busy = '';
+  // Un élément après l'autre : la liste montre celui qui est en cours, se vide au fur et à mesure, et l'en-tête
+  // compte l'avancement (un gros dossier peut demander plusieurs secondes).
+  var list = all ? (_fsx.items || []).slice() : items.slice(), failed = [];
+  _fsx.busy = T('Suppression…');
+  _fsx.purge = { total: list.length, done: 0, freed: 0, cur: '' };
+  for (var i = 0; i < list.length; i++) {
+    var it = list[i];
+    _fsx.purge.cur = it.id; fsxTrashRender();
+    try {
+      var r = await fileops('POST', 'trash/purge', { items: [{ root: it.root, id: it.id }] });
+      var f = ensureArray(r.failed);
+      if (f.length) failed.push(f[0]);
+      else {
+        _fsx.purge.done++; _fsx.purge.freed += Number(it.size) || 0;
+        _fsx.items = (_fsx.items || []).filter(function(x) { return !(x.id === it.id && x.root === it.root); });
+      }
+    } catch (e) { failed.push({ error: dkErrText(e) }); }
+  }
+  var freed = _fsx.purge.freed, done = _fsx.purge.done;
+  _fsx.purge = null; _fsx.busy = '';
+  if (failed.length) toast('❌ ' + String(failed[0].error || '') + (done ? ' · ' + Tf('{0} supprimés', done) : ''), 9000);
+  else toast('✅ ' + (all ? Tf('Corbeille vidée : {0} libérés', mntFmtSize(freed)) : T('Supprimé définitivement')), 7000);
   await fsxTrashLoad();
 }
 async function fsxTrashSet(patch) {

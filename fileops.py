@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.59.0'
+APP_VERSION = '2.60.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10119,8 +10119,8 @@ def store_catalog(force=False):
 
 
 # Bloc nginx des apps. Posé par fileops dans nginx.conf (toutes les méthodes d'installation), une seule fois.
-_STORE_NGINX_MARK = 'MDM-STORE-NGINX-V3'   # à changer à chaque évolution du bloc : fileops remplace l'ancien
-_STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V3 : apps du Magasin Desktroo, derrière la session du bureau (posé par fileops) ──
+_STORE_NGINX_MARK = 'MDM-STORE-NGINX-V4'   # à changer à chaque évolution du bloc : fileops remplace l'ancien
+_STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V4 : apps du Magasin Desktroo, derrière la session du bureau (posé par fileops) ──
     location = /_store_auth {
         internal;
         proxy_pass              http://fileops:8765/store/auth;
@@ -10149,6 +10149,30 @@ _STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V3 : apps du Mag
 
     location ~ "^/a/([a-z0-9][a-z0-9-]{0,40})$" {
         return 301 $uri/$is_args$args;
+    }
+
+    # Bureautique (OnlyOffice, Euro-Office) : le serveur écoute sur 80 et doit connaître son adresse publique
+    # (X-Forwarded-Host avec le chemin /a/<app>) pour les adresses qu'il donne au navigateur.
+    location ~ "^/a/(onlyoffice|eurooffice)/" {
+        set                   $dt_app $1;
+        set                   $dt_orig $uri;
+        auth_request          /_store_auth;
+        resolver              127.0.0.11 valid=10s ipv6=off;
+        rewrite               ^/a/[^/]+(/.*)$ $1 break;
+        proxy_pass            http://dt-$dt_app:80;
+        proxy_http_version    1.1;
+        proxy_set_header      Host               $http_host;
+        proxy_set_header      X-Forwarded-Host   $http_host/a/$dt_app;
+        proxy_set_header      X-Forwarded-Proto  $dt_fwd_proto;
+        proxy_set_header      X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_set_header      Upgrade            $http_upgrade;
+        proxy_set_header      Connection         $http_connection;
+        proxy_read_timeout    3600s;
+        proxy_send_timeout    3600s;
+        client_max_body_size  1g;
+        error_page 401 = @dks_401;
+        error_page 403 = @dks_403;
+        error_page 502 504 = @dks_502;
     }
 
     location ~ "^/a/([a-z0-9][a-z0-9-]{0,40})/" {
@@ -10185,6 +10209,17 @@ _STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V3 : apps du Mag
 '''
 
 
+# Protocole vu par le navigateur : celui annoncé par un proxy placé devant (NPMplus en https), sinon celui de la requête.
+_STORE_NGINX_MAP_MARK = 'MDM-STORE-MAP-V1'
+_STORE_NGINX_MAP = '''# ── MDM-STORE-MAP-V1 : protocole vu par le navigateur, pour les apps du Magasin (posé par fileops) ──
+map $http_x_forwarded_proto $dt_fwd_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+'''
+
+
 def store_nginx_ensure():
     """Ajoute le bloc /a/ à nginx.conf s'il manque, vérifie la config (nginx -t) et recharge ; en cas d'erreur,
     remet le fichier d'origine. Réécriture SUR PLACE : le fichier est monté seul dans le conteneur du bureau."""
@@ -10195,7 +10230,7 @@ def store_nginx_ensure():
         txt = open(conf, encoding='utf-8').read()
     except Exception:
         return False
-    if _STORE_NGINX_MARK in txt:
+    if _STORE_NGINX_MARK in txt and _STORE_NGINX_MAP_MARK in txt:
         return True
     anchor = '    location /fileops/ {'
     if anchor not in txt:
@@ -10205,7 +10240,14 @@ def store_nginx_ensure():
     old = base.find('    # ── MDM-STORE-V1')
     if old >= 0 and base.find(anchor, old) > old:      # bloc d'une version précédente : on le remplace
         base = base[:old] + base[base.find(anchor, old):]
-    new = base.replace(anchor, _STORE_NGINX + anchor, 1)
+    block = _STORE_NGINX
+    if _STORE_NGINX_MAP_MARK not in base:
+        m = re.search(r'^server\s*\{', base, re.M)
+        if m:
+            base = base[:m.start()] + _STORE_NGINX_MAP + base[m.start():]
+        else:   # pas de bloc server en tête de fichier : sans la table, le protocole de la requête suffit
+            block = block.replace('$dt_fwd_proto', '$scheme')
+    new = base.replace(anchor, block + anchor, 1)
 
     def _write(s):
         with open(conf, 'r+', encoding='utf-8') as fh:
@@ -10677,7 +10719,8 @@ def _store_timezone():
 
 
 STORE_CAP_ALLOWED = ('NET_BIND_SERVICE', 'NET_ADMIN', 'NET_RAW', 'SYS_MODULE',   # capacités qu'une app signée peut demander (ports < 1024 ; VPN ;
-                      'CHOWN', 'DAC_OVERRIDE', 'FOWNER', 'SETUID', 'SETGID')   # apps qui gèrent leurs propres fichiers et comptes : sauvegarde)
+                      'CHOWN', 'DAC_OVERRIDE', 'FOWNER', 'SETUID', 'SETGID',   # apps qui gèrent leurs propres fichiers et comptes : sauvegarde ;
+                      'KILL', 'FSETID', 'SETPCAP', 'SETFCAP', 'SYS_CHROOT', 'AUDIT_WRITE')   # serveurs à plusieurs services : jeu par défaut de Docker)
 STORE_SYSCTL_ALLOWED = ('net.ipv4.ip_forward', 'net.ipv4.conf.all.src_valid_mark', 'net.ipv6.conf.all.disable_ipv6',
                         'net.ipv6.conf.all.forwarding', 'net.ipv6.conf.default.forwarding')
 STORE_HOST_MOUNTS_ALLOWED = ('/lib/modules',)   # dossiers de l'hôte qu'une app peut voir, en lecture seule
@@ -10859,6 +10902,8 @@ def store_compose(app):
         'cap_drop': ['ALL'],
         'labels': {'fr.desktroo.store': app_id, 'fr.desktroo.version': str(app.get('version', ''))},
     }
+    if app.get('tmpfs', True) is False:   # /tmp dans le conteneur : gros fichiers temporaires (conversion de documents)
+        svc.pop('tmpfs', None)
     if res.get('memory_mb'):
         svc['mem_limit'] = '%dm' % int(res['memory_mb'])
     if res.get('cpus'):
@@ -10942,6 +10987,9 @@ def _store_prepare_data(app):
             p = base + '/' + name
             # Propriétaire changé (autre compte, ou passage en « tout le NAS ») : tout le contenu suit, sinon l'app
             # ne peut plus écrire dans ses propres fichiers.
+            if v.get('keep_owner'):   # l'app donne elle-même ce dossier à ses services (base de données…) : on n'y touche pas
+                cmds.append('mkdir -p {p}'.format(p=shq(p)))
+                continue
             cmds.append('mkdir -p {p} && {{ [ "$(stat -c %u:%g {p})" = {o} ] || chown -R {o} {p}; }}'.format(p=shq(p), o=owner))
     cmds += _store_seed_cmds(app, owner)
     if cmds:
@@ -10955,9 +11003,14 @@ def _store_health(app, tries=30):
     path = str(app.get('health') or '/')
     if not path.startswith('/'):
         path = '/' + path
+    port = STORE_APP_PORT
+    if app.get('id') in OFFICE_APP_IDS:   # seul port autre que 8080 permis : celui du serveur de documents
+        port = int(app.get('port') or OFFICE_PORT)
+    if tries > 1:   # premier démarrage long (base de données, polices) : « health_wait » secondes au plus
+        tries = max(tries, min(200, int(app.get('health_wait') or 0) // 6))
     for i in range(tries):
         _o, _e, code = _px_host('docker exec desktroo wget -q -T 4 -O /dev/null %s 2>/dev/null'
-                                % shq('http://dt-%s:%d%s' % (app['id'], STORE_APP_PORT, path)), timeout=20)
+                                % shq('http://dt-%s:%d%s' % (app['id'], port, path)), timeout=20)
         if code == 0:
             return True
         if i < tries - 1:
@@ -14632,6 +14685,512 @@ _STORE_SDK = {
 # ── MDM-STORE-V1 (fin) ──────────────────────────────────────────────────────────────────────────
 
 
+# ── MDM-OFFICE-V1 : bureautique du Magasin (OnlyOffice, ou Euro-Office plus tard) dans les fenêtres du bureau ──────
+# Le serveur de documents (dt-onlyoffice, réseau des apps) n'édite que ce que fileops lui confie : une adresse signée
+# pour lire le fichier (/office/file/<billet>) et une adresse de retour pour l'enregistrer (/office/save/<billet>),
+# toutes deux sur desktroo-fileops, jamais exposées au navigateur. Chaque échange est signé (JWT HS256) avec un secret
+# propre à l'installation (_store_derive(app, 'jwt')), posé aussi dans le conteneur (JWT_SECRET=@derive:jwt).
+import zipfile as _of_zip, io as _of_io, uuid as _of_uuid
+
+OFFICE_APP_IDS = ('onlyoffice', 'eurooffice')        # même API (DocsAPI) : l'une ou l'autre, installée par le Magasin
+OFFICE_PORT = 80                                       # port interne du serveur de documents
+OFFICE_SELF = 'http://desktroo-fileops:%d' % PORT      # fileops vu depuis le réseau des apps
+OFFICE_TTL = 7 * 86400                                 # validité des billets (une séance d'édition peut durer)
+OFFICE_MAX = 1024 * 1024 * 1024
+OFFICE_KINDS = {   # extension → (type de document, modifiable)
+    'docx': ('word', True), 'docm': ('word', True), 'dotx': ('word', True), 'odt': ('word', True), 'ott': ('word', True),
+    'doc': ('word', False), 'rtf': ('word', False),
+    'xlsx': ('cell', True), 'xlsm': ('cell', True), 'xltx': ('cell', True), 'ods': ('cell', True), 'ots': ('cell', True),
+    'xls': ('cell', False),
+    'pptx': ('slide', True), 'pptm': ('slide', True), 'potx': ('slide', True), 'odp': ('slide', True), 'otp': ('slide', True),
+    'ppt': ('slide', False),
+}
+_OFFICE_KEY = _st_hmac.new(_STORE_SECRET, b'desktroo-office-v1', _st_hashlib.sha256).digest()
+_OFFICE_LOCK = _threading.Lock()
+_OFFICE_SESS_FILE = os.path.join(STORE_DIR, 'office-sessions.json')
+_office_cache = {'t': 0.0, 'v': None}
+
+
+def _office_jwt(payload, secret):
+    head = _store_b64e(json.dumps({'alg': 'HS256', 'typ': 'JWT'}, separators=(',', ':')).encode('utf-8'))
+    body = _store_b64e(json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+    sig = _st_hmac.new(secret.encode('utf-8'), (head + '.' + body).encode('ascii'), _st_hashlib.sha256).digest()
+    return head + '.' + body + '.' + _store_b64e(sig)
+
+
+def _office_jwt_read(token, secret):
+    """Contenu d'un JWT HS256 signé avec « secret », sinon None (signature, algorithme ou échéance refusés)."""
+    try:
+        head, body, sig = str(token or '').strip().split('.')
+        if json.loads(_store_b64d(head).decode('utf-8')).get('alg') != 'HS256':
+            return None
+        want = _st_hmac.new(secret.encode('utf-8'), (head + '.' + body).encode('ascii'), _st_hashlib.sha256).digest()
+        if not _st_hmac.compare_digest(_store_b64d(sig), want):
+            return None
+        d = json.loads(_store_b64d(body).decode('utf-8'))
+        if not isinstance(d, dict) or (d.get('exp') and float(d['exp']) < _st_time.time()):
+            return None
+        return d
+    except Exception:
+        return None
+
+
+def _office_ticket(path, app, user):
+    raw = json.dumps([os.path.abspath(path), app, str(user or '')[:64], int(_st_time.time()) + OFFICE_TTL],
+                     ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    return _store_b64e(_st_hmac.new(_OFFICE_KEY, raw, _st_hashlib.sha256).digest()[:16] + raw)
+
+
+def _office_ticket_read(tok):
+    """(chemin, app, utilisateur) d'un billet valide, sinon None."""
+    try:
+        blob = _store_b64d(tok)
+        sig, raw = blob[:16], blob[16:]
+        if not _st_hmac.compare_digest(sig, _st_hmac.new(_OFFICE_KEY, raw, _st_hashlib.sha256).digest()[:16]):
+            return None
+        path, app, user, exp = json.loads(raw.decode('utf-8'))
+        if int(exp) < _st_time.time() or app not in OFFICE_APP_IDS:
+            return None
+        return str(path), str(app), str(user)
+    except Exception:
+        return None
+
+
+def _office_ext(path):
+    return os.path.basename(str(path)).rsplit('.', 1)[-1].lower() if '.' in os.path.basename(str(path)) else ''
+
+
+def _office_path_ok(path):
+    p = os.path.abspath(str(path or ''))
+    return p if (p.startswith('/mnt/') and '/../' not in p + '/') else None
+
+
+def office_status(force=False):
+    """Bureautique installée par le Magasin, et en marche ? (lu au plus toutes les 15 s)"""
+    now = _st_time.time()
+    if not force and _office_cache['v'] is not None and now - _office_cache['t'] < 15:
+        return _office_cache['v']
+    reg = store_installed_get()
+    app = next((a for a in OFFICE_APP_IDS if a in reg), '')
+    out = {'ok': True, 'app': app, 'installed': bool(app), 'running': False, 'busy': False,
+           'kinds': {k: v[0] for k, v in OFFICE_KINDS.items()}, 'edit': sorted(k for k, v in OFFICE_KINDS.items() if v[1])}
+    if app:
+        rec = reg.get(app) or {}
+        out.update(name=rec.get('name') or {}, version=rec.get('version') or '', busy=_store_running(app))
+        try:
+            out['running'] = bool(_store_container_info('dt-' + app)[1])
+        except Exception:
+            out['running'] = False
+    _office_cache.update(t=now, v=out)
+    return out
+
+
+def _office_sessions():
+    d = _lic_read_json(_OFFICE_SESS_FILE)
+    return d if isinstance(d, dict) else {}
+
+
+def _office_sessions_set(d):
+    os.makedirs(STORE_DIR, exist_ok=True)
+    _lic_write_json(_OFFICE_SESS_FILE, d)
+
+
+def _office_doc_key(path, app):
+    """Clé du document pour le serveur. Tant qu'une séance est ouverte sur ce fichier, la même clé est rendue : un second
+    utilisateur rejoint la séance (coédition) au lieu d'en ouvrir une autre qui écraserait la première à l'enregistrement."""
+    st = os.stat(path)
+    now = _st_time.time()
+    with _OFFICE_LOCK:
+        s = _office_sessions()
+        for k in [k for k, v in s.items() if now - float((v or {}).get('at', 0)) > 2 * 86400]:
+            s.pop(k, None)
+        rec = s.get(path)
+        if rec and rec.get('app') == app and rec.get('key'):
+            rec['at'] = now
+        else:
+            seed = '%s|%d|%d|%s' % (path, st.st_mtime_ns, st.st_size, app)
+            rec = {'key': _st_hashlib.sha1(seed.encode('utf-8')).hexdigest()[:20] + _of_uuid.uuid4().hex[:8], 'app': app, 'at': now}
+            s[path] = rec
+        _office_sessions_set(s)
+        return rec['key']
+
+
+def _office_session_end(path, key):
+    with _OFFICE_LOCK:
+        s = _office_sessions()
+        if (s.get(path) or {}).get('key') == key:
+            s.pop(path, None)
+            _office_sessions_set(s)
+
+
+def _office_session_touch(path, key):
+    with _OFFICE_LOCK:
+        s = _office_sessions()
+        if (s.get(path) or {}).get('key') == key:
+            s[path]['at'] = _st_time.time()
+            _office_sessions_set(s)
+
+
+_OFFICE_REGION = {'fr': 'fr-FR', 'en': 'en-GB', 'es': 'es-ES', 'de': 'de-DE', 'it': 'it-IT', 'pt': 'pt-PT', 'nl': 'nl-NL'}
+
+
+def office_open(handler, body):
+    """Configuration signée de l'éditeur pour un fichier du NAS : la page la donne telle quelle à DocsAPI.DocEditor."""
+    st = office_status()
+    app = st.get('app')
+    if not app:
+        return 409, {'ok': False, 'error': "Aucune suite bureautique n'est installée : ajoutez OnlyOffice depuis Desktroo Apps."}
+    if not st.get('running'):
+        return 409, {'ok': False, 'error': "OnlyOffice est arrêté : démarrez-le dans Desktroo Apps."}
+    path = _office_path_ok((body or {}).get('path'))
+    if not path or not os.path.isfile(path):
+        return 404, {'ok': False, 'error': 'Fichier introuvable.'}
+    ext = _office_ext(path)
+    if ext not in OFFICE_KINDS:
+        return 400, {'ok': False, 'error': 'Ce type de fichier ne s’ouvre pas dans OnlyOffice.'}
+    dtype, editable = OFFICE_KINDS[ext]
+    if editable and not os.access(path, os.W_OK):
+        editable = False
+    user = _px_by(handler) or 'admin'
+    lang = re.sub(r'[^a-zA-Z-]', '', str((body or {}).get('lang') or 'fr'))[:10] or 'fr'
+    tok = _office_ticket(path, app, user)
+    key = _office_doc_key(path, app)
+    name = os.path.basename(path)
+    cfg = {
+        'documentType': dtype,
+        'document': {
+            'fileType': ext, 'key': key, 'title': name, 'url': OFFICE_SELF + '/office/file/' + tok,
+            'info': {'folder': os.path.dirname(path)},
+            'permissions': {'edit': editable, 'download': True, 'print': True, 'comment': editable, 'review': editable,
+                            'fillForms': editable, 'modifyFilter': True, 'modifyContentControl': True, 'copy': True},
+        },
+        'editorConfig': {
+            'mode': 'edit' if editable else 'view',
+            'lang': lang, 'region': _OFFICE_REGION.get(lang.split('-')[0], 'en-GB'),
+            'callbackUrl': OFFICE_SELF + '/office/save/' + tok,
+            'user': {'id': re.sub(r'[^A-Za-z0-9._@-]', '_', user)[:64], 'name': user},
+            'customization': {
+                'autosave': True, 'forcesave': True, 'compactHeader': False, 'feedback': False, 'help': True,
+                'integrationMode': 'embed', 'uiTheme': 'theme-light' if (body or {}).get('theme') == 'light' else 'theme-dark',
+                'close': {'visible': True, 'text': str((body or {}).get('close_text') or 'Fermer')[:40]},
+                'mobile': {'forceView': False}, 'mobileForceView': False,
+            },
+        },
+    }
+    secret = _store_derive(app, 'jwt')
+    cfg['token'] = _office_jwt(cfg, secret)
+    return 200, {'ok': True, 'app': app, 'config': cfg, 'editable': editable,
+                 'api': '/a/%s/web-apps/apps/api/documents/api.js' % app}
+
+
+def office_file_serve(handler, tok):
+    t = _office_ticket_read(tok)
+    path = t and _office_path_ok(t[0])
+    if not path or not os.path.isfile(path):
+        handler.send_response(404)
+        handler.send_header('Content-Length', '0')
+        handler.end_headers()
+        return
+    size = os.path.getsize(path)
+    handler.send_response(200)
+    handler.send_header('Content-Type', 'application/octet-stream')
+    handler.send_header('Content-Length', str(size))
+    handler.send_header('Cache-Control', 'no-store')
+    handler.end_headers()
+    try:
+        with open(path, 'rb') as f:
+            while True:
+                chunk = f.read(1024 * 1024)
+                if not chunk:
+                    break
+                handler.wfile.write(chunk)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+
+
+def _office_fetch(app, url, dest):
+    """Télécharge le document enregistré par le serveur. L'adresse qu'il donne est celle vue par le navigateur
+    (https://<domaine>/a/<app>/cache/…) : on n'en garde que le chemin, demandé directement à dt-<app>."""
+    import urllib.request
+    from urllib.parse import urlsplit
+    u = urlsplit(str(url or ''))
+    path = u.path or '/'
+    pre = '/a/%s/' % app
+    if path.startswith(pre):
+        path = path[len(pre) - 1:]
+    if not path.startswith('/') or '..' in path:
+        raise ValueError('adresse refusée')
+    src = 'http://dt-%s:%d%s%s' % (app, OFFICE_PORT, path, ('?' + u.query) if u.query else '')
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    n = 0
+    with opener.open(urllib.request.Request(src, headers={'User-Agent': 'Desktroo'}), timeout=120) as r, open(dest, 'wb') as f:
+        while True:
+            chunk = r.read(1024 * 1024)
+            if not chunk:
+                break
+            n += len(chunk)
+            if n > OFFICE_MAX:
+                raise ValueError('document trop volumineux')
+            f.write(chunk)
+    if n == 0:
+        raise ValueError('document vide')
+    return n
+
+
+def _office_free_name(path):
+    if not os.path.exists(path):
+        return path
+    base, ext = os.path.splitext(path)
+    for i in range(2, 1000):
+        cand = '%s (%d)%s' % (base, i, ext)
+        if not os.path.exists(cand):
+            return cand
+    return base + '-' + _of_uuid.uuid4().hex[:6] + ext
+
+
+def _office_write(app, url, target, by=''):
+    """Remplace le fichier par la version enregistrée, de façon atomique, en gardant propriétaire et droits."""
+    parent = os.path.dirname(target)
+    if not os.path.isdir(parent):   # dossier disparu pendant l'édition : rien n'est perdu
+        parent = os.path.join(STORE_DIR, 'office-rescue')
+        os.makedirs(parent, exist_ok=True)
+        target = os.path.join(parent, os.path.basename(target))
+    tmp = os.path.join(parent, '.%s.desktroo-%s' % (os.path.basename(target)[:80], _of_uuid.uuid4().hex[:8]))
+    try:
+        size = _office_fetch(app, url, tmp)
+        try:
+            st = os.stat(target)
+            os.chown(tmp, st.st_uid, st.st_gid)
+            os.chmod(tmp, st.st_mode & 0o7777)
+        except FileNotFoundError:
+            try:
+                pst = os.stat(parent)
+                os.chown(tmp, pst.st_uid, pst.st_gid)
+                os.chmod(tmp, 0o664)
+            except OSError:
+                pass
+        except OSError:
+            pass
+        os.replace(tmp, target)
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    _px_log('office.save', by, path=target, size=size)
+    return target
+
+
+def office_save(handler, tok):
+    """Adresse de retour du serveur de documents. Répond toujours {"error": 0} une fois la demande vérifiée et traitée,
+    {"error": 1} si elle est refusée ou si l'enregistrement échoue (le serveur garde alors le document et réessaie)."""
+    def reply(err):
+        b = json.dumps({'error': err}).encode('utf-8')
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'application/json')
+        handler.send_header('Content-Length', str(len(b)))
+        handler.end_headers()
+        handler.wfile.write(b)
+    t = _office_ticket_read(tok)
+    if not t:
+        return reply(1)
+    path, app, user = t
+    try:
+        n = int(handler.headers.get('Content-Length', 0) or 0)
+        raw = json.loads(handler.rfile.read(min(n, 2 * 1024 * 1024)).decode('utf-8')) if n > 0 else {}
+    except Exception:
+        return reply(1)
+    secret = _store_derive(app, 'jwt')
+    data = None
+    if isinstance(raw, dict) and raw.get('token'):
+        data = _office_jwt_read(raw['token'], secret)
+    if data is None:
+        auth = str(handler.headers.get('Authorization', '') or '')
+        if auth.lower().startswith('bearer '):
+            d = _office_jwt_read(auth[7:], secret)
+            if isinstance(d, dict):
+                data = d.get('payload') if isinstance(d.get('payload'), dict) else d
+    if not isinstance(data, dict):
+        log.warning('Bureautique : retour non signé refusé pour %s', path)
+        return reply(1)
+    status, key = int(data.get('status') or 0), str(data.get('key') or '')
+    try:
+        if status == 1:
+            _office_session_touch(path, key)
+        elif status in (2, 6):
+            target = path
+            ft = str(data.get('filetype') or '').lower()
+            if ft and ft != _office_ext(path):   # format changé par le serveur : enregistré à côté, l'original reste
+                target = _office_free_name(os.path.splitext(path)[0] + '.' + re.sub(r'[^a-z0-9]', '', ft)[:6])
+            who = ','.join(str(x) for x in (data.get('users') or [])[:5]) or user
+            _office_write(app, data.get('url'), target, by=who)
+            if status == 2:
+                _office_session_end(path, key)
+        elif status in (3, 7):
+            log.warning('Bureautique : le serveur signale un échec d’enregistrement (%d) pour %s', status, path)
+            if status == 3:
+                _office_session_end(path, key)
+        elif status == 4:
+            _office_session_end(path, key)
+    except Exception as e:
+        log.warning('Bureautique : enregistrement de %s en échec : %s', path, e)
+        return reply(1)
+    return reply(0)
+
+
+# Modèles vides (Office Open XML minimal, A4) : un nouveau document s'ouvre dans OnlyOffice comme dans Word, Excel ou PowerPoint.
+_OX_CT = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>%s</Types>'
+_OX_OV = '<Override PartName="%s" ContentType="application/vnd.openxmlformats-officedocument.%s+xml"/>'
+_OX_RELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">%s</Relationships>'
+_OX_REL = '<Relationship Id="%s" Type="http://schemas.openxmlformats.org/%s" Target="%s"/>'
+_OX_R = 'officeDocument/2006/relationships/'
+_OX_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+_OX_A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+_OX_P = 'http://schemas.openxmlformats.org/presentationml/2006/main'
+_OX_RN = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+
+
+def _ox_zip(parts):
+    buf = _of_io.BytesIO()
+    with _of_zip.ZipFile(buf, 'w', _of_zip.ZIP_DEFLATED) as z:
+        for name, text in parts:
+            z.writestr(name, text.encode('utf-8'))
+    return buf.getvalue()
+
+
+def _ox_docx(lang):
+    W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+    styles = (_OX_HEAD + '<w:styles xmlns:w="%s"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/>'
+              '<w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="%s"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="259" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
+              '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style></w:styles>') % (W, lang)
+    doc = (_OX_HEAD + '<w:document xmlns:w="%s"><w:body><w:p/><w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'
+           '<w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>') % W
+    return _ox_zip([
+        ('[Content_Types].xml', _OX_CT % (_OX_OV % ('/word/document.xml', 'wordprocessingml.document.main') + _OX_OV % ('/word/styles.xml', 'wordprocessingml.styles'))),
+        ('_rels/.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'officeDocument', 'word/document.xml'))),
+        ('word/_rels/document.xml.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'styles', 'styles.xml'))),
+        ('word/document.xml', doc), ('word/styles.xml', styles)])
+
+
+def _ox_xlsx(lang):
+    S = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+    sheet = {'fr': 'Feuille1', 'es': 'Hoja1', 'de': 'Tabelle1', 'it': 'Foglio1'}.get(lang.split('-')[0], 'Sheet1')
+    styles = (_OX_HEAD + '<styleSheet xmlns="%s"><fonts count="1"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts>'
+              '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+              '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+              '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+              '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+              '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>') % S
+    return _ox_zip([
+        ('[Content_Types].xml', _OX_CT % (_OX_OV % ('/xl/workbook.xml', 'spreadsheetml.sheet.main') + _OX_OV % ('/xl/worksheets/sheet1.xml', 'spreadsheetml.worksheet')
+                                          + _OX_OV % ('/xl/styles.xml', 'spreadsheetml.styles'))),
+        ('_rels/.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'officeDocument', 'xl/workbook.xml'))),
+        ('xl/_rels/workbook.xml.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'worksheet', 'worksheets/sheet1.xml') + _OX_REL % ('rId2', _OX_R + 'styles', 'styles.xml'))),
+        ('xl/workbook.xml', _OX_HEAD + '<workbook xmlns="%s" xmlns:r="%s"><sheets><sheet name="%s" sheetId="1" r:id="rId1"/></sheets></workbook>' % (S, _OX_RN, sheet)),
+        ('xl/worksheets/sheet1.xml', _OX_HEAD + '<worksheet xmlns="%s"><sheetData/></worksheet>' % S),
+        ('xl/styles.xml', styles)])
+
+
+def _ox_sp(pid, name, ph, x, y, cx, cy, txt=''):
+    return ('<p:sp><p:nvSpPr><p:cNvPr id="%d" name="%s"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr>%s</p:nvPr></p:nvSpPr>'
+            '<p:spPr>%s</p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p>%s<a:endParaRPr lang="fr-FR"/></a:p></p:txBody></p:sp>') % (
+        pid, name, ph, ('<a:xfrm><a:off x="%d" y="%d"/><a:ext cx="%d" cy="%d"/></a:xfrm>' % (x, y, cx, cy)) if cx else '', txt)
+
+
+def _ox_pptx(lang):
+    ns = 'xmlns:a="%s" xmlns:r="%s" xmlns:p="%s"' % (_OX_A, _OX_RN, _OX_P)
+    tree = '<p:cSld%s><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>%s</p:spTree></p:cSld>'
+    grp = '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>'
+    lvl = lambda sz, f: '<a:lvl1pPr><a:defRPr sz="%d"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill><a:latin typeface="+%s-lt"/></a:defRPr></a:lvl1pPr>' % (sz, f)
+    master = (_OX_HEAD + '<p:sldMaster %s><p:cSld><p:bg><p:bgRef idx="1001"><a:schemeClr val="bg1"/></p:bgRef></p:bg><p:spTree>' % ns + grp
+              + _ox_sp(2, 'Title Placeholder 1', '<p:ph type="title"/>', 838200, 365125, 10515600, 1325563)
+              + _ox_sp(3, 'Text Placeholder 2', '<p:ph type="body" idx="1"/>', 838200, 1825625, 10515600, 4351338)
+              + '</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" '
+              'accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>'
+              '<p:txStyles><p:titleStyle>%s</p:titleStyle><p:bodyStyle>%s</p:bodyStyle><p:otherStyle>%s</p:otherStyle></p:txStyles></p:sldMaster>' % (
+                  lvl(4400, 'mj'), lvl(2800, 'mn'), lvl(1800, 'mn')))
+    layout = (_OX_HEAD + '<p:sldLayout %s type="title" preserve="1">' % ns + tree % (' name="Title Slide"',
+              _ox_sp(2, 'Title 1', '<p:ph type="ctrTitle"/>', 1524000, 1122363, 9144000, 2387600)
+              + _ox_sp(3, 'Subtitle 2', '<p:ph type="subTitle" idx="1"/>', 1524000, 3602038, 9144000, 1655762))
+              + '<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>')
+    slide = (_OX_HEAD + '<p:sld %s>' % ns + tree % ('', _ox_sp(2, 'Title 1', '<p:ph type="ctrTitle"/>', 0, 0, 0, 0)
+             + _ox_sp(3, 'Subtitle 2', '<p:ph type="subTitle" idx="1"/>', 0, 0, 0, 0)) + '<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>')
+    sys_ = lambda n, c: '<a:%s><a:srgbClr val="%s"/></a:%s>' % (n, c, n)
+    clr = ''.join(sys_(n, c) for n, c in (('dk1', '000000'), ('lt1', 'FFFFFF'), ('dk2', '1F2A44'), ('lt2', 'E7E9EE'), ('accent1', '1D7A55'),
+                                          ('accent2', '2B6CB0'), ('accent3', 'D97706'), ('accent4', '7C3AED'), ('accent5', 'DB2777'), ('accent6', '0891B2'),
+                                          ('hlink', '2B6CB0'), ('folHlink', '7C3AED')))
+    font = lambda f: '<a:latin typeface="%s"/><a:ea typeface=""/><a:cs typeface=""/>' % f
+    fill = '<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>'
+    ln = '<a:ln w="%d"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln>'
+    theme = (_OX_HEAD + '<a:theme xmlns:a="%s" name="Desktroo"><a:themeElements><a:clrScheme name="Desktroo">%s</a:clrScheme>'
+             '<a:fontScheme name="Desktroo"><a:majorFont>%s</a:majorFont><a:minorFont>%s</a:minorFont></a:fontScheme>'
+             '<a:fmtScheme name="Desktroo"><a:fillStyleLst>%s</a:fillStyleLst><a:lnStyleLst>%s</a:lnStyleLst>'
+             '<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst>'
+             '<a:bgFillStyleLst>%s</a:bgFillStyleLst></a:fmtScheme></a:themeElements><a:objectDefaults/><a:extraClrSchemeLst/></a:theme>') % (
+        _OX_A, clr, font('Calibri Light'), font('Calibri'), fill * 3, ''.join(ln % w for w in (6350, 12700, 19050)), fill * 3)
+    pres = (_OX_HEAD + '<p:presentation %s saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst>'
+            '<p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst><p:sldSz cx="12192000" cy="6858000"/><p:notesSz cx="6858000" cy="9144000"/>'
+            '<p:defaultTextStyle><a:lvl1pPr><a:defRPr lang="%s"/></a:lvl1pPr></p:defaultTextStyle></p:presentation>') % (ns, lang)
+    return _ox_zip([
+        ('[Content_Types].xml', _OX_CT % (_OX_OV % ('/ppt/presentation.xml', 'presentationml.presentation.main')
+                                          + _OX_OV % ('/ppt/slideMasters/slideMaster1.xml', 'presentationml.slideMaster')
+                                          + _OX_OV % ('/ppt/slideLayouts/slideLayout1.xml', 'presentationml.slideLayout')
+                                          + _OX_OV % ('/ppt/slides/slide1.xml', 'presentationml.slide') + _OX_OV % ('/ppt/theme/theme1.xml', 'theme'))),
+        ('_rels/.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'officeDocument', 'ppt/presentation.xml'))),
+        ('ppt/_rels/presentation.xml.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'slideMaster', 'slideMasters/slideMaster1.xml')
+                                                        + _OX_REL % ('rId2', _OX_R + 'slide', 'slides/slide1.xml') + _OX_REL % ('rId3', _OX_R + 'theme', 'theme/theme1.xml'))),
+        ('ppt/presentation.xml', pres),
+        ('ppt/slideMasters/slideMaster1.xml', master),
+        ('ppt/slideMasters/_rels/slideMaster1.xml.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'slideLayout', '../slideLayouts/slideLayout1.xml')
+                                                                     + _OX_REL % ('rId2', _OX_R + 'theme', '../theme/theme1.xml'))),
+        ('ppt/slideLayouts/slideLayout1.xml', layout),
+        ('ppt/slideLayouts/_rels/slideLayout1.xml.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'slideMaster', '../slideMasters/slideMaster1.xml'))),
+        ('ppt/slides/slide1.xml', slide),
+        ('ppt/slides/_rels/slide1.xml.rels', _OX_RELS % (_OX_REL % ('rId1', _OX_R + 'slideLayout', '../slideLayouts/slideLayout1.xml'))),
+        ('ppt/theme/theme1.xml', theme)])
+
+
+_OFFICE_TEMPLATES = {'docx': _ox_docx, 'xlsx': _ox_xlsx, 'pptx': _ox_pptx}
+
+
+def office_new(handler, body):
+    """Nouveau document vide dans un dossier du NAS ; rend son chemin (la page l'ouvre aussitôt)."""
+    body = body or {}
+    kind = str(body.get('kind') or '')
+    if kind not in _OFFICE_TEMPLATES:
+        return 400, {'ok': False, 'error': 'Type de document inconnu.'}
+    d = _office_path_ok(body.get('dir'))
+    if not d or not os.path.isdir(d):
+        return 404, {'ok': False, 'error': 'Dossier introuvable.'}
+    name = str(body.get('name') or '').strip()
+    if not name or name in ('.', '..') or re.search(r'[/\\\x00-\x1f]', name) or len(name) > 200:
+        return 400, {'ok': False, 'error': 'Nom invalide.'}
+    if _office_ext(name) != kind:
+        name += '.' + kind
+    path = os.path.join(d, name)
+    if os.path.exists(path):
+        return 409, {'ok': False, 'error': 'Un fichier porte déjà ce nom dans ce dossier.'}
+    lang = {'fr': 'fr-FR', 'en': 'en-GB', 'es': 'es-ES'}.get(str(body.get('lang') or 'fr')[:2], 'fr-FR')
+    data = _OFFICE_TEMPLATES[kind](lang)
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o664)
+        with os.fdopen(fd, 'wb') as f:
+            f.write(data)
+        try:
+            pst = os.stat(d)
+            os.chown(path, pst.st_uid, pst.st_gid)
+        except OSError:
+            pass
+    except FileExistsError:
+        return 409, {'ok': False, 'error': 'Un fichier porte déjà ce nom dans ce dossier.'}
+    except OSError as e:
+        return 400, {'ok': False, 'error': 'Création impossible : %s' % (e.strerror or e)}
+    _px_log('office.new', _px_by(handler), path=path)
+    return 200, {'ok': True, 'path': path, 'name': name}
+# ── MDM-OFFICE-V1 (fin) ──────────────────────────────────────────────────────────────────────────
+
+
 class FileOpsHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -14820,11 +15379,21 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(200, {'accent': 'green'})
             return
 
+        # MDM-OFFICE-V1 : le serveur de documents lit le fichier sur une adresse signée (réseau des apps), sans jeton
+        if _pp.path.startswith('/office/file/'):
+            return office_file_serve(self, _pp.path[len('/office/file/'):].split('/')[0])
+
         if not self._auth():
             return
         p    = urlparse(self.path)
         path = p.path.rstrip('/')
         qs   = dict(parse_qsl(p.query))
+
+        if path == '/office/status':   # MDM-OFFICE-V1
+            try:
+                return self._json(200, office_status(qs.get('force') == '1'))
+            except Exception as e:
+                return self._json(200, {'ok': False, 'app': '', 'installed': False, 'running': False, 'error': str(e)})
 
         # MDM-FILES-PLUS-V1
         if _px_get(self, path, qs):
@@ -15523,6 +16092,8 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return self._auth_login()
         if urlparse(self.path).path.rstrip('/') == '/store/login':   # MDM-STORE-V1 : connexion directe aux apps
             return store_login(self)
+        if urlparse(self.path).path.startswith('/office/save/'):   # MDM-OFFICE-V1 : retour du serveur de documents, signé
+            return office_save(self, urlparse(self.path).path[len('/office/save/'):].split('/')[0])
         if urlparse(self.path).path.rstrip('/') == '/store/app/quarantine':   # appel d'une app, authentifiée par son secret
             code, resp = store_app_quarantine(self)
             return self._json(code, resp)
@@ -15530,6 +16101,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return
         p    = urlparse(self.path)
         path = p.path.rstrip('/')
+
+        # MDM-OFFICE-V1 : ouvrir un fichier dans l'éditeur, créer un document vide
+        if path in ('/office/open', '/office/new'):
+            try:
+                code, resp = (office_open if path == '/office/open' else office_new)(self, self._body())
+            except Exception as e:
+                code, resp = 500, {'ok': False, 'error': str(e)}
+            return self._json(code, resp)
 
         # MDM-DKBACKUP-V1 : sauvegarde / restauration de Desktroo
         if path.startswith('/dkbackup/'):

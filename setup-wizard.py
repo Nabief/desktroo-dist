@@ -2316,10 +2316,12 @@ var DK_LANG = dkDetectLang();
 if (DK_PACKS[DK_LANG]) { DK_PACK = dkLoadPack(DK_LANG); if (!DK_PACK && !DK_BUILTIN[DK_LANG]) DK_LANG = 'en'; }
 /* Locale des dates et des nombres : celle du navigateur s'il parle la langue affichée (pour
    l'anglais, en-GB sinon : jour avant le mois, 24 h), sinon celle que donne le fichier. */
+// Locale reconnue par le navigateur (« en-US@posix » et autres formes exotiques sont refusées par Intl)
+function dkLocaleOk(loc) { try { return Intl.DateTimeFormat.supportedLocalesOf([loc]).length > 0; } catch (_) { return false; } }
 function dkLocaleFor(lang) {
   var nav = navigator.language || '', loc;
   if (lang === 'fr') return 'fr-FR';
-  if (lang === 'en') return /^en\b/i.test(nav) ? nav : 'en-GB';
+  if (lang === 'en') return /^en\b/i.test(nav) && dkLocaleOk(nav) ? nav : 'en-GB';
   loc = nav.toLowerCase().split('-')[0] === lang.split('-')[0] ? nav
       : ((DK_PACK && DK_PACK._desktroo && DK_PACK._desktroo.locale) || (DK_PACKS[lang] && DK_PACKS[lang].locale) || DK_BUILTIN_LOCALE[lang] || lang);
   try { return Intl.DateTimeFormat.supportedLocalesOf([loc]).length ? loc : 'en-GB'; } catch (_) { return 'en-GB'; }
