@@ -3,7 +3,13 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.56.0 — unreleased
+## 2.56.1 — unreleased
+
+### Fixed
+- **Desktroo Pass: “Resend the invitation”, “Disable”, “Re-enable”, “Remove 2FA” and “Delete” work.** The vault answered “404” with an HTML page.
+  > Vaultwarden only accepts these actions with a JSON body (Content-Type: application/json); Desktroo sent none. An HTML error page is no longer shown as is in the message.
+
+## 2.56.0 — 18 October 2026
 
 ### New
 - **Add your language to Desktroo.** Desktroo comes in French and English; anyone can now translate it into their own language, without waiting for an update. System configuration → Language and time zone → “Download the template to translate”, translate the file, then “Import a language file…”. The language is offered on the login screen and in the settings, to everyone who opens this desktop; a browser set to that language shows it on its own.
@@ -12,8 +18,6 @@ the grey line underneath gives the technical detail, when there is one.
 - **A link to Desktroo Apps** under “See also” in the App catalog and in the Applications manager.
 
 ### Fixed
-- **Desktroo Pass: “Resend the invitation”, “Disable”, “Re-enable”, “Remove 2FA” and “Delete” work.** The vault answered “404” with an HTML page.
-  > Vaultwarden only accepts these actions with a JSON body (Content-Type: application/json); Desktroo sent none. An HTML error page is no longer shown as is in the message.
 - **A window can no longer be shrunk until its content is cut off.** Two-pane managers that had no minimum size (Desktroo Apps and its app windows such as Desktroo Pass, TrueNAS updates, Activity log, Health check, Websites, Downloads) stop at 640 × 420, never larger than the screen.
   > The bottom-right corner handle now respects each window’s minimum size, like the edges do.
 - **Desktroo Pass says clearly when invitations are not sent by email.** The banner explains that the invited person receives nothing until sending is turned on, and the button is now called “Turn on sending emails”. The vault also tells you when the NAS mail settings changed since it took them over, and a “Send a test email” button checks sending through the same path as invitations.
