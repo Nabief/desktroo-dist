@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.49'
+APP_VERSION = '2.54.50'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -17339,7 +17339,10 @@ def dkbackup_build(dest_path, kind='backup'):
                         n += 1
                     except OSError:
                         pass
-    os.chmod(tmp, 0o600)
+    try:
+        os.chmod(tmp, 0o600)
+    except OSError:
+        pass   # dataset à ACL (SMB/NFSv4) : le compte n'a pas le droit de changer le mode, le fichier reste utilisable
     os.replace(tmp, dest_path)
     return n
 

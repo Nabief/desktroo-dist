@@ -3,6 +3,14 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.50 — 18 October 2026
+
+### Improved
+- **The file picker now uses the desktop's colors.** The browser's grey default button, on the Restore and Update pages, becomes a rounded button like the others.
+
+### Fixed
+- **The Desktroo backup failed on an ACL-based NAS folder** (“Operation not permitted” on the file being written). Desktroo no longer forces the file's permissions when the folder does not allow it: the backup goes through.
+
 ## 2.54.49 — 18 October 2026
 
 ### New

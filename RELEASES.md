@@ -3,6 +3,14 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.50 — 18 octobre 2026
+
+### Amélioré
+- **Le choix d'un fichier prend les couleurs du bureau.** Le bouton gris d'origine du navigateur, sur les pages Restauration et Mise à jour, devient un bouton arrondi comme les autres.
+
+### Corrigé
+- **La sauvegarde de Desktroo échouait sur un dossier de NAS à ACL** (« Operation not permitted » sur le fichier en cours d'écriture). Desktroo n'impose plus les droits du fichier quand le dossier ne l'autorise pas : la sauvegarde se fait.
+
 ## 2.54.49 — 18 octobre 2026
 
 ### Nouveau
