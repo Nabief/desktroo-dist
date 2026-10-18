@@ -33,7 +33,7 @@ INSTALL_RUNNING = False
 INSTALL_DONE = False
 # Accord à la licence d'utilisation (LICENSE.md). TERMS_VERSION suit le numéro écrit en tête de LICENSE.md,
 # comme dans fileops.py. Tant que l'accord n'a pas été donné sur le premier écran, /install refuse de partir.
-TERMS_VERSION = '1.0'
+TERMS_VERSION = '1.1'
 LICENCE_ACCEPTED = None
 
 # ── Auto-détection IP ─────────────────────────────────────────
@@ -1969,7 +1969,7 @@ I18N_EN = r"""{
 }"""
 
 I18N_JS = r"""
-/* ===== Langues : français (langue du code) et anglais =====
+/* ===== Langues : français (langue du code), anglais, et langues ajoutées =====
    Le code reste écrit en français. Chaque texte affiché passe par T('…'), qui le rend
    tel quel en français et le traduit sinon à l'aide du dictionnaire embarqué
    (<script id="dk-i18n-en">, clé = segment français, valeur = traduction).
@@ -1979,7 +1979,9 @@ I18N_JS = r"""
    - Tdyn(s)  : message composé à l'exécution (toasts, erreurs du serveur) ;
    - le HTML statique est traduit une fois, au chargement, par dkTranslateDom().
    Ajouter un texte : l'écrire en français, l'entourer de T(), puis lancer
-   « node tools/i18n/i18n.js check desktroo.html » pour lister ce qui reste à traduire. */
+   « node tools/i18n/i18n.js check desktroo.html » pour lister ce qui reste à traduire.
+   Langue ajoutée : fichier <install>/lang/<code>.json (mêmes clés, voir tools/i18n/README.md),
+   servi par fileops ; ses textes remplacent l'anglais, ceux qui manquent restent en anglais. */
 
 /* Découpage d'un fragment (HTML ou texte brut) en segments traduisibles.
    Ce fichier est partagé : l'outil tools/i18n l'utilise tel quel, et le même code est
@@ -2096,25 +2098,85 @@ function dkMapSegments(lit, fn) {
 }
 
 var DK_LANGS = { fr: 'Français', en: 'English' };
+/* Langues ajoutées : leur liste est gardée dans le navigateur (« dk-lang-list ») pour que la
+   langue choisie soit connue dès le chargement, puis relue en arrière-plan (dkLangRefresh). */
+var DK_PACK_URL = '/fileops/lang', DK_PACK_CODE_RE = /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/, DK_PACKS = {}, DK_PACK = null;
+function dkPacksSet(list) {
+  var l, i;
+  for (l in DK_PACKS) delete DK_LANGS[l];
+  DK_PACKS = {};
+  for (i = 0; list && i < list.length; i++) {
+    l = list[i];
+    if (!l || !DK_PACK_CODE_RE.test(l.code) || l.code === 'fr' || l.code === 'en' || typeof l.name !== 'string' || !l.name) continue;
+    DK_PACKS[l.code] = { name: l.name, locale: typeof l.locale === 'string' ? l.locale : '' };
+    DK_LANGS[l.code] = l.name;
+  }
+}
+if (typeof DK_NO_PACKS === 'undefined') {
+  try { dkPacksSet(JSON.parse(localStorage.getItem('dk-lang-list') || '[]')); } catch (_) {}
+}
+// « de-AT » : la langue exacte si elle existe, sinon sa langue de base (« de »)
+function dkLangMatch(tag) {
+  tag = String(tag || '').toLowerCase().replace(/_/g, '-');
+  if (Object.prototype.hasOwnProperty.call(DK_LANGS, tag)) return tag;
+  tag = tag.split('-')[0];
+  return Object.prototype.hasOwnProperty.call(DK_LANGS, tag) ? tag : null;
+}
 function dkDetectLang() {
-  try { var v = localStorage.getItem('dk-lang'); if (DK_LANGS[v]) return v; } catch (_) {}
-  var n = (navigator.languages && navigator.languages[0]) || navigator.language || 'fr';
-  return /^fr\b/i.test(n) ? 'fr' : 'en';
+  try { var v = localStorage.getItem('dk-lang'); if (v && Object.prototype.hasOwnProperty.call(DK_LANGS, v)) return v; } catch (_) {}
+  var list = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'fr'], i, m;
+  for (i = 0; i < list.length; i++) { m = dkLangMatch(list[i]); if (m) return m; }
+  return 'en';
+}
+// Le fichier d'une langue ajoutée est lu avant tout affichage (requête synchrone, servie
+// depuis le cache du navigateur quand il n'a pas changé). Illisible : on passe à l'anglais.
+function dkLoadPack(code) {
+  try {
+    var x = new XMLHttpRequest();
+    x.open('GET', DK_PACK_URL + '/' + encodeURIComponent(code) + '.json', false);
+    x.send(null);
+    if (x.status !== 200) return null;
+    var d = JSON.parse(x.responseText);
+    return (d && typeof d === 'object' && d._desktroo && d._desktroo.code === code) ? d : null;
+  } catch (e) { return null; }
 }
 var DK_LANG = dkDetectLang();
-/* Locale des dates et des nombres : celle du navigateur s'il est anglophone, sinon en-GB
-   (jour avant le mois, 24 h), plus proche des habitudes européennes que en-US. */
-var DK_LOCALE = DK_LANG === 'fr' ? 'fr-FR' : (/^en\b/i.test(navigator.language || '') ? navigator.language : 'en-GB');
+if (DK_PACKS[DK_LANG]) { DK_PACK = dkLoadPack(DK_LANG); if (!DK_PACK) DK_LANG = 'en'; }
+/* Locale des dates et des nombres : celle du navigateur s'il parle la langue affichée (pour
+   l'anglais, en-GB sinon : jour avant le mois, 24 h), sinon celle que donne le fichier. */
+function dkLocaleFor(lang) {
+  var nav = navigator.language || '', loc;
+  if (lang === 'fr') return 'fr-FR';
+  if (lang === 'en') return /^en\b/i.test(nav) ? nav : 'en-GB';
+  loc = nav.toLowerCase().split('-')[0] === lang.split('-')[0] ? nav
+      : ((DK_PACK && DK_PACK._desktroo && DK_PACK._desktroo.locale) || (DK_PACKS[lang] && DK_PACKS[lang].locale) || lang);
+  try { return Intl.DateTimeFormat.supportedLocalesOf([loc]).length ? loc : 'en-GB'; } catch (_) { return 'en-GB'; }
+}
+var DK_LOCALE = dkLocaleFor(DK_LANG);
 var DK_DICT = null, _dkCache = Object.create(null);
 document.documentElement.lang = DK_LANG;
 
+/* Un texte d'une langue ajoutée n'est gardé que s'il ne peut rien casser là où le code l'insère
+   (HTML, attributs, gestionnaires onclick) : pas de guillemet droit ni de barre oblique inverse,
+   seulement les balises de mise en forme nues, seulement les entités courantes. fileops nettoie
+   déjà les fichiers ; ce contrôle en est le filet. */
+var DK_PACK_BAD = /["'\\]|<(?!\/?(?:b|strong|i|em|u|code|kbd|small|sub|sup|mark)>|br>)|&(?!(?:amp|lt|gt|nbsp|hellip|mdash|ndash|laquo|raquo|thinsp);)/i;
 function dkDict() {
   if (DK_DICT) return DK_DICT;
   DK_DICT = {};
   try {
-    var el = document.getElementById('dk-i18n-' + DK_LANG);
+    // L'anglais sert de base à toutes les langues autres que le français.
+    var el = document.getElementById('dk-i18n-en');
     if (el) DK_DICT = JSON.parse(el.textContent);
   } catch (e) { console.warn('[i18n] dictionnaire illisible', e); }
+  if (DK_PACK) {
+    var k, v;
+    for (k in DK_PACK) {
+      if (k === '_desktroo' || !Object.prototype.hasOwnProperty.call(DK_PACK, k)) continue;
+      v = DK_PACK[k];
+      if (typeof v === 'string' && v && !DK_PACK_BAD.test(v)) DK_DICT[k] = v;
+    }
+  }
   return DK_DICT;
 }
 function dkLookup(key) {
@@ -2267,7 +2329,7 @@ function dkTranslateDom(root) {
 
 /* ── Sélecteur de langue ── */
 function dkSetLang(lang) {
-  if (!DK_LANGS[lang] || lang === DK_LANG) return;
+  if (!Object.prototype.hasOwnProperty.call(DK_LANGS, lang) || lang === DK_LANG) return;
   try { localStorage.setItem('dk-lang', lang); } catch (_) {}
   location.reload();   // les textes sont résolus au chargement : on repart d'une page neuve
 }
@@ -2275,21 +2337,51 @@ function dkToggleLang() { dkSetLang(DK_LANG === 'fr' ? 'en' : 'fr'); }
 function dkInstallLangSwitch() {
   var box = document.getElementById('dk-lang-login'), lab = document.getElementById('dk-lang-other'), h = '', l;
   if (box) {
-    for (l in DK_LANGS) {
-      h += '<button type="button" class="dk-lang-btn' + (l === DK_LANG ? ' active' : '') + '" lang="' + l + '"'
-         + (l === DK_LANG ? ' aria-current="true"' : '') + ' onclick="dkSetLang(\'' + l + '\')">' + DK_LANGS[l] + '</button>';
+    var codes = Object.keys(DK_LANGS);
+    if (codes.length > 4) {   // au-delà de quatre langues, une liste plutôt qu'une rangée de boutons
+      for (l = 0; l < codes.length; l++) {
+        h += '<option value="' + codes[l] + '" lang="' + codes[l] + '"' + (codes[l] === DK_LANG ? ' selected' : '') + '>' + dkEsc(DK_LANGS[codes[l]]) + '</option>';
+      }
+      box.innerHTML = '<select class="dk-lang-sel" onchange="dkSetLang(this.value)">' + h + '</select>';
+    } else {
+      for (l in DK_LANGS) {
+        h += '<button type="button" class="dk-lang-btn' + (l === DK_LANG ? ' active' : '') + '" lang="' + l + '"'
+           + (l === DK_LANG ? ' aria-current="true"' : '') + ' onclick="dkSetLang(\'' + l + '\')">' + dkEsc(DK_LANGS[l]) + '</button>';
+      }
+      box.innerHTML = h;
     }
-    box.innerHTML = h;
   }
   if (lab) { l = DK_LANG === 'fr' ? 'en' : 'fr'; lab.textContent = DK_LANGS[l]; lab.lang = l; }
+}
+/* Relit la liste des langues ajoutées sur le NAS ; cb(liste) ou cb(null) si elle n'a pas pu être lue.
+   Au chargement (sans cb), la première fois qu'une langue du navigateur y apparaît et si personne
+   n'a choisi de langue ici, le bureau se recharge dans cette langue. */
+function dkLangRefresh(cb) {
+  function done(d) { if (cb) { try { cb(d); } catch (e) { console.warn('[i18n]', e); } } }
+  if (typeof DK_NO_PACKS !== 'undefined' || !window.fetch) return done(null);
+  fetch(DK_PACK_URL, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d || !Array.isArray(d.langs)) return done(null);
+    var list = d.langs.map(function (l) { return { code: l.code, name: l.name, locale: l.locale || '' }; }), raw = JSON.stringify(list), old = null, chosen = null;
+    try { old = localStorage.getItem('dk-lang-list'); chosen = localStorage.getItem('dk-lang'); localStorage.setItem('dk-lang-list', raw); } catch (_) {}
+    dkPacksSet(list);
+    dkInstallLangSwitch();
+    if (cb) return done(d);
+    if (old !== raw && !chosen) {
+      var want = dkDetectLang(), once = null;
+      try { once = sessionStorage.getItem('dk-lang-auto'); sessionStorage.setItem('dk-lang-auto', '1'); } catch (_) {}
+      if (want !== DK_LANG && DK_PACKS[want] && !once) location.reload();
+    }
+  }).catch(function () { done(null); });
 }
 document.addEventListener('DOMContentLoaded', function () {
   dkTranslateDom(document.body);
   dkInstallLangSwitch();
+  dkLangRefresh();
 });
 """
 
 HTML = HTML.replace('<!--@I18N@-->',
+                    '<script>var DK_NO_PACKS = true;</script>\n'   # l'assistant ne lit pas les langues ajoutées (pas de fileops)
                     '<script type="application/json" id="dk-i18n-en">' + I18N_EN + '</script>\n'
                     '<script id="dk-i18n">' + I18N_JS + '</script>')
 

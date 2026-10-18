@@ -3,7 +3,22 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.55.0 — à paraître
+## 2.56.0 — à paraître
+
+### Nouveau
+- **Ajoutez votre langue à Desktroo.** Desktroo existe en français et en anglais ; chacun peut maintenant le traduire dans sa langue, sans attendre une mise à jour. Configuration système → Langue et fuseau horaire → « Télécharger le modèle à traduire », traduisez le fichier, puis « Importer un fichier de langue… ». La langue est proposée à l'écran de connexion et dans les réglages, pour tous ceux qui ouvrent ce bureau ; un navigateur réglé dans cette langue l'affiche tout seul.
+  > Le fichier est <install>/lang/<code>.json : les textes français en clés, la traduction en valeurs. Ce qui n'est pas traduit reste en anglais, et « Modèle à jour » redonne le fichier complété des textes ajoutés par les versions suivantes. Le fichier est vérifié et nettoyé à l'import (balises de mise en forme seulement). Les langues ajoutées font partie de la sauvegarde de Desktroo et restent en place aux mises à jour.
+- **Licence d'utilisation 1.1.** Elle permet désormais de créer, d'utiliser et de partager des fichiers de langue. Le bureau vous demande de l'accepter une nouvelle fois.
+- **Un lien vers Desktroo Apps** dans « Voir aussi » du Catalogue d'applications et du gestionnaire d'Applications.
+
+### Corrigé
+- **Une fenêtre ne se réduit plus au point de couper son contenu.** Les gestionnaires à deux volets qui n'avaient pas de taille minimale (Desktroo Apps et les fenêtres de ses apps comme Desktroo Pass, Mises à jour TrueNAS, Journal d'activité, Bilan de santé, Sites Web, Téléchargements) s'arrêtent à 640 × 420, jamais plus grand que l'écran.
+  > La poignée du coin bas-droit respecte désormais la taille minimale de chaque fenêtre, comme les bords.
+- **Desktroo Pass dit clairement quand les invitations ne partent pas par e-mail.** Le bandeau explique que la personne invitée ne reçoit rien tant que l'envoi n'est pas activé, et le bouton s'appelle « Activer l'envoi des e-mails ». Le coffre signale aussi quand la messagerie du NAS a changé depuis qu'il l'a reprise, et un bouton « Envoyer un e-mail de test » vérifie l'envoi par le même chemin que les invitations.
+  > Le test passe par Vaultwarden (/admin/test/smtp) ; son message d'erreur est affiché tel quel. Après l'activation, « Renvoyer l'invitation » envoie l'e-mail aux personnes déjà invitées.
+- **La liste des applications montre leurs icônes.** Les apps de Desktroo Apps prennent l'icône du Magasin, et une application personnalisée celle de l'app du même nom du catalogue TrueNAS (Nextcloud, n8n, OnlyOffice…). Les autres gardent leur initiale.
+
+## 2.55.0 — 18 octobre 2026
 
 ### Nouveau
 - **Les widgets se posent où vous voulez sur le bureau.** Faites glisser un widget par son titre et lâchez-le n'importe où : il s'aimante aux bords et aux autres widgets. Tirez son coin inférieur droit pour l'élargir ou le rétrécir. Les icônes du bureau s'écartent pour ne jamais passer dessous.

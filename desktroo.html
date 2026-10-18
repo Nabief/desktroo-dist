@@ -185,6 +185,8 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
   .dk-lang-btn { background:none; border:1px solid transparent; border-radius:999px; padding:4px 12px; font-size:12px; color:var(--text-dim); cursor:pointer; transition:color .15s, border-color .15s; }
   .dk-lang-btn:hover { color:var(--text); }
   .dk-lang-btn.active { color:var(--text); border-color:var(--glass-border); cursor:default; }
+  .dk-lang-sel { background:transparent; border:1px solid var(--glass-border); border-radius:999px; padding:4px 10px; font:inherit; font-size:12px; color:var(--text-dim); cursor:pointer; }
+  .dk-lang-sel option { color:#000; }
 
   /* ===== FONDS D'ÉCRAN ===== */
   /* Les fonds intégrés sont dessinés en CSS : nets à toute résolution, sans fichier à
@@ -931,7 +933,11 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     animation:win-open 0.22s cubic-bezier(0.34,1.4,0.64,1);
   }
   .window.visible { display:flex; }
-  #win-network { min-width:820px; min-height:520px; }
+  /* Gestionnaires à deux volets (colonne de navigation + contenu), dont les fenêtres des apps du Magasin :
+   en dessous de cette taille, le contenu n'a plus la place de s'afficher. Les fenêtres qui ont leur propre
+   minimum (règles par id ci-dessous) gardent le leur. Jamais plus grand que l'écran. */
+html:not(.dk-phone):not(.dk-kiosk) .window:has(.web-shell) { min-width:min(640px, calc(100vw - 24px)); min-height:min(420px, calc(100vh - 80px)); }
+#win-network { min-width:820px; min-height:520px; }
   #win-libvirt { min-width:860px; min-height:540px; }
   #win-maintenance { min-width:820px; min-height:520px; }
   #win-cron { min-width:820px; min-height:520px; }
@@ -4179,6 +4185,58 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Envoyer un e-mail de test": "Send a test email",
+"La messagerie du NAS a changé depuis que le coffre l’a reprise : les invitations partent encore avec les anciens réglages.": "The NAS mail settings changed since the vault took them over: invitations still go out with the old settings.",
+"Reprendre la messagerie du NAS": "Use the NAS mail settings again",
+"Invitation envoyée à {0}. Si elle n’arrive pas, regardez dans les indésirables, puis essayez « Envoyer un e-mail de test ».": "Invitation sent to {0}. If it does not arrive, check the spam folder, then try “Send a test email”.",
+"Adresse à laquelle le coffre envoie un e-mail de test :": "Address the vault sends a test email to:",
+"Envoi de l’e-mail de test…": "Sending the test email…",
+"Le serveur d’envoi a accepté le message pour {0}. S’il n’arrive pas, regardez dans les indésirables : l’adresse d’expédition n’est peut-être pas autorisée par ce serveur.": "The mail server accepted the message for {0}. If it does not arrive, check the spam folder: the sender address may not be allowed by that server.",
+"Le coffre n’a pas de messagerie : utilisez « Activer l’envoi des e-mails ».": "The vault has no mail settings: use “Turn on sending emails”.",
+"Le serveur d’envoi a refusé le message.": "The mail server refused the message.",
+"Le coffre n’envoie pas encore d’e-mails : les personnes invitées ne reçoivent rien.": "The vault does not send emails yet: invited people receive nothing.",
+"En attendant, chacune doit ouvrir {0} et créer son compte avec l’adresse e-mail que vous avez invitée.": "Until then, each of them must open {0} and create their account with the email address you invited.",
+"l’adresse du coffre": "the vault address",
+"La messagerie du NAS (celle des alertes) est prête : « Activer l’envoi des e-mails » la donne au coffre.": "The NAS mail settings (the ones used for alerts) are ready: “Turn on sending emails” gives them to the vault.",
+"L’envoi passe par la messagerie du NAS, celle des alertes.": "Sending uses the NAS mail settings, the ones used for alerts.",
+"Régler la messagerie du NAS": "Set up the NAS mail",
+"Activer l’envoi des e-mails": "Turn on sending emails",
+"Les e-mails du coffre partiront depuis {0}. Pour une personne déjà invitée, utilisez « Renvoyer l’invitation ».": "The vault’s emails will be sent from {0}. For someone already invited, use “Resend invitation”.",
+"Les apps Mdm-services.fr pour votre NAS": "Mdm-services.fr apps for your NAS",
+"Langues ajoutées": "Added languages",
+"La liste des langues ajoutées n'a pas pu être lue.": "The list of added languages could not be read.",
+"affichée": "in use",
+"{0} textes traduits sur {1} ({2} %)": "{0} of {1} texts translated ({2} %)",
+"Le fichier de cette langue, complété des textes qui lui manquent, à traduire puis à réimporter": "This language’s file, completed with the texts it lacks, to translate and import again",
+"Modèle à jour": "Updated template",
+"Aucune langue ajoutée pour l'instant.": "No added language yet.",
+"Importer un fichier de langue...": "Import a language file...",
+"Télécharger le modèle à traduire": "Download the template to translate",
+"{0} : {1} textes traduits sur {2}.": "{0}: {1} of {2} texts translated.",
+"{0} textes encore en anglais : ils s'affichent en anglais.": "{0} texts still in English: they are shown in English.",
+"{0} textes que cette version de Desktroo n'utilise pas (gardés pour plus tard).": "{0} texts this version of Desktroo does not use (kept for later).",
+"{0} textes corrigés : guillemets droits remplacés par des guillemets typographiques, balises non permises retirées.": "{0} texts corrected: straight quotes replaced with typographic ones, disallowed tags removed.",
+"{0} entrées ignorées : leur valeur n'est pas un texte.": "{0} entries ignored: their value is not text.",
+"Repères {0}, {1}… différents de l'original, à vérifier :": "Placeholders {0}, {1}… differ from the original, please check:",
+"Pour ajouter une langue : téléchargez le modèle, traduisez les valeurs (à droite de chaque ligne ; le texte français, à gauche, ne se modifie pas), renseignez le code et le nom de la langue en tête du fichier, puis importez-le ici. Ce qui n'est pas traduit reste en anglais. La langue est alors proposée à tous ceux qui ouvrent ce bureau.": "To add a language: download the template, translate the values (on the right of each line; the French text on the left must not be changed), fill in the language code and name at the top of the file, then import it here. Anything left untranslated stays in English. The language is then offered to everyone who opens this desktop.",
+"Fichier de langue introuvable.": "Language file not found.",
+"Modèle téléchargé : {0} textes à traduire": "Template downloaded: {0} texts to translate",
+"Modèle téléchargé": "Template downloaded",
+"Fichier trop gros (4 Mo au plus).": "File too large (4 MB at most).",
+"Import refusé.": "Import refused.",
+"{0} mis à jour": "{0} updated",
+"{0} ajouté": "{0} added",
+"Retirer la langue « {0} » ? Ceux qui l'utilisent repasseront en anglais.": "Remove the language “{0}”? Anyone using it will go back to English.",
+"Retrait refusé.": "Removal refused.",
+"Langue retirée : {0}": "Language removed: {0}",
+"Code de langue invalide : deux ou trois lettres, éventuellement suivies d'une variante (« de », « pt-br »).": "Invalid language code: two or three letters, optionally followed by a variant (“de”, “pt-br”).",
+"Le français et l'anglais sont fournis avec Desktroo : choisissez le code d'une autre langue.": "French and English come with Desktroo: choose the code of another language.",
+"Le fichier doit contenir un objet JSON { \"texte français\": \"traduction\", … }.": "The file must contain a JSON object { \"French text\": \"translation\", … }.",
+"Entrée « _desktroo » absente : partez du modèle à traduire, qui la contient.": "“_desktroo” entry missing: start from the template to translate, which contains it.",
+"Donnez à la langue un nom de 1 à 40 caractères (« name », par exemple « Deutsch »).": "Give the language a name of 1 to 40 characters (“name”, for example “Deutsch”).",
+"Ce fichier n'est pas du JSON valide : {0}": "This file is not valid JSON: {0}",
+"Aucun texte traduit dans ce fichier : chaque valeur est vide ou encore en anglais.": "No translated text in this file: every value is empty or still in English.",
+"Langue introuvable.": "Language not found.",
 "Session expirée": "Session expired",
 "Votre session sur le portail d'authentification a expiré. Reconnectez-vous pour retrouver vos fichiers, le terminal et les VM.": "Your session on the authentication portal has expired. Sign in again to get your files, the terminal and the VMs back.",
 "Se reconnecter": "Sign in again",
@@ -10012,7 +10070,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Les remet en colonnes contre les bords du bureau, sans changer leur largeur.": "Puts them back in columns along the edges of the desktop, keeping their width."
 }</script>
 <script id="dk-i18n">
-/* ===== Langues : français (langue du code) et anglais =====
+/* ===== Langues : français (langue du code), anglais, et langues ajoutées =====
    Le code reste écrit en français. Chaque texte affiché passe par T('…'), qui le rend
    tel quel en français et le traduit sinon à l'aide du dictionnaire embarqué
    (<script id="dk-i18n-en">, clé = segment français, valeur = traduction).
@@ -10022,7 +10080,9 @@ select option{ background:#101b2e; color:#e9eef7; }
    - Tdyn(s)  : message composé à l'exécution (toasts, erreurs du serveur) ;
    - le HTML statique est traduit une fois, au chargement, par dkTranslateDom().
    Ajouter un texte : l'écrire en français, l'entourer de T(), puis lancer
-   « node tools/i18n/i18n.js check desktroo.html » pour lister ce qui reste à traduire. */
+   « node tools/i18n/i18n.js check desktroo.html » pour lister ce qui reste à traduire.
+   Langue ajoutée : fichier <install>/lang/<code>.json (mêmes clés, voir tools/i18n/README.md),
+   servi par fileops ; ses textes remplacent l'anglais, ceux qui manquent restent en anglais. */
 
 /* Découpage d'un fragment (HTML ou texte brut) en segments traduisibles.
    Ce fichier est partagé : l'outil tools/i18n l'utilise tel quel, et le même code est
@@ -10139,25 +10199,85 @@ function dkMapSegments(lit, fn) {
 }
 
 var DK_LANGS = { fr: 'Français', en: 'English' };
+/* Langues ajoutées : leur liste est gardée dans le navigateur (« dk-lang-list ») pour que la
+   langue choisie soit connue dès le chargement, puis relue en arrière-plan (dkLangRefresh). */
+var DK_PACK_URL = '/fileops/lang', DK_PACK_CODE_RE = /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/, DK_PACKS = {}, DK_PACK = null;
+function dkPacksSet(list) {
+  var l, i;
+  for (l in DK_PACKS) delete DK_LANGS[l];
+  DK_PACKS = {};
+  for (i = 0; list && i < list.length; i++) {
+    l = list[i];
+    if (!l || !DK_PACK_CODE_RE.test(l.code) || l.code === 'fr' || l.code === 'en' || typeof l.name !== 'string' || !l.name) continue;
+    DK_PACKS[l.code] = { name: l.name, locale: typeof l.locale === 'string' ? l.locale : '' };
+    DK_LANGS[l.code] = l.name;
+  }
+}
+if (typeof DK_NO_PACKS === 'undefined') {
+  try { dkPacksSet(JSON.parse(localStorage.getItem('dk-lang-list') || '[]')); } catch (_) {}
+}
+// « de-AT » : la langue exacte si elle existe, sinon sa langue de base (« de »)
+function dkLangMatch(tag) {
+  tag = String(tag || '').toLowerCase().replace(/_/g, '-');
+  if (Object.prototype.hasOwnProperty.call(DK_LANGS, tag)) return tag;
+  tag = tag.split('-')[0];
+  return Object.prototype.hasOwnProperty.call(DK_LANGS, tag) ? tag : null;
+}
 function dkDetectLang() {
-  try { var v = localStorage.getItem('dk-lang'); if (DK_LANGS[v]) return v; } catch (_) {}
-  var n = (navigator.languages && navigator.languages[0]) || navigator.language || 'fr';
-  return /^fr\b/i.test(n) ? 'fr' : 'en';
+  try { var v = localStorage.getItem('dk-lang'); if (v && Object.prototype.hasOwnProperty.call(DK_LANGS, v)) return v; } catch (_) {}
+  var list = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'fr'], i, m;
+  for (i = 0; i < list.length; i++) { m = dkLangMatch(list[i]); if (m) return m; }
+  return 'en';
+}
+// Le fichier d'une langue ajoutée est lu avant tout affichage (requête synchrone, servie
+// depuis le cache du navigateur quand il n'a pas changé). Illisible : on passe à l'anglais.
+function dkLoadPack(code) {
+  try {
+    var x = new XMLHttpRequest();
+    x.open('GET', DK_PACK_URL + '/' + encodeURIComponent(code) + '.json', false);
+    x.send(null);
+    if (x.status !== 200) return null;
+    var d = JSON.parse(x.responseText);
+    return (d && typeof d === 'object' && d._desktroo && d._desktroo.code === code) ? d : null;
+  } catch (e) { return null; }
 }
 var DK_LANG = dkDetectLang();
-/* Locale des dates et des nombres : celle du navigateur s'il est anglophone, sinon en-GB
-   (jour avant le mois, 24 h), plus proche des habitudes européennes que en-US. */
-var DK_LOCALE = DK_LANG === 'fr' ? 'fr-FR' : (/^en\b/i.test(navigator.language || '') ? navigator.language : 'en-GB');
+if (DK_PACKS[DK_LANG]) { DK_PACK = dkLoadPack(DK_LANG); if (!DK_PACK) DK_LANG = 'en'; }
+/* Locale des dates et des nombres : celle du navigateur s'il parle la langue affichée (pour
+   l'anglais, en-GB sinon : jour avant le mois, 24 h), sinon celle que donne le fichier. */
+function dkLocaleFor(lang) {
+  var nav = navigator.language || '', loc;
+  if (lang === 'fr') return 'fr-FR';
+  if (lang === 'en') return /^en\b/i.test(nav) ? nav : 'en-GB';
+  loc = nav.toLowerCase().split('-')[0] === lang.split('-')[0] ? nav
+      : ((DK_PACK && DK_PACK._desktroo && DK_PACK._desktroo.locale) || (DK_PACKS[lang] && DK_PACKS[lang].locale) || lang);
+  try { return Intl.DateTimeFormat.supportedLocalesOf([loc]).length ? loc : 'en-GB'; } catch (_) { return 'en-GB'; }
+}
+var DK_LOCALE = dkLocaleFor(DK_LANG);
 var DK_DICT = null, _dkCache = Object.create(null);
 document.documentElement.lang = DK_LANG;
 
+/* Un texte d'une langue ajoutée n'est gardé que s'il ne peut rien casser là où le code l'insère
+   (HTML, attributs, gestionnaires onclick) : pas de guillemet droit ni de barre oblique inverse,
+   seulement les balises de mise en forme nues, seulement les entités courantes. fileops nettoie
+   déjà les fichiers ; ce contrôle en est le filet. */
+var DK_PACK_BAD = /["'\\]|<(?!\/?(?:b|strong|i|em|u|code|kbd|small|sub|sup|mark)>|br>)|&(?!(?:amp|lt|gt|nbsp|hellip|mdash|ndash|laquo|raquo|thinsp);)/i;
 function dkDict() {
   if (DK_DICT) return DK_DICT;
   DK_DICT = {};
   try {
-    var el = document.getElementById('dk-i18n-' + DK_LANG);
+    // L'anglais sert de base à toutes les langues autres que le français.
+    var el = document.getElementById('dk-i18n-en');
     if (el) DK_DICT = JSON.parse(el.textContent);
   } catch (e) { console.warn('[i18n] dictionnaire illisible', e); }
+  if (DK_PACK) {
+    var k, v;
+    for (k in DK_PACK) {
+      if (k === '_desktroo' || !Object.prototype.hasOwnProperty.call(DK_PACK, k)) continue;
+      v = DK_PACK[k];
+      if (typeof v === 'string' && v && !DK_PACK_BAD.test(v)) DK_DICT[k] = v;
+    }
+  }
   return DK_DICT;
 }
 function dkLookup(key) {
@@ -10310,7 +10430,7 @@ function dkTranslateDom(root) {
 
 /* ── Sélecteur de langue ── */
 function dkSetLang(lang) {
-  if (!DK_LANGS[lang] || lang === DK_LANG) return;
+  if (!Object.prototype.hasOwnProperty.call(DK_LANGS, lang) || lang === DK_LANG) return;
   try { localStorage.setItem('dk-lang', lang); } catch (_) {}
   location.reload();   // les textes sont résolus au chargement : on repart d'une page neuve
 }
@@ -10318,17 +10438,46 @@ function dkToggleLang() { dkSetLang(DK_LANG === 'fr' ? 'en' : 'fr'); }
 function dkInstallLangSwitch() {
   var box = document.getElementById('dk-lang-login'), lab = document.getElementById('dk-lang-other'), h = '', l;
   if (box) {
-    for (l in DK_LANGS) {
-      h += '<button type="button" class="dk-lang-btn' + (l === DK_LANG ? ' active' : '') + '" lang="' + l + '"'
-         + (l === DK_LANG ? ' aria-current="true"' : '') + ' onclick="dkSetLang(\'' + l + '\')">' + DK_LANGS[l] + '</button>';
+    var codes = Object.keys(DK_LANGS);
+    if (codes.length > 4) {   // au-delà de quatre langues, une liste plutôt qu'une rangée de boutons
+      for (l = 0; l < codes.length; l++) {
+        h += '<option value="' + codes[l] + '" lang="' + codes[l] + '"' + (codes[l] === DK_LANG ? ' selected' : '') + '>' + dkEsc(DK_LANGS[codes[l]]) + '</option>';
+      }
+      box.innerHTML = '<select class="dk-lang-sel" onchange="dkSetLang(this.value)">' + h + '</select>';
+    } else {
+      for (l in DK_LANGS) {
+        h += '<button type="button" class="dk-lang-btn' + (l === DK_LANG ? ' active' : '') + '" lang="' + l + '"'
+           + (l === DK_LANG ? ' aria-current="true"' : '') + ' onclick="dkSetLang(\'' + l + '\')">' + dkEsc(DK_LANGS[l]) + '</button>';
+      }
+      box.innerHTML = h;
     }
-    box.innerHTML = h;
   }
   if (lab) { l = DK_LANG === 'fr' ? 'en' : 'fr'; lab.textContent = DK_LANGS[l]; lab.lang = l; }
+}
+/* Relit la liste des langues ajoutées sur le NAS ; cb(liste) ou cb(null) si elle n'a pas pu être lue.
+   Au chargement (sans cb), la première fois qu'une langue du navigateur y apparaît et si personne
+   n'a choisi de langue ici, le bureau se recharge dans cette langue. */
+function dkLangRefresh(cb) {
+  function done(d) { if (cb) { try { cb(d); } catch (e) { console.warn('[i18n]', e); } } }
+  if (typeof DK_NO_PACKS !== 'undefined' || !window.fetch) return done(null);
+  fetch(DK_PACK_URL, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d || !Array.isArray(d.langs)) return done(null);
+    var list = d.langs.map(function (l) { return { code: l.code, name: l.name, locale: l.locale || '' }; }), raw = JSON.stringify(list), old = null, chosen = null;
+    try { old = localStorage.getItem('dk-lang-list'); chosen = localStorage.getItem('dk-lang'); localStorage.setItem('dk-lang-list', raw); } catch (_) {}
+    dkPacksSet(list);
+    dkInstallLangSwitch();
+    if (cb) return done(d);
+    if (old !== raw && !chosen) {
+      var want = dkDetectLang(), once = null;
+      try { once = sessionStorage.getItem('dk-lang-auto'); sessionStorage.setItem('dk-lang-auto', '1'); } catch (_) {}
+      if (want !== DK_LANG && DK_PACKS[want] && !once) location.reload();
+    }
+  }).catch(function () { done(null); });
 }
 document.addEventListener('DOMContentLoaded', function () {
   dkTranslateDom(document.body);
   dkInstallLangSwitch();
+  dkLangRefresh();
 });
 </script>
 <style id="dk-phone-css">
@@ -16244,12 +16393,19 @@ function dkPassRenderUsers(body, st) {
     + '<div style="display:flex;gap:8px;max-width:560px;margin-bottom:14px;"><input id="dkpass-inv" style="' + iStyle() + 'margin-top:0;" placeholder="' + T('adresse e-mail de la personne') + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')dkPassInvite()">'
     + '<button class="web-open" onclick="dkPassInvite()">' + T('Inviter') + '</button></div>';
   var mail = st.mail || {};
-  h += mail.ok
-    ? '<p class="dks-tag" style="margin:-4px 0 14px;">' + Tf('Les invitations partent par e-mail depuis {0}, avec un lien pour créer le compte.', webEsc(mail.from)) + '</p>'
-    : '<div class="dks-banner" style="flex-wrap:wrap;"><span style="flex:1;min-width:240px;">' + T('Les invitations ne partent pas encore par e-mail : la personne doit créer son compte elle-même sur l’adresse du coffre.')
-      + (mail.why ? ' <span class="dks-tag" style="display:block;">' + webEsc(mail.why) + '</span>' : '') + '</span>'
-      + '<button class="fs-btn" onclick="openApp(\'sysconfig\');gsAfter(\'sysconfig\',function(){scGo(\'mail\');})">' + T('Régler la messagerie') + '</button>'
-      + '<button class="web-open" onclick="dkPassMail()">' + T('Envoyer les invitations par e-mail') + '</button></div>';
+  h += mail.ok && !mail.stale
+    ? '<p class="dks-tag" style="margin:-4px 0 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><span>' + Tf('Les invitations partent par e-mail depuis {0}, avec un lien pour créer le compte.', webEsc(mail.from)) + '</span>'
+      + '<button class="web-mini" onclick="dkPassTestMail()">' + T('Envoyer un e-mail de test') + '</button></p>'
+    : mail.ok
+    ? '<div class="dks-banner" style="flex-wrap:wrap;"><span style="flex:1;min-width:240px;">' + T('La messagerie du NAS a changé depuis que le coffre l’a reprise : les invitations partent encore avec les anciens réglages.') + '</span>'
+      + '<button class="fs-btn" onclick="dkPassTestMail()">' + T('Envoyer un e-mail de test') + '</button>'
+      + '<button class="web-open" onclick="dkPassMail()">' + T('Reprendre la messagerie du NAS') + '</button></div>'
+    : '<div class="dks-banner" style="flex-wrap:wrap;"><span style="flex:1;min-width:240px;"><strong>' + T('Le coffre n’envoie pas encore d’e-mails : les personnes invitées ne reçoivent rien.') + '</strong> '
+      + Tf('En attendant, chacune doit ouvrir {0} et créer son compte avec l’adresse e-mail que vous avez invitée.', dkPassUrl() ? '<span class="mono">' + webEsc(dkPassUrl()) + '</span>' : T('l’adresse du coffre'))
+      + ' <span class="dks-tag" style="display:block;">' + (mail.now_ok ? T('La messagerie du NAS (celle des alertes) est prête : « Activer l’envoi des e-mails » la donne au coffre.')
+        : webEsc(mail.now_why || mail.why || T('L’envoi passe par la messagerie du NAS, celle des alertes.'))) + '</span></span>'
+      + '<button class="fs-btn" onclick="openApp(\'sysconfig\');gsAfter(\'sysconfig\',function(){scGo(\'mail\');})">' + T('Régler la messagerie du NAS') + '</button>'
+      + '<button class="web-open" onclick="dkPassMail()">' + T('Activer l’envoi des e-mails') + '</button></div>';
   var users = st.users || [];
   if (!users.length) h += '<div class="dks-empty">' + T('Aucun compte pour l’instant. Invitez-vous en premier, avec votre adresse e-mail.') + '</div>';
   else {
@@ -16270,20 +16426,30 @@ function dkPassRenderUsers(body, st) {
   }
   h += '<p class="dks-tag" style="margin-top:14px;max-width:640px;">' + (mail.ok
     ? T('La personne invitée suit le lien reçu par e-mail, crée son compte et choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.')
-    : Tf('Une personne invitée crée son compte sur {0} avec cette même adresse e-mail, puis choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.', dkPassUrl())) + '</p>';
+    : Tf('Une personne invitée crée son compte sur {0} avec cette même adresse e-mail, puis choisit son mot de passe maître. Personne d’autre ne peut s’inscrire.', dkPassUrl() || T('l’adresse du coffre'))) + '</p>';
   body.innerHTML = h;
 }
 async function dkPassInvite() {
   var el = document.getElementById('dkpass-inv'), email = (el && el.value || '').trim();
   if (!email) { toast(T('Indiquez une adresse e-mail.')); return; }
   try { await fileops('POST', 'store/pass/invite', { email: email });
-    toast(((_dkPass.st || {}).mail || {}).ok ? Tf('Invitation envoyée à {0}.', email) : Tf('{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.', email), 7000); }
+    toast(((_dkPass.st || {}).mail || {}).ok ? Tf('Invitation envoyée à {0}. Si elle n’arrive pas, regardez dans les indésirables, puis essayez « Envoyer un e-mail de test ».', email) : Tf('{0} est invité(e) : il reste à créer son compte sur l’adresse du coffre.', email), 9000); }
   catch (e) { toast('⚠️ ' + (e.message || e), 7000); return; }
   dkPassLoad(true);
 }
+// E-mail de test envoyé par le coffre lui-même : il passe par le même chemin que les invitations.
+async function dkPassTestMail() {
+  var inp = document.getElementById('dkpass-inv'), def = (inp && inp.value || '').trim();
+  var email = await showPrompt(T('Adresse à laquelle le coffre envoie un e-mail de test :'), def);
+  if (!email || !email.trim()) return;
+  toast(T('Envoi de l’e-mail de test…'), 4000);
+  try { await fileops('POST', 'store/pass/test-mail', { email: email.trim() });
+    toast('✅ ' + Tf('Le serveur d’envoi a accepté le message pour {0}. S’il n’arrive pas, regardez dans les indésirables : l’adresse d’expédition n’est peut-être pas autorisée par ce serveur.', email.trim()), 12000); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 15000); }
+}
 async function dkPassMail() {
   toast(T('Activation de l’envoi par e-mail… (le coffre redémarre quelques secondes)'), 5000);
-  try { var r = await fileops('POST', 'store/pass/mail', {}); toast('✅ ' + Tf('Les invitations partiront depuis {0}.', r.from || ''), 6000); }
+  try { var r = await fileops('POST', 'store/pass/mail', {}); toast('✅ ' + Tf('Les e-mails du coffre partiront depuis {0}. Pour une personne déjà invitée, utilisez « Renvoyer l’invitation ».', r.from || ''), 9000); }
   catch (e) { toast('⚠️ ' + (e.message || e), 9000); }
   dkPassLoad(true);
 }
@@ -19318,6 +19484,7 @@ function wmAgo(iso) {
   if (m < 2880) return Tf('depuis {0} h', Math.round(m / 60));
   return Tf('depuis {0} jours', Math.round(m / 1440));
 }
+WEB_ICONS.bag = WEB_ICONS.bag || '<path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>';
 WEB_ICONS.box = WEB_ICONS.box || '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/>';
 WEB_ICONS.grid = '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>';
 WEB_ICONS.code = '<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>';
@@ -19573,9 +19740,57 @@ function appIcon(name, url, cls) {
   var n = String(name || '?').replace(/^ix-/, ''), h = 0;
   for (var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360;
   return '<span class="app-ico' + (cls ? ' ' + cls : '') + '" style="--h:' + h + '"><b>' + webEsc(n.charAt(0).toUpperCase()) + '</b>'
-    + (url && /^https:\/\//i.test(url) ? '<img src="' + webEsc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">' : '') + '</span>';
+    + (url && (/^https:\/\//i.test(url) || /^\/fileops\/store\/icon\/[a-z0-9-]+$/.test(url)) ? '<img src="' + webEsc(url) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.parentNode.classList.add(\'has-img\')" onerror="this.remove()">' : '') + '</span>';
 }
-function appIconOf(a, cls) { return appIcon(appTitle(a) || appKey(a), ((a && a.metadata) || {}).icon, cls); }
+/* Icône d'une application installée. Celles du catalogue TrueNAS portent la leur. Les apps de
+   Desktroo Apps (« dt-<id> ») prennent celle du Magasin. Une application personnalisée prend
+   celle de l'app du même nom dans le catalogue TrueNAS (« jellyfin3 » → jellyfin, « onlyoffice »
+   → onlyoffice-document-server), à défaut celle du Magasin ; sinon, son initiale. */
+var _appsIco = { map: null, loading: false, tried: false };
+function appsIcoIndex(raw, map) {
+  function add(app, key) {
+    if (!app || typeof app !== 'object') return;
+    var id = String(app.catalog_app || app.name || app.app_name || key || '').toLowerCase(), u = app.icon_url || app.icon;
+    if (id && typeof u === 'string' && /^https:\/\//i.test(u) && !map[id]) map[id] = u;
+  }
+  if (Array.isArray(raw)) raw.forEach(function(x) { add(x); });
+  else if (raw && typeof raw === 'object') Object.keys(raw).forEach(function(t) {
+    var v = raw[t];
+    if (v && typeof v === 'object' && !Array.isArray(v) && !v.icon_url && !v.name) Object.keys(v).forEach(function(k) { add(v[k], k); });
+    else add(v, t);
+  });
+  return map;
+}
+function appsIcoLoad() {
+  if (_appsIco.loading || (_appsIco.map && Object.keys(_appsIco.map).length)) return;
+  var map = appsIcoIndex(Array.isArray(window._catalogAll) ? window._catalogAll : [], {});
+  if (Object.keys(map).length) { _appsIco.map = map; return; }
+  if (_appsIco.tried) return;   // un seul essai par ouverture du bureau ; le Catalogue, une fois ouvert, prend le relais
+  _appsIco.tried = true; _appsIco.loading = true;
+  wsCall('catalog.apps', [{ cache: true, cache_only: true, retrieve_all_trains: true, trains: [] }], 60000).then(function(raw) {
+    _appsIco.map = appsIcoIndex(raw, {});
+  }).catch(function() { _appsIco.map = {}; }).then(function() {
+    _appsIco.loading = false;
+    if (Object.keys(_appsIco.map).length && wmVisible('apps')) appsRender(true);
+  });
+}
+function appIconUrl(a) {
+  var m = (a && a.metadata) || {}, k = appKey(a).toLowerCase(), base, i, ids, store;
+  if (m.icon) return m.icon;
+  if (!(a && a.custom_app)) return '';
+  if (/^dt-[a-z0-9-]+$/.test(k)) return '/fileops/store/icon/' + k.slice(3);
+  base = k.replace(/[-_]?\d+$/, '');
+  appsIcoLoad();
+  if (!_appsIco.map) return '';
+  if (_appsIco.map[k]) return _appsIco.map[k];
+  if (_appsIco.map[base]) return _appsIco.map[base];
+  store = ((_dkStore.view || _appsStoreView || {}).apps || []).filter(function(x) { return x.id === base; })[0];
+  if (store && /^[a-z0-9-]+$/.test(base)) return '/fileops/store/icon/' + base;
+  ids = Object.keys(_appsIco.map).sort();
+  for (i = 0; i < ids.length; i++) if (base.length > 2 && ids[i].indexOf(base + '-') === 0) return _appsIco.map[ids[i]];
+  return '';
+}
+function appIconOf(a, cls) { return appIcon(appTitle(a) || appKey(a), appIconUrl(a), cls); }
 async function appsFetch() {
   var r;
   try { r = await wsCall('app.query', [[], {}], 60000); }
@@ -19607,8 +19822,9 @@ async function appsStoreCheck() {
   if (Date.now() - _appsStoreAt < 60000) return;
   _appsStoreAt = Date.now();
   var sig = function() { return _apps.map(function(a) { return appsStoreUpd(a) ? 1 : 0; }).join(''); }, before = sig();
+  var had = !!_appsStoreView;
   try { _appsStoreView = await fileops('GET', 'store/view'); } catch (_) { return; }
-  if (sig() !== before && wmVisible('apps')) appsRender(true);
+  if ((sig() !== before || !had) && wmVisible('apps')) appsRender(true);
 }
 function appsStoreUpdates() { dkStoreOpen(); _dkStore.nav = 'updates'; _dkStore.sel = null; }
 async function loadApps(soft) {
@@ -19658,6 +19874,7 @@ function appsSide() {
   if (_appsLoaded && !_apps.length) h += '<div class="web-side-empty">' + T('Aucune application') + '</div>';
   h += wmSep() + wmSideTitle(T('Voir aussi'))
     + wmNav({ call: 'openApp(\'catalog\')', icon: 'plus', name: T('Catalogue') })
+    + wmNav({ call: 'dkStoreOpen()', icon: 'bag', name: T('Desktroo Apps') })
     + wmNav({ call: 'openApp(\'docker\')', icon: 'layers', name: T('Conteneurs') })
     + wmNav({ call: 'openTrueNASPage(\'/ui/apps\')', icon: 'out', name: T('Ouvrir dans TrueNAS') });
   wmSide('apps', h);
@@ -20442,6 +20659,7 @@ function catSide() {
     cats.forEach(function(c) { h += wmNav({ active: cur && cur.nav === 'cat' && cur.cat === c, call: 'catGo(\'cat\',decodeURIComponent(' + wmQ(c) + '))', name: catLabel(c), count: counts[c] }); });
   }
   h += wmSep() + wmSideTitle(T('Voir aussi'))
+    + wmNav({ call: 'dkStoreOpen()', icon: 'bag', name: T('Desktroo Apps'), title: T('Les apps Mdm-services.fr pour votre NAS') })
     + wmNav({ call: 'catalogCustomYaml()', icon: 'code', name: T('Application personnalisée'), title: T('Installer depuis un fichier docker-compose') })
     + wmNav({ call: 'openApp(\'apps\')', icon: 'box', name: T('Applications installées') });
   wmSide('cat', h);
@@ -20815,10 +21033,12 @@ function setupResizeHandle(handle) {
     e.preventDefault();
     var win = handle.closest('.window');
     var sx = e.clientX, sy = e.clientY;
-    var sw = win.offsetWidth, sh = win.offsetHeight;
+    var sw = win.offsetWidth, sh = win.offsetHeight, cs = getComputedStyle(win);
+    // Taille minimale de la fenêtre (CSS min-width / min-height, selon son contenu), 320 × 200 au moins
+    var minW = Math.max(320, parseFloat(cs.minWidth) || 0), minH = Math.max(200, parseFloat(cs.minHeight) || 0);
     var onMove = function(mv) {
-      win.style.width  = Math.max(320, sw + mv.clientX - sx) + 'px';
-      win.style.height = Math.max(200, sh + mv.clientY - sy) + 'px';
+      win.style.width  = Math.max(minW, sw + mv.clientX - sx) + 'px';
+      win.style.height = Math.max(minH, sh + mv.clientY - sy) + 'px';
     };
     var onUp = function() {
       document.removeEventListener('mousemove', onMove);
@@ -21606,7 +21826,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.55.0';
+var DK_PAGE_VERSION = '2.56.0';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();
@@ -30757,6 +30977,98 @@ function scSide() {
     + wmNav({ call: 'openTrueNASPage(\'/ui/system/general\')', icon: 'out', name: T('Ouvrir dans TrueNAS') }));
 }
 function scSaveBtn(call, label) { return '<div class="web-foot" style="justify-content:flex-start;margin-top:16px;"><button class="web-open" onclick="' + call + '"' + (_sc.busy ? ' disabled' : '') + '>' + (_sc.busy ? T('Enregistrement...') : label) + '</button></div>'; }
+// ── MDM-LANGPACKS-V1 : langues ajoutées (fichiers <install>/lang/<code>.json) ─────────────────────
+// Le modèle à traduire est fabriqué ici, à partir du dictionnaire anglais de la page : ce qui reste
+// à traduire d'abord, puis ce qui l'est déjà. fileops valide et nettoie le fichier à l'import.
+var _dkLp = { d: null, loading: false, busy: '', report: null };
+function dkLpLoad() {
+  _dkLp.loading = true;
+  dkLangRefresh(function(d) {
+    _dkLp.loading = false;
+    _dkLp.d = d || { total: 0, langs: [], error: T('La liste des langues ajoutées n\'a pas pu être lue.') };
+    if (wmBody('sc') && _sc.nav === 'loc') scView(true);
+  });
+}
+function dkLpNum(n) { return Number(n || 0).toLocaleString(DK_LOCALE); }
+function dkLpHtml() {
+  var h = '<div class="web-group-title">' + T('Langues ajoutées') + '</div>';
+  if (!_dkLp.d) { if (!_dkLp.loading) dkLpLoad(); return h + '<p class="web-note" style="margin-top:0;">' + T('Chargement...') + '</p>'; }
+  var d = _dkLp.d, total = d.total || 0, dis = _dkLp.busy ? ' disabled' : '', r = _dkLp.report;
+  h += '<div class="web-group">' + ((d.langs || []).length ? d.langs.map(function(l) {
+    var pct = total ? Math.min(100, Math.floor(100 * l.translated / total)) : 0, c = String(l.code).replace(/[^a-z0-9-]/g, '');
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(l.name) + ' <span class="dim mono" style="font-weight:400;">' + c + '</span>'
+      + (c === DK_LANG ? ' <span class="dim" style="font-weight:400;">· ' + T('affichée') + '</span>' : '') + '</span>'
+      + '<span class="web-row-desc">' + webEsc(Tf('{0} textes traduits sur {1} ({2} %)', dkLpNum(l.translated), dkLpNum(total), pct)) + (l.author ? ' · ' + webEsc(l.author) : '') + '</span></span>'
+      + '<button class="fs-btn" onclick="dkLpTemplate(\'' + c + '\')"' + dis + ' title="' + webEsc(T('Le fichier de cette langue, complété des textes qui lui manquent, à traduire puis à réimporter')) + '">' + T('Modèle à jour') + '</button>'
+      + '<button class="fs-btn" onclick="dkLpRemove(\'' + c + '\')"' + dis + '>' + T('Retirer') + '</button></div>';
+  }).join('') : '<div class="web-row"><span class="web-row-text"><span class="web-row-desc">' + webEsc(d.error || T('Aucune langue ajoutée pour l\'instant.')) + '</span></span></div>') + '</div>';
+  h += '<div class="web-foot" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:12px;">'
+    + '<button class="web-open" onclick="document.getElementById(\'dk-lp-file\').click()"' + dis + '>' + (_dkLp.busy ? webEsc(_dkLp.busy) : T('Importer un fichier de langue...')) + '</button>'
+    + '<button class="fs-btn" onclick="dkLpTemplate(\'\')"' + dis + '>' + T('Télécharger le modèle à traduire') + '</button>'
+    + '<input type="file" id="dk-lp-file" accept=".json,application/json" hidden onchange="dkLpImport(this)"></div>';
+  if (r) {
+    var lines = [Tf('{0} : {1} textes traduits sur {2}.', webEsc(r.name), dkLpNum(r.translated), dkLpNum(r.total))];
+    if (r.unchanged) lines.push(Tf('{0} textes encore en anglais : ils s\'affichent en anglais.', dkLpNum(r.unchanged)));
+    if (r.unknown) lines.push(Tf('{0} textes que cette version de Desktroo n\'utilise pas (gardés pour plus tard).', dkLpNum(r.unknown)));
+    if (r.cleaned) lines.push(Tf('{0} textes corrigés : guillemets droits remplacés par des guillemets typographiques, balises non permises retirées.', dkLpNum(r.cleaned)));
+    if (r.ignored) lines.push(Tf('{0} entrées ignorées : leur valeur n\'est pas un texte.', dkLpNum(r.ignored)));
+    if ((r.holes || []).length) lines.push(T('Repères {0}, {1}… différents de l\'original, à vérifier :') + ' ' + r.holes.slice(0, 5).map(function(k) { return '« ' + webEsc(k) + ' »'; }).join(', ') + (r.holes.length > 5 ? '…' : ''));
+    h += '<p class="web-note">' + lines.join('<br>') + '</p>';
+  }
+  h += '<p class="web-note">' + T('Pour ajouter une langue : téléchargez le modèle, traduisez les valeurs (à droite de chaque ligne ; le texte français, à gauche, ne se modifie pas), renseignez le code et le nom de la langue en tête du fichier, puis importez-le ici. Ce qui n\'est pas traduit reste en anglais. La langue est alors proposée à tous ceux qui ouvrent ce bureau.') + '</p>';
+  return h;
+}
+async function dkLpTemplate(code) {
+  try {
+    var base = JSON.parse(document.getElementById('dk-i18n-en').textContent), pack = {}, meta, todo = [], done = [], out = {};
+    if (code) {
+      var resp = await fetch('/fileops/lang/' + encodeURIComponent(code) + '.json', { cache: 'no-cache' });
+      if (!resp.ok) throw new Error(T('Fichier de langue introuvable.'));
+      pack = await resp.json();
+    }
+    meta = pack._desktroo || {};
+    Object.keys(base).forEach(function(k) { (typeof pack[k] === 'string' && pack[k] && pack[k] !== base[k] ? done : todo).push(k); });
+    out._desktroo = {
+      code: meta.code || 'xx', name: meta.name || '', locale: meta.locale || meta.code || 'xx-XX',
+      version: DK_PAGE_VERSION, author: meta.author || '',
+      aide: 'Traduisez chaque valeur (à droite) ; ne modifiez pas les clés (le texte français, à gauche). Les {0} premières lignes sont encore en anglais : ce sont elles qui restent à traduire. Gardez {0}, {1}… et les balises <b>, <code>… à leur place. Renseignez code (« de », « pt-br »…), name (le nom de la langue dans cette langue, « Deutsch ») et locale (« de-DE »), puis importez le fichier : Configuration système → Langue et fuseau horaire → Langues ajoutées.'.replace('{0}', todo.length),
+      help: 'Translate each value (on the right); do not change the keys (the French text, on the left). The first {0} lines are still in English: those are the ones left to translate. Keep {0}, {1}… and tags such as <b>, <code>… in place. Fill in code (“de”, “pt-br”…), name (the language’s own name, “Deutsch”) and locale (“de-DE”), then import the file: System configuration → Language and time zone → Added languages.'.replace('{0}', todo.length)
+    };
+    todo.forEach(function(k) { out[k] = base[k]; });
+    done.forEach(function(k) { out[k] = pack[k]; });
+    var blob = new Blob([JSON.stringify(out, null, 1) + '\n'], { type: 'application/json' }), a = document.createElement('a'), href = URL.createObjectURL(blob);
+    a.href = href; a.download = 'desktroo-lang-' + (code || 'template') + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(href); }, 60000);
+    toast(code ? Tf('Modèle téléchargé : {0} textes à traduire', dkLpNum(todo.length)) : T('Modèle téléchargé'), 6000);
+  } catch (e) { wmToastErr(e); }
+}
+async function dkLpImport(inp) {
+  var file = inp && inp.files && inp.files[0];
+  if (!file) return;
+  inp.value = '';
+  if (file.size > 4 * 1024 * 1024) { toast('❌ ' + T('Fichier trop gros (4 Mo au plus).'), 7000); return; }
+  _dkLp.busy = T('Import...'); _dkLp.report = null; scView(true);
+  try {
+    var text = await file.text(), r = await fileops('POST', 'lang/import', { content: text });
+    if (!r || !r.ok) throw new Error((r && r.error) || T('Import refusé.'));
+    _dkLp.report = r;
+    toast(r.replaced ? Tf('{0} mis à jour', r.name) : Tf('{0} ajouté', r.name), 6000);
+  } catch (e) { wmToastErr(e); }
+  _dkLp.busy = ''; _dkLp.d = null;
+  scView(true);
+}
+async function dkLpRemove(code) {
+  var l = ((_dkLp.d && _dkLp.d.langs) || []).filter(function(x) { return x.code === code; })[0];
+  if (!l || !await showConfirm(webEsc(Tf('Retirer la langue « {0} » ? Ceux qui l\'utilisent repasseront en anglais.', l.name)), { ok: T('Retirer') })) return;
+  try {
+    var r = await fileops('POST', 'lang/delete', { code: code });
+    if (!r || !r.ok) throw new Error((r && r.error) || T('Retrait refusé.'));
+    toast(Tf('Langue retirée : {0}', l.name));
+    if (code === DK_LANG) { try { localStorage.removeItem('dk-lang'); } catch (_) {} }
+  } catch (e) { wmToastErr(e); }
+  _dkLp.d = null; _dkLp.report = null;
+  scView(true);
+}
 function scView(soft) {
   if (!_sc.gen) return;
   scSide();
@@ -30770,6 +31082,7 @@ function scView(soft) {
       + wmField(T('Langue du bureau'), '<select class="wm-input" id="sc-desk-lang" onchange="dkSetLang(this.value)">'
         + Object.keys(DK_LANGS).map(function(l) { return '<option value="' + l + '"' + (l === DK_LANG ? ' selected' : '') + ' lang="' + l + '">' + webEsc(DK_LANGS[l]) + '</option>'; }).join('') + '</select>',
         T('Gardée dans ce navigateur. Le bureau se recharge pour l\'appliquer.'));
+    h += dkLpHtml();
     h += '<div class="web-group-title">TrueNAS</div><div style="display:flex;flex-direction:column;gap:14px;">';
     var hasLang = Object.prototype.hasOwnProperty.call(g, 'language') && _sc.langs;
     if (hasLang) {

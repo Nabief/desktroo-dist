@@ -1,6 +1,6 @@
 # Licence d'utilisation de Desktroo
 
-Version 1.0 du 10 octobre 2026
+Version 1.1 du 18 octobre 2026
 
 **© 2026 Mdm-services.fr. Tous droits réservés.**
 
@@ -22,7 +22,8 @@ L'Éditeur vous accorde un droit personnel, non exclusif et non cessible :
 
 - d'installer le Logiciel sur les serveurs TrueNAS dont vous avez l'usage légitime ;
 - de l'utiliser pour vos propres besoins, pendant la période d'essai gratuite, puis avec un abonnement en cours de validité, aux conditions publiées sur https://desktroo.fr ;
-- d'en faire les copies de sauvegarde nécessaires à cet usage.
+- d'en faire les copies de sauvegarde nécessaires à cet usage ;
+- de créer des fichiers de langue pour le Logiciel (dossier `lang/` de l'installation, ajoutés depuis le bureau), de les utiliser et de les partager librement. Un fichier de langue contient les textes de l'interface et leur traduction, et aucun code du Logiciel. Si vous en transmettez un à l'Éditeur, vous l'autorisez à le reprendre gratuitement dans Desktroo.
 
 Tout ce qui n'est pas expressément permis ici est réservé à l'Éditeur.
 
@@ -31,7 +32,7 @@ Tout ce qui n'est pas expressément permis ici est réservé à l'Éditeur.
 Sans l'accord écrit et préalable de l'Éditeur, vous ne pouvez pas :
 
 1. copier, publier, distribuer, mettre à disposition, vendre, louer ou concéder en sous-licence tout ou partie du Logiciel, modifié ou non ;
-2. modifier, adapter, traduire ou transformer le Logiciel, ni en tirer un autre logiciel, y compris en confiant son code à un outil d'intelligence artificielle pour le réécrire, le traduire dans un autre langage ou en produire une variante ;
+2. modifier, adapter, traduire ou transformer le Logiciel (hors fichiers de langue, permis à l'article 2), ni en tirer un autre logiciel, y compris en confiant son code à un outil d'intelligence artificielle pour le réécrire, le traduire dans un autre langage ou en produire une variante ;
 3. retirer, masquer ou modifier les mentions de droits, de titulaire, de marque ou de licence présentes dans le Logiciel ;
 4. présenter le Logiciel, ou un logiciel qui en est tiré, comme votre œuvre ou celle d'un tiers ;
 5. contourner, désactiver ou altérer le contrôle de licence, la période d'essai ou tout autre dispositif de protection ;
@@ -88,7 +89,7 @@ Pour demander une autorisation, signaler une copie ou poser une question sur cet
 
 # Desktroo licence agreement
 
-Version 1.0, 10 October 2026
+Version 1.1, 18 October 2026
 
 **© 2026 Mdm-services.fr. All rights reserved.**
 
@@ -110,7 +111,8 @@ The Publisher grants you a personal, non-exclusive, non-transferable right to:
 
 - install the Software on the TrueNAS servers you are legitimately entitled to use;
 - use it for your own needs, during the free trial period and then with a valid subscription, under the terms published at https://desktroo.fr;
-- make the backup copies needed for that use.
+- make the backup copies needed for that use;
+- create language files for the Software (the `lang/` folder of the installation, added from the desktop), use them and share them freely. A language file contains the interface texts and their translation, and no code of the Software. If you send one to the Publisher, you allow the Publisher to include it in Desktroo free of charge.
 
 Everything not expressly allowed here is reserved to the Publisher.
 
@@ -119,7 +121,7 @@ Everything not expressly allowed here is reserved to the Publisher.
 Without the Publisher's prior written consent, you may not:
 
 1. copy, publish, distribute, make available, sell, rent or sublicense all or part of the Software, modified or not;
-2. modify, adapt, translate or transform the Software, or derive other software from it, including by giving its code to an artificial intelligence tool to rewrite it, port it to another language or produce a variant;
+2. modify, adapt, translate or transform the Software (except language files, allowed in section 2), or derive other software from it, including by giving its code to an artificial intelligence tool to rewrite it, port it to another language or produce a variant;
 3. remove, hide or alter the copyright, ownership, trademark or licence notices in the Software;
 4. present the Software, or software derived from it, as your own work or someone else's;
 5. bypass, disable or tamper with the licence check, the trial period or any other protection;

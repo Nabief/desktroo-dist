@@ -38,7 +38,7 @@ fi
 # ── Licence d'utilisation : pas de première installation sans accord ──
 # L'accord se donne dans le YAML de la Custom App : ACCEPT_LICENCE: "oui". Il est inscrit dans
 # data/licence-acceptee.json, que le bureau lit. TERMS_VERSION suit le numéro de LICENSE.md.
-TERMS_VERSION="1.0"
+TERMS_VERSION="1.1"
 TERMS_REC="$D/data/licence-acceptee.json"
 if [ ! -f "$D/fileops.py" ] && [ "${ACCEPT_LICENCE:-}" != "oui" ]; then
   echo "✗ Licence d'utilisation non acceptée : Desktroo n'est pas installé."

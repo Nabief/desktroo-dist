@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.55.0'
+APP_VERSION = '2.56.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -8872,7 +8872,7 @@ _LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/lice
 # data/licence-acceptee.json ; le bureau le demande à la première connexion s'il manque (installation
 # antérieure, fichiers copiés à la main) ou si le texte a changé de version.
 # TERMS_VERSION suit le numéro de version écrit en tête de LICENSE.md : les deux changent ensemble.
-TERMS_VERSION = '1.0'
+TERMS_VERSION = '1.1'
 TERMS_FILE = os.path.join(ACCESS_DATA_DIR, 'licence-acceptee.json')
 
 
@@ -9512,6 +9512,215 @@ def _wallpaper_free_name(base, name):
     return candidate
 
 
+# ── MDM-LANGPACKS-V1 : langues ajoutées ──────────────────────────────────────
+# Une langue ajoutée est un fichier <install>/lang/<code>.json : un objet dont les clés sont
+# les textes français de Desktroo et les valeurs leur traduction, plus une entrée
+# « _desktroo » qui la décrit (code, name, locale, version, author). Un texte absent garde
+# l'anglais. La liste des textes à traduire est le dictionnaire anglais de desktroo.html
+# (bloc dk-i18n-en). Lire la liste et un fichier ne demande pas de jeton : l'écran de
+# connexion en a besoin. Importer et retirer en demandent un.
+LANG_DIR = os.environ.get('LANG_DIR') or (os.path.join(APP_DIR, 'lang') if APP_DIR else '')
+LANG_MAX_BYTES = 4 * 1024 * 1024
+LANG_MAX_TEXT = 4000
+_LP_CODE_RE = re.compile(r'^[a-z]{2,3}(-[a-z0-9]{2,8})?$')
+_LP_LOCALE_RE = re.compile(r'^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$')
+_LP_TAGS = ('b', 'strong', 'i', 'em', 'u', 'code', 'kbd', 'small', 'sub', 'sup', 'mark', 'br')
+_LP_TAG_RE = re.compile(r'<\s*(/?)\s*([A-Za-z][A-Za-z0-9]*)\b[^<>]*>')
+_LP_KEEP_RE = re.compile(r'(</?(?:b|strong|i|em|u|code|kbd|small|sub|sup|mark)>|<br>)')
+_LP_AMP_RE = re.compile(r'&(?!(?:amp|lt|gt|nbsp|hellip|mdash|ndash|laquo|raquo|thinsp);)')
+_LP_HOLE_RE = re.compile(r'\{\d\}')
+_lp_base_cache = {'key': None, 'd': {}}
+_lp_stat_cache = {}
+
+
+def _lp_clean(v):
+    """Rend un texte sûr partout où le bureau l'insère (HTML, attributs, onclick) : guillemets
+    typographiques, balises de mise en forme nues seulement, entités courantes seulement."""
+    v = ''.join(c for c in str(v) if c in '\n\t' or ord(c) >= 32)
+    v = v.replace('"', '”').replace("'", '’').replace('\\', '＼')
+
+    def tag(m):
+        t = m.group(2).lower()
+        if t not in _LP_TAGS:
+            return ''
+        return '<br>' if t == 'br' else '<%s%s>' % (m.group(1), t)
+    v = _LP_TAG_RE.sub(tag, v)
+    parts = _LP_KEEP_RE.split(v)
+    for i in range(0, len(parts), 2):
+        parts[i] = _LP_AMP_RE.sub('&amp;', parts[i]).replace('<', '&lt;').replace('>', '&gt;')
+    return ''.join(parts)[:LANG_MAX_TEXT]
+
+
+def _lp_base():
+    """Dictionnaire anglais de référence (clé française → anglais), relu si desktroo.html change."""
+    p = os.path.join(APP_DIR, 'desktroo.html') if APP_DIR else ''
+    try:
+        st = os.stat(p)
+    except OSError:
+        return {}
+    key = (st.st_mtime, st.st_size)
+    if _lp_base_cache['key'] != key:
+        d = {}
+        try:
+            with open(p, encoding='utf-8') as fh:
+                m = re.search(r'<script type="application/json" id="dk-i18n-en">(.*?)</script>', fh.read(), re.S)
+            if m:
+                d = json.loads(m.group(1))
+        except Exception as e:
+            log.warning('langues : dictionnaire anglais illisible : %s', e)
+        _lp_base_cache.update(key=key, d=d if isinstance(d, dict) else {})
+    return _lp_base_cache['d']
+
+
+def _lp_code(code):
+    code = str(code or '').strip().lower().replace('_', '-')
+    if not _LP_CODE_RE.match(code):
+        raise ValueError('Code de langue invalide : deux ou trois lettres, éventuellement suivies d\'une variante (« de », « pt-br »).')
+    if code in ('fr', 'en'):
+        raise ValueError('Le français et l\'anglais sont fournis avec Desktroo : choisissez le code d\'une autre langue.')
+    return code
+
+
+def _lp_path(code):
+    if not LANG_DIR:
+        raise RuntimeError('Dossier des langues indisponible (APP_DIR non défini).')
+    return os.path.join(LANG_DIR, _lp_code(code) + '.json')
+
+
+def _lp_parse(data):
+    """Valide et nettoie un fichier de langue. Rend (meta, textes, rapport)."""
+    if not isinstance(data, dict):
+        raise ValueError('Le fichier doit contenir un objet JSON { "texte français": "traduction", … }.')
+    meta = data.get('_desktroo')
+    if not isinstance(meta, dict):
+        raise ValueError('Entrée « _desktroo » absente : partez du modèle à traduire, qui la contient.')
+    code = _lp_code(meta.get('code'))
+    name = ' '.join(str(meta.get('name') or '').split())
+    if not name or len(name) > 40:
+        raise ValueError('Donnez à la langue un nom de 1 à 40 caractères (« name », par exemple « Deutsch »).')
+    loc = str(meta.get('locale') or '').strip()
+    clean_meta = {'code': code, 'name': _lp_clean(name), 'locale': loc if _LP_LOCALE_RE.match(loc) else code,
+                  'version': _lp_clean(str(meta.get('version') or ''))[:20], 'author': _lp_clean(str(meta.get('author') or ''))[:120]}
+    base = _lp_base()
+    out = {}
+    rep = {'translated': 0, 'total': len(base), 'unchanged': 0, 'empty': 0, 'ignored': 0, 'unknown': 0, 'cleaned': 0, 'holes': []}
+    for k, v in data.items():
+        if k == '_desktroo' or k.startswith('_'):
+            continue
+        if not isinstance(v, str) or not k.strip():
+            rep['ignored'] += 1
+            continue
+        if not v.strip():
+            rep['empty'] += 1
+            continue
+        c = _lp_clean(v)
+        if c != v:
+            rep['cleaned'] += 1
+        if k in base and c == base[k]:
+            rep['unchanged'] += 1   # encore en anglais : inutile de le garder, l'anglais s'affiche déjà
+            continue
+        if k not in base:
+            rep['unknown'] += 1
+        elif sorted(_LP_HOLE_RE.findall(k)) != sorted(_LP_HOLE_RE.findall(c)) and len(rep['holes']) < 20:
+            rep['holes'].append(k)
+        out[k] = c
+    rep['translated'] = sum(1 for k in out if k in base)
+    return clean_meta, out, rep
+
+
+def _lp_read(code):
+    with open(_lp_path(code), encoding='utf-8') as fh:
+        return _lp_parse(json.load(fh))
+
+
+def lang_list():
+    langs = []
+    total = len(_lp_base())
+    if LANG_DIR and os.path.isdir(LANG_DIR):
+        for fn in sorted(os.listdir(LANG_DIR)):
+            if not fn.endswith('.json') or fn.startswith('.'):
+                continue
+            full = os.path.join(LANG_DIR, fn)
+            try:
+                st = os.stat(full)
+                key = (fn, st.st_mtime, st.st_size, total)
+                item = _lp_stat_cache.get(fn)
+                if not item or item[0] != key:
+                    meta, _texts, rep = _lp_read(fn[:-5])
+                    if meta['code'] != fn[:-5]:
+                        raise ValueError('code « %s » différent du nom du fichier' % meta['code'])
+                    item = (key, dict(meta, translated=rep['translated'], unknown=rep['unknown'], mtime=int(st.st_mtime)))
+                    _lp_stat_cache[fn] = item
+                langs.append(item[1])
+            except Exception as e:
+                log.warning('langues : %s ignoré : %s', fn, e)
+    return {'ok': True, 'total': total, 'langs': langs}
+
+
+def lang_import(body):
+    raw = body.get('content')
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError('Fichier vide.')
+    if len(raw.encode('utf-8')) > LANG_MAX_BYTES:
+        raise ValueError('Fichier trop gros (4 Mo au plus).')
+    try:
+        data = json.loads(raw)
+    except ValueError as e:
+        raise ValueError('Ce fichier n\'est pas du JSON valide : %s' % e)
+    meta, texts, rep = _lp_parse(data)
+    if not rep['translated']:
+        raise ValueError('Aucun texte traduit dans ce fichier : chaque valeur est vide ou encore en anglais.')
+    path = _lp_path(meta['code'])
+    os.makedirs(LANG_DIR, exist_ok=True)
+    existed = os.path.exists(path)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as fh:
+        json.dump(dict({'_desktroo': meta}, **texts), fh, ensure_ascii=False, indent=1)
+        fh.write('\n')
+    os.replace(tmp, path)
+    _lp_stat_cache.pop(meta['code'] + '.json', None)
+    return dict(rep, ok=True, code=meta['code'], name=meta['name'], replaced=existed)
+
+
+def lang_delete(code):
+    path = _lp_path(code)
+    if not os.path.exists(path):
+        raise FileNotFoundError('Langue introuvable.')
+    os.unlink(path)
+    _lp_stat_cache.pop(os.path.basename(path), None)
+    return {'ok': True}
+
+
+def _lang_serve(handler, code):
+    """GET /lang/<code>.json : le fichier nettoyé, revalidé par le navigateur à chaque ouverture."""
+    try:
+        full = _lp_path(code)
+        st = os.stat(full)
+    except (ValueError, RuntimeError, OSError):
+        return handler._json(404, {'error': 'Langue introuvable.'})
+    etag = '"%x-%x"' % (int(st.st_mtime), st.st_size)
+    if handler.headers.get('If-None-Match') == etag:
+        handler.send_response(304)
+        handler.send_header('ETag', etag)
+        handler.end_headers()
+        return
+    try:
+        meta, texts, _rep = _lp_read(code)
+    except Exception as e:
+        return handler._json(422, {'error': 'Fichier de langue illisible : %s' % e})
+    body = json.dumps(dict({'_desktroo': meta}, **texts), ensure_ascii=False).encode('utf-8')
+    handler.send_response(200)
+    handler.send_header('Content-Type', 'application/json; charset=utf-8')
+    handler.send_header('Content-Length', str(len(body)))
+    handler.send_header('Cache-Control', 'no-cache')
+    handler.send_header('ETag', etag)
+    handler.end_headers()
+    try:
+        handler.wfile.write(body)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+
+
 # ── MDM-STORE-V1 : Magasin d'apps Desktroo ───────────────────────────────────────────────────────
 # Phase 0 : session des apps (cookie dt_app), vérification pour nginx (/store/auth), kit des apps (SDK),
 # catalogue signé, réseau Docker partagé et bloc nginx /a/<id>/. Plan : « Plan — Magasin d'apps Desktroo ».
@@ -9931,6 +10140,7 @@ _STORE_POST = {
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
     '/store/pass/mail': lambda b: store_pass_mail(b),
+    '/store/pass/test-mail': lambda b: store_pass_test_mail(b),
     '/store/nas': lambda b: store_nas_update(b),
 }
 
@@ -13659,6 +13869,23 @@ def _store_pass_smtp():
     return env, ''
 
 
+def _store_pass_mail_sig(env):
+    """Empreinte des réglages d'envoi donnés au coffre : sert à voir que la messagerie du NAS a changé depuis."""
+    import hashlib
+    return hashlib.sha256(json.dumps(env, sort_keys=True).encode('utf-8')).hexdigest()[:16] if env else ''
+
+
+_PASS_MAILCHK = {'t': 0, 'env': {}, 'why': ''}
+
+
+def _store_pass_smtp_now():
+    """Messagerie actuelle du NAS, relue au plus une fois par minute (affichage de l'état du coffre)."""
+    if _st_time.time() - _PASS_MAILCHK['t'] > 60:
+        env, why = _store_pass_smtp()
+        _PASS_MAILCHK.update(t=_st_time.time(), env=env, why=why)
+    return _PASS_MAILCHK['env'], _PASS_MAILCHK['why']
+
+
 def store_pass_compose(app, s):
     images = (app or {}).get('images') or {}
     env = {'TZ': _store_timezone(), 'ROCKET_PORT': '8080', 'SIGNUPS_ALLOWED': 'false', 'INVITATIONS_ALLOWED': 'true',
@@ -13668,7 +13895,9 @@ def store_pass_compose(app, s):
         env['DOMAIN'] = 'https://' + s['domain']
     smtp, _why = _store_pass_smtp()   # invitations par e-mail, avec la messagerie du NAS
     env.update(smtp)
-    s['mail'] = {'ok': bool(smtp), 'from': smtp.get('SMTP_FROM', ''), 'why': _why}
+    s['mail'] = {'ok': bool(smtp), 'from': smtp.get('SMTP_FROM', ''), 'why': _why, 'sig': _store_pass_mail_sig(smtp),
+                 'server': ('%s:%s' % (smtp.get('SMTP_HOST'), smtp.get('SMTP_PORT'))) if smtp else ''}
+    _PASS_MAILCHK['t'] = 0
     _store_pass_save(s)
     svc = {
         'image': str(images.get('vaultwarden') or 'docker.io/vaultwarden/server:latest'),
@@ -13758,12 +13987,26 @@ def _pass_session(force=False):
         return _PASS['cookie']
 
 
+def _pass_err_text(raw):
+    """Message d'erreur de Vaultwarden (JSON « message » ou « ErrorModel ») plutôt que la réponse brute."""
+    try:
+        d = json.loads(raw.decode('utf-8'))
+        if isinstance(d, dict):
+            m = d.get('message') or d.get('Message') or (d.get('errorModel') or d.get('ErrorModel') or {}).get('message') \
+                or d.get('error_description') or d.get('error')
+            if m:
+                return str(m)[:300]
+    except Exception:
+        pass
+    return raw[:200].decode('utf-8', 'replace')
+
+
 def _pass_admin(method, path, body=None):
     code, raw, _sc = _pass_http(method, '/admin' + path, body=body, cookie=_pass_session())
     if code in (401, 403) or (code in (302, 303)):
         code, raw, _sc = _pass_http(method, '/admin' + path, body=body, cookie=_pass_session(force=True))
     if code >= 400:
-        raise RuntimeError('Le coffre a répondu %s : %s' % (code, raw[:200].decode('utf-8', 'replace')))
+        raise RuntimeError('Le coffre a répondu %s : %s' % (code, _pass_err_text(raw)))
     try:
         return json.loads(raw.decode('utf-8') or 'null')
     except Exception:
@@ -13782,6 +14025,15 @@ def store_pass_state():
         pass
     if not st['installed']:
         return st
+    # La messagerie du NAS a-t-elle changé depuis que le coffre l'a reprise ? (réglée après coup, mot de passe, port…)
+    try:
+        env, why = _store_pass_smtp_now()
+        m = st['mail']
+        m['now_ok'], m['now_why'] = bool(env), why
+        m['stale'] = bool(env) and _store_pass_mail_sig(env) != m.get('sig', '')
+        m.pop('sig', None)
+    except Exception:
+        pass
     try:
         rows = _pass_admin('GET', '/users') or []
         st['users'] = [{'id': u.get('id') or u.get('Id'), 'email': u.get('email') or u.get('Email'),
@@ -13809,6 +14061,21 @@ def store_pass_invite(body):
         if re.search(r'already exists', t, re.I):
             return 409, {'ok': False, 'error': 'Cette adresse a déjà un compte.'}
         return 502, {'ok': False, 'error': t[:300]}
+
+
+def store_pass_test_mail(body):
+    """E-mail de test envoyé par le coffre lui-même (API /admin/test/smtp de Vaultwarden) : même chemin que les invitations."""
+    email = str((body or {}).get('email') or '').strip().lower()
+    if not re.match(r'^[^@\s]{1,64}@[^@\s]{1,253}\.[a-z]{2,}$', email):
+        return 400, {'ok': False, 'error': 'Adresse e-mail invalide.'}
+    try:
+        _pass_admin('POST', '/test/smtp', {'email': email})
+        return 200, {'ok': True}
+    except Exception as e:
+        t = str(e)
+        if re.search(r'mail is not enabled', t, re.I):
+            return 409, {'ok': False, 'error': 'Le coffre n’a pas de messagerie : utilisez « Activer l’envoi des e-mails ».'}
+        return 502, {'ok': False, 'error': 'Le serveur d’envoi a refusé le message. ' + t[:300]}
 
 
 def store_pass_user(body):
@@ -14311,6 +14578,15 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         # MDM-STORE-V1 : vérification pour nginx, kit des apps, fin de session — sans jeton
         if _pp.path.startswith('/store/') and _store_public_get(self, _pp.path):
             return
+        # MDM-LANGPACKS-V1 : langues ajoutées, lues par l'écran de connexion, donc sans jeton
+        if _pp.path.rstrip('/') == '/lang':
+            try:
+                self._json(200, lang_list())
+            except Exception as e:
+                self._json(200, {'ok': False, 'total': 0, 'langs': [], 'error': str(e)})
+            return
+        if _pp.path.startswith('/lang/') and _pp.path.endswith('.json'):
+            return _lang_serve(self, _pp.path[6:-5])
         # Couleur du thème : lue par l'écran de connexion, donc sans jeton
         if _pp.path.rstrip('/') == '/branding':
             try:
@@ -15194,6 +15470,18 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                         os.unlink(tmp_path)
                     except OSError:
                         pass
+            return
+        # MDM-LANGPACKS-V1 : importer ou retirer une langue ajoutée
+        if path in ('/lang/import', '/lang/delete'):
+            try:
+                b = self._body()
+                self._json(200, lang_import(b) if path == '/lang/import' else lang_delete(b.get('code')))
+            except FileNotFoundError as e:
+                self._json(404, {'ok': False, 'error': str(e)})
+            except ValueError as e:
+                self._json(400, {'ok': False, 'error': str(e)})
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
             return
         # MDM-WALLPAPERS-V1 : suppression d'une image du dossier
         if path == '/wallpapers/delete':
@@ -17328,7 +17616,7 @@ def dkbackup_build(dest_path, kind='backup'):
             raw = json.dumps(meta).encode('utf-8')
             ti = _bk_tarfile.TarInfo('desktroo-backup.json'); ti.size = len(raw); ti.mtime = meta['created']; ti.mode = 0o600
             tf.addfile(ti, _bk_io.BytesIO(raw))
-            for base, prefix in ((ACCESS_DATA_DIR, 'data'), (os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '', 'wallpapers')):
+            for base, prefix in ((ACCESS_DATA_DIR, 'data'), (os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '', 'wallpapers'), (LANG_DIR, 'lang')):
                 if not base or not os.path.isdir(base):
                     continue
                 for root, dirs, files in os.walk(base):
@@ -17498,7 +17786,7 @@ def dkbackup_restore(path):
                 if nm == 'desktroo-backup.json':
                     continue
                 parts = nm.split('/')
-                if (not m.isfile() or nm.startswith('/') or '..' in parts or parts[0] not in ('data', 'wallpapers') or len(parts) < 2
+                if (not m.isfile() or nm.startswith('/') or '..' in parts or parts[0] not in ('data', 'wallpapers', 'lang') or len(parts) < 2
                         or (parts[0] == 'data' and not _dkbk_included('/'.join(parts[1:])))):
                     continue
                 members.append(m)
@@ -17517,7 +17805,7 @@ def dkbackup_restore(path):
                     with open(dst, 'wb') as fh:
                         _bk_shutil.copyfileobj(src, fh)
                 n = 0
-                for top, base in (('data', ACCESS_DATA_DIR), ('wallpapers', os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '')):
+                for top, base in (('data', ACCESS_DATA_DIR), ('wallpapers', os.path.join(APP_DIR, 'wallpapers') if APP_DIR else ''), ('lang', LANG_DIR)):
                     srcdir = os.path.join(stage, top)
                     if not base or not os.path.isdir(srcdir):
                         continue

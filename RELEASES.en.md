@@ -3,7 +3,22 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.55.0 — unreleased
+## 2.56.0 — unreleased
+
+### New
+- **Add your language to Desktroo.** Desktroo comes in French and English; anyone can now translate it into their own language, without waiting for an update. System configuration → Language and time zone → “Download the template to translate”, translate the file, then “Import a language file…”. The language is offered on the login screen and in the settings, to everyone who opens this desktop; a browser set to that language shows it on its own.
+  > The file is <install>/lang/<code>.json: the French texts as keys, the translation as values. Anything not translated stays in English, and “Updated template” gives the file back completed with the texts added by later versions. The file is checked and cleaned on import (formatting tags only). Added languages are part of the Desktroo backup and stay in place across updates.
+- **Licence agreement 1.1.** It now allows you to create, use and share language files. The desktop asks you to accept it once more.
+- **A link to Desktroo Apps** under “See also” in the App catalog and in the Applications manager.
+
+### Fixed
+- **A window can no longer be shrunk until its content is cut off.** Two-pane managers that had no minimum size (Desktroo Apps and its app windows such as Desktroo Pass, TrueNAS updates, Activity log, Health check, Websites, Downloads) stop at 640 × 420, never larger than the screen.
+  > The bottom-right corner handle now respects each window’s minimum size, like the edges do.
+- **Desktroo Pass says clearly when invitations are not sent by email.** The banner explains that the invited person receives nothing until sending is turned on, and the button is now called “Turn on sending emails”. The vault also tells you when the NAS mail settings changed since it took them over, and a “Send a test email” button checks sending through the same path as invitations.
+  > The test goes through Vaultwarden (/admin/test/smtp); its error message is shown as is. Once sending is on, “Resend invitation” sends the email to people already invited.
+- **The applications list shows their icons.** Desktroo Apps apps use the Store icon, and a custom application uses the one of the app with the same name in the TrueNAS catalog (Nextcloud, n8n, OnlyOffice…). The others keep their initial.
+
+## 2.55.0 — 18 October 2026
 
 ### New
 - **Place widgets anywhere on the desktop.** Drag a widget by its title and drop it wherever you like: it snaps to the edges and to other widgets. Pull its bottom-right corner to make it wider or narrower. Desktop icons move aside so they never end up underneath.

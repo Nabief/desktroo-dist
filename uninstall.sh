@@ -92,7 +92,7 @@ fi
 KNOWN_CONTAINERS="desktroo desktroo-fileops desktroo-websites desktroo-php83 desktroo-php82 desktroo-php81 desktroo-php74 desktroo-mariadb desktroo-authelia desktroo-init"
 APP_FILES="fileops.py desktroo.html vnc-viewer.html setup-truenas-host.sh update.sh update-web.sh setup-wizard.py app-init.sh install.sh uninstall.sh LICENSE.md RELEASES.md RELEASES.en.md version.txt docker-compose.yml docker-compose.authelia.yml nginx.conf nginx-desktop-plain.conf autostart.sh autostart.log .htpasswd desktroo-dl-extension.zip __pycache__"
 DB_ITEMS="mariadb websites"
-SETTINGS_ITEMS="data authelia wallpapers"
+SETTINGS_ITEMS="data authelia wallpapers lang"
 AUTOSTART_COMMENTS='("Desktroo autostart", "TrueNAS Desktop autostart")'
 
 HAVE_DOCKER=0
