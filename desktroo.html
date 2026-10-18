@@ -9778,6 +9778,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Revenir en arrière": "Go back",
 "Retour en arrière...": "Going back...",
 "Données remises dans l'état de l'instantané.": "Data put back as of the snapshot.",
+"Réglages enregistrés ; un service absent de ce système n'a pas pu être relancé.": "Settings saved; a service missing from this system could not be restarted.",
 "Administration complète": "Full administration",
   "Audio": "Audio",
   "Sous-titres": "Subtitles",
@@ -30915,9 +30916,14 @@ function scSpec(k) {
       { k: 'fqdn_syslog', l: T('Signer les lignes du nom complet du NAS'), t: 'bool' },
       { k: 'syslog_audit', l: T('Envoyer aussi le journal d\'audit'), t: 'bool' } ] } ] }; }
 
-  if (k === 'krn') return { key: k, api: 'system.advanced', title: T('Noyau et matériel'), s: [
+  if (k === 'krn') return { key: k, api: 'system.advanced', title: T('Noyau et matériel'),
+    // TrueNAS enregistre le réglage puis tente de redémarrer un service qui n'existe pas sous Linux : l'erreur ne veut pas dire
+    // que le réglage est perdu. On la traite comme un succès partiel et la page relit l'état réel.
+    run: async function(body) {
+      try { return await wsCall('system.advanced.update', [body], 180000); }
+      catch (e) { if (/NotImplemented\.service/.test(String((e && e.message) || e))) { toast(T('Réglages enregistrés ; un service absent de ce système n\'a pas pu être relancé.'), 8000); return null; } throw e; }
+    }, s: [
     { f: [
-      { k: 'powerdaemon', l: T('Économie d\'énergie du processeur'), t: 'bool', h: T('Le processeur ralentit quand il a peu à faire') },
       { k: 'autotune', l: T('Réglage automatique'), t: 'bool', h: T('TrueNAS ajuste des paramètres du noyau à la mémoire installée') },
       { k: 'kdump_enabled', l: T('Garder une trace en cas de plantage du noyau'), t: 'bool' },
       { k: 'debugkernel', l: T('Noyau de débogage'), t: 'bool', h: T('À la demande du support seulement ; au prochain démarrage') },

@@ -9,6 +9,7 @@ the grey line underneath gives the technical detail, when there is one.
 - **The file picker now uses the desktop's colors.** The browser's grey default button, on the Restore and Update pages, becomes a rounded button like the others.
 
 ### Fixed
+- **Kernel and hardware: no more “NotImplemented.service” error.** The “Processor power saving” setting (a service that does not exist on Linux) is removed from the page, and when TrueNAS saves a setting but cannot restart a missing service, Desktroo says so instead of showing an error.
 - **The Desktroo backup failed on an ACL-based NAS folder** (“Operation not permitted” on the file being written). Desktroo no longer forces the file's permissions when the folder does not allow it: the backup goes through.
 
 ## 2.54.49 — 18 October 2026
