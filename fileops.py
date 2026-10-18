@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.48'
+APP_VERSION = '2.54.49'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -8862,7 +8862,8 @@ def _lic_is_readonly():
 
 # Routes POST dont l'écriture reste autorisée même en lecture seule (on doit pouvoir signaler un problème sans abonnement).
 _LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report', '/terms/accept',
-                            '/uninstall/run', '/store/uninstall', '/store/start', '/store/access'}
+                            '/uninstall/run', '/store/uninstall', '/store/start', '/store/access',
+                            '/dkbackup/run', '/dkbackup/settings', '/dkbackup/delete', '/dkbackup/restore', '/dkbackup/restore-local'}
 
 
 # ── Licence d'utilisation (LICENSE.md) : l'accord de l'installation ─────────────────────────────
@@ -10467,6 +10468,17 @@ def _store_running(app_id):
     return store_job_get(app_id).get('state') == 'running'
 
 
+def _store_ds_create(name):
+    """Crée un dataset. Sous un parent en ACL POSIX (le dataset « apps » de TrueNAS), TrueNAS refuse l'aclmode hérité :
+    il doit valoir DISCARD. On réessaie alors avec cette valeur."""
+    try:
+        return _store_midclt('pool.dataset.create', {'name': name}, timeout=120)
+    except RuntimeError as e:
+        if 'aclmode' not in str(e):
+            raise
+        return _store_midclt('pool.dataset.create', {'name': name, 'aclmode': 'DISCARD'}, timeout=120)
+
+
 def _store_prepare_data(app):
     ds = _store_dataset(app['id'])
     parent = ds.rsplit('/', 1)[0]
@@ -10483,7 +10495,7 @@ def _store_prepare_data(app):
                     if c3 != 0:
                         log.warning('Magasin : %s existe déjà et contient des fichiers : utilisé tel quel, sans dataset.', p)
                         continue
-            _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
+            _store_ds_create(d)
     owner = str(app.get('run_as') or '568:568')
     nas = _store_nas_get(app['id']) if (app.get('nas_access') and not _store_nas_all(app)) else None
     if _store_nas_all(app):
@@ -11365,7 +11377,7 @@ def _store_npm_prepare(app):
         for d in (parent, ds):
             out, _e, code = _px_host('zfs list -H -o name ' + shq(d) + ' 2>/dev/null', timeout=30)
             if code != 0 or not out.strip():
-                _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
+                _store_ds_create(d)
         s['data'] = '/mnt/' + ds
     _store_npm_settings_save(s)
     return s
@@ -13679,7 +13691,7 @@ def _store_pass_prepare(app):
     for d in (parent, ds):
         out, _e, code = _px_host('zfs list -H -o name ' + shq(d) + ' 2>/dev/null', timeout=30)
         if code != 0 or not out.strip():
-            _store_midclt('pool.dataset.create', {'name': d}, timeout=120)
+            _store_ds_create(d)
     p = '/mnt/' + ds + '/data'
     _o, err, code = _px_host('mkdir -p %s && chown 568:568 %s' % (shq(p), shq(p)), timeout=60)
     if code != 0:
@@ -14334,6 +14346,31 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(502, {'ok': False, 'error': str(e)})
             return
 
+        # MDM-DKBACKUP-V1 : sauvegarde de Desktroo (état, téléchargement)
+        if path == '/dkbackup/status':
+            try:
+                self._json(200, dkbackup_status())
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
+            return
+        if path == '/dkbackup/download':
+            nm = dict(parse_qsl(p.query)).get('name', '')
+            full = os.path.join(_dkbk_settings()['dir'], nm)
+            if not DKBK_NAME_RE.match(nm) or not os.path.isfile(full):
+                self._json(404, {'ok': False, 'error': 'Sauvegarde introuvable.'})
+                return
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/gzip')
+            self.send_header('Content-Length', str(os.path.getsize(full)))
+            self.send_header('Content-Disposition', 'attachment; filename="%s"' % nm)
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            try:
+                with open(full, 'rb') as fh:
+                    _bk_shutil.copyfileobj(fh, self.wfile)
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         # MDM-LICENSE-V1 : état de la licence / essai
         if path == '/license/status':
             try:
@@ -14983,6 +15020,52 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         p    = urlparse(self.path)
         path = p.path.rstrip('/')
 
+        # MDM-DKBACKUP-V1 : sauvegarde / restauration de Desktroo
+        if path.startswith('/dkbackup/'):
+            try:
+                if path == '/dkbackup/run':
+                    code, resp = dkbackup_run(manual=True)
+                elif path == '/dkbackup/settings':
+                    code, resp = dkbackup_settings_set(self._body())
+                elif path == '/dkbackup/delete':
+                    code, resp = dkbackup_delete(str(self._body().get('name', '')))
+                elif path == '/dkbackup/snap-restore':
+                    b = self._body()
+                    code, resp = dkbackup_snap_restore(str(b.get('app', '')), str(b.get('snapshot', '')))
+                elif path in ('/dkbackup/restore', '/dkbackup/restore-local'):
+                    tmpf = None
+                    if path == '/dkbackup/restore-local':
+                        nm = str(self._body().get('name', ''))
+                        full = os.path.join(_dkbk_settings()['dir'], nm)
+                        if not DKBK_NAME_RE.match(nm) or not os.path.isfile(full):
+                            return self._json(404, {'ok': False, 'error': 'Sauvegarde introuvable.'})
+                    else:
+                        n = int(self.headers.get('Content-Length', 0))
+                        if n <= 0 or n > DKBK_MAX_UPLOAD:
+                            return self._json(400, {'ok': False, 'error': 'Fichier absent ou trop volumineux.'})
+                        fd, tmpf = _tempfile.mkstemp(prefix='dkup-', suffix='.tar.gz')
+                        with os.fdopen(fd, 'wb') as fh:
+                            left = n
+                            while left > 0:
+                                chunk = self.rfile.read(min(1 << 20, left))
+                                if not chunk:
+                                    break
+                                fh.write(chunk); left -= len(chunk)
+                        full = tmpf
+                    try:
+                        code, resp = dkbackup_restore(full)
+                    finally:
+                        if tmpf:
+                            try: os.remove(tmpf)
+                            except OSError: pass
+                    if code == 200:
+                        _schedule_self_restart()
+                else:
+                    code, resp = 404, {'ok': False, 'error': 'Route inconnue.'}
+                self._json(code, resp)
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
+            return
         # MDM-LICENSE-V1 : activation + garde lecture seule
         if path == '/license/activate':
             try:
@@ -17172,6 +17255,310 @@ if os.environ.get('HOST_BOOTSTRAP', '1').lower() not in ('0', 'false', 'no', 'of
         name='host-bootstrap',
         daemon=True,
     ).start()
+
+# ── Sauvegarde et restauration de Desktroo (MDM-DKBACKUP-V1) ───────────────────────────────────────
+# Une archive .tar.gz des réglages de Desktroo (dossier de données + fonds d'écran), rangée dans un dossier du NAS
+# et téléchargeable ; en plus, un instantané ZFS horodaté du dataset de chaque app du Magasin (retour en arrière
+# instantané, sans copie). La licence et l'identité de l'installation n'en font pas partie : elles restent celles du NAS.
+import tarfile as _bk_tarfile
+import io as _bk_io
+import shutil as _bk_shutil
+
+DKBK_SETTINGS = os.path.join(ACCESS_DATA_DIR, 'dkbackup.json')
+DKBK_NAME_RE  = re.compile(r'^desktroo-(?:backup|avant-restauration)-\d{8}-\d{6}\.tar\.gz$')
+DKBK_SNAP_RE  = re.compile(r'^dkbak-\d{8}-\d{6}$')
+DKBK_INTERVAL = 7 * 86400
+DKBK_EXCLUDE  = {'license.json', 'activation-key', 'license-refresh.json', 'install-id', 'trial.json', 'trial-fp.json',
+                 'dkbackup.json', 'images-fresh.json', 'activity.jsonl'}
+DKBK_EXCLUDE_PATHS = {'store/catalog.json'}
+DKBK_MAX_UPLOAD = 512 * 1024 * 1024
+_dkbk_lock = _threading.Lock()
+
+
+def _dkbk_settings():
+    d = _lic_read_json(DKBK_SETTINGS)
+    d = d if isinstance(d, dict) else {}
+    keep = d.get('keep')
+    return {'auto': bool(d.get('auto', True)),
+            'dir': str(d.get('dir') or os.path.join(APP_DIR or ACCESS_DATA_DIR, 'backups')),
+            'keep': int(keep) if isinstance(keep, int) and 1 <= keep <= 60 else 4,
+            'last': int(d.get('last') or 0), 'last_error': str(d.get('last_error') or '')}
+
+
+def _dkbk_save(s):
+    _lic_write_json(DKBK_SETTINGS, {k: s[k] for k in ('auto', 'dir', 'keep', 'last', 'last_error')})
+
+
+def _dkbk_dir_ok(path):
+    p = os.path.normpath(str(path or ''))
+    return p.startswith('/mnt/') and '..' not in p.split('/') and len(p) < 400
+
+
+def _dkbk_stamp(ts=None):
+    return _lic_time.strftime('%Y%m%d-%H%M%S', _lic_time.localtime(ts if ts else _lic_time.time()))
+
+
+def _dkbk_included(rel):
+    rel = rel.replace('\\', '/')
+    if rel in DKBK_EXCLUDE_PATHS or rel.startswith('.'):
+        return False
+    return os.path.basename(rel) not in DKBK_EXCLUDE and not rel.endswith(('.tmp', '.lock'))
+
+
+def _dkbk_apps():
+    out = []
+    for app_id, rec in sorted(store_installed_get().items()):
+        ds = str((rec or {}).get('dataset') or '')
+        if _STORE_DS_RE.match(ds) and not any(part in ('.', '..') for part in ds.split('/')):
+            out.append((app_id, ds))
+    return out
+
+
+def dkbackup_build(dest_path, kind='backup'):
+    """Écrit l'archive dans dest_path (fichier temporaire puis renommage). Rend le nombre de fichiers."""
+    tmp = dest_path + '.part'
+    n = 0
+    meta = {'format': 'desktroo-backup', 'version': 1, 'app_version': APP_VERSION, 'created': int(_lic_time.time()),
+            'kind': kind, 'apps': [a for a, _d in _dkbk_apps()]}
+    with _bk_tarfile.open(tmp, 'w:gz') as tf:
+        raw = json.dumps(meta).encode('utf-8')
+        ti = _bk_tarfile.TarInfo('desktroo-backup.json'); ti.size = len(raw); ti.mtime = meta['created']; ti.mode = 0o600
+        tf.addfile(ti, _bk_io.BytesIO(raw))
+        for base, prefix in ((ACCESS_DATA_DIR, 'data'), (os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '', 'wallpapers')):
+            if not base or not os.path.isdir(base):
+                continue
+            for root, dirs, files in os.walk(base):
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                for fn in files:
+                    full = os.path.join(root, fn)
+                    rel = os.path.relpath(full, base)
+                    if os.path.islink(full) or (prefix == 'data' and not _dkbk_included(rel)):
+                        continue
+                    try:
+                        tf.add(full, arcname=prefix + '/' + rel.replace(os.sep, '/'), recursive=False)
+                        n += 1
+                    except OSError:
+                        pass
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, dest_path)
+    return n
+
+
+def dkbackup_snapshots(create=False, keep=4):
+    """Instantanés ZFS 'dkbak-…' des datasets d'apps. create=True en prend un nouveau, puis élague à `keep` par dataset.
+    Rend (liste [{app, dataset, name, ts}], erreurs)."""
+    snaps, errs = [], []
+    stamp = 'dkbak-' + _dkbk_stamp()
+    for app_id, ds in _dkbk_apps():
+        try:
+            if create:
+                out, err, code = _px_host('zfs snapshot %s' % shq(ds + '@' + stamp), timeout=60)
+                if code != 0 and 'dataset does not exist' not in (err or out or ''):
+                    errs.append('%s : %s' % (app_id, (err or out or 'échec').strip()[-160:]))
+            out, err, code = _px_host('zfs list -H -p -t snapshot -d 1 -o name,creation -s creation %s 2>/dev/null' % shq(ds), timeout=60)
+            rows = []
+            for line in (out or '').splitlines():
+                nm, _t, cr = line.partition('\t')
+                sn = nm.split('@', 1)[-1]
+                if DKBK_SNAP_RE.match(sn):
+                    rows.append((sn, int(cr.strip() or 0)))
+            rows.sort(key=lambda r: r[0])
+            if create and len(rows) > keep:
+                for sn, _cr in rows[:len(rows) - keep]:
+                    _px_host('zfs destroy %s' % shq(ds + '@' + sn), timeout=120)
+                rows = rows[len(rows) - keep:]
+            for sn, cr in rows:
+                snaps.append({'app': app_id, 'dataset': ds, 'name': sn, 'ts': cr})
+        except Exception as e:
+            errs.append('%s : %s' % (app_id, e))
+    return snaps, errs
+
+
+def dkbackup_list():
+    s = _dkbk_settings()
+    rows = []
+    try:
+        for fn in os.listdir(s['dir']):
+            if DKBK_NAME_RE.match(fn):
+                st = os.stat(os.path.join(s['dir'], fn))
+                rows.append({'name': fn, 'size': st.st_size, 'ts': int(st.st_mtime), 'safety': fn.startswith('desktroo-avant')})
+    except OSError:
+        pass
+    rows.sort(key=lambda r: r['name'], reverse=True)
+    return rows
+
+
+def dkbackup_run(manual=False):
+    """Archive + instantanés + rotation. Rend (code, dict)."""
+    if not _dkbk_lock.acquire(blocking=False):
+        return 409, {'ok': False, 'error': 'Une sauvegarde est déjà en cours.'}
+    try:
+        s = _dkbk_settings()
+        if not _dkbk_dir_ok(s['dir']):
+            return 400, {'ok': False, 'error': 'Dossier de sauvegarde invalide : il doit se trouver sous /mnt.'}
+        try:
+            os.makedirs(s['dir'], exist_ok=True)
+            name = 'desktroo-backup-%s.tar.gz' % _dkbk_stamp()
+            n = dkbackup_build(os.path.join(s['dir'], name))
+        except Exception as e:
+            s['last_error'] = 'Archive : %s' % e
+            _dkbk_save(s)
+            return 502, {'ok': False, 'error': s['last_error']}
+        allb = dkbackup_list()
+        for r in [r for r in allb if not r['safety']][s['keep']:] + [r for r in allb if r['safety']][3:]:
+            try:
+                os.remove(os.path.join(s['dir'], r['name']))
+            except OSError:
+                pass
+        snaps, errs = dkbackup_snapshots(create=True, keep=s['keep'])
+        s['last'] = int(_lic_time.time())
+        s['last_error'] = '; '.join(errs)[:400]
+        _dkbk_save(s)
+        return 200, {'ok': True, 'name': name, 'files': n, 'snapshots': len(snaps), 'warnings': errs}
+    finally:
+        _dkbk_lock.release()
+
+
+def dkbackup_status():
+    s = _dkbk_settings()
+    snaps, _e = dkbackup_snapshots()
+    return {'ok': True, 'settings': s, 'backups': dkbackup_list(), 'snapshots': snaps,
+            'next': (s['last'] + DKBK_INTERVAL) if s['auto'] else 0, 'interval': DKBK_INTERVAL}
+
+
+def dkbackup_settings_set(b):
+    s = _dkbk_settings()
+    if 'auto' in b:
+        s['auto'] = bool(b['auto'])
+    if 'keep' in b:
+        try:
+            k = int(b['keep'])
+        except Exception:
+            return 400, {'ok': False, 'error': 'Nombre de copies invalide.'}
+        if not 1 <= k <= 60:
+            return 400, {'ok': False, 'error': 'Entre 1 et 60 copies.'}
+        s['keep'] = k
+    if b.get('dir'):
+        d = os.path.normpath(str(b['dir']).strip())
+        if not _dkbk_dir_ok(d):
+            return 400, {'ok': False, 'error': 'Le dossier doit se trouver sous /mnt.'}
+        s['dir'] = d
+    _dkbk_save(s)
+    return 200, {'ok': True, 'settings': s}
+
+
+def dkbackup_delete(name):
+    s = _dkbk_settings()
+    if not DKBK_NAME_RE.match(str(name or '')):
+        return 400, {'ok': False, 'error': 'Nom invalide.'}
+    try:
+        os.remove(os.path.join(s['dir'], name))
+    except OSError as e:
+        return 404, {'ok': False, 'error': str(e)}
+    return 200, {'ok': True}
+
+
+def dkbackup_restore(path):
+    """Remet en place une archive. Garde une copie de sécurité de l'état actuel. Rend (code, dict)."""
+    if not _dkbk_lock.acquire(blocking=False):
+        return 409, {'ok': False, 'error': 'Une sauvegarde ou une restauration est déjà en cours.'}
+    try:
+        try:
+            tf = _bk_tarfile.open(path, 'r:gz')
+        except Exception:
+            return 400, {'ok': False, 'error': "Ce fichier n'est pas une sauvegarde Desktroo (.tar.gz)."}
+        with tf:
+            try:
+                mf = tf.extractfile('desktroo-backup.json')
+                meta = json.loads(mf.read().decode('utf-8')) if mf else None
+            except Exception:
+                meta = None
+            if not isinstance(meta, dict) or meta.get('format') != 'desktroo-backup':
+                return 400, {'ok': False, 'error': "Ce fichier n'est pas une sauvegarde Desktroo."}
+            members = []
+            for m in tf.getmembers():
+                nm = m.name
+                if nm == 'desktroo-backup.json':
+                    continue
+                parts = nm.split('/')
+                if (not m.isfile() or nm.startswith('/') or '..' in parts or parts[0] not in ('data', 'wallpapers') or len(parts) < 2
+                        or (parts[0] == 'data' and not _dkbk_included('/'.join(parts[1:])))):
+                    continue
+                members.append(m)
+            if not members:
+                return 400, {'ok': False, 'error': 'La sauvegarde ne contient aucun réglage.'}
+            s = _dkbk_settings()
+            os.makedirs(s['dir'], exist_ok=True)
+            safety = os.path.join(s['dir'], 'desktroo-avant-restauration-%s.tar.gz' % _dkbk_stamp())
+            dkbackup_build(safety, kind='avant-restauration')
+            stage = _tempfile.mkdtemp(prefix='dkrestore-')
+            try:
+                for m in members:
+                    dst = os.path.join(stage, m.name)
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                    src = tf.extractfile(m)
+                    with open(dst, 'wb') as fh:
+                        _bk_shutil.copyfileobj(src, fh)
+                n = 0
+                for top, base in (('data', ACCESS_DATA_DIR), ('wallpapers', os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '')):
+                    srcdir = os.path.join(stage, top)
+                    if not base or not os.path.isdir(srcdir):
+                        continue
+                    for root, _d, files in os.walk(srcdir):
+                        for fn in files:
+                            full = os.path.join(root, fn)
+                            dst = os.path.join(base, os.path.relpath(full, srcdir))
+                            os.makedirs(os.path.dirname(dst), exist_ok=True)
+                            tmp = dst + '.rst'
+                            _bk_shutil.copyfile(full, tmp)
+                            os.replace(tmp, dst)
+                            n += 1
+            finally:
+                _bk_shutil.rmtree(stage, ignore_errors=True)
+        return 200, {'ok': True, 'files': n, 'safety': os.path.basename(safety), 'apps': meta.get('apps', [])}
+    finally:
+        _dkbk_lock.release()
+
+
+def dkbackup_snap_restore(app_id, snap):
+    """Remet les données d'une app dans l'état d'un instantané : arrêt, retour en arrière ZFS, redémarrage."""
+    reg = store_installed_get()
+    rec = reg.get(app_id) if _STORE_ID_RE.match(str(app_id or '')) else None
+    ds = str((rec or {}).get('dataset') or '')
+    if not rec or not any(a == app_id for a, _d in _dkbk_apps()) or not DKBK_SNAP_RE.match(str(snap or '')):
+        return 400, {'ok': False, 'error': 'App ou instantané inconnu.'}
+    snaps, _e = dkbackup_snapshots()
+    if not any(x['app'] == app_id and x['name'] == snap for x in snaps):
+        return 404, {'ok': False, 'error': 'Instantané introuvable.'}
+    try:
+        try:
+            _store_midclt('app.stop', 'dt-' + app_id, job=True, timeout=300)
+        except Exception as e:
+            log.warning('dkbackup : arrêt de %s : %s', app_id, e)
+        out, err, code = _px_host('zfs rollback -r %s' % shq(ds + '@' + snap), timeout=300)
+        if code != 0:
+            raise RuntimeError((err or out or 'zfs rollback a échoué').strip()[-300:])
+        store_net_ensure()
+        _store_midclt('app.start', 'dt-' + app_id, job=True, timeout=600)
+        return 200, {'ok': True}
+    except Exception as e:
+        return 502, {'ok': False, 'error': str(e)}
+
+
+def _dkbk_loop():
+    _lic_time.sleep(120)
+    while True:
+        try:
+            s = _dkbk_settings()
+            if s['auto'] and _lic_time.time() - s['last'] >= DKBK_INTERVAL:
+                code, out = dkbackup_run()
+                log.info('Sauvegarde automatique de Desktroo : %s', out.get('name') or out.get('error'))
+        except Exception as e:
+            log.warning('Sauvegarde automatique : %s', e)
+        _lic_time.sleep(900)
+
+
+_threading.Thread(target=_dkbk_loop, name='dkbackup', daemon=True).start()
 
 # MDM-STORE-V1 : réseau des apps et bloc nginx /a/
 _threading.Thread(target=_store_boot, name='store-boot', daemon=True).start()

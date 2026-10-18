@@ -9730,6 +9730,44 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Catalogue du": "Catalog of",
 "Pour installer cette app seule, ouvrez Desktroo dans le navigateur (et non dans l’application Desktroo).": "To install this app on its own, open Desktroo in the browser (not in the Desktroo app).",
 "Un caractère de l’identifiant ou du mot de passe n’est pas pris en charge (accents courants admis, pas les symboles exotiques).": "A character in the username or password is not supported (common accents are fine, exotic symbols are not).",
+"copie de sécurité avant une restauration": "safety copy made before a restore",
+"Les réglages de Desktroo : partages, sites, accès des apps, secrets des apps, fonds d'écran et liste des apps installées. La licence n'y est pas : elle reste celle de ce NAS. Le fichier contient des secrets : gardez-le à l'abri.": "Desktroo's settings: shares, sites, app access, app secrets, wallpapers and the list of installed apps. The license is not included: it stays this NAS's. The file contains secrets: keep it safe.",
+"Sauvegarder Desktroo maintenant": "Back up Desktroo now",
+"Dernière sauvegarde : {0}.": "Last backup: {0}.",
+"Aucune sauvegarde pour l'instant.": "No backup yet.",
+"Prochaine : {0}.": "Next: {0}.",
+"Sauvegarde automatique": "Automatic backup",
+"Une fois par semaine, faite par Desktroo lui-même : aucune tâche à créer dans TrueNAS.": "Once a week, done by Desktroo itself: no task to create in TrueNAS.",
+"Copies à garder": "Copies to keep",
+"Les plus anciennes sont supprimées. Autant d'instantanés sont gardés pour les données de chaque app.": "The oldest are deleted. The same number of snapshots is kept for each app's data.",
+"Dossier des copies sur le NAS": "Folder for copies on the NAS",
+"Un dossier sous /mnt, de préférence sur un autre pool que celui des apps.": "A folder under /mnt, preferably on a different pool from the apps.",
+"Copies sur le NAS": "Copies on the NAS",
+"Aucune copie pour l'instant.": "No copy yet.",
+"Restaurer Desktroo": "Restore Desktroo",
+"Remettre une de ces copies ou un fichier ; revenir à un instantané d'une app": "Put one of these copies or a file back; go back to an app snapshot",
+"Remet les réglages de Desktroo d'une sauvegarde, puis redémarre Desktroo. Une copie de sécurité de l'état actuel est faite juste avant. TrueNAS, vos fichiers et la licence ne bougent pas.": "Puts Desktroo's settings from a backup back, then restarts Desktroo. A safety copy of the current state is made just before. TrueNAS, your files and the license do not change.",
+"Fichier de sauvegarde Desktroo": "Desktroo backup file",
+"Un fichier .tar.gz téléchargé depuis la page « Sauvegarde ».": "A .tar.gz file downloaded from the “Backup” page.",
+"Restaurer ce fichier": "Restore this file",
+"Données des apps": "App data",
+"Aucun instantané pour l'instant : un est pris à chaque sauvegarde de Desktroo.": "No snapshot yet: one is taken at every Desktroo backup.",
+"Chaque sauvegarde prend un instantané ZFS des données de chaque app. Revenir à un instantané remet l'app dans l'état de ce moment-là ; ce qui a changé depuis est perdu.": "Each backup takes a ZFS snapshot of each app's data. Going back to a snapshot puts the app back as it was then; what changed since is lost.",
+"Revenir à ce point": "Go back to this point",
+"Sauvegarde en cours...": "Backing up...",
+"Sauvegarde faite : {0}": "Backup done: {0}",
+"Fichier vide.": "Empty file.",
+"Supprimer la copie « {0} » ?": "Delete the copy “{0}”?",
+"Copie supprimée": "Copy deleted",
+"Desktroo restauré : il redémarre. La page se recharge dans un instant.": "Desktroo restored: it is restarting. The page reloads in a moment.",
+"Restaurer Desktroo depuis <strong>": "Restore Desktroo from <strong>",
+"Les réglages actuels de Desktroo sont remplacés (une copie de sécurité est faite avant), puis Desktroo redémarre.": "Desktroo's current settings are replaced (a safety copy is made first), then Desktroo restarts.",
+"Ce fichier ne ressemble pas à une sauvegarde Desktroo (.tar.gz).": "This file does not look like a Desktroo backup (.tar.gz).",
+"Remettre les données de <strong>{0}</strong> dans l'état du {1} ?": "Put <strong>{0}</strong>'s data back as of {1}?",
+"L'app est arrêtée le temps du retour en arrière. Tout ce qu'elle a enregistré depuis cet instantané est perdu, ainsi que les instantanés plus récents.": "The app is stopped while going back. Everything it saved since this snapshot is lost, along with newer snapshots.",
+"Revenir en arrière": "Go back",
+"Retour en arrière...": "Going back...",
+"Données remises dans l'état de l'instantané.": "Data put back as of the snapshot.",
 "Administration complète": "Full administration",
   "Audio": "Audio",
   "Sous-titres": "Subtitles",
@@ -13073,7 +13111,7 @@ async function fileops(method, endpoint, body, _retried) {
   if (DK_UNINSTALLED) return new Promise(function() {});   // le service s'en va : plus aucun appel, plus aucune erreur affichée
   // En lecture seule, quatre envois restent permis : activer une licence, signaler un problème, accepter la licence d'utilisation,
   // et désinstaller (un abonnement expiré ne doit pas empêcher de partir).
-  if (_licReadonly && method !== 'GET' && ['license/activate', 'report', 'terms/accept', 'uninstall/run', 'store/uninstall', 'store/start', 'store/access'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
+  if (_licReadonly && method !== 'GET' && ['license/activate', 'report', 'terms/accept', 'uninstall/run', 'store/uninstall', 'store/start', 'store/access', 'dkbackup/run', 'dkbackup/settings', 'dkbackup/delete', 'dkbackup/restore-local'].indexOf(String(endpoint).split('?')[0].replace(/^\/+/, '')) < 0) {
     licBlockToast();
     throw new Error('LICENSE_READONLY');
   }
@@ -21518,7 +21556,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.54.48';
+var DK_PAGE_VERSION = '2.54.49';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();
@@ -30658,6 +30696,7 @@ function scSaveBtn(call, label) { return '<div class="web-foot" style="justify-c
 function scView(soft) {
   if (!_sc.gen) return;
   scSide();
+  if ((_sc.nav === 'bak' || _sc.nav === 'rst') && !_dkbk.loading && (!_dkbk.st || Date.now() - _dkbk.t > 15000)) setTimeout(dkbkLoad, 0);
   if (scExtra(soft)) return;
   var el = wmBody('sc'), g = _sc.gen, h = '';
   if (_sc.nav === 'loc') {
@@ -30705,7 +30744,7 @@ function scView(soft) {
           _sc.seed, 'onchange="_sc.seed=this.checked"' + (_sc.busy ? ' disabled' : '')) + '</div>'
       + '<div class="web-foot" style="justify-content:flex-start;margin-top:16px;"><button class="web-open" onclick="scBackup()"' + (_sc.busy ? ' disabled' : '') + '>' + (_sc.busy ? T('Préparation...') : T('Télécharger la sauvegarde')) + '</button></div>'
       + '<p class="web-note">' + (last ? Tf('Dernière sauvegarde téléchargée depuis ce navigateur : {0}.', webEsc(last)) : T('Aucune sauvegarde téléchargée depuis ce navigateur.')) + '</p>'
-      + '<div class="web-group" style="margin-top:16px;">' + wmRow('scGo(\'rst\')', T('Restauration'), T('Remettre un de ces fichiers en place ; le NAS redémarre')) + '</div>';
+      + '<div class="web-group" style="margin-top:16px;">' + wmRow('scGo(\'rst\')', T('Restauration'), T('Remettre un de ces fichiers en place ; le NAS redémarre')) + '</div>' + dkbkBackupHtml();
   } else {
     wmHead('sc', T('Nom du NAS'), { keepScroll: soft, narrow: true });
     h += '<div style="display:flex;flex-direction:column;gap:14px;margin-top:6px;">'
@@ -31007,6 +31046,132 @@ async function tnUpload(method, params, file) {
   if (typeof data.job_id !== 'number') throw new Error(T('TrueNAS n\'a pas ouvert de tâche pour ce fichier.'));
   return data.job_id;
 }
+// ── Sauvegarde et restauration de Desktroo : au même endroit que celles de TrueNAS (pages « Sauvegarde » et « Restauration ») ──
+var _dkbk = { st: null, t: 0, loading: false, busy: '', err: '' };
+function dkbkDate(ts) { try { return ts ? new Date(ts * 1000).toLocaleString(DK_LOCALE, { dateStyle: 'medium', timeStyle: 'short' }) : ''; } catch (_) { return ''; } }
+function dkbkRefresh() { if (_sc.nav === 'bak' || _sc.nav === 'rst') scView(true); }
+async function dkbkLoad(force) {
+  if (_dkbk.loading || (!force && _dkbk.st && Date.now() - _dkbk.t < 15000)) return;
+  _dkbk.loading = true;
+  try { _dkbk.st = await fileops('GET', 'dkbackup/status'); _dkbk.t = Date.now(); _dkbk.err = ''; }
+  catch (e) { _dkbk.err = e && e.status === 404 ? T('Le service Desktroo n\'est pas à jour : mettez d\'abord Desktroo à jour.') : wmErr(e); }
+  _dkbk.loading = false; dkbkRefresh();
+}
+function dkbkRows(list, buttons) {
+  return list.map(function(b) {
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(dkbkDate(b.ts)) + (b.safety ? ' · ' + T('copie de sécurité avant une restauration') : '') + '</span>'
+      + '<span class="web-row-desc">' + webEsc(b.name) + ' · ' + fmtBytes(b.size) + '</span></span>' + buttons(b) + '</div>';
+  }).join('');
+}
+function dkbkBackupHtml() {
+  var st = _dkbk.st, o = '<div class="web-group-title" style="margin-top:28px;">Desktroo</div>'
+    + '<p class="web-note" style="margin-top:0;">' + T('Les réglages de Desktroo : partages, sites, accès des apps, secrets des apps, fonds d\'écran et liste des apps installées. La licence n\'y est pas : elle reste celle de ce NAS. Le fichier contient des secrets : gardez-le à l\'abri.') + '</p>';
+  if (!st) return o + (_dkbk.err ? '<p class="web-note" style="color:var(--danger);">' + webEsc(_dkbk.err) + '</p>' : '<p class="web-note">' + T('Chargement...') + '</p>');
+  var s = st.settings || {}, busy = !!_dkbk.busy;
+  o += '<div class="web-foot" style="justify-content:flex-start;margin-top:10px;"><button class="web-open" onclick="dkbkRun()"' + (busy ? ' disabled' : '') + '>' + (busy ? webEsc(_dkbk.busy) : T('Sauvegarder Desktroo maintenant')) + '</button></div>'
+    + '<p class="web-note">' + (s.last ? Tf('Dernière sauvegarde : {0}.', webEsc(dkbkDate(s.last))) : T('Aucune sauvegarde pour l\'instant.'))
+    + (s.auto && st.next ? ' ' + Tf('Prochaine : {0}.', webEsc(dkbkDate(Math.max(st.next, Math.floor(Date.now() / 1000))))) : '')
+    + (s.last_error ? '<br><span style="color:var(--danger);">' + webEsc(s.last_error) + '</span>' : '') + '</p>'
+    + '<div class="web-group" style="margin-top:14px;">' + wmSwitch('dkbk-auto', T('Sauvegarde automatique'), T('Une fois par semaine, faite par Desktroo lui-même : aucune tâche à créer dans TrueNAS.'), s.auto, 'onchange="dkbkSet()"') + '</div>'
+    + '<div class="wm-form" style="margin-top:14px;">'
+    + wmField(T('Copies à garder'), wmInput('dkbk-keep', s.keep, 'type="number" min="1" max="60" onchange="dkbkSet()"'), T('Les plus anciennes sont supprimées. Autant d\'instantanés sont gardés pour les données de chaque app.'))
+    + wmField(T('Dossier des copies sur le NAS'), wmInput('dkbk-dir', s.dir, 'onchange="dkbkSet()"'), T('Un dossier sous /mnt, de préférence sur un autre pool que celui des apps.')) + '</div>';
+  var bk = (st.backups || []);
+  o += '<div class="web-group-title" style="margin-top:20px;">' + T('Copies sur le NAS') + '</div>';
+  o += bk.length ? '<div class="web-group">' + dkbkRows(bk, function(b) {
+      return '<button class="fs-btn" onclick="dkbkDownload(\'' + webEsc(b.name) + '\')">' + T('Télécharger') + '</button> <button class="fs-btn" onclick="dkbkDelete(\'' + webEsc(b.name) + '\')">' + T('Supprimer') + '</button>';
+    }) + '</div>' : '<p class="web-note">' + T('Aucune copie pour l\'instant.') + '</p>';
+  o += '<div class="web-group" style="margin-top:16px;">' + wmRow('scGo(\'rst\')', T('Restaurer Desktroo'), T('Remettre une de ces copies ou un fichier ; revenir à un instantané d\'une app')) + '</div>';
+  return o;
+}
+function dkbkRestoreHtml() {
+  var st = _dkbk.st, busy = !!_dkbk.busy, o = '<div class="web-group-title" style="margin-top:28px;">Desktroo</div>'
+    + '<p class="web-note" style="margin-top:0;">' + T('Remet les réglages de Desktroo d\'une sauvegarde, puis redémarre Desktroo. Une copie de sécurité de l\'état actuel est faite juste avant. TrueNAS, vos fichiers et la licence ne bougent pas.') + '</p>'
+    + '<div class="wm-form" style="margin-top:10px;">' + wmField(T('Fichier de sauvegarde Desktroo'), '<input class="wm-input" type="file" id="dkbk-file" accept=".gz,.tgz"' + (busy ? ' disabled' : '') + '>', T('Un fichier .tar.gz téléchargé depuis la page « Sauvegarde ».'))
+    + '<div class="web-foot" style="justify-content:flex-start;"><button class="web-open" onclick="dkbkRestoreFile()"' + (busy ? ' disabled' : '') + '>' + (busy ? webEsc(_dkbk.busy) : T('Restaurer ce fichier')) + '</button></div></div>';
+  if (!st) return o + (_dkbk.err ? '<p class="web-note" style="color:var(--danger);">' + webEsc(_dkbk.err) + '</p>' : '');
+  if ((st.backups || []).length) {
+    o += '<div class="web-group-title" style="margin-top:20px;">' + T('Copies sur le NAS') + '</div><div class="web-group">' + dkbkRows(st.backups, function(b) {
+      return '<button class="fs-btn" onclick="dkbkRestoreLocal(\'' + webEsc(b.name) + '\')"' + (busy ? ' disabled' : '') + '>' + T('Restaurer') + '</button>';
+    }) + '</div>';
+  }
+  var sn = (st.snapshots || []).slice().sort(function(a, b) { return a.app === b.app ? b.ts - a.ts : (a.app < b.app ? -1 : 1); });
+  o += '<div class="web-group-title" style="margin-top:20px;">' + T('Données des apps') + '</div>';
+  if (!sn.length) return o + '<p class="web-note">' + T('Aucun instantané pour l\'instant : un est pris à chaque sauvegarde de Desktroo.') + '</p>';
+  o += '<p class="web-note" style="margin-top:0;">' + T('Chaque sauvegarde prend un instantané ZFS des données de chaque app. Revenir à un instantané remet l\'app dans l\'état de ce moment-là ; ce qui a changé depuis est perdu.') + '</p><div class="web-group">'
+    + sn.map(function(x) {
+      return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(x.app) + ' · ' + webEsc(dkbkDate(x.ts)) + '</span><span class="web-row-desc">' + webEsc(x.dataset) + '@' + webEsc(x.name) + '</span></span>'
+        + '<button class="fs-btn" onclick="dkbkSnapRestore(\'' + webEsc(x.app) + '\',\'' + webEsc(x.name) + '\')"' + (busy ? ' disabled' : '') + '>' + T('Revenir à ce point') + '</button></div>';
+    }).join('') + '</div>';
+  return o;
+}
+async function dkbkRun() {
+  if (_dkbk.busy) return;
+  _dkbk.busy = T('Sauvegarde en cours...'); dkbkRefresh();
+  try {
+    var r = await fileops('POST', 'dkbackup/run', {});
+    toast('✅ ' + Tf('Sauvegarde faite : {0}', r.name), 7000);
+    if (r.warnings && r.warnings.length) toast('⚠️ ' + r.warnings.join(' · '), 9000);
+  } catch (e) { wmToastErr(e); }
+  _dkbk.busy = ''; await dkbkLoad(true);
+}
+async function dkbkSet() {
+  var keep = parseInt(wmVal('dkbk-keep'), 10), dir = wmVal('dkbk-dir');
+  try {
+    var r = await fileops('POST', 'dkbackup/settings', { auto: wmOn('dkbk-auto'), keep: isFinite(keep) ? keep : 0, dir: dir });
+    if (_dkbk.st) _dkbk.st.settings = r.settings;
+    toast(T('Réglages enregistrés'));
+  } catch (e) { wmToastErr(e); }
+  await dkbkLoad(true);
+}
+async function dkbkDownload(name) {
+  try {
+    var resp = await fetch('/fileops/dkbackup/download?name=' + encodeURIComponent(name), { headers: { 'X-Fileops-Token': getFileopsToken(), 'X-Desktroo-User': encodeURIComponent(currentUser || '') } });
+    if (!resp.ok) throw new Error(T('Téléchargement HTTP ') + resp.status);
+    var blob = await resp.blob();
+    if (!blob.size) throw new Error(T('Fichier vide.'));
+    var a = document.createElement('a'), href = URL.createObjectURL(blob);
+    a.href = href; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(href); }, 60000);
+    toast(Tf('Sauvegarde téléchargée : {0}', name), 7000);
+  } catch (e) { wmToastErr(e); }
+}
+async function dkbkDelete(name) {
+  if (!await showConfirm(webEsc(Tf('Supprimer la copie « {0} » ?', name)), { ok: T('Supprimer') })) return;
+  try { await fileops('POST', 'dkbackup/delete', { name: name }); toast(T('Copie supprimée')); } catch (e) { wmToastErr(e); }
+  await dkbkLoad(true);
+}
+function dkbkAfterRestore(r) {
+  toast('✅ ' + T('Desktroo restauré : il redémarre. La page se recharge dans un instant.'), 15000);
+  setTimeout(function() { location.reload(); }, 15000);
+}
+async function dkbkRestoreLocal(name) {
+  if (_dkbk.busy || !await showConfirm(T('Restaurer Desktroo depuis <strong>') + webEsc(name) + '</strong> ?<br><span style="font-size:12px;color:var(--danger);">' + T('Les réglages actuels de Desktroo sont remplacés (une copie de sécurité est faite avant), puis Desktroo redémarre.') + '</span>', { danger: true, ok: T('Restaurer') })) return;
+  _dkbk.busy = T('Restauration en cours...'); dkbkRefresh();
+  try { dkbkAfterRestore(await fileops('POST', 'dkbackup/restore-local', { name: name })); } catch (e) { wmToastErr(e); }
+  _dkbk.busy = ''; dkbkRefresh();
+}
+async function dkbkRestoreFile() {
+  var inp = document.getElementById('dkbk-file'), file = inp && inp.files && inp.files[0];
+  if (_dkbk.busy) return;
+  if (!file) { toast('❌ ' + T('Choisissez d\'abord le fichier de sauvegarde.'), 6000); return; }
+  if (!/\.(tar\.gz|tgz)$/i.test(file.name)) { toast('❌ ' + T('Ce fichier ne ressemble pas à une sauvegarde Desktroo (.tar.gz).'), 8000); return; }
+  if (!await showConfirm(T('Restaurer Desktroo depuis <strong>') + webEsc(file.name) + '</strong> ?<br><span style="font-size:12px;color:var(--danger);">' + T('Les réglages actuels de Desktroo sont remplacés (une copie de sécurité est faite avant), puis Desktroo redémarre.') + '</span>', { danger: true, ok: T('Restaurer') })) return;
+  _dkbk.busy = T('Envoi du fichier...'); dkbkRefresh();
+  try {
+    var resp = await fetch('/fileops/dkbackup/restore', { method: 'POST', body: file, headers: { 'X-Fileops-Token': getFileopsToken(), 'X-Desktroo-User': encodeURIComponent(currentUser || ''), 'Content-Type': 'application/octet-stream' } });
+    var data = await resp.json().catch(function() { return {}; });
+    if (!resp.ok) throw new Error(resp.status === 404 ? T('Le service Desktroo n\'est pas à jour : mettez d\'abord Desktroo à jour.') : (data.error || 'HTTP ' + resp.status));
+    dkbkAfterRestore(data);
+  } catch (e) { wmToastErr(e); }
+  _dkbk.busy = ''; dkbkRefresh();
+}
+async function dkbkSnapRestore(app, snap) {
+  if (_dkbk.busy || !await showConfirm(Tf('Remettre les données de <strong>{0}</strong> dans l\'état du {1} ?', webEsc(app), webEsc(snap)) + '<br><span style="font-size:12px;color:var(--danger);">' + T('L\'app est arrêtée le temps du retour en arrière. Tout ce qu\'elle a enregistré depuis cet instantané est perdu, ainsi que les instantanés plus récents.') + '</span>', { danger: true, ok: T('Revenir en arrière') })) return;
+  _dkbk.busy = T('Retour en arrière...'); dkbkRefresh();
+  try { await fileops('POST', 'dkbackup/snap-restore', { app: app, snapshot: snap }); toast('✅ ' + T('Données remises dans l\'état de l\'instantané.'), 8000); } catch (e) { wmToastErr(e); }
+  _dkbk.busy = ''; await dkbkLoad(true);
+}
 // ── Restauration : remettre une sauvegarde de la configuration, ou revenir aux réglages d'usine ──
 function scRestoreView(soft) {
   wmHead('sc', T('Restauration'), { keepScroll: soft, narrow: true, sub: T('Remettre en place une sauvegarde de la configuration.') });
@@ -31017,7 +31182,7 @@ function scRestoreView(soft) {
     + '<div class="web-foot" style="justify-content:flex-start;"><button class="web-open" onclick="scRestore()"' + (busy ? ' disabled' : '') + '>' + (busy ? webEsc(busy) : T('Restaurer cette sauvegarde')) + '</button></div></div>'
     + '<div class="web-group-title" style="margin-top:28px;">' + T('Réglages d\'usine') + '</div>'
     + '<p class="web-note" style="margin-top:0;">' + T('Efface tous les réglages du NAS, comme au premier démarrage : comptes, partages, réseau, tâches, applications déclarées. Les pools et leurs fichiers restent sur les disques, mais il faudra les réimporter. Desktroo ne retrouvera le NAS qu\'après sa réinstallation.') + '</p>'
-    + '<div class="web-foot" style="justify-content:flex-start;margin-top:12px;"><button class="fs-btn" onclick="scFactoryReset()"' + (busy ? ' disabled' : '') + '>' + T('Revenir aux réglages d\'usine') + '</button></div>';
+    + '<div class="web-foot" style="justify-content:flex-start;margin-top:12px;"><button class="fs-btn" onclick="scFactoryReset()"' + (busy ? ' disabled' : '') + '>' + T('Revenir aux réglages d\'usine') + '</button></div>' + dkbkRestoreHtml();
 }
 async function scRestore() {
   var inp = document.getElementById('sc-rst-file'), file = inp && inp.files && inp.files[0];

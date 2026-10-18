@@ -3,6 +3,17 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.54.49 — 18 October 2026
+
+### New
+- **Desktroo backup and restore, in the same place as TrueNAS's.** In System configuration, the “Backup” and “Restore” pages have a Desktroo section. One click on “Back up Desktroo now” makes a file with your settings (shares, sites, app access and secrets, wallpapers, list of installed apps), kept in a NAS folder you choose and downloadable. Each backup also takes a ZFS snapshot of each app's data, which you can go back to in one click.
+- **Automatic weekly backup**, with the number of copies to keep (4 by default). Desktroo does it itself: no task to create in TrueNAS.
+- **Safe restore.** A safety copy of the current state is made just before, then Desktroo restarts. The license and the installation identity are not included: they stay the NAS's.
+  > `.tar.gz` archive (`data/` + `wallpapers/`, license, `install-id`, trial and caches excluded), `dkbak-YYYYMMDD-HHMMSS` snapshots on `apps/desktroo/<app>`, going back with `zfs rollback` while the app is stopped. `/dkbackup/*` routes.
+
+### Fixed
+- **Installing an app failed on a NAS whose “apps” dataset uses POSIX ACLs** (“aclmode: Must be set to DISCARD when acltype is POSIX or OFF”), for example VPN (WireGuard). Desktroo now creates its datasets with the right value.
+
 ## 2.54.48 — 18 October 2026
 
 ### Fixed
