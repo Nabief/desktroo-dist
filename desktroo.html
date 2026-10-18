@@ -884,6 +884,18 @@ try { document.documentElement.setAttribute('data-theme', localStorage.getItem('
     font-size:13px; font-weight:700; color:var(--accent-ink);
   }
   .user-name { font-size:12px; font-weight:500; }
+  /* Photo ou avatar du profil */
+  .user-avatar { overflow:hidden; flex-shrink:0; }
+  .user-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+  .user-avatar svg { width:58%; height:58%; fill:none; stroke:#fff; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .user-drop-header .user-avatar { cursor:pointer; }
+  .dkav-cur { display:flex; align-items:center; gap:14px; margin:4px 0 18px; }
+  .dkav-cur .user-avatar { width:64px; height:64px; font-size:26px; }
+  .dkav-grid { display:grid; grid-template-columns:repeat(auto-fill, 52px); gap:12px; }
+  .dkav-grid button { width:52px; height:52px; padding:0; border:2px solid transparent; border-radius:50%; background:none; cursor:pointer; }
+  .dkav-grid button .user-avatar { width:100%; height:100%; }
+  .dkav-grid button.on { border-color:var(--accent); }
+  .dkav-grid button:focus-visible { outline:2px solid var(--accent2); outline-offset:2px; }
 
   /* ===== USER DROPDOWN MENU ===== */
   .user-dropdown {
@@ -4195,6 +4207,28 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Photo du profil": "Profile picture",
+"Elle s’affiche dans la barre des tâches, pour ce compte, sur tous les navigateurs.": "It is shown in the taskbar, for this account, on every browser.",
+"Photo personnelle": "Personal photo",
+"Avatar": "Avatar",
+"Initiale du nom": "Initial of the name",
+"Choisir un avatar": "Choose an avatar",
+"Avatar {0}": "Avatar {0}",
+"Une photo est recadrée au centre et réduite avant d’être envoyée ; elle reste sur le NAS.": "A photo is cropped to the centre and shrunk before it is sent; it stays on the NAS.",
+"Choisir une photo…": "Choose a photo…",
+"Revenir à l’initiale": "Back to the initial",
+"Cette image ne peut pas être lue.": "This image cannot be read.",
+"Compte inconnu.": "Unknown account.",
+"Avatar inconnu.": "Unknown avatar.",
+"Image illisible.": "Unreadable image.",
+"Image trop lourde (600 Ko au plus).": "Image too large (600 KB at most).",
+"Format d'image non pris en charge (PNG, JPEG ou WebP).": "Unsupported image format (PNG, JPEG or WebP).",
+"Pas de photo.": "No photo.",
+"Administrateur en lecture seule": "Read-only administrator",
+"Administrateur des partages": "Sharing administrator",
+"Accès limité": "Limited access",
+"{0} sur le disque": "{0} on disk",
+"calcul en cours…": "calculating…",
 "Programme bêta": "Beta programme",
 "Inscrit": "Enrolled",
 "Tester les nouveautés en avance": "Try new features early",
@@ -10151,6 +10185,28 @@ select option{ background:#101b2e; color:#e9eef7; }
      au dictionnaire anglais doit l'être ici aussi (« node tools/i18n/i18n.js check » compte ce qui manque). -->
 <script type="application/json" id="dk-i18n-es">
 {
+"Photo du profil": "Foto del perfil",
+"Elle s’affiche dans la barre des tâches, pour ce compte, sur tous les navigateurs.": "Se muestra en la barra de tareas, para esta cuenta, en todos los navegadores.",
+"Photo personnelle": "Foto personal",
+"Avatar": "Avatar",
+"Initiale du nom": "Inicial del nombre",
+"Choisir un avatar": "Elegir un avatar",
+"Avatar {0}": "Avatar {0}",
+"Une photo est recadrée au centre et réduite avant d’être envoyée ; elle reste sur le NAS.": "La foto se recorta por el centro y se reduce antes de enviarla; se queda en el NAS.",
+"Choisir une photo…": "Elegir una foto…",
+"Revenir à l’initiale": "Volver a la inicial",
+"Cette image ne peut pas être lue.": "No se puede leer esta imagen.",
+"Compte inconnu.": "Cuenta desconocida.",
+"Avatar inconnu.": "Avatar desconocido.",
+"Image illisible.": "Imagen ilegible.",
+"Image trop lourde (600 Ko au plus).": "Imagen demasiado pesada (600 KB como máximo).",
+"Format d'image non pris en charge (PNG, JPEG ou WebP).": "Formato de imagen no admitido (PNG, JPEG o WebP).",
+"Pas de photo.": "No hay foto.",
+"Administrateur en lecture seule": "Administrador de solo lectura",
+"Administrateur des partages": "Administrador de recursos compartidos",
+"Accès limité": "Acceso limitado",
+"{0} sur le disque": "{0} en el disco",
+"calcul en cours…": "calculando…",
 "Programme bêta": "Programa beta",
 "Inscrit": "Inscrito",
 "Tester les nouveautés en avance": "Prueba las novedades antes",
@@ -16904,16 +16960,21 @@ html[lang="en"].dk-phone .web-tr > [data-l]::before { content:attr(data-l) ':'; 
       </div>
       <div id="user-dropdown" class="user-dropdown" style="display:none;">
         <div class="user-drop-header">
-          <div class="user-avatar" id="user-avatar2" style="width:32px;height:32px;font-size:14px;">R</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;" id="user-name-display2">…</div>
-            <div style="font-size:11px;color:var(--text-dim);">Administrateur</div>
+          <div class="user-avatar" id="user-avatar2" style="width:32px;height:32px;font-size:14px;" onclick="dkAvatarOpen()" title="Photo du profil">?</div>
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="user-name-display2"></div>
+            <div style="font-size:11px;color:var(--text-dim);" id="user-role-display"></div>
           </div>
         </div>
         <div class="user-drop-sep"></div>
-        <div class="user-drop-item" onclick="dkToggleLang()" translate="no">
+        <div class="user-drop-item" onclick="document.getElementById('user-dropdown').style.display='none';openApp('sysconfig');gsAfter('sysconfig',function(){scGo('loc');})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
-          <span id="dk-lang-other"></span>
+          <span>Langue</span>
+          <span id="dk-lang-cur" translate="no" style="margin-left:auto;font-size:11.5px;color:var(--text-dim);"></span>
+        </div>
+        <div class="user-drop-item" onclick="dkAvatarOpen()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+          <span>Photo du profil</span>
         </div>
         <div class="user-drop-item" onclick="document.getElementById('user-dropdown').style.display='none';openApp('control');cpGo('look')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.3 6 10.5a6 6 0 0 1-12 0C6 9.3 12 3 12 3z"/></svg>
@@ -17650,11 +17711,26 @@ function tndOpenDeepLinkApp() {
 // par les identifiants de la session, puis le dernier compte retenu par ce navigateur.
 // Sans cette resolution, une session rouverte dans un nouvel onglet n'a aucun nom :
 // sessionStorage est propre a l'onglet, alors que la reconnexion vient de localStorage.
+// Rôles TrueNAS du compte connecté (auth.me → privilege.roles), pour le menu du compte.
+var _dkMeRoles = null;
+function dkRolesOf(me) {
+  var r = me && me.privilege && me.privilege.roles;
+  if (r && !Array.isArray(r) && Array.isArray(r.$set)) r = r.$set;
+  return Array.isArray(r) ? r.map(String) : null;
+}
+function dkRoleLabel() {
+  var r = _dkMeRoles;
+  if (!r) return '';
+  if (r.indexOf('FULL_ADMIN') >= 0) return T('Administrateur');
+  if (r.indexOf('READONLY_ADMIN') >= 0) return T('Administrateur en lecture seule');
+  if (r.indexOf('SHARING_ADMIN') >= 0) return T('Administrateur des partages');
+  return r.length ? T('Accès limité') : T('Utilisateur');
+}
 async function dkResolveUser(typed) {
   var name = '';
   try {
     var me = await wsCall('auth.me', [], 15000);
-    if (me && typeof me === 'object') name = String(me.pw_name || me.username || '').trim();
+    if (me && typeof me === 'object') { name = String(me.pw_name || me.username || '').trim(); _dkMeRoles = dkRolesOf(me); }
   } catch (_) {}
   if (!name && basicAuth) {
     try { var c = atob(basicAuth), k = c.indexOf(':'); if (k > 0) name = c.slice(0, k); } catch (_) {}
@@ -17672,6 +17748,110 @@ function updateUserUI() {
   // Tant que le compte n'est pas connu, ne rien affirmer plutot qu'afficher un nom faux.
   avatar.textContent = currentUser ? currentUser.charAt(0).toUpperCase() : '?';
   name.textContent   = currentUser || '';
+  // Menu du compte : même nom et même initiale que la barre des tâches, rôle lu dans TrueNAS, langue en cours.
+  var a2 = document.getElementById('user-avatar2'), n2 = document.getElementById('user-name-display2'), r2 = document.getElementById('user-role-display'), lc = document.getElementById('dk-lang-cur');
+  if (a2) a2.textContent = avatar.textContent;
+  if (n2) n2.textContent = currentUser || '';
+  if (r2) r2.textContent = dkRoleLabel();
+  if (lc) lc.textContent = DK_LANGS[DK_LANG] || DK_LANG;
+  dkAvatarPaint();
+  if (currentUser && _dkAv.user !== currentUser) dkAvatarLoad();
+}
+// ── Photo du profil : une photo envoyée par la personne, ou un avatar proposé. Gardée sur le NAS, pour chaque compte ──
+var DK_AVATARS = [
+  ['leaf', '#34d399', '#059669', '<path d="M5 19c0-9 6-14 14-14 0 8-5 14-14 14z"/><path d="M5 19l8-8"/>'],
+  ['sun', '#fbbf24', '#f97316', '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'],
+  ['moon', '#818cf8', '#4338ca', '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>'],
+  ['star', '#f472b6', '#be185d', '<polygon points="12 3 14.8 8.8 21 9.6 16.5 14 17.6 20.2 12 17.2 6.4 20.2 7.5 14 3 9.6 9.2 8.8"/>'],
+  ['mountain', '#38bdf8', '#0369a1', '<path d="M3 19l6-10 4 6 3-4 5 8z"/>'],
+  ['wave', '#22d3ee', '#0e7490', '<path d="M3 10c3-3 6 3 9 0s6 3 9 0M3 16c3-3 6 3 9 0s6 3 9 0"/>'],
+  ['bolt', '#facc15', '#ca8a04', '<path d="M13 3L5 13h6l-1 8 8-10h-6z"/>'],
+  ['heart', '#fb7185', '#e11d48', '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>'],
+  ['music', '#c084fc', '#7e22ce', '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>'],
+  ['camera', '#94a3b8', '#334155', '<rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8 7l2-3h4l2 3"/>'],
+  ['rocket', '#fb923c', '#c2410c', '<path d="M12 3c4 2 6 6 5 11l-2 3H9l-2-3C6 9 8 5 12 3z"/><circle cx="12" cy="10" r="2"/><path d="M9 17l-2 4M15 17l2 4"/>'],
+  ['coffee', '#d6a77a', '#7c4a24', '<path d="M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17M8 3v3M12 3v3"/>'],
+  ['paw', '#a3e635', '#4d7c0f', '<circle cx="7" cy="9" r="1.8"/><circle cx="11" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="18" cy="10" r="1.8"/><path d="M8 16c0-3 2.5-5 4.5-5s4.5 2 4.5 5c0 2-2 3-4.5 3S8 18 8 16z"/>'],
+  ['flower', '#f9a8d4', '#db2777', '<circle cx="12" cy="12" r="2.5"/><path d="M12 9.5C10 6 10.5 3 12 3s2 3 0 6.5M14.5 12c3.5-2 6.5-1.5 6.5 0s-3 2-6.5 0M12 14.5c2 3.5 1.5 6.5 0 6.5s-2-3 0-6.5M9.5 12C6 14 3 13.5 3 12s3-2 6.5 0"/>'],
+  ['planet', '#60a5fa', '#7c3aed', '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(-20 12 12)"/>'],
+  ['crown', '#fcd34d', '#b45309', '<path d="M4 18h16M5 15l-1-8 5 4 3-6 3 6 5-4-1 8z"/>'],
+  ['tree', '#4ade80', '#166534', '<path d="M12 3l6 9h-4l4 6H6l4-6H6z"/><path d="M12 18v3"/>'],
+  ['cloud', '#bae6fd', '#0284c7', '<path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/>']
+];
+var _dkAv = { user: '', rec: null, url: '' };
+function dkAvatarPreset(id) { return DK_AVATARS.filter(function(a) { return a[0] === id; })[0] || null; }
+// Contenu et fond d'une pastille de profil : photo, avatar proposé, ou l'initiale sur le dégradé du thème.
+function dkAvatarFill(el, rec, letter) {
+  var p = rec && rec.kind === 'preset' ? dkAvatarPreset(rec.id) : null;
+  if (rec && rec.kind === 'photo' && _dkAv.url) { el.innerHTML = '<img src="' + _dkAv.url + '" alt="">'; el.style.background = 'none'; }
+  else if (p) { el.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + p[3] + '</svg>'; el.style.background = 'linear-gradient(135deg,' + p[1] + ',' + p[2] + ')'; }
+  else { el.textContent = letter; el.style.background = ''; }
+}
+function dkAvatarPaint() {
+  var letter = currentUser ? currentUser.charAt(0).toUpperCase() : '?';
+  ['user-avatar', 'user-avatar2', 'dkav-big'].forEach(function(id) { var el = document.getElementById(id); if (el) dkAvatarFill(el, _dkAv.user === currentUser ? _dkAv.rec : null, letter); });
+}
+async function dkAvatarLoad() {
+  var who = currentUser;
+  _dkAv.user = who;
+  try {
+    var r = await fileops('GET', 'profile');
+    if (who !== currentUser) return;
+    _dkAv.rec = (r && r.avatar) || null;
+    if (_dkAv.rec && _dkAv.rec.kind === 'photo') {
+      var resp = await fetch('/fileops/profile/photo?v=' + encodeURIComponent(_dkAv.rec.v || ''), { headers: { 'X-Fileops-Token': getFileopsToken(), 'X-Desktroo-User': encodeURIComponent(currentUser || '') } });
+      if (resp.ok) { if (_dkAv.url) URL.revokeObjectURL(_dkAv.url); _dkAv.url = URL.createObjectURL(await resp.blob()); }
+      else _dkAv.rec = null;
+    }
+  } catch (_) { _dkAv.rec = null; }
+  dkAvatarPaint();
+}
+function dkAvatarOpen() {
+  var dd = document.getElementById('user-dropdown');
+  if (dd) dd.style.display = 'none';
+  dkSheet({ key: 'avatar', title: T('Photo du profil'), sub: webEsc(T('Elle s’affiche dans la barre des tâches, pour ce compte, sur tous les navigateurs.')) });
+  dkAvatarRender();
+}
+function dkAvatarRender(busy) {
+  var body = dkSheetBody('avatar');
+  if (!body) return;
+  var rec = _dkAv.rec, dis = busy ? ' disabled' : '';
+  var h = '<div class="dkav-cur"><div class="user-avatar" id="dkav-big"></div><div><div style="font-weight:600;">' + webEsc(currentUser || '') + '</div>'
+    + '<div class="dim" style="font-size:12px;">' + webEsc(rec ? (rec.kind === 'photo' ? T('Photo personnelle') : T('Avatar')) : T('Initiale du nom')) + '</div></div></div>'
+    + '<div class="web-group-title">' + T('Choisir un avatar') + '</div><div class="dkav-grid">';
+  DK_AVATARS.forEach(function(a) {
+    h += '<button type="button" class="' + (rec && rec.kind === 'preset' && rec.id === a[0] ? 'on' : '') + '" onclick="dkAvatarSet({kind:\'preset\',id:\'' + a[0] + '\'})"' + dis + ' aria-label="' + webEsc(Tf('Avatar {0}', a[0])) + '">'
+      + '<span class="user-avatar" style="background:linear-gradient(135deg,' + a[1] + ',' + a[2] + ')"><svg viewBox="0 0 24 24" aria-hidden="true">' + a[3] + '</svg></span></button>';
+  });
+  h += '</div><p class="web-note" style="margin-top:16px;">' + T('Une photo est recadrée au centre et réduite avant d’être envoyée ; elle reste sur le NAS.') + '</p>'
+    + '<input type="file" id="dkav-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onchange="dkAvatarFile(this)">';
+  body.innerHTML = h;
+  dkAvatarPaint();
+  dkSheetFoot('<button class="web-open" onclick="document.getElementById(\'dkav-file\').click()"' + dis + '>' + (busy ? T('Envoi…') : T('Choisir une photo…')) + '</button>'
+    + (rec ? '<button class="fs-btn" onclick="dkAvatarSet({kind:\'none\'})"' + dis + '>' + T('Revenir à l’initiale') + '</button>' : '')
+    + '<span class="dk-sheet-grow"></span><button class="fs-btn" onclick="dkSheetClose()">' + T('Fermer') + '</button>');
+}
+async function dkAvatarSet(body) {
+  dkAvatarRender(true);
+  try {
+    var r = await fileops('POST', 'profile/avatar', body);
+    if (!r || !r.ok) throw new Error((r && r.error) || T('Le service n’a pas répondu.'));
+    _dkAv.user = '';
+    await dkAvatarLoad();
+  } catch (e) { wmToastErr(e); }
+  dkAvatarRender();
+}
+// Photo : recadrée en carré au centre, réduite à 256 px, envoyée en JPEG (quelques dizaines de Ko).
+async function dkAvatarFile(inp) {
+  var f = inp && inp.files && inp.files[0];
+  if (inp) inp.value = '';
+  if (!f) return;
+  try {
+    var bmp = await createImageBitmap(f), side = Math.min(bmp.width, bmp.height), c = document.createElement('canvas');
+    c.width = c.height = 256;
+    c.getContext('2d').drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, 256, 256);
+    await dkAvatarSet({ kind: 'photo', data: c.toDataURL('image/jpeg', 0.88) });
+  } catch (e) { toast('❌ ' + T('Cette image ne peut pas être lue.'), 7000); }
 }
 
 // ===========================
@@ -19501,7 +19681,8 @@ setInterval(function() { if (Object.keys(_dkStoreWins).length) dkStoreSession(fa
 var _dkStore = { view: null, sel: null, users: null, polls: {}, booted: false };
 var DK_STORE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/><path d="M9.5 13.5l1.8 1.8 3.2-3.6"/></svg>';
 function dkStoreName(n) {
-  if (n && typeof n === 'object') { var l = String(document.documentElement.lang || 'fr').slice(0, 2); return n[l] || n.fr || n.en || ''; }
+  // Textes du catalogue de Desktroo Apps : la langue du bureau, à défaut l'anglais (le français pour le français).
+  if (n && typeof n === 'object') { var l = String(document.documentElement.lang || 'fr').slice(0, 2); return n[l] || (l === 'fr' ? n.fr : n.en) || n.fr || n.en || ''; }
   return String(n || '');
 }
 function dkStoreIcon(id, size) {
@@ -27565,7 +27746,7 @@ function relRender(list, installed) {
       : (installed && v.version === installed ? '<span class="about-chip ok">' + T('Installée') + '</span>' : '');
     return '<section class="rel-v' + (newer ? ' is-new' : '') + '" id="' + relId(v.version) + '">'
       + '<h5 class="rel-h"><span class="rel-num">' + webEsc(v.version) + '</span>'
-      + (v.when ? '<span class="rel-when">' + webEsc(v.when) + '</span>' : '') + chip + '</h5>'
+      + (v.when && !/^(à paraître|unreleased)$/i.test(v.when) ? '<span class="rel-when">' + webEsc(v.when) + '</span>' : '') + chip + '</h5>'
       + v.secs.map(function(sc) {
           return (sc.title ? '<div class="rel-sec">' + webEsc(sc.title) + '</div>' : '')
             + '<ul class="rel-list">' + sc.items.map(function(it) {
@@ -27628,7 +27809,7 @@ function relNotesRender(top) {
     var id = relId(v.version), mine = v.version === installed;
     h += '<button class="web-nav' + (_reln.cur === id ? ' active' : '') + '" data-rel="' + id + '" onclick="relNotesGo(this.dataset.rel)" title="' + webEsc(v.version) + '">'
       + '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(v.version) + (mine ? ' · ' + T('installée') : '') + '</span>'
-      + (v.when ? '<span class="web-nav-meta">' + webEsc(v.when) + '</span>' : '') + '</span></button>';
+      + (v.when && !/^(à paraître|unreleased)$/i.test(v.when) ? '<span class="web-nav-meta">' + webEsc(v.when) + '</span>' : '') + '</span></button>';
   });
   wmSide('relnotes', h);
   wmHead('relnotes', T('Notes de version'), { sub: Tf('Version installée : {0}', installed) });
@@ -28015,7 +28196,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.58.1';
+var DK_PAGE_VERSION = '2.59.0';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -32647,6 +32828,10 @@ async function fsxTrashLoad() {
   try {
     var r = await fileops('GET', 'trash/list');
     _fsx.items = ensureArray(r.items); _fsx.conf = { enabled: !!r.enabled, days: Number(r.days) || 30 }; _fsx.confAt = Date.now(); _fsx.total = Number(r.total) || 0;
+    _fsx.disk = r.disk == null ? null : Number(r.disk); _fsx.pending = !!r.pending;
+    // Tailles encore en calcul (gros dossiers, place sur le disque) : la liste se relit d'elle-même.
+    clearTimeout(_fsx.poll);
+    if (_fsx.pending) _fsx.poll = setTimeout(function() { if (dkSheetBody('trash') && !_fsx.busy) fsxTrashLoad(); }, 4000);
   } catch (e) {
     body = dkSheetBody('trash');
     if (!body) return;
@@ -32668,7 +32853,11 @@ function fsxTrashRender() {
   var body = dkSheetBody('trash');
   if (!body) return;
   var list = _fsx.items || [], conf = _fsx.conf || { enabled: true, days: 30 }, busy = !!_fsx.busy, n = list.length;
-  dkSheetHead(T('Corbeille'), n ? webEsc((n > 1 ? Tf('{0} éléments', n) : T('1 élément')) + ', ' + mntFmtSize(_fsx.total)) + ' · ' + webEsc(Tf('Chaque élément est supprimé pour de bon {0} après y être entré.', fsxDays(conf.days))) : '');
+  // La place indiquée est celle occupée sur le disque (ce que « Vider la corbeille » libère) ; en attendant son calcul,
+  // la somme des tailles, précédée de « ≥ » si un gros dossier n'est pas encore mesuré en entier.
+  var some = list.some(function(it) { return it.size_complete === false && it.present !== false; });
+  var size = _fsx.disk != null ? Tf('{0} sur le disque', mntFmtSize(_fsx.disk)) : ((some ? '≥ ' : '') + mntFmtSize(_fsx.total) + (_fsx.pending ? ' · ' + T('calcul en cours…') : ''));
+  dkSheetHead(T('Corbeille'), n ? webEsc((n > 1 ? Tf('{0} éléments', n) : T('1 élément')) + ', ' + size) + ' · ' + webEsc(Tf('Chaque élément est supprimé pour de bon {0} après y être entré.', fsxDays(conf.days))) : '');
   var h = '';
   if (!conf.enabled) h += '<p class="web-note dk-sheet-warn">' + T('La corbeille est désactivée : ce que vous supprimez depuis Fichiers disparaît tout de suite.') + '</p>';
   if (!n) {

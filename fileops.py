@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.58.1'
+APP_VERSION = '2.59.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -766,6 +766,87 @@ def beta_offer_answer(body):
     with open(_beta_offer_file(), 'w') as fh:
         fh.write('%s %s\n' % (str((body or {}).get('answer') or 'non')[:20], _login_time.strftime('%Y-%m-%d %H:%M')))
     return 200, {'ok': True}
+
+
+# ── Profil : photo ou avatar de chaque compte (data/profiles/<empreinte du nom>.json et .img) ──
+# Gardé sur le NAS, donc le même sur tous les navigateurs ; il fait partie de la sauvegarde de Desktroo.
+PROFILE_MAX_BYTES = 600 * 1024
+_PROFILE_TYPES = ((b'\x89PNG\r\n\x1a\n', 'image/png'), (b'\xff\xd8\xff', 'image/jpeg'), (b'RIFF', 'image/webp'))
+
+
+def _profile_paths(handler):
+    from urllib.parse import unquote
+    import hashlib
+    u = unquote(handler.headers.get('X-Desktroo-User', '') or '').strip()
+    if not re.match(r'^[A-Za-z0-9._@-]{1,64}$', u):
+        raise ValueError('Compte inconnu.')
+    base = os.path.join(ACCESS_DATA_DIR, 'profiles', hashlib.sha256(u.lower().encode('utf-8')).hexdigest()[:24])
+    return base + '.json', base + '.img'
+
+
+def profile_get(handler):
+    pj, _pi = _profile_paths(handler)
+    try:
+        with open(pj, encoding='utf-8') as fh:
+            d = json.load(fh)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def profile_avatar_set(handler, body):
+    import base64
+    pj, pi = _profile_paths(handler)
+    kind = str((body or {}).get('kind') or '')
+    rec = None
+    if kind == 'preset':
+        pid = str(body.get('id') or '')
+        if not re.match(r'^[a-z0-9-]{1,24}$', pid):
+            raise ValueError('Avatar inconnu.')
+        rec = {'kind': 'preset', 'id': pid}
+    elif kind == 'photo':
+        raw = str(body.get('data') or '')
+        raw = raw.split(',', 1)[1] if raw.startswith('data:') else raw
+        try:
+            data = base64.b64decode(raw, validate=True)
+        except Exception:
+            raise ValueError('Image illisible.')
+        if not data or len(data) > PROFILE_MAX_BYTES:
+            raise ValueError('Image trop lourde (600 Ko au plus).')
+        ctype = next((t for magic, t in _PROFILE_TYPES if data.startswith(magic)), '')
+        if not ctype or (ctype == 'image/webp' and data[8:12] != b'WEBP'):
+            raise ValueError('Format d\'image non pris en charge (PNG, JPEG ou WebP).')
+        os.makedirs(os.path.dirname(pi), exist_ok=True)
+        with open(pi + '.tmp', 'wb') as fh:
+            fh.write(data)
+        os.replace(pi + '.tmp', pi)
+        rec = {'kind': 'photo', 'type': ctype, 'v': int(_login_time.time())}
+    elif kind != 'none':
+        raise ValueError('Demande invalide.')
+    if kind != 'photo' and os.path.exists(pi):
+        os.unlink(pi)
+    os.makedirs(os.path.dirname(pj), exist_ok=True)
+    d = profile_get(handler)
+    d['avatar'] = rec
+    with open(pj + '.tmp', 'w', encoding='utf-8') as fh:
+        json.dump(d, fh)
+    os.replace(pj + '.tmp', pj)
+    return {'ok': True, 'avatar': rec}
+
+
+def profile_photo(handler):
+    _pj, pi = _profile_paths(handler)
+    rec = (profile_get(handler).get('avatar') or {})
+    if rec.get('kind') != 'photo' or not os.path.isfile(pi):
+        return handler._json(404, {'error': 'Pas de photo.'})
+    with open(pi, 'rb') as fh:
+        body = fh.read()
+    handler.send_response(200)
+    handler.send_header('Content-Type', rec.get('type') or 'image/jpeg')
+    handler.send_header('Content-Length', str(len(body)))
+    handler.send_header('Cache-Control', 'no-cache')
+    handler.end_headers()
+    handler.wfile.write(body)
 
 
 def _dist_raw(channel=None):
@@ -5019,6 +5100,67 @@ def _px_trash_roots():
     return roots
 
 
+# Taille réelle de la corbeille. À la suppression, un gros dossier n'est mesuré qu'en partie (« ≥ … ») pour ne pas
+# faire attendre : sa taille exacte est calculée ensuite, en arrière-plan. La place occupée sur le disque (du -sk de
+# chaque dossier de corbeille, ce que « Vider » libère vraiment, comme l'annonce la désinstallation) l'est aussi.
+_PX_TRASH_BG = {'sizes': {}, 'busy': set(), 'disk': None, 'disk_key': None, 'disk_busy': False}
+_PX_TRASH_BG_LOCK = _access_threading.Lock()
+
+
+def _px_trash_size_bg(slot, tid):
+    try:
+        size, _c = _px_tree_size(slot, budget=10 ** 9)
+        with _PX_TRASH_BG_LOCK:
+            _PX_TRASH_BG['sizes'][tid] = size
+        try:   # la fiche garde la taille exacte (si le service a le droit d'y écrire)
+            with open(slot + '.json', encoding='utf-8') as f:
+                rec = json.load(f)
+            rec['size'], rec['size_complete'] = size, True
+            with open(slot + '.json', 'w', encoding='utf-8') as f:
+                f.write(json.dumps(rec, ensure_ascii=False))
+        except Exception:
+            pass
+    finally:
+        with _PX_TRASH_BG_LOCK:
+            _PX_TRASH_BG['busy'].discard(tid)
+
+
+def _px_trash_disk_bg(tdirs, key):
+    total = 0
+    try:
+        for t in tdirs:
+            try:
+                out = subprocess.run(['du', '-sk', t], capture_output=True, text=True, timeout=900).stdout
+                total += int((out.split() or ['0'])[0]) * 1024
+            except Exception:
+                pass
+        with _PX_TRASH_BG_LOCK:
+            _PX_TRASH_BG['disk'], _PX_TRASH_BG['disk_key'] = total, key
+    finally:
+        with _PX_TRASH_BG_LOCK:
+            _PX_TRASH_BG['disk_busy'] = False
+
+
+def _px_trash_disk(roots=None):
+    """Place occupée par toutes les corbeilles, ou None tant qu'elle se calcule. Recalculée quand leur contenu change."""
+    tdirs, key = [], []
+    for root in (roots if roots is not None else _px_trash_roots()):
+        t = os.path.join(root, _PX_TRASH)
+        try:
+            key.append((t, tuple(sorted(os.listdir(t)))))
+            tdirs.append(t)
+        except OSError:
+            continue
+    key = tuple(key)
+    with _PX_TRASH_BG_LOCK:
+        if _PX_TRASH_BG['disk_key'] == key:
+            return _PX_TRASH_BG['disk']
+        if not _PX_TRASH_BG['disk_busy']:
+            _PX_TRASH_BG['disk_busy'] = True
+            _access_threading.Thread(target=_px_trash_disk_bg, args=(tdirs, key), daemon=True).start()
+    return None
+
+
 def _px_trash_list(roots=None):
     conf = _px_trash_conf()
     items = []
@@ -5041,6 +5183,15 @@ def _px_trash_list(roots=None):
             rec['root'] = root
             rec['expires_at'] = int(rec.get('deleted_at', 0)) + conf['days'] * 86400
             rec['present'] = os.path.lexists(os.path.join(tdir, rec['id'], str(rec.get('name', ''))))
+            if rec.get('size_complete') is False and rec['present']:
+                tid = rec['id']
+                with _PX_TRASH_BG_LOCK:
+                    known = _PX_TRASH_BG['sizes'].get(tid)
+                    if known is None and tid not in _PX_TRASH_BG['busy']:
+                        _PX_TRASH_BG['busy'].add(tid)
+                        _access_threading.Thread(target=_px_trash_size_bg, args=(os.path.join(tdir, tid), tid), daemon=True).start()
+                if known is not None:
+                    rec['size'], rec['size_complete'] = known, True
             items.append(rec)
     items.sort(key=lambda r: -int(r.get('deleted_at', 0)))
     return items
@@ -5499,7 +5650,9 @@ def _px_get(handler, path, qs):
             handler._json(200, dict(_px_trash_conf(), ok=True))
         elif path == '/trash/list':
             items = _px_trash_list()
-            handler._json(200, dict(_px_trash_conf(), ok=True, items=items, total=sum(int(i.get('size') or 0) for i in items)))
+            disk = _px_trash_disk()
+            handler._json(200, dict(_px_trash_conf(), ok=True, items=items, total=sum(int(i.get('size') or 0) for i in items), disk=disk,
+                                    pending=disk is None or any(i.get('size_complete') is False and i.get('present') for i in items)))
         elif path == '/versions':
             handler._json(200, dict(_px_versions(qs.get('path', ''), qs.get('limit', '200') or 200), ok=True))
         elif path == '/versions/list':
@@ -14682,6 +14835,16 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return
 
         # Licence d'utilisation : l'accord a-t-il été donné pour la version en cours du texte ?
+        # Profil du compte : photo ou avatar
+        if path in ('/profile', '/profile/photo'):
+            try:
+                if path == '/profile':
+                    self._json(200, dict(profile_get(self), ok=True))
+                else:
+                    profile_photo(self)
+            except ValueError as e:
+                self._json(400, {'ok': False, 'error': str(e)})
+            return
         if path == '/terms/status':
             self._json(200, _terms_status())
             return
@@ -15577,6 +15740,15 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        # Profil du compte : choisir un avatar, envoyer une photo, revenir à l'initiale
+        if path == '/profile/avatar':
+            try:
+                self._json(200, profile_avatar_set(self, self._body()))
+            except ValueError as e:
+                self._json(400, {'ok': False, 'error': str(e)})
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
+            return
         # Programme bêta : inscription, désinscription, réponse à l'invitation
         if path in ('/update/channel', '/update/beta-offer'):
             try:

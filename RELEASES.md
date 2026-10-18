@@ -3,7 +3,24 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.58.1 — à paraître
+## 2.59.0 — 18 octobre 2026
+
+### Nouveau
+- **Une photo ou un avatar pour votre compte.** Cliquez sur votre nom en haut à droite, puis « Photo du profil » : choisissez l'un des 18 avatars proposés ou une photo à vous. Elle s'affiche dans la barre des tâches, pour ce compte, sur tous les navigateurs.
+  > La photo est recadrée au centre et réduite à 256 px dans le navigateur, puis gardée sur le NAS (data/profiles, compris dans la sauvegarde de Desktroo). Routes GET /profile, GET /profile/photo, POST /profile/avatar.
+
+### Amélioré
+- **Menu du compte.** Il affiche maintenant le vrai nom et l'initiale du compte connecté, et son rôle lu dans TrueNAS (administrateur, lecture seule…) au lieu d'un « R … Administrateur » figé. « Langue » ouvre le choix des langues (Configuration système → Langue et fuseau horaire) au lieu de basculer directement en anglais.
+
+### Corrigé
+- **Desktroo Apps dans la langue du bureau.** Le nom et la description des apps du Magasin restaient en français pour l'espagnol : ils sont maintenant traduits, et une langue ajoutée affiche l'anglais plutôt que le français quand l'app n'a pas sa traduction.
+  > Catalogue (store/desktroo-store/catalog.json) : entrée « es » ajoutée à chaque texte (nom, accroche, description, ports, notes d'installation). dkStoreName : langue du bureau, sinon anglais, sinon français. À publier avec publish-store.ps1.
+- **Plus de « à paraître » à côté de « Installée ».** Une version publiée garde désormais sa date dans les notes de version.
+  > publish-dist.ps1 date l'entrée de la version publiée (« à paraître » / « unreleased » remplacés par la date du jour, dans le dépôt source comme dans le dist). Le bureau n'affiche plus ces mentions pour les versions déjà publiées sans date.
+- **La corbeille annonce sa vraie taille.** Elle affichait moins que la page de désinstallation (7,6 Go contre 11,7 Go) : un gros dossier n'était mesuré qu'en partie au moment de sa suppression (« ≥ 5,2 Go »). Sa taille exacte se calcule maintenant juste après, et l'en-tête donne la place occupée sur le disque, celle que « Vider la corbeille » libère.
+  > Taille complète d'un élément mesuré en partie calculée en arrière-plan et notée dans sa fiche ; place sur le disque par du -sk de chaque dossier .desktroo-corbeille (même mesure que uninstall.sh), recalculée quand le contenu change. La liste se relit toute seule pendant le calcul.
+
+## 2.58.1 — 18 octobre 2026
 
 ### Corrigé
 - **« Voir ce qu'apporte la mise à jour » montre bien la nouvelle version.** Les notes de version affichées dataient parfois d'avant sa publication : elles s'arrêtaient à la version installée.

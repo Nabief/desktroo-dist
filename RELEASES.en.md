@@ -3,7 +3,24 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.58.1 — unreleased
+## 2.59.0 — 18 October 2026
+
+### New
+- **A photo or an avatar for your account.** Click your name at the top right, then “Profile picture”: choose one of the 18 suggested avatars or a photo of your own. It is shown in the taskbar, for this account, on every browser.
+  > The photo is cropped to the centre and shrunk to 256 px in the browser, then kept on the NAS (data/profiles, included in the Desktroo backup). Routes GET /profile, GET /profile/photo, POST /profile/avatar.
+
+### Improved
+- **Account menu.** It now shows the real name and initial of the signed-in account, and its role read from TrueNAS (administrator, read-only…) instead of a fixed “R … Administrator”. “Language” opens the language choice (System configuration → Language and time zone) instead of switching straight to English.
+
+### Fixed
+- **Desktroo Apps in the desktop language.** App names and descriptions in the Store stayed in French for Spanish: they are now translated, and an added language shows English rather than French when the app has no translation.
+  > Catalogue (store/desktroo-store/catalog.json): “es” entry added to every text (name, tagline, description, ports, setup notes). dkStoreName: desktop language, else English, else French. To be published with publish-store.ps1.
+- **No more “unreleased” next to “Installed”.** A published version now keeps its date in the release notes.
+  > publish-dist.ps1 dates the entry of the published version (“à paraître” / “unreleased” replaced by today’s date, in the source repository as in the dist). The desktop no longer shows these words for versions already published without a date.
+- **The bin shows its real size.** It showed less than the uninstall page (7.6 GB versus 11.7 GB): a large folder was only partly measured when it was deleted (“≥ 5.2 GB”). Its exact size is now calculated right after, and the header gives the space used on disk, which is what “Empty the bin” frees.
+  > Full size of a partly measured item calculated in the background and saved in its record; disk space via du -sk of each .desktroo-corbeille folder (same measure as uninstall.sh), recalculated when the content changes. The list refreshes itself during the calculation.
+
+## 2.58.1 — 18 October 2026
 
 ### Fixed
 - **“See what the update brings” now shows the new version.** The release notes shown sometimes dated from before its release: they stopped at the installed version.
