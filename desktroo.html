@@ -1157,6 +1157,28 @@ html:not(.dk-phone):not(.dk-kiosk) .window:has(.web-shell) { min-width:min(640px
   .fs-item.active { background:rgba(var(--accent-rgb),0.2); color:var(--accent2); }
   .fs-item svg { opacity:0.7; }
   .fs-item:hover svg, .fs-item.active svg { opacity:1; }
+  .fs-fav-section .fs-sidebar-title { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .fs-fav-add { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; padding:0; border:0; border-radius:6px;
+    background:none; color:var(--text-dim); cursor:pointer; font:inherit; font-size:15px; line-height:1; }
+  .fs-fav-add:hover { background:rgba(var(--accent-rgb),0.16); color:var(--accent2); }
+  .fs-fav-item .fs-fav-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fs-fav-item .fs-fav-x { display:none; width:18px; height:18px; padding:0; border:0; border-radius:5px; background:none; color:var(--text-dim);
+    cursor:pointer; font-size:14px; line-height:1; flex-shrink:0; }
+  .fs-fav-item:hover .fs-fav-x, .fs-fav-item:focus-within .fs-fav-x { display:inline-flex; align-items:center; justify-content:center; }
+  .fs-fav-item .fs-fav-x:hover { background:rgba(224,82,82,0.16); color:var(--danger); }
+  .fs-fav-item.dragging { opacity:.45; }
+  .fs-fav-item.drop-before { box-shadow:inset 0 2px 0 var(--accent); }
+  .fs-fav-empty { display:flex; align-items:center; gap:9px; padding:6px 10px; border-radius:var(--radius-sm); font-size:12px; color:var(--text-dim);
+    cursor:pointer; border:1px dashed var(--glass-border); }
+  .fs-fav-empty:hover { color:var(--accent2); border-color:rgba(var(--accent-rgb),0.45); }
+  .fsfav-list { flex:1; min-height:0; overflow:auto; padding:4px 14px 10px; }
+  .fsfav-pool { margin:10px 0 4px; font-size:10px; font-weight:700; color:var(--text-dim); text-transform:uppercase; letter-spacing:.8px; }
+  .fsfav-row { display:flex; align-items:center; gap:9px; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .fsfav-row:hover { background:rgba(255,255,255,0.06); }
+  [data-theme="light"] .fsfav-row:hover { background:rgba(0,0,0,0.05); }
+  .fsfav-row input { margin:0; accent-color:var(--accent); flex-shrink:0; }
+  .fsfav-row .fsfav-path { margin-left:auto; color:var(--text-dim); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:45%; }
+  .fsfav-foot { display:flex; align-items:center; gap:8px; padding:10px 14px; border-top:1px solid var(--glass-border); }
   .fs-main { display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; }
   .fs-address-bar {
     display:flex; align-items:center; gap:6px; padding:8px 12px 0;
@@ -4213,6 +4235,20 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Favoris gardés sur ce navigateur seulement : ": "Favorites kept on this browser only: ",
+"Retiré des favoris": "Removed from favorites",
+"Ajouté aux favoris": "Added to favorites",
+"Choisir des datasets…": "Choose datasets…",
+"Ajouter des datasets…": "Add datasets…",
+"Retirer des favoris": "Remove from favorites",
+"Ajouter ce dossier aux favoris": "Add this folder to favorites",
+"Retirer ce dossier des favoris": "Remove this folder from favorites",
+"Favoris de Fichiers": "Files favorites",
+"Cochez les datasets à garder sous la main dans la colonne de Fichiers. Un dossier s’ajoute aussi par le clic droit.": "Tick the datasets to keep at hand in the Files sidebar. A folder can also be added with a right-click.",
+"Filtrer…": "Filter…",
+"{0} en favori": "{0} in favorites",
+"Aucun dataset trouvé.": "No dataset found.",
+"Favoris enregistrés": "Favorites saved",
 "OnlyOffice ne répond pas encore : s’il vient de démarrer, réessayez dans une minute.": "OnlyOffice isn't responding yet: if it has just started, try again in a minute.",
 "Ouverture du document…": "Opening the document…",
 "Aucune suite bureautique n’est installée : ajoutez OnlyOffice depuis Desktroo Apps.": "No office suite is installed: add OnlyOffice from Desktroo Apps.",
@@ -10218,6 +10254,20 @@ select option{ background:#101b2e; color:#e9eef7; }
      au dictionnaire anglais doit l'être ici aussi (« node tools/i18n/i18n.js check » compte ce qui manque). -->
 <script type="application/json" id="dk-i18n-es">
 {
+"Favoris gardés sur ce navigateur seulement : ": "Favoritos guardados solo en este navegador: ",
+"Retiré des favoris": "Quitado de favoritos",
+"Ajouté aux favoris": "Añadido a favoritos",
+"Choisir des datasets…": "Elegir datasets…",
+"Ajouter des datasets…": "Añadir datasets…",
+"Retirer des favoris": "Quitar de favoritos",
+"Ajouter ce dossier aux favoris": "Añadir esta carpeta a favoritos",
+"Retirer ce dossier des favoris": "Quitar esta carpeta de favoritos",
+"Favoris de Fichiers": "Favoritos de Archivos",
+"Cochez les datasets à garder sous la main dans la colonne de Fichiers. Un dossier s’ajoute aussi par le clic droit.": "Marca los datasets que quieres tener a mano en la columna de Archivos. Una carpeta también se añade con el clic derecho.",
+"Filtrer…": "Filtrar…",
+"{0} en favori": "{0} en favoritos",
+"Aucun dataset trouvé.": "No se ha encontrado ningún dataset.",
+"Favoris enregistrés": "Favoritos guardados",
 "OnlyOffice ne répond pas encore : s’il vient de démarrer, réessayez dans une minute.": "OnlyOffice aún no responde: si acaba de arrancar, vuelve a intentarlo en un minuto.",
 "Ouverture du document…": "Abriendo el documento…",
 "Aucune suite bureautique n’est installée : ajoutez OnlyOffice depuis Desktroo Apps.": "No hay ninguna suite ofimática instalada: añade OnlyOffice desde Desktroo Apps.",
@@ -18397,6 +18447,7 @@ function buildFsWindowHtml(wid, top, left) {
           <div class="fs-item" data-path="/home" onclick="setActiveFsWin('${wid}');fsNavigate('/home')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/home')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> /home</div>
           <div class="fs-item" data-path="/tmp" onclick="setActiveFsWin('${wid}');fsNavigate('/tmp')" ondragover="event.preventDefault();this.classList.add('drop-target')" ondragleave="this.classList.remove('drop-target')" ondrop="this.classList.remove('drop-target');fsSidebarDrop(event,'/tmp')"><svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> /tmp</div>
         </div>
+        <div class="fs-sidebar-section fs-fav-section" id="${wid}-fs-fav-sidebar"></div>
         <div class="fs-sidebar-section" id="${wid}-fs-pools-sidebar">
           <div class="fs-sidebar-title">Pools</div>
         </div>
@@ -18487,10 +18538,12 @@ function buildFsWindowHtml(wid, top, left) {
         <div class="ctx-item fsctx-paste" onclick="setActiveFsWin('${wid}');fsPaste()" style="display:none;">Coller</div>
         <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsMoveTo()">Déplacer vers…</div>
         <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsCopyTo()">Copier vers…</div>
+        <div class="ctx-item fsctx-fav" style="display:none;" onclick="setActiveFsWin('${wid}');fsFavToggleSel()">Ajouter aux favoris</div>
         <hr class="ctx-separator fsctx-sel">
         <div class="ctx-item fsctx-sel" onclick="setActiveFsWin('${wid}');fsRenamePrompt()">Renommer</div>
         <div class="ctx-item fsctx-sel danger" onclick="setActiveFsWin('${wid}');fsDeleteSelected()">Supprimer</div>
         <hr class="ctx-separator fsctx-new-sep">
+        <div class="ctx-item fsctx-favhere" style="display:none;" onclick="setActiveFsWin('${wid}');fsFavToggle(currentFsPath)">Ajouter ce dossier aux favoris</div>
         <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsMkdirPrompt()">Nouveau dossier</div>
         <div class="ctx-item" onclick="setActiveFsWin('${wid}');fsNewFile()">Nouveau document</div>
         <div class="ctx-item fsctx-office" style="display:none;" onclick="setActiveFsWin('${wid}');dkOfficeNew('docx',currentFsPath)">Nouveau document Word</div>
@@ -19080,6 +19133,7 @@ function fsRenderEntries(el, items) {
     if (sep) sep.style.display = _fsClipboard ? '' : 'none';
     fsxCtxSync(null, false);
     dkOfficeCtxSync(ctx);
+    fsFavCtxSync(ctx, null, false);
     fsCtxPlace(ctx, e);
   };
   if (!items.length) {
@@ -19457,6 +19511,7 @@ function fsShowCtx(e, item) {
   if (pasteEl) pasteEl.style.display = _fsClipboard ? '' : 'none';
   fsxCtxSync(item, multi);
   dkOfficeCtxSync(ctx);
+  fsFavCtxSync(ctx, item, multi);
   // Positionner
   fsCtxPlace(ctx, e);
 }
@@ -28470,7 +28525,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.0';
+var DK_PAGE_VERSION = '2.60.1';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -32993,7 +33048,177 @@ async function fsxTrashConf(force) {
   return _fsx.conf;
 }
 // Ajouts à une fenêtre Fichiers : « Corbeille » dans la colonne, deux lignes dans le menu du clic droit.
+// ── MDM-FS-FAV-V1 : favoris de Fichiers (datasets et dossiers), entre « Emplacements » et « Pools » ────────────────
+// Gardés par compte sur le NAS (profil : fs_favorites), donc les mêmes sur tous les navigateurs ; copie locale si le
+// NAS ne répond pas. Ajout par le clic droit (dossier sélectionné ou dossier ouvert) ou par le choix des datasets (+).
+var _fsFav = { list: null, user: null, busy: null };
+var FS_FAV_SVG = '<svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><polygon points="12 2.8 14.9 8.7 21.4 9.6 16.7 14.2 17.8 20.6 12 17.6 6.2 20.6 7.3 14.2 2.6 9.6 9.1 8.7"/></svg>';
+function fsFavNorm(p) { p = String(p || ''); return p.length > 1 ? p.replace(/\/+$/, '') : p; }
+function fsFavList() { return _fsFav.list || []; }
+function fsFavHas(p) { p = fsFavNorm(p); return fsFavList().some(function(f) { return f.path === p; }); }
+function fsFavLabel(f) { return f.name || (f.path === '/' ? '/' : f.path.split('/').pop()) || f.path; }
+async function fsFavLoad(force) {
+  if (_fsFav.list && !force && _fsFav.user === currentUser) return _fsFav.list;
+  if (_fsFav.busy) return _fsFav.busy;
+  _fsFav.busy = (async function() {
+    var who = currentUser, list = null;
+    try { var r = await fileops('GET', 'profile'); if (r && Array.isArray(r.fs_favorites)) list = r.fs_favorites; else if (r && r.ok !== false) list = []; } catch (_) {}
+    if (list === null) { try { list = JSON.parse(localStorage.getItem('dk_fs_fav') || '[]'); } catch (_) { list = []; } }
+    _fsFav.list = (Array.isArray(list) ? list : []).filter(function(f) { return f && typeof f.path === 'string'; });
+    _fsFav.user = who;
+    _fsFav.busy = null;
+    fsFavRender();
+    return _fsFav.list;
+  })();
+  return _fsFav.busy;
+}
+async function fsFavSave(list, note) {
+  _fsFav.list = list;
+  try { localStorage.setItem('dk_fs_fav', JSON.stringify(list)); } catch (_) {}
+  fsFavRender();
+  try {
+    var r = await fileops('POST', 'profile/favorites', { favorites: list });
+    if (r && Array.isArray(r.favorites)) { _fsFav.list = r.favorites; fsFavRender(); }
+    if (note) toast(note, 3000);
+  } catch (e) { toast(T('Favoris gardés sur ce navigateur seulement : ') + dkErrText(e), 6000); }
+}
+function fsFavToggle(path, name) {
+  path = fsFavNorm(path);
+  if (!path) return;
+  var list = fsFavList().slice();
+  if (fsFavHas(path)) fsFavSave(list.filter(function(f) { return f.path !== path; }), T('Retiré des favoris'));
+  else { list.push({ path: path, name: name || '' }); fsFavSave(list, T('Ajouté aux favoris')); }
+}
+function fsFavToggleSel() { if (fsSelected && fsSelected.type === 'DIRECTORY') fsFavToggle(fsSelected.path); }
+function fsFavRemove(path) { path = fsFavNorm(path); fsFavSave(fsFavList().filter(function(f) { return f.path !== path; }), T('Retiré des favoris')); }
+function fsFavMove(from, before) {
+  var list = fsFavList().slice(), i = list.findIndex(function(f) { return f.path === from; });
+  if (i < 0) return;
+  var it = list.splice(i, 1)[0], j = before ? list.findIndex(function(f) { return f.path === before; }) : -1;
+  if (j < 0) list.push(it); else list.splice(j, 0, it);
+  fsFavSave(list);
+}
+// Une fenêtre Fichiers : sa section « Favoris » (une seule fois), puis la liste du compte.
+function fsFavDecorate(wid) {
+  var sec = document.getElementById(wid + '-fs-fav-sidebar');
+  if (!sec || sec._fav) return;
+  sec._fav = true;
+  fsFavRenderOne(sec);
+  fsFavLoad(_fsFav.user !== currentUser);
+}
+function fsFavRender() { document.querySelectorAll('[id$="-fs-fav-sidebar"]').forEach(fsFavRenderOne); if (typeof fsTreeSync === 'function') fsTreeSync(); }
+function fsFavRenderOne(sec) {
+  var wid = sec.id.replace(/-fs-fav-sidebar$/, ''), list = fsFavList();
+  sec.innerHTML = '<div class="fs-sidebar-title"><span>' + T('Favoris') + '</span><button class="fs-fav-add" title="' + webEsc(T('Choisir des datasets…')) + '" aria-label="' + webEsc(T('Choisir des datasets…')) + '">+</button></div>';
+  sec.querySelector('.fs-fav-add').onclick = function(e) { e.stopPropagation(); setActiveFsWin(wid); fsFavPicker(); };
+  if (!list.length) {
+    var em = document.createElement('div');
+    em.className = 'fs-fav-empty';
+    em.innerHTML = FS_FAV_SVG + '<span>' + T('Ajouter des datasets…') + '</span>';
+    em.onclick = function() { setActiveFsWin(wid); fsFavPicker(); };
+    sec.appendChild(em);
+    return;
+  }
+  list.forEach(function(f) {
+    var it = document.createElement('div');
+    it.className = 'fs-item fs-fav-item';
+    it.dataset.path = f.path;
+    it.title = f.path;
+    it.draggable = true;
+    it.innerHTML = FS_FAV_SVG + '<span class="fs-fav-name"></span><button class="fs-fav-x" aria-label="' + webEsc(T('Retirer des favoris')) + '" title="' + webEsc(T('Retirer des favoris')) + '">&times;</button>';
+    it.querySelector('.fs-fav-name').textContent = fsFavLabel(f);
+    it.onclick = function() { setActiveFsWin(wid); fsNavigate(f.path); };
+    it.querySelector('.fs-fav-x').onclick = function(e) { e.stopPropagation(); fsFavRemove(f.path); };
+    // Glisser un favori le range ailleurs dans la liste ; y déposer des fichiers les déplace dans ce dossier.
+    it.addEventListener('dragstart', function(e) { e.dataTransfer.setData('application/x-dk-fav', f.path); e.dataTransfer.effectAllowed = 'move'; it.classList.add('dragging'); });
+    it.addEventListener('dragend', function() { it.classList.remove('dragging'); });
+    it.addEventListener('dragover', function(e) {
+      var t = e.dataTransfer.types;
+      if (t.indexOf('application/x-dk-fav') >= 0) { e.preventDefault(); it.classList.add('drop-before'); }
+      else if (t.indexOf('text/plain') >= 0) { e.preventDefault(); it.classList.add('drop-target'); }
+    });
+    it.addEventListener('dragleave', function() { it.classList.remove('drop-target', 'drop-before'); });
+    it.addEventListener('drop', function(e) {
+      it.classList.remove('drop-target', 'drop-before');
+      var src = e.dataTransfer.getData('application/x-dk-fav');
+      if (src) { e.preventDefault(); if (src !== f.path) fsFavMove(src, f.path); return; }
+      setActiveFsWin(wid); fsSidebarDrop(e, f.path);
+    });
+    sec.appendChild(it);
+  });
+}
+// Menu du clic droit : « Ajouter aux favoris » sur un dossier seul, « … ce dossier … » dans un dossier ouvert.
+function fsFavCtxSync(ctx, item, multi) {
+  if (!ctx) return;
+  if (_fsFav.list === null) fsFavLoad();
+  var a = ctx.querySelector('.fsctx-fav'), b = ctx.querySelector('.fsctx-favhere');
+  var dirSel = !!(item && !multi && item.type === 'DIRECTORY');
+  if (a) { a.style.display = dirSel ? '' : 'none'; if (dirSel) a.textContent = fsFavHas(item.path) ? T('Retirer des favoris') : T('Ajouter aux favoris'); }
+  var here = !item && currentFsPath && !(fsScope && fsScope()._fsSearch);
+  if (b) { b.style.display = here ? '' : 'none'; if (here) b.textContent = fsFavHas(currentFsPath) ? T('Retirer ce dossier des favoris') : T('Ajouter ce dossier aux favoris'); }
+}
+// Choix des datasets : tous les datasets des pools, cochés s'ils sont déjà en favori.
+async function fsFavPicker() {
+  var win = document.getElementById('win-fsfav');
+  if (win) { win.classList.add('visible'); bringToFront(win); return; }
+  await fsFavLoad();
+  win = dkStoreMakeWin('fsfav', T('Favoris de Fichiers'), 560, 600,
+    '<div style="padding:14px 14px 6px;"><div style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;">' + T('Cochez les datasets à garder sous la main dans la colonne de Fichiers. Un dossier s’ajoute aussi par le clic droit.') + '</div>'
+    + '<input class="wm-input" id="fsfav-q" placeholder="' + webEsc(T('Filtrer…')) + '" autocomplete="off" spellcheck="false" style="width:100%;"></div>'
+    + '<div class="fsfav-list" id="fsfav-list"><div class="fs-loading" style="height:120px;"><div class="spinner"></div> ' + T('Chargement...') + '</div></div>'
+    + '<div class="fsfav-foot"><span id="fsfav-count" style="color:var(--text-dim);font-size:12px;"></span><span style="flex:1"></span>'
+    + '<button class="web-mini" id="fsfav-cancel">' + T('Annuler') + '</button><button class="web-open" id="fsfav-ok">' + T('Enregistrer') + '</button></div>');
+  var sel = {};
+  fsFavList().forEach(function(f) { sel[f.path] = true; });
+  var all = [];
+  function count() { var c = document.getElementById('fsfav-count'); if (c) c.textContent = Tf('{0} en favori', Object.keys(sel).filter(function(k) { return sel[k]; }).length); }
+  function draw() {
+    var el = document.getElementById('fsfav-list'); if (!el) return;
+    var q = (document.getElementById('fsfav-q').value || '').trim().toLowerCase(), h = '', pool = '';
+    var rows = all.filter(function(d) { return !q || d.name.toLowerCase().indexOf(q) >= 0; });
+    rows.forEach(function(d, i) {
+      var pl = d.name.split('/')[0];
+      if (pl !== pool) { pool = pl; h += '<div class="fsfav-pool">' + webEsc(pl) + '</div>'; }
+      var depth = d.name.split('/').length - 1;
+      h += '<label class="fsfav-row" style="padding-left:' + (8 + (q ? 0 : depth * 16)) + 'px;"><input type="checkbox" data-i="' + all.indexOf(d) + '"' + (sel[d.path] ? ' checked' : '') + '>'
+        + '<span>' + webEsc(q ? d.name : (d.name.split('/').pop() || d.name)) + '</span><span class="fsfav-path">' + webEsc(d.path) + '</span></label>';
+    });
+    el.innerHTML = h || '<div style="padding:20px;color:var(--text-dim);text-align:center;">' + T('Aucun dataset trouvé.') + '</div>';
+    el.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.onchange = function() { sel[all[+cb.dataset.i].path] = cb.checked; count(); }; });
+    count();
+  }
+  win.querySelector('#fsfav-q').oninput = draw;
+  win.querySelector('#fsfav-cancel').onclick = function() { win.querySelector('.win-btn.cls').click(); };
+  win.querySelector('#fsfav-ok').onclick = function() {
+    var known = {}; all.forEach(function(d) { known[d.path] = d; });
+    // Les dossiers ajoutés par le clic droit restent ; les datasets suivent les cases, nouveaux en fin de liste.
+    var list = fsFavList().filter(function(f) { return !known[f.path] || sel[f.path]; });
+    all.forEach(function(d) { if (sel[d.path] && !list.some(function(f) { return f.path === d.path; })) list.push({ path: d.path, name: '' }); });
+    fsFavSave(list, T('Favoris enregistrés'));
+    win.querySelector('.win-btn.cls').click();
+  };
+  try {
+    var pools = ensureArray(await socketCall('/pool')), list = [];
+    for (var i = 0; i < pools.length; i++) {
+      var pn = pools[i].name;
+      list.push({ name: pn, path: '/mnt/' + pn });
+      var ds = await stoDsLoad(pn);
+      ds.forEach(function(d) {
+        // Datasets internes de TrueNAS (.system, ix-apps…) : pas des dossiers de travail.
+        if (/(^|\/)\./.test(d.name) || /^[^\/]+\/(ix-apps|ix-applications)(\/|$)/.test(d.name)) return;
+        list.push({ name: d.name, path: fsFavNorm(d.mountpoint || ('/mnt/' + d.name)) });
+      });
+    }
+    all = list;
+    draw();
+    var q = document.getElementById('fsfav-q'); if (q) q.focus();
+  } catch (e) {
+    var el = document.getElementById('fsfav-list');
+    if (el) el.innerHTML = '<div style="padding:20px;color:var(--danger);">' + webEsc(dkErrText(e)) + '</div>';
+  }
+}
 function fsxDecorate(wid) {
+  fsFavDecorate(wid);
   var win = document.getElementById('win-' + wid);
   if (!win || win.querySelector('.fsx-trash-item')) return;
   fsxTrashConf();   // le menu du clic droit saura s'il y a une corbeille

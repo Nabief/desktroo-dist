@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.1 — 18 October 2026
+
+### New
+- **Favorites in Files.** A “Favorites” section between Locations and Pools keeps your preferred datasets and folders at hand: the + button lets you tick datasets in the list of all those on the NAS, and right-clicking a folder adds or removes it. Drag a favorite to reorder it; drop files on it to move them there. Favorites follow your account on every browser.
+  > Kept in the account profile (data/profiles, fs_favorites field, 60 at most); route POST /profile/favorites. Internal datasets (.system, ix-apps) are left out of the list.
+
 ## 2.60.0 — 18 October 2026
 
 ### New

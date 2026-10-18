@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.1 — 18 octobre 2026
+
+### Nouveau
+- **Des favoris dans Fichiers.** Une section « Favoris » entre Emplacements et Pools garde vos datasets et dossiers préférés sous la main : le bouton + permet de cocher des datasets dans la liste de tous ceux du NAS, et un clic droit sur un dossier l'ajoute ou le retire. Glissez un favori pour le ranger ; déposez-y des fichiers pour les y déplacer. Les favoris suivent votre compte sur tous les navigateurs.
+  > Gardés dans le profil du compte (data/profiles, champ fs_favorites, 60 au plus) ; route POST /profile/favorites. Datasets internes (.system, ix-apps) écartés de la liste.
+
 ## 2.60.0 — 18 octobre 2026
 
 ### Nouveau

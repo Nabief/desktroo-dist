@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.0'
+APP_VERSION = '2.60.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -832,6 +832,34 @@ def profile_avatar_set(handler, body):
         json.dump(d, fh)
     os.replace(pj + '.tmp', pj)
     return {'ok': True, 'avatar': rec}
+
+
+PROFILE_FAV_MAX = 60
+
+
+def profile_favorites_set(handler, body):
+    """Favoris de Fichiers du compte : [{path, name}], dans l'ordre choisi. Chemins absolus, sans « .. »."""
+    raw = (body or {}).get('favorites')
+    if not isinstance(raw, list):
+        raise ValueError('Demande invalide.')
+    out, seen = [], set()
+    for f in raw[:PROFILE_FAV_MAX]:
+        p = str((f or {}).get('path') if isinstance(f, dict) else f or '').strip()
+        if len(p) > 1 and p.endswith('/'):
+            p = p.rstrip('/')
+        if not p.startswith('/') or len(p) > 1024 or '\x00' in p or '/../' in p + '/' or p in seen:
+            continue
+        seen.add(p)
+        name = str((f or {}).get('name') or '') if isinstance(f, dict) else ''
+        out.append({'path': p, 'name': re.sub(r'[\x00-\x1f]', '', name)[:80]})
+    pj, _pi = _profile_paths(handler)
+    os.makedirs(os.path.dirname(pj), exist_ok=True)
+    d = profile_get(handler)
+    d['fs_favorites'] = out
+    with open(pj + '.tmp', 'w', encoding='utf-8') as fh:
+        json.dump(d, fh)
+    os.replace(pj + '.tmp', pj)
+    return {'ok': True, 'favorites': out}
 
 
 def profile_photo(handler):
@@ -16320,6 +16348,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             return
 
         # Profil du compte : choisir un avatar, envoyer une photo, revenir à l'initiale
+        if path == '/profile/favorites':   # favoris de Fichiers du compte
+            try:
+                self._json(200, profile_favorites_set(self, self._body()))
+            except ValueError as e:
+                self._json(400, {'ok': False, 'error': str(e)})
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
+            return
         if path == '/profile/avatar':
             try:
                 self._json(200, profile_avatar_set(self, self._body()))
