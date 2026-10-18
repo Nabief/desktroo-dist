@@ -12,6 +12,8 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 - **Un lien vers Desktroo Apps** dans « Voir aussi » du Catalogue d'applications et du gestionnaire d'Applications.
 
 ### Corrigé
+- **Desktroo Pass : « Renvoyer l'invitation », « Désactiver », « Réactiver », « Retirer la 2FA » et « Supprimer » fonctionnent.** Le coffre répondait « 404 » avec une page HTML.
+  > Vaultwarden n'accepte ces actions qu'avec un corps JSON (Content-Type: application/json) ; Desktroo n'en envoyait pas. Une page d'erreur HTML n'est plus affichée telle quelle dans le message.
 - **Une fenêtre ne se réduit plus au point de couper son contenu.** Les gestionnaires à deux volets qui n'avaient pas de taille minimale (Desktroo Apps et les fenêtres de ses apps comme Desktroo Pass, Mises à jour TrueNAS, Journal d'activité, Bilan de santé, Sites Web, Téléchargements) s'arrêtent à 640 × 420, jamais plus grand que l'écran.
   > La poignée du coin bas-droit respecte désormais la taille minimale de chaque fenêtre, comme les bords.
 - **Desktroo Pass dit clairement quand les invitations ne partent pas par e-mail.** Le bandeau explique que la personne invitée ne reçoit rien tant que l'envoi n'est pas activé, et le bouton s'appelle « Activer l'envoi des e-mails ». Le coffre signale aussi quand la messagerie du NAS a changé depuis qu'il l'a reprise, et un bouton « Envoyer un e-mail de test » vérifie l'envoi par le même chemin que les invitations.

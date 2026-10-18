@@ -13998,7 +13998,11 @@ def _pass_err_text(raw):
                 return str(m)[:300]
     except Exception:
         pass
-    return raw[:200].decode('utf-8', 'replace')
+    t = raw[:2000].decode('utf-8', 'replace')
+    if re.search(r'<html|<!doctype', t, re.I):
+        m = re.search(r'<title>([^<]{1,120})</title>', t, re.I)
+        return 'page %s' % (m.group(1).strip() if m else 'HTML')
+    return t[:200]
 
 
 def _pass_admin(method, path, body=None):
@@ -14084,7 +14088,8 @@ def store_pass_user(body):
     if not re.match(r'^[0-9a-f-]{8,64}$', uid) or act not in ('delete', 'disable', 'enable', 'deauth', 'remove-2fa', 'invite/resend'):
         return 400, {'ok': False, 'error': 'Demande invalide.'}
     try:
-        _pass_admin('POST', '/users/%s/%s' % (uid, act))
+        # Vaultwarden ne reconnaît ces routes qu'avec Content-Type: application/json (sinon 404) : corps JSON vide
+        _pass_admin('POST', '/users/%s/%s' % (uid, act), {})
         return 200, {'ok': True}
     except Exception as e:
         return 502, {'ok': False, 'error': str(e)[:300]}

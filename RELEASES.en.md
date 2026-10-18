@@ -12,10 +12,12 @@ the grey line underneath gives the technical detail, when there is one.
 - **A link to Desktroo Apps** under “See also” in the App catalog and in the Applications manager.
 
 ### Fixed
+- **Desktroo Pass: “Resend the invitation”, “Disable”, “Re-enable”, “Remove 2FA” and “Delete” work.** The vault answered “404” with an HTML page.
+  > Vaultwarden only accepts these actions with a JSON body (Content-Type: application/json); Desktroo sent none. An HTML error page is no longer shown as is in the message.
 - **A window can no longer be shrunk until its content is cut off.** Two-pane managers that had no minimum size (Desktroo Apps and its app windows such as Desktroo Pass, TrueNAS updates, Activity log, Health check, Websites, Downloads) stop at 640 × 420, never larger than the screen.
   > The bottom-right corner handle now respects each window’s minimum size, like the edges do.
 - **Desktroo Pass says clearly when invitations are not sent by email.** The banner explains that the invited person receives nothing until sending is turned on, and the button is now called “Turn on sending emails”. The vault also tells you when the NAS mail settings changed since it took them over, and a “Send a test email” button checks sending through the same path as invitations.
-  > The test goes through Vaultwarden (/admin/test/smtp); its error message is shown as is. Once sending is on, “Resend invitation” sends the email to people already invited.
+  > The test goes through Vaultwarden (/admin/test/smtp); its error message is shown as is. Once sending is on, “Resend the invitation” sends the email to people already invited.
 - **The applications list shows their icons.** Desktroo Apps apps use the Store icon, and a custom application uses the one of the app with the same name in the TrueNAS catalog (Nextcloud, n8n, OnlyOffice…). The others keep their initial.
 
 ## 2.55.0 — 18 October 2026
