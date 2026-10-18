@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.54.50'
+APP_VERSION = '2.54.51'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -17315,35 +17315,49 @@ def _dkbk_apps():
 
 
 def dkbackup_build(dest_path, kind='backup'):
-    """Écrit l'archive dans dest_path (fichier temporaire puis renommage). Rend le nombre de fichiers."""
-    tmp = dest_path + '.part'
+    """Écrit l'archive dans dest_path. Rend le nombre de fichiers.
+    L'archive se construit d'abord dans le dossier temporaire du conteneur, puis se copie à sa place : sur un dossier du NAS
+    à ACL (SMB/NFSv4), ni le changement de droits ni le renommage d'un fichier ne sont toujours permis ; créer et écrire, si."""
+    fd, tmp = _tempfile.mkstemp(prefix='dkbk-', suffix='.tar.gz')
+    os.close(fd)
     n = 0
-    meta = {'format': 'desktroo-backup', 'version': 1, 'app_version': APP_VERSION, 'created': int(_lic_time.time()),
-            'kind': kind, 'apps': [a for a, _d in _dkbk_apps()]}
-    with _bk_tarfile.open(tmp, 'w:gz') as tf:
-        raw = json.dumps(meta).encode('utf-8')
-        ti = _bk_tarfile.TarInfo('desktroo-backup.json'); ti.size = len(raw); ti.mtime = meta['created']; ti.mode = 0o600
-        tf.addfile(ti, _bk_io.BytesIO(raw))
-        for base, prefix in ((ACCESS_DATA_DIR, 'data'), (os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '', 'wallpapers')):
-            if not base or not os.path.isdir(base):
-                continue
-            for root, dirs, files in os.walk(base):
-                dirs[:] = [d for d in dirs if not d.startswith('.')]
-                for fn in files:
-                    full = os.path.join(root, fn)
-                    rel = os.path.relpath(full, base)
-                    if os.path.islink(full) or (prefix == 'data' and not _dkbk_included(rel)):
-                        continue
-                    try:
-                        tf.add(full, arcname=prefix + '/' + rel.replace(os.sep, '/'), recursive=False)
-                        n += 1
-                    except OSError:
-                        pass
     try:
-        os.chmod(tmp, 0o600)
-    except OSError:
-        pass   # dataset à ACL (SMB/NFSv4) : le compte n'a pas le droit de changer le mode, le fichier reste utilisable
-    os.replace(tmp, dest_path)
+        meta = {'format': 'desktroo-backup', 'version': 1, 'app_version': APP_VERSION, 'created': int(_lic_time.time()),
+                'kind': kind, 'apps': [a for a, _d in _dkbk_apps()]}
+        with _bk_tarfile.open(tmp, 'w:gz') as tf:
+            raw = json.dumps(meta).encode('utf-8')
+            ti = _bk_tarfile.TarInfo('desktroo-backup.json'); ti.size = len(raw); ti.mtime = meta['created']; ti.mode = 0o600
+            tf.addfile(ti, _bk_io.BytesIO(raw))
+            for base, prefix in ((ACCESS_DATA_DIR, 'data'), (os.path.join(APP_DIR, 'wallpapers') if APP_DIR else '', 'wallpapers')):
+                if not base or not os.path.isdir(base):
+                    continue
+                for root, dirs, files in os.walk(base):
+                    dirs[:] = [d for d in dirs if not d.startswith('.')]
+                    for fn in files:
+                        full = os.path.join(root, fn)
+                        rel = os.path.relpath(full, base)
+                        if os.path.islink(full) or (prefix == 'data' and not _dkbk_included(rel)):
+                            continue
+                        try:
+                            tf.add(full, arcname=prefix + '/' + rel.replace(os.sep, '/'), recursive=False)
+                            n += 1
+                        except OSError:
+                            pass
+        try:
+            with open(tmp, 'rb') as src, open(dest_path, 'wb') as dst:
+                _bk_shutil.copyfileobj(src, dst)
+        except OSError as e:
+            raise OSError('écriture dans %s impossible (%s). Choisissez un autre dossier, ou donnez au compte de Desktroo le droit d\'y écrire.'
+                          % (os.path.dirname(dest_path), e.strerror or e))
+        try:
+            os.chmod(dest_path, 0o600)
+        except OSError:
+            pass   # dataset à ACL : le mode ne se change pas, le fichier reste utilisable
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
     return n
 
 

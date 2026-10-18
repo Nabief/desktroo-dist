@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.54.51 — 18 octobre 2026
+
+### Corrigé
+- **La sauvegarde de Desktroo se fait aussi sur un dossier du NAS aux droits restrictifs.** L'archive se prépare désormais ailleurs, puis se copie dans le dossier choisi : plus besoin de renommer ni de changer les droits d'un fichier, ce que certains dossiers (ACL) refusent. Si le dossier n'accepte vraiment pas l'écriture, le message dit lequel et que faire.
+
 ## 2.54.50 — 18 octobre 2026
 
 ### Amélioré
