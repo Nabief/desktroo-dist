@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.2 — 18 October 2026
+
+### Fixed
+- **OnlyOffice documents stayed on the loading screen.** The editor now opens all the way. If a document still does not open after a minute and a half, a banner says so and offers to try again.
+  > OnlyOffice's service worker re-read the editor's static files without the apps session cookie, so nginx refused them. These files (web-apps, sdkjs, fonts, dictionaries) are now served without the session, read-only (nginx block V5); document, saving and live connection stay behind the session. “Try again” also removes OnlyOffice's service worker.
+
 ## 2.60.1 — 18 October 2026
 
 ### New

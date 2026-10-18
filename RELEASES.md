@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.2 — 18 octobre 2026
+
+### Corrigé
+- **Les documents OnlyOffice restaient sur l'écran de chargement.** L'éditeur s'ouvre maintenant jusqu'au bout. Si un document ne s'ouvre toujours pas au bout d'une minute et demie, un bandeau le dit et propose de réessayer.
+  > Le service worker d'OnlyOffice relisait les fichiers statiques de l'éditeur sans le cookie de session des apps : nginx les refusait. Ces fichiers (web-apps, sdkjs, polices, dictionnaires) sont servis sans la session, en lecture seule (bloc nginx V5) ; document, enregistrement et liaison en direct restent derrière la session. « Réessayer » retire aussi le service worker d'OnlyOffice.
+
 ## 2.60.1 — 18 octobre 2026
 
 ### Nouveau

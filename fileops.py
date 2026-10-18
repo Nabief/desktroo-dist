@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.1'
+APP_VERSION = '2.60.2'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10147,8 +10147,8 @@ def store_catalog(force=False):
 
 
 # Bloc nginx des apps. Posé par fileops dans nginx.conf (toutes les méthodes d'installation), une seule fois.
-_STORE_NGINX_MARK = 'MDM-STORE-NGINX-V4'   # à changer à chaque évolution du bloc : fileops remplace l'ancien
-_STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V4 : apps du Magasin Desktroo, derrière la session du bureau (posé par fileops) ──
+_STORE_NGINX_MARK = 'MDM-STORE-NGINX-V5'   # à changer à chaque évolution du bloc : fileops remplace l'ancien
+_STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V5 : apps du Magasin Desktroo, derrière la session du bureau (posé par fileops) ──
     location = /_store_auth {
         internal;
         proxy_pass              http://fileops:8765/store/auth;
@@ -10177,6 +10177,22 @@ _STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V4 : apps du Mag
 
     location ~ "^/a/([a-z0-9][a-z0-9-]{0,40})$" {
         return 301 $uri/$is_args$args;
+    }
+
+    # Bureautique : fichiers statiques de l'éditeur (code, polices, dictionnaires), sans la session. Le service worker
+    # d'OnlyOffice les relit sans cookie ; ils ne contiennent aucune donnée. Lecture seule.
+    location ~ "^/a/(onlyoffice|eurooffice)/([0-9]+\.[0-9]+\.[0-9]+[.-][A-Za-z0-9._-]+/)?(web-apps|sdkjs|sdkjs-plugins|fonts|dictionaries)/" {
+        set                   $dt_app $1;
+        limit_except GET HEAD { deny all; }
+        resolver              127.0.0.11 valid=10s ipv6=off;
+        rewrite               ^/a/[^/]+(/.*)$ $1 break;
+        proxy_pass            http://dt-$dt_app:80;
+        proxy_http_version    1.1;
+        proxy_set_header      Host               $http_host;
+        proxy_set_header      X-Forwarded-Host   $http_host/a/$dt_app;
+        proxy_set_header      X-Forwarded-Proto  $dt_fwd_proto;
+        proxy_set_header      Cookie             "";
+        error_page 502 504 = @dks_502;
     }
 
     # Bureautique (OnlyOffice, Euro-Office) : le serveur écoute sur 80 et doit connaître son adresse publique

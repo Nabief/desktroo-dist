@@ -4235,6 +4235,7 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Le document ne s’ouvre pas : OnlyOffice ne répond pas comme prévu.": "The document is not opening: OnlyOffice is not responding as expected.",
 "Favoris gardés sur ce navigateur seulement : ": "Favorites kept on this browser only: ",
 "Retiré des favoris": "Removed from favorites",
 "Ajouté aux favoris": "Added to favorites",
@@ -10254,6 +10255,7 @@ select option{ background:#101b2e; color:#e9eef7; }
      au dictionnaire anglais doit l'être ici aussi (« node tools/i18n/i18n.js check » compte ce qui manque). -->
 <script type="application/json" id="dk-i18n-es">
 {
+"Le document ne s’ouvre pas : OnlyOffice ne répond pas comme prévu.": "El documento no se abre: OnlyOffice no responde como se esperaba.",
 "Favoris gardés sur ce navigateur seulement : ": "Favoritos guardados solo en este navegador: ",
 "Retiré des favoris": "Quitado de favoritos",
 "Ajouté aux favoris": "Añadido a favoritos",
@@ -19804,6 +19806,8 @@ function dkOfficeCss() {
     + '.dkoff-host > iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}'
     + '.dkoff-wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text-dim);font-size:13px;z-index:1;pointer-events:none;}'
     + '.dkoff-host .dk-wait{position:absolute;inset:0;}'
+    + '.dkoff-stuck{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px;'
+    + 'border-radius:12px;background:var(--glass,#131f34);color:var(--text,#e9eef7);border:1px solid var(--glass-border);box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:13px;max-width:calc(100% - 32px);}'
     + '.dkoff-row > svg{flex-shrink:0;margin-right:12px;}'
     + '.dkoff-new{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:0 0 22px;}'
     + '.dkoff-new button{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.04);color:var(--text);font:inherit;font-size:13px;cursor:pointer;text-align:left;}'
@@ -19860,7 +19864,7 @@ async function dkOfficeOpen(path) {
     await dkOfficeLoadApi(r.app, r.api);
     if (!document.getElementById('win-' + wid)) return;   // fenêtre fermée pendant le chargement
     var cfg = r.config;
-    function ready() { var w = win.querySelector('.dkoff-wait'); if (w) w.remove(); }
+    function ready() { var w = win.querySelector('.dkoff-wait'); if (w) w.remove(); win._dkoffReady = true; var n = win.querySelector('.dkoff-stuck'); if (n) n.remove(); }
     cfg.width = '100%'; cfg.height = '100%';
     cfg.type = document.documentElement.classList.contains('dk-phone') ? 'mobile' : 'desktop';
     cfg.events = {
@@ -19869,6 +19873,8 @@ async function dkOfficeOpen(path) {
       onError: function(ev) { ready(); toast('❌ ' + String((ev && ev.data && ev.data.errorDescription) || T('Erreur de l’éditeur')), 8000); }
     };
     _dkOffice.eds[wid] = { ed: new DocsAPI.DocEditor(wid + '-ed', cfg), path: path, edit: !!r.editable };
+    var wt = win.querySelector('.dkoff-wait'); if (wt) wt.style.display = 'none';
+    dkOfficeWatch(win, wid, path);
     if (!r.editable) toast(T('Ouvert en lecture seule (format ancien ou fichier protégé).'), 6000);
     dkOfficeRecentAdd(path);
     dkStoreWatchTheme();
@@ -19878,10 +19884,32 @@ async function dkOfficeOpen(path) {
       '<button class="web-open" onclick="dkOfficeRetry(' + wmQ(path) + ',\'' + wid + '\')">' + T('Réessayer') + '</button>');
   }
 }
-function dkOfficeRetry(p, wid) {
+async function dkOfficeRetry(p, wid) {
   var b = document.querySelector('#win-' + wid + ' .win-btn.cls');
   if (b) b.click();
+  await dkOfficeResetSw();
   dkOfficeOpen(decodeURIComponent(p));
+}
+// Service worker d'OnlyOffice : retiré avant de réessayer, pour qu'une copie gardée d'un essai raté ne resserve pas.
+async function dkOfficeResetSw() {
+  try {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
+    var regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.filter(function(r) { return /\/a\/(onlyoffice|eurooffice)\//.test(r.scope); }).map(function(r) { return r.unregister(); }));
+  } catch (_) {}
+}
+// L'éditeur n'a pas fini de se charger en 90 s : un bandeau propose de réessayer (au lieu d'un chargement sans fin).
+function dkOfficeWatch(win, wid, path) {
+  setTimeout(function() {
+    if (win._dkoffReady || !document.getElementById('win-' + wid)) return;
+    var host = win.querySelector('.dkoff-host');
+    if (!host || host.querySelector('.dkoff-stuck')) return;
+    var bar = document.createElement('div');
+    bar.className = 'dkoff-stuck';
+    bar.innerHTML = '<span>' + T('Le document ne s’ouvre pas : OnlyOffice ne répond pas comme prévu.') + '</span>'
+      + '<button class="web-open" onclick="dkOfficeRetry(' + wmQ(path) + ',\'' + wid + '\')">' + T('Réessayer') + '</button>';
+    host.appendChild(bar);
+  }, 90000);
 }
 function dkOfficeClosed(wid) {
   var e = _dkOffice.eds[wid];
@@ -28525,7 +28553,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.1';
+var DK_PAGE_VERSION = '2.60.2';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
