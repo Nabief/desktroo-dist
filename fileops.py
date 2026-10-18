@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.57.1'
+APP_VERSION = '2.58.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -741,6 +741,33 @@ def _dist_channel():
         return 'stable'
 
 
+# Programme bêta : s'inscrire crée data/store/beta (mises à jour depuis la branche « beta » du dépôt, apps en test
+# de Desktroo Apps visibles), se désinscrire le retire. L'invitation n'est faite qu'une fois : la réponse est notée.
+def _beta_offer_file():
+    return os.path.join(STORE_DIR, 'beta-offer')
+
+
+def dist_channel_set(body):
+    ch = str((body or {}).get('channel') or '')
+    if ch not in ('beta', 'stable'):
+        return 400, {'ok': False, 'error': 'Canal inconnu.'}
+    os.makedirs(os.path.dirname(STORE_BETA_FILE), exist_ok=True)
+    if ch == 'beta':
+        with open(STORE_BETA_FILE, 'w') as fh:
+            fh.write('Programme bêta de Desktroo : inscrit depuis le bureau le %s\n' % _login_time.strftime('%Y-%m-%d %H:%M'))
+    elif os.path.exists(STORE_BETA_FILE):
+        os.unlink(STORE_BETA_FILE)
+    beta_offer_answer({'answer': ch})
+    return 200, dict(_version_status(), ok=True)
+
+
+def beta_offer_answer(body):
+    os.makedirs(STORE_DIR, exist_ok=True)
+    with open(_beta_offer_file(), 'w') as fh:
+        fh.write('%s %s\n' % (str((body or {}).get('answer') or 'non')[:20], _login_time.strftime('%Y-%m-%d %H:%M')))
+    return 200, {'ok': True}
+
+
 def _dist_raw(channel=None):
     """Adresse du dépôt de distribution : branche « main » (stable) ou « beta ». Un GITHUB_RAW personnalisé reste intact."""
     base = GITHUB_RAW
@@ -767,10 +794,11 @@ def _version_status():
         except Exception:
             latest = ''
 
-    def _norm(v):   # « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
+    def _norm(v):   # « 2.58.1b2 » (bêta n° 2) précède « 2.58.1 » (stable) et suit « 2.58.1b1 »
         v = str(v or '').strip()
-        nums = [int(x) for x in re.findall(r'\d+', v)[:4]]
-        return nums + [0] * (4 - len(nums)) + [0 if re.search(r'\d[bB]\d*$', v) else 1]
+        m = re.match(r'^(.*\d)[bB](\d*)$', v)
+        nums = [int(x) for x in re.findall(r'\d+', m.group(1) if m else v)[:4]]
+        return nums + [0] * (4 - len(nums)) + ([0, int(m.group(2) or 0)] if m else [1, 0])
 
     upd = False
     if latest:
@@ -779,6 +807,7 @@ def _version_status():
         except Exception:
             upd = (latest != APP_VERSION)
     return {'version': APP_VERSION, 'latest': latest, 'update_available': bool(upd), 'channel': _dist_channel(), 'boot': _BOOT_ID,
+            'beta_offer': _dist_channel() != 'beta' and not os.path.exists(_beta_offer_file()),
             'truenas_host': ('' if SSH_VIA_GATEWAY else SSH_HOST), 'truenas_ip': _truenas_ip()}
 
 
@@ -15530,6 +15559,15 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        # Programme bêta : inscription, désinscription, réponse à l'invitation
+        if path in ('/update/channel', '/update/beta-offer'):
+            try:
+                b = self._body()
+                code, resp = dist_channel_set(b) if path == '/update/channel' else beta_offer_answer(b)
+                self._json(code, resp)
+            except Exception as e:
+                self._json(500, {'ok': False, 'error': str(e)})
+            return
         if path == '/branding':
             try:
                 self._json(200, dict(_branding_set(str(self._body().get('accent') or '')), ok=True))

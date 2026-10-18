@@ -3,7 +3,13 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.57.1 — unreleased
+## 2.58.0 — unreleased
+
+### New
+- **Beta programme.** Those who wish get new Desktroo versions a few days before everyone else, and help polish them. The invitation appears once in the alerts; you can join or leave at any time in About → Beta programme.
+  > Joining creates data/store/beta: updates then come from the “beta” branch of the distribution repository (publish-dist.ps1 -Beta), and Desktroo Apps applications in testing become visible. After leaving, the NAS keeps its version until the next, newer stable version. The answer to the invitation is recorded in data/store/beta-offer. Betas are numbered 2.58.1b1, 2.58.1b2…, before the stable 2.58.1: the beta number is now compared correctly (a 2.58.1b1 used to rank above 2.58.1).
+
+## 2.57.1 — 18 October 2026
 
 ### New
 - **Desktroo in Spanish.** Spanish joins French and English: the whole desktop and the installation wizard, picked automatically for a browser set to Spanish, or from the login screen and System configuration → Language and time zone.

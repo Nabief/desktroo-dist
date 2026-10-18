@@ -4195,6 +4195,26 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Programme bêta": "Beta programme",
+"Inscrit": "Enrolled",
+"Tester les nouveautés en avance": "Try new features early",
+"Ce NAS reçoit les versions bêta de Desktroo.": "This NAS receives Desktroo beta versions.",
+"Recevez les nouvelles versions de Desktroo quelques jours avant tout le monde, et aidez à les mettre au point.": "Get new Desktroo versions a few days before everyone else, and help polish them.",
+"Les mises à jour proposées viennent des versions bêta : elles arrivent plus tôt et plus souvent.": "Offered updates come from beta versions: they arrive earlier and more often.",
+"Les applications en test de Desktroo Apps deviennent visibles dans le Magasin.": "Desktroo Apps applications in testing become visible in the Store.",
+"Une version bêta a été vérifiée, mais elle peut encore contenir des défauts : gardez une sauvegarde de Desktroo et signalez ce qui ne va pas avec « Signaler un problème ».": "A beta version has been checked, but it may still have flaws: keep a Desktroo backup and report anything wrong with “Report a problem”.",
+"Vous pouvez quitter le programme à tout moment. Vous gardez alors votre version jusqu’à la prochaine version stable, qui sera plus récente.": "You can leave the programme at any time. You then keep your version until the next stable version, which will be newer.",
+"Quitter le programme bêta": "Leave the beta programme",
+"Inscription...": "Enrolling...",
+"Rejoindre le programme bêta": "Join the beta programme",
+"Non merci": "No thanks",
+"Rejoindre le programme bêta ? Ce NAS recevra les versions bêta de Desktroo, avant leur sortie pour tous.": "Join the beta programme? This NAS will receive Desktroo beta versions before they are released to everyone.",
+"Rejoindre": "Join",
+"Le service n’a pas répondu.": "The service did not respond.",
+"Inscrit au programme bêta. Merci !": "Enrolled in the beta programme. Thank you!",
+"Vous suivez de nouveau les versions stables.": "You are following stable versions again.",
+"Tester les nouveautés de Desktroo en avant-première ?": "Try new Desktroo features before anyone else?",
+"Programme bêta — cliquer pour en savoir plus": "Beta programme — click to learn more",
 "Revenir au début": "Back to top",
 "Améliorations": "Improvements",
 "Corrections": "Fixes",
@@ -10131,6 +10151,26 @@ select option{ background:#101b2e; color:#e9eef7; }
      au dictionnaire anglais doit l'être ici aussi (« node tools/i18n/i18n.js check » compte ce qui manque). -->
 <script type="application/json" id="dk-i18n-es">
 {
+"Programme bêta": "Programa beta",
+"Inscrit": "Inscrito",
+"Tester les nouveautés en avance": "Prueba las novedades antes",
+"Ce NAS reçoit les versions bêta de Desktroo.": "Este NAS recibe las versiones beta de Desktroo.",
+"Recevez les nouvelles versions de Desktroo quelques jours avant tout le monde, et aidez à les mettre au point.": "Recibe las nuevas versiones de Desktroo unos días antes que nadie y ayuda a pulirlas.",
+"Les mises à jour proposées viennent des versions bêta : elles arrivent plus tôt et plus souvent.": "Las actualizaciones propuestas vienen de las versiones beta: llegan antes y con más frecuencia.",
+"Les applications en test de Desktroo Apps deviennent visibles dans le Magasin.": "Las aplicaciones en pruebas de Desktroo Apps pasan a verse en la Tienda.",
+"Une version bêta a été vérifiée, mais elle peut encore contenir des défauts : gardez une sauvegarde de Desktroo et signalez ce qui ne va pas avec « Signaler un problème ».": "Una versión beta se ha revisado, pero aún puede tener fallos: guarda una copia de seguridad de Desktroo e informa de lo que no funcione con «Informar de un problema».",
+"Vous pouvez quitter le programme à tout moment. Vous gardez alors votre version jusqu’à la prochaine version stable, qui sera plus récente.": "Puedes dejar el programa en cualquier momento. Conservarás tu versión hasta la siguiente versión estable, que será más reciente.",
+"Quitter le programme bêta": "Dejar el programa beta",
+"Inscription...": "Inscribiendo...",
+"Rejoindre le programme bêta": "Unirse al programa beta",
+"Non merci": "No, gracias",
+"Rejoindre le programme bêta ? Ce NAS recevra les versions bêta de Desktroo, avant leur sortie pour tous.": "¿Unirse al programa beta? Este NAS recibirá las versiones beta de Desktroo antes de su publicación para todos.",
+"Rejoindre": "Unirse",
+"Le service n’a pas répondu.": "El servicio no ha respondido.",
+"Inscrit au programme bêta. Merci !": "Inscrito en el programa beta. ¡Gracias!",
+"Vous suivez de nouveau les versions stables.": "Vuelves a seguir las versiones estables.",
+"Tester les nouveautés de Desktroo en avant-première ?": "¿Probar las novedades de Desktroo antes que nadie?",
+"Programme bêta — cliquer pour en savoir plus": "Programa beta — haz clic para saber más",
 "Revenir au début": "Volver al principio",
 "Améliorations": "Mejoras",
 "Corrections": "Correcciones",
@@ -18017,13 +18057,18 @@ async function loadNotifs() {
   try { upPending = tndUpdatePending(); } catch (e) {}
   var appItems = '', appN = 0;
   try { appItems = appUpItemsHtml(); appN = _appUp.list.length; } catch (e) {}
+  var betaItem = (_tndUpdate && _tndUpdate.beta_offer && !upPending)
+    ? '<div class="notif-item" style="cursor:pointer;" onclick="aboutGo(\'beta\')"><div class="notif-dot info"></div><div class="notif-text">' + T('Tester les nouveautés de Desktroo en avant-première ?')
+      + '<div class="notif-time">' + T('Programme bêta — cliquer pour en savoir plus') + ' · <a href="#" onclick="event.stopPropagation();betaDecline();return false;" style="color:inherit;">' + T('Non merci') + '</a></div></div></div>'
+    : '';
+  appItems += betaItem;
   var upItem = upPending
     ? T('<div class="notif-item" style="cursor:pointer;" onclick="tndAbout()"><div class="notif-dot warning"></div><div class="notif-text">Mise à jour ') + ((_tndUpdate && _tndUpdate.latest) || '') + T(' disponible<div class="notif-time">Desktroo — cliquer pour installer</div></div></div>')
     : '';
   try {
     const raw    = await socketCall('/alert/list');
     const alerts = ensureArray(raw).filter(a => !a.dismissed);
-    if (!alerts.length && !upPending && !appN) {
+    if (!alerts.length && !upPending && !appN && !betaItem) {
       el.innerHTML = T('<div style="color:var(--accent);font-size:12px;text-align:center;padding:8px 0;opacity:0.7;">● Aucune alerte</div>');
       badge.style.display = 'none';
       return;
@@ -27262,7 +27307,7 @@ function aboutGo(k) {
 }
 function loadAbout() {
   if (_about.busy) return;   // une mise à jour est en cours : son suivi garde la fenêtre
-  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'uninstall') aboutUninstallView(); else if (_about.nav === 'report') aboutReportView(); else if (_about.nav === 'rights') aboutRightsView(); else if (_about.nav === 'notes') aboutNotesView(); else aboutDeskView();
+  if (_about.nav === 'lic') aboutLicView(); else if (_about.nav === 'uninstall') aboutUninstallView(); else if (_about.nav === 'report') aboutReportView(); else if (_about.nav === 'rights') aboutRightsView(); else if (_about.nav === 'notes') aboutNotesView(); else if (_about.nav === 'beta') aboutBetaView(); else aboutDeskView();
 }
 function aboutBody() { return document.getElementById('about-body'); }
 // ── Signaler un problème : une page de la fenêtre « À propos ». Le message part au service, qui le relaie à desktroo.fr ──
@@ -27817,6 +27862,8 @@ async function aboutDeskView() {
     + (up ? '<div class="about-row"><span>' + T('Dernière version') + '</span><span class="about-val">' + webEsc(v.latest) + '<span class="about-chip warn">' + T('Disponible') + '</span></span></div>' : '')
     + '<button class="about-row" onclick="aboutGo(\'notes\')"><span>' + T('Nouveautés') + '</span><span class="about-val">'
       + (up ? T('Voir ce qu\'apporte la mise à jour') : T('Notes de version')) + chev + '</span></button>'
+    + '<button class="about-row" onclick="aboutGo(\'beta\')"><span>' + T('Programme bêta') + '</span><span class="about-val">'
+      + (v.channel === 'beta' ? '<span class="about-chip ok">' + T('Inscrit') + '</span>' : T('Tester les nouveautés en avance')) + chev + '</span></button>'
     + '<button class="about-row" onclick="aboutGo(\'lic\')"><span>' + T('Licence') + '</span><span class="about-val">'
       + (lic ? '<span class="about-chip' + (lic[1] ? ' ' + lic[1] : '') + '">' + lic[0] + '</span>' : '') + chev + '</span></button>'
     + '<a class="about-row" href="https://desktroo.fr" target="_blank" rel="noopener"><span>' + T('Site web') + '</span><span class="about-val">desktroo.fr' + out + '</span></a>'
@@ -27829,6 +27876,49 @@ async function aboutDeskView() {
         : '<button class="about-quiet" onclick="tndDoUpdate()">' + T('Forcer la mise à jour') + '</button>')
     + '<button class="about-quiet" onclick="aboutGo(\'uninstall\')">' + T('Désinstaller Desktroo…') + '</button>'
     + '</div></div>';
+}
+// ── Programme bêta : les nouvelles versions quelques jours avant tout le monde, sur demande ──
+var _beta = { busy: false };
+async function aboutBetaView() {
+  var box = aboutBody(), v = _tndUpdate || await tndVersionFetch().catch(function() { return null; }) || {};
+  if (_about.nav !== 'beta') return;
+  var on = v.channel === 'beta', dis = _beta.busy ? ' disabled' : '';
+  box.innerHTML = '<div class="about-page"><button class="web-crumb" onclick="aboutGo(\'desk\')">&lsaquo; ' + T('À propos') + '</button>'
+    + '<h4 class="about-title">' + T('Programme bêta') + '</h4>'
+    + '<p class="about-legal-lead">' + (on ? '<span class="about-chip ok">' + T('Inscrit') + '</span> ' + T('Ce NAS reçoit les versions bêta de Desktroo.')
+        : T('Recevez les nouvelles versions de Desktroo quelques jours avant tout le monde, et aidez à les mettre au point.')) + '</p>'
+    + '<ul class="rel-list" style="margin:10px 0 0;">'
+    + '<li>' + T('Les mises à jour proposées viennent des versions bêta : elles arrivent plus tôt et plus souvent.') + '</li>'
+    + '<li>' + T('Les applications en test de Desktroo Apps deviennent visibles dans le Magasin.') + '</li>'
+    + '<li>' + T('Une version bêta a été vérifiée, mais elle peut encore contenir des défauts : gardez une sauvegarde de Desktroo et signalez ce qui ne va pas avec « Signaler un problème ».') + '</li>'
+    + '<li>' + T('Vous pouvez quitter le programme à tout moment. Vous gardez alors votre version jusqu’à la prochaine version stable, qui sera plus récente.') + '</li>'
+    + '</ul>'
+    + '<div class="about-actions">'
+    + (on ? '<button class="about-quiet" onclick="betaSet(\'stable\')"' + dis + '>' + T('Quitter le programme bêta') + '</button>'
+          : '<button class="web-open" onclick="betaSet(\'beta\')"' + dis + '>' + (_beta.busy ? T('Inscription...') : T('Rejoindre le programme bêta')) + '</button>'
+            + (v.beta_offer ? '<button class="about-quiet" onclick="betaDecline(true)"' + dis + '>' + T('Non merci') + '</button>' : ''))
+    + '<button class="about-quiet" onclick="aboutGo(\'report\')">' + T('Signaler un problème') + '</button>'
+    + '</div></div>';
+  box.scrollTop = 0;
+}
+async function betaSet(ch) {
+  if (ch === 'beta' && !await showConfirm(T('Rejoindre le programme bêta ? Ce NAS recevra les versions bêta de Desktroo, avant leur sortie pour tous.'), { ok: T('Rejoindre') })) return;
+  _beta.busy = true; aboutBetaView();
+  try {
+    var r = await fileops('POST', 'update/channel', { channel: ch });
+    if (!r || !r.ok) throw new Error((r && r.error) || T('Le service n’a pas répondu.'));
+    _tndUpdate = null; await tndVersionFetch().catch(function() {});
+    toast(ch === 'beta' ? T('Inscrit au programme bêta. Merci !') : T('Vous suivez de nouveau les versions stables.'), 7000);
+  } catch (e) { wmToastErr(e); }
+  _beta.busy = false;
+  try { loadNotifs(); } catch (_) {}
+  if (_about.nav === 'beta') aboutBetaView();
+}
+async function betaDecline(back) {
+  try { await fileops('POST', 'update/beta-offer', { answer: 'non' }); } catch (_) {}
+  if (_tndUpdate) _tndUpdate.beta_offer = false;
+  try { loadNotifs(); } catch (_) {}
+  if (back && _about.nav === 'beta') aboutGo('desk');
 }
 async function tndDoUpdate() {
   if (!await showConfirm(T('Lancer la mise à jour ? Le service va redémarrer (~30 s).'))) return;
@@ -27920,13 +28010,13 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.57.1';
+var DK_PAGE_VERSION = '2.58.0';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
-  function key(v) {
+  function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
-    var n = (v.match(/\d+/g) || []).slice(0, 4).map(Number);
+    var m = /^(.*\d)[bB](\d*)$/.exec(v), n = ((m ? m[1] : v).match(/\d+/g) || []).slice(0, 4).map(Number);
     while (n.length < 4) n.push(0);
-    n.push(/\d[bB]\d*$/.test(v) ? 0 : 1);
+    n.push(m ? 0 : 1, m ? +(m[2] || 0) : 0);
     return n;
   }
   var x = key(a), y = key(b);
