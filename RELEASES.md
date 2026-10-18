@@ -3,9 +3,16 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.55.0 — à paraître
+
+### Nouveau
+- **Les widgets se posent où vous voulez sur le bureau.** Faites glisser un widget par son titre et lâchez-le n'importe où : il s'aimante aux bords et aux autres widgets. Tirez son coin inférieur droit pour l'élargir ou le rétrécir. Les icônes du bureau s'écartent pour ne jamais passer dessous.
+  > Un widget posé près d'un bord le reste quand la fenêtre change de taille, et il est ramené dans l'écran s'il ne tient plus. Panneau de configuration → Bureau Desktroo → Widgets → « Ranger les widgets » les remet en colonnes contre les bords. À la mise à jour, les widgets partent de leur place actuelle. Sur téléphone, ils restent empilés comme avant.
+
 ## 2.54.51 — 18 octobre 2026
 
 ### Corrigé
+- **Supprimer un dataset qui en contient d'autres.** TrueNAS répondait « filesystem has children ». Desktroo liste maintenant les sous-datasets qui partiront avec lui, et demande de retaper le nom du dataset pour confirmer avant de tout supprimer.
 - **La sauvegarde de Desktroo se fait aussi sur un dossier du NAS aux droits restrictifs.** L'archive se prépare désormais ailleurs, puis se copie dans le dossier choisi : plus besoin de renommer ni de changer les droits d'un fichier, ce que certains dossiers (ACL) refusent. Si le dossier n'accepte vraiment pas l'écriture, le message dit lequel et que faire.
 
 ## 2.54.50 — 18 octobre 2026

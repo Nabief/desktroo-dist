@@ -3,9 +3,16 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.55.0 — unreleased
+
+### New
+- **Place widgets anywhere on the desktop.** Drag a widget by its title and drop it wherever you like: it snaps to the edges and to other widgets. Pull its bottom-right corner to make it wider or narrower. Desktop icons move aside so they never end up underneath.
+  > A widget placed near an edge stays there when the window is resized, and is brought back on screen if it no longer fits. Control panel → Desktroo desktop → Widgets → “Arrange widgets” puts them back in columns along the edges. After the update, widgets start where they are today. On a phone, they stay stacked as before.
+
 ## 2.54.51 — 18 October 2026
 
 ### Fixed
+- **Deleting a dataset that contains others.** TrueNAS answered “filesystem has children”. Desktroo now lists the child datasets that will go with it, and asks you to retype the dataset's name to confirm before deleting everything.
 - **The Desktroo backup also works on a NAS folder with restrictive permissions.** The archive is now prepared elsewhere, then copied into the chosen folder: no more renaming or changing a file's permissions, which some (ACL) folders refuse. If the folder really does not accept writing, the message says which one and what to do.
 
 ## 2.54.50 — 18 October 2026
