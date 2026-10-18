@@ -1968,11 +1968,180 @@ I18N_EN = r"""{
 "/mnt/\u003cvotre-pool>/apps/desktop": "/mnt/\u003cyour-pool>/apps/desktop"
 }"""
 
+# Espagnol de l'assistant : mêmes clés que I18N_EN (repris du dictionnaire du bureau quand le texte y est).
+I18N_ES = r"""{
+"Test en cours…": "Probando…",
+"inconnu": "desconocido",
+"Chargement...": "Cargando...",
+"Dossier vide": "Carpeta vacía",
+"Erreur :": "Error:",
+"Terminé": "Terminado",
+"Parcourir": "Examinar",
+"🌐 Réseau": "🌐 Red",
+"Token sidecar": "Token sidecar",
+"← Retour": "← Volver",
+"Fermer": "Cerrar",
+"Annuler": "Cancelar",
+"Teste le SMTP (il doit réussir), ou laisse le mot de passe SMTP vide.": "Prueba el SMTP (la prueba debe superarse) o deja vacía la contraseña SMTP.",
+"Renseigne serveur, identifiant et mot de passe SMTP.": "Introduce el servidor, el usuario y la contraseña SMTP.",
+"✓ Connexion SMTP réussie (authentification OK).": "✓ Conexión SMTP correcta (autenticación OK).",
+"✗ Échec SMTP :": "✗ Error de SMTP:",
+"Exécuté en root": "Ejecutado como root",
+"Docker disponible": "Docker disponible",
+"OpenSSL (génération token)": "OpenSSL (generación del token)",
+"✗ Manquant": "✗ Falta",
+"⚠ Optionnel": "⚠ Opcional",
+"Pools détectés :": "Pools detectados:",
+"— utilise 📁 pour en choisir un autre.": "— usa 📁 para elegir otro.",
+"IP TrueNAS obligatoire": "La IP de TrueNAS es obligatoria",
+"Mot de passe SSH obligatoire": "La contraseña SSH es obligatoria",
+"Teste le SMTP (il doit réussir) avant de lancer, ou laisse le mot de passe SMTP vide pour utiliser le fichier local.": "Prueba el SMTP (la prueba debe superarse) antes de empezar o deja vacía la contraseña SMTP para usar el archivo local.",
+"✅ Installation terminée — vérifie le journal ci-dessus, puis clique « Continuer ».": "✅ Instalación terminada — revisa el registro de arriba y haz clic en «Continuar».",
+"Assistant d'installation": "Asistente de instalación",
+"Prérequis": "Requisitos previos",
+"Vérification en cours...": "Comprobando...",
+"Continuer →": "Continuar →",
+"📁 Chemins": "📁 Rutas",
+"Répertoire d'installation": "Directorio de instalación",
+"Dossier VMs": "Carpeta de VM",
+"Dossier ISOs (racine)": "Carpeta de ISO (raíz)",
+"IP du TrueNAS": "IP del TrueNAS",
+"Port du bureau": "Puerto del escritorio",
+"même que l'IP si vide": "igual que la IP si está vacío",
+"Utilisé dans les en-têtes nginx. Laissez vide pour utiliser l'IP.": "Se usa en los encabezados de nginx. Déjalo vacío para usar la IP.",
+"🔐 Accès SSH": "🔐 Acceso SSH",
+"Utilisateur SSH": "Usuario SSH",
+"Mot de passe SSH": "Contraseña SSH",
+"🔑 Sécurité": "🔑 Seguridad",
+"Laissez vide pour générer automatiquement": "Déjalo vacío para generarlo automáticamente",
+"Clé secrète du service fileops, remise au navigateur après la connexion.": "Clave secreta del servicio fileops, que se entrega al navegador tras iniciar sesión.",
+"Compte du portail 2FA — identifiant": "Cuenta del portal 2FA — usuario",
+"Sans mot de passe saisi, l'assistant en génère un et l'affiche pendant l'installation.": "Si no introduces ninguna contraseña, el asistente genera una y la muestra durante la instalación.",
+"Compte du portail 2FA — mot de passe": "Cuenta del portal 2FA — contraseña",
+"Laissez vide pour générer": "Déjalo vacío para generarla",
+"Activer la double authentification (2FA / Authelia)": "Activar la verificación en dos pasos (2FA / Authelia)",
+"Ajoute un code TOTP. Nécessite 2 domaines locaux, demandés à l'étape suivante.": "Añade un código TOTP. Requiere 2 dominios locales, que se piden en el paso siguiente.",
+"Les dossiers du NAS où Desktroo range ses fichiers, ses machines virtuelles et ses images ISO.": "Las carpetas del NAS donde Desktroo guarda sus archivos, sus máquinas virtuales y sus imágenes ISO.",
+"L'adresse du NAS et le port sur lequel le bureau répondra.": "La dirección del NAS y el puerto en el que responderá el escritorio.",
+"Le compte TrueNAS avec lequel le bureau exécute ses commandes sur le NAS.": "La cuenta de TrueNAS con la que el escritorio ejecuta sus comandos en el NAS.",
+"🛡️ Double authentification": "🛡️ Verificación en dos pasos",
+"Le compte avec lequel vous vous connecterez au portail de double authentification.": "La cuenta con la que iniciarás sesión en el portal de verificación en dos pasos.",
+"🌍 Domaines": "🌍 Dominios",
+"Les deux adresses locales par lesquelles on atteint le bureau et le portail.": "Las dos direcciones locales con las que se accede al escritorio y al portal.",
+"✉️ Codes 2FA par e-mail": "✉️ Códigos 2FA por correo electrónico",
+"Répertoire d'installation obligatoire": "El directorio de instalación es obligatorio",
+"Les deux domaines sont obligatoires pour la double authentification.": "Los dos dominios son obligatorios para la verificación en dos pasos.",
+"Domaine du bureau": "Dominio del escritorio",
+"Domaine du portail 2FA": "Dominio del portal 2FA",
+"E-mail administrateur": "Correo electrónico del administrador",
+"IP de Nginx Proxy Manager (NPM)": "IP de Nginx Proxy Manager (NPM)",
+"Le HTTPS de la 2FA passe par NPM. Les 2 domaines pointeront vers cette IP.": "El HTTPS de la 2FA pasa por NPM. Los 2 dominios apuntarán a esta IP.",
+"Envoyer les codes 2FA par email (SMTP)": "Enviar los códigos 2FA por correo electrónico (SMTP)",
+"Décoché : les codes 2FA sont écrits dans un fichier local (authelia/notification.txt) — le plus simple. Coché : renseigne et teste le SMTP ci-dessous.": "Desmarcado: los códigos 2FA se escriben en un archivo local (authelia/notification.txt) — lo más sencillo. Marcado: introduce y prueba el SMTP a continuación.",
+"Serveur SMTP": "Servidor SMTP",
+"Identifiant SMTP (adresse d'envoi)": "Usuario SMTP (dirección de envío)",
+"Mot de passe SMTP": "Contraseña SMTP",
+"Laisse vide pour envoyer les codes dans un fichier local": "Déjalo vacío para enviar los códigos a un archivo local",
+"Si rempli : Authelia envoie les codes par email (port 465 = SSL, 587 = STARTTLS). Si vide : les codes sont écrits dans authelia/notification.txt.": "Si se rellena: Authelia envía los códigos por correo electrónico (puerto 465 = SSL, 587 = STARTTLS). Si está vacío: los códigos se escriben en authelia/notification.txt.",
+"Tester le SMTP": "Probar el SMTP",
+"Le test doit réussir avant de pouvoir installer (sinon l'enrôlement 2FA par email serait impossible).": "La prueba debe superarse antes de poder instalar (si no, la inscripción en la 2FA por correo electrónico sería imposible).",
+"L'assistant configure tout le côté NAS. Il reste ensuite à créer 2 hôtes proxy dans NPM + les redirections DNS vers l'IP de NPM — l'assistant affiche les valeurs exactes à la fin. L'enrôlement TOTP se fait après l'installation.": "El asistente configura toda la parte del NAS. Después solo queda crear 2 hosts proxy en NPM + las redirecciones DNS hacia la IP de NPM — el asistente muestra los valores exactos al final. La inscripción TOTP se hace después de la instalación.",
+"Installer →": "Instalar →",
+"Licence d'utilisation": "Licencia de uso",
+"Tous droits réservés.": "Todos los derechos reservados.",
+"Avant d'installer Desktroo, lis et accepte sa licence. Desktroo est un logiciel propriétaire : son code est lisible parce qu'il s'installe sur ton NAS, pas parce qu'il est libre.": "Antes de instalar Desktroo, lee y acepta su licencia. Desktroo es un software propietario: su código se puede leer porque se instala en tu NAS, no porque sea libre.",
+"Ce que la licence permet": "Lo que permite la licencia",
+"Installer Desktroo sur tes propres NAS.": "Instalar Desktroo en tus propios NAS.",
+"L'utiliser pour tes besoins, pendant l'essai puis avec un abonnement.": "Usarlo para tus necesidades, durante la prueba y luego con una suscripción.",
+"En garder des copies de sauvegarde.": "Guardar copias de seguridad de él.",
+"Ce qui demande un accord écrit": "Lo que requiere un acuerdo por escrito",
+"Copier, publier ou redistribuer Desktroo, modifié ou non.": "Copiar, publicar o redistribuir Desktroo, modificado o no.",
+"Le modifier ou en tirer un autre logiciel, y compris avec une IA.": "Modificarlo o crear otro software a partir de él, incluso con una IA.",
+"Retirer ou changer les mentions de droits.": "Quitar o cambiar los avisos de derechos.",
+"Contourner la licence ou la période d'essai.": "Eludir la licencia o el periodo de prueba.",
+"Réutiliser le nom Desktroo ou son logo.": "Reutilizar el nombre Desktroo o su logotipo.",
+"Lire la licence complète": "Leer la licencia completa",
+"J'ai lu et j'accepte la licence d'utilisation de Desktroo.": "He leído y acepto la licencia de uso de Desktroo.",
+"Accepter et continuer →": "Aceptar y continuar →",
+"L'accord n'a pas pu être enregistré. Recharge la page et réessaie.": "No se ha podido guardar la aceptación. Recarga la página y vuelve a intentarlo.",
+"✓ Licence d'utilisation acceptée": "✓ Licencia de uso aceptada",
+"⚠ Accord à la licence non enregistré ({0}) : le bureau le redemandera.": "⚠ Aceptación de la licencia no guardada ({0}): el escritorio la volverá a pedir.",
+"Installation réussie !": "¡Instalación completada!",
+"Desktroo est prêt.": "Desktroo está listo.",
+"Ouvrir le bureau →": "Abrir el escritorio →",
+"📁 Choisir un dossier": "📁 Elegir una carpeta",
+"Choisir ce dossier": "Elegir esta carpeta",
+"▸ Configuration TrueNAS (SSH + sudo) via middleware...": "▸ Configurando TrueNAS (SSH + sudo) mediante el middleware...",
+"✓ SSH : auth par mot de passe activée": "✓ SSH: autenticación por contraseña activada",
+"⚠ ssh.update a échoué : {0}": "⚠ ssh.update ha fallado: {0}",
+"✓ Service SSH démarré": "✓ Servicio SSH iniciado",
+"⚠ Démarrage SSH : {0}": "⚠ Inicio de SSH: {0}",
+"⚠ midclt introuvable — configure SSH/sudo manuellement.": "⚠ No se encuentra midclt — configura SSH/sudo manualmente.",
+"✓ sudo sans mot de passe activé pour {0}": "✓ sudo sin contraseña activado para {0}",
+"⚠ user.update a échoué : {0}": "⚠ user.update ha fallado: {0}",
+"⚠ Utilisateur {0} introuvable — active le sudo NOPASSWD manuellement.": "⚠ No se encuentra el usuario {0} — activa sudo NOPASSWD manualmente.",
+"✓ Dataset créé : {0}": "✓ Conjunto de datos creado: {0}",
+"▸ Création des datasets ZFS...": "▸ Creando los conjuntos de datos ZFS...",
+"▸ Sauvegarde de la configuration...": "▸ Guardando la configuración...",
+"▸ Récupération des fichiers applicatifs...": "▸ Obteniendo los archivos de la aplicación...",
+"▸ Génération de docker-compose.yml...": "▸ Generando docker-compose.yml...",
+"✓ docker-compose.yml (stack complète)": "✓ docker-compose.yml (stack completa)",
+"▸ Génération de nginx.conf...": "▸ Generando nginx.conf...",
+"▸ Nettoyage des anciennes modifications systemd/libvirt...": "▸ Limpiando las modificaciones antiguas de systemd/libvirt...",
+"▸ Configuration du démarrage automatique (POSTINIT)...": "▸ Configurando el inicio automático (POSTINIT)...",
+"▸ Démarrage de la stack Docker...": "▸ Iniciando la stack de Docker...",
+"⚠ Reglage password_login_groups ignore ({0}).": "⚠ Ajuste password_login_groups omitido ({0}).",
+"⚠ {0} existe déjà en dossier — conservé tel quel.": "⚠ {0} ya existe como carpeta — se conserva tal cual.",
+"⚠ Dataset {0} non créé ({1}) — dossier simple utilisé.": "⚠ Conjunto de datos {0} no creado ({1}) — se usa una carpeta normal.",
+"⚠ 2FA demandée mais domaines manquants/invalides — 2FA désactivée.": "⚠ 2FA solicitada, pero faltan dominios o no son válidos — 2FA desactivada.",
+"⚠ Les 2 domaines doivent partager le même domaine parent ({0}) — 2FA désactivée.": "⚠ Los 2 dominios deben compartir el mismo dominio principal ({0}) — 2FA desactivada.",
+"✓ Compte du portail 2FA — utilisateur: {0} mot de passe: {1}": "✓ Cuenta del portal 2FA — usuario: {0} contraseña: {1}",
+"▸ Configuration Authelia (2FA)...": "▸ Configurando Authelia (2FA)...",
+"✓ Authelia configuré (utilisateur: {0}) — conteneur publié sur le port 9091": "✓ Authelia configurado (usuario: {0}) — contenedor publicado en el puerto 9091",
+"✓ Snippets NPM écrits dans {0}": "✓ Snippets de NPM escritos en {0}",
+"===== A FAIRE DANS NPM (une seule fois) =====": "===== POR HACER EN NPM (una sola vez) =====",
+"RECOMMANDE : NPMplus (fork de NPM) integre Authelia nativement -- plus simple que NPM standard.": "RECOMENDADO: NPMplus (fork de NPM) integra Authelia de forma nativa -- más sencillo que NPM estándar.",
+"- Hote proxy PORTAIL : {0} -> http {1} port 9091 -- SSL Let's Encrypt + Force SSL + Websockets. Rien dans Advanced.": "- Host proxy PORTAL: {0} -> http {1} puerto 9091 -- SSL Let’s Encrypt + Force SSL + Websockets. Nada en Advanced.",
+"- Hote proxy BUREAU : {0} -> http {1} port {2} -- SSL + Force SSL + Websockets.": "- Host proxy ESCRITORIO: {0} -> http {1} puerto {2} -- SSL + Force SSL + Websockets.",
+"NPMplus (recommande) : Auth Request = 'authelia (modern)', Auth Request Upstream = http://{0}:9091 (sans chemin). Rien d'autre a monter.": "NPMplus (recomendado): Auth Request = «authelia (modern)», Auth Request Upstream = http://{0}:9091 (sin ruta). No hay que montar nada más.",
+"NPM standard : monte {0} sous /snippets dans NPM, puis onglet Advanced :": "NPM estándar: monta {0} en /snippets en NPM y, después, en la pestaña Advanced:",
+"━━━━━ DNS — pointer les 2 domaines vers l'accès (comme tes autres services) ━━━━━": "━━━━━ DNS — apunta los 2 dominios al punto de acceso (como tus otros servicios) ━━━━━",
+"✓ Authelia répond (portail 2FA en service)": "✓ Authelia responde (portal 2FA en funcionamiento)",
+"✗ Authelia ne démarre pas : l'accès par le domaine du bureau est indisponible. Dernières lignes de son journal :": "✗ Authelia no se inicia: el acceso por el dominio del escritorio no está disponible. Últimas líneas de su registro:",
+"⚠ État d'Authelia non vérifié ({0})": "⚠ Estado de Authelia no comprobado ({0})",
+"ancienne page retirée : truenas-desktop.html": "página antigua retirada: truenas-desktop.html",
+"✓ Stack Docker démarrée": "✓ Stack de Docker iniciada",
+"✗ Erreur démarrage Docker": "✗ Error al iniciar Docker",
+"➤ Rapport d'installation complet : {0}": "➤ Informe de instalación completo: {0}",
+"➤ Rapport d'installation complet (à envoyer en cas de souci) : {0}": "➤ Informe de instalación completo (envíalo si hay algún problema): {0}",
+"✓ SSH : groupe {0} deja autorise (mot de passe)": "✓ SSH: grupo {0} ya autorizado (contraseña)",
+"✓ Email (SMTP) configuré : {0} via {1}:{2}": "✓ Correo electrónico (SMTP) configurado: {0} mediante {1}:{2}",
+"➤ Enrôlement TOTP : ouvre https://{0} , connecte-toi ({1}) ; le code de vérification est envoyé par email à {2}.": "➤ Inscripción TOTP: abre https://{0} , inicia sesión ({1}); el código de verificación se envía por correo electrónico a {2}.",
+"➤ Enrôlement TOTP : ouvre https://{0} , connecte-toi ({1}), scanne le QR — le code est dans {2}/authelia/notification.txt": "➤ Inscripción TOTP: abre https://{0} , inicia sesión ({1}), escanea el código QR — el código está en {2}/authelia/notification.txt",
+"⚠ midclt introuvable — démarrage auto non configuré.": "⚠ No se encuentra midclt — inicio automático no configurado.",
+"⚠ Démarrage auto non configuré ({0}) — non bloquant, le bureau démarre quand même.": "⚠ Inicio automático no configurado ({0}) — no es bloqueante, el escritorio se inicia de todos modos.",
+"✓ SSH : login mot de passe autorise pour le groupe {0}": "✓ SSH: inicio de sesión con contraseña autorizado para el grupo {0}",
+"⚠ password_login_groups non applique ({0}) — a regler en UI si besoin.": "⚠ password_login_groups no aplicado ({0}) — ajústalo en la interfaz si hace falta.",
+"⚠ {0} était un dossier (mount Docker d'un essai précédent) — supprimé.": "⚠ {0} era una carpeta (montaje de Docker de un intento anterior) — eliminada.",
+"✓ {0} (copié)": "✓ {0} (copiado)",
+"✓ {0} (téléchargé)": "✓ {0} (descargado)",
+"⚠ Hash Authelia non généré ({0}) — à compléter dans users_database.yml": "⚠ Hash de Authelia no generado ({0}) — complétalo en users_database.yml",
+"conf de site mise à jour : {0}": "configuración del sitio actualizada: {0}",
+"✓ Démarrage auto configuré (Init/Shutdown Script POSTINIT)": "✓ Inicio automático configurado (Init/Shutdown Script POSTINIT)",
+"⚠ POSTINIT non créé ({0}) — à configurer en UI si besoin.": "⚠ POSTINIT no creado ({0}) — configúralo en la interfaz si hace falta.",
+"⚠ Impossible de supprimer le dossier parasite {0} : {1}": "⚠ No se puede eliminar la carpeta sobrante {0}: {1}",
+"✗ Échec récupération {0} : {1}": "✗ Error al obtener {0}: {1}",
+"ancien conteneur retiré : {0}": "contenedor antiguo retirado: {0}",
+"(optionnel)": "(opcional)",
+"/mnt/\u003cvotre-pool>/apps/desktop": "/mnt/\u003ctu-pool>/apps/desktop"
+}"""
+
 I18N_JS = r"""
-/* ===== Langues : français (langue du code), anglais, et langues ajoutées =====
+/* ===== Langues : français (langue du code), anglais et espagnol intégrés, et langues ajoutées =====
    Le code reste écrit en français. Chaque texte affiché passe par T('…'), qui le rend
    tel quel en français et le traduit sinon à l'aide du dictionnaire embarqué
-   (<script id="dk-i18n-en">, clé = segment français, valeur = traduction).
+   (<script id="dk-i18n-en">, clé = segment français, valeur = traduction ; même chose pour
+   l'espagnol dans <script id="dk-i18n-es">, qui complète l'anglais).
    - T('…')   : littéral du code (résultat mis en cache) ;
    - Tt`…`    : gabarit ;
    - Tf('… {0} …', a) : phrase dont l'ordre des mots change d'une langue à l'autre ;
@@ -2097,13 +2266,15 @@ function dkMapSegments(lit, fn) {
   return out;
 }
 
-var DK_LANGS = { fr: 'Français', en: 'English' };
+var DK_LANGS = { fr: 'Français', en: 'English', es: 'Español' };
+// Langues livrées avec Desktroo (dictionnaire embarqué dk-i18n-<code>, sauf le français, langue du code).
+var DK_BUILTIN = { fr: 'Français', en: 'English', es: 'Español' }, DK_BUILTIN_LOCALE = { es: 'es-ES' };
 /* Langues ajoutées : leur liste est gardée dans le navigateur (« dk-lang-list ») pour que la
    langue choisie soit connue dès le chargement, puis relue en arrière-plan (dkLangRefresh). */
 var DK_PACK_URL = '/fileops/lang', DK_PACK_CODE_RE = /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/, DK_PACKS = {}, DK_PACK = null;
 function dkPacksSet(list) {
   var l, i;
-  for (l in DK_PACKS) delete DK_LANGS[l];
+  for (l in DK_PACKS) { if (DK_BUILTIN[l]) DK_LANGS[l] = DK_BUILTIN[l]; else delete DK_LANGS[l]; }
   DK_PACKS = {};
   for (i = 0; list && i < list.length; i++) {
     l = list[i];
@@ -2141,7 +2312,8 @@ function dkLoadPack(code) {
   } catch (e) { return null; }
 }
 var DK_LANG = dkDetectLang();
-if (DK_PACKS[DK_LANG]) { DK_PACK = dkLoadPack(DK_LANG); if (!DK_PACK) DK_LANG = 'en'; }
+// Un fichier « es » importé complète ou corrige l'espagnol intégré ; illisible, l'espagnol intégré reste.
+if (DK_PACKS[DK_LANG]) { DK_PACK = dkLoadPack(DK_LANG); if (!DK_PACK && !DK_BUILTIN[DK_LANG]) DK_LANG = 'en'; }
 /* Locale des dates et des nombres : celle du navigateur s'il parle la langue affichée (pour
    l'anglais, en-GB sinon : jour avant le mois, 24 h), sinon celle que donne le fichier. */
 function dkLocaleFor(lang) {
@@ -2149,7 +2321,7 @@ function dkLocaleFor(lang) {
   if (lang === 'fr') return 'fr-FR';
   if (lang === 'en') return /^en\b/i.test(nav) ? nav : 'en-GB';
   loc = nav.toLowerCase().split('-')[0] === lang.split('-')[0] ? nav
-      : ((DK_PACK && DK_PACK._desktroo && DK_PACK._desktroo.locale) || (DK_PACKS[lang] && DK_PACKS[lang].locale) || lang);
+      : ((DK_PACK && DK_PACK._desktroo && DK_PACK._desktroo.locale) || (DK_PACKS[lang] && DK_PACKS[lang].locale) || DK_BUILTIN_LOCALE[lang] || lang);
   try { return Intl.DateTimeFormat.supportedLocalesOf([loc]).length ? loc : 'en-GB'; } catch (_) { return 'en-GB'; }
 }
 var DK_LOCALE = dkLocaleFor(DK_LANG);
@@ -2168,6 +2340,9 @@ function dkDict() {
     // L'anglais sert de base à toutes les langues autres que le français.
     var el = document.getElementById('dk-i18n-en');
     if (el) DK_DICT = JSON.parse(el.textContent);
+    // Langue intégrée autre que l'anglais (espagnol) : son dictionnaire complète l'anglais.
+    var own = DK_LANG !== 'en' && DK_BUILTIN[DK_LANG] && document.getElementById('dk-i18n-' + DK_LANG), k0, d0;
+    if (own) { d0 = JSON.parse(own.textContent); for (k0 in d0) if (typeof d0[k0] === 'string' && d0[k0]) DK_DICT[k0] = d0[k0]; }
   } catch (e) { console.warn('[i18n] dictionnaire illisible', e); }
   if (DK_PACK) {
     var k, v;
@@ -2383,6 +2558,7 @@ document.addEventListener('DOMContentLoaded', function () {
 HTML = HTML.replace('<!--@I18N@-->',
                     '<script>var DK_NO_PACKS = true;</script>\n'   # l'assistant ne lit pas les langues ajoutées (pas de fileops)
                     '<script type="application/json" id="dk-i18n-en">' + I18N_EN + '</script>\n'
+                    '<script type="application/json" id="dk-i18n-es">' + I18N_ES + '</script>\n'
                     '<script id="dk-i18n">' + I18N_JS + '</script>')
 
 # ── Polices de la charte ──────────────────────────────────────
