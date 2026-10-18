@@ -3,14 +3,18 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.57.0 — unreleased
+## 2.57.1 — unreleased
+
+### New
+- **Desktroo in Spanish.** Spanish joins French and English: the whole desktop and the installation wizard, picked automatically for a browser set to Spanish, or from the login screen and System configuration → Language and time zone.
+  > Embedded dictionary (dk-i18n-es, I18N_ES in the wizard), on top of English. An imported “es” file still takes priority, to correct a text. Dates and numbers in es-ES format (or the browser’s, if it is Spanish-speaking).
+
+## 2.57.0 — 18 October 2026
 
 ### New
 - **Translating Desktroo no longer needs special tools.** The template to translate can now be downloaded as a spreadsheet (.xlsx, for Excel, LibreOffice or Google Sheets), as XLIFF (.xlf, the format of translation tools such as OmegaT, Poedit, Weblate or Crowdin) or as JSON. It also comes in batches of 500 texts, small enough for an online translation service, which refuses large requests.
   > System configuration → Language and time zone → “Translate”: choose the language, the texts (the next 500, a batch or everything) and the format. In Google Sheets, the =GOOGLETRANSLATE() formula suggests a first translation of the column, to review. Import accepts .json, .xlsx, .csv and .xlf.
 - **An import adds to the language instead of replacing it.** Batches can be imported one after another; “Replace the whole language” starts from scratch.
-- **Desktroo in Spanish.** Spanish joins French and English: the whole desktop and the installation wizard, picked automatically for a browser set to Spanish, or from the login screen and System configuration → Language and time zone.
-  > Embedded dictionary (dk-i18n-es, I18N_ES in the wizard), on top of English. An imported “es” file still takes priority, to correct a text. Dates and numbers in es-ES format (or the browser’s, if it is Spanish-speaking).
 - **Release notes get their own window.** On the left, the list of versions leads straight to each one; a filter shows only what is new, improved or fixed, and technical details (the grey lines) hide with one click. A “Back to top” button appears as soon as you scroll down.
   > About → New and updated. The version you are reading is highlighted in the left column. In an added language, the notes are shown in English.
 
