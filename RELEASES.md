@@ -3,7 +3,17 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.56.1 — à paraître
+## 2.57.0 — à paraître
+
+### Nouveau
+- **Traduire Desktroo devient faisable sans outil spécial.** Le modèle à traduire se télécharge maintenant en tableur (.xlsx, pour Excel, LibreOffice ou Google Sheets), en XLIFF (.xlf, le format des outils de traduction comme OmegaT, Poedit, Weblate ou Crowdin) ou en JSON. Il se télécharge aussi par lots de 500 textes, assez petits pour un service de traduction en ligne, qui refuse les gros envois.
+  > Configuration système → Langue et fuseau horaire → « Traduire » : choisissez la langue, les textes (les 500 suivants, un lot ou tout) et le format. Dans Google Sheets, la formule =GOOGLETRANSLATE() propose une première traduction de la colonne à relire. L'import accepte .json, .xlsx, .csv et .xlf.
+- **Un import complète la langue au lieu de la remplacer.** Les lots s'importent les uns après les autres ; « Remplacer toute la langue » repart de zéro.
+- **Desktroo en espagnol.** Un fichier de langue espagnol complet est fourni à part (es.json), à importer depuis la même page.
+- **Les notes de version ont leur fenêtre.** À gauche, la liste des versions mène directement à chacune ; un tri n'affiche que les nouveautés, les améliorations ou les corrections, et les détails techniques (les lignes grises) se masquent d'un clic. Un bouton « Revenir au début » apparaît dès qu'on descend.
+  > À propos → Nouveautés. La version en cours de lecture est surlignée dans la colonne de gauche. Dans une langue ajoutée, les notes s'affichent en anglais.
+
+## 2.56.1 — 18 octobre 2026
 
 ### Corrigé
 - **Desktroo Pass : « Renvoyer l'invitation », « Désactiver », « Réactiver », « Retirer la 2FA » et « Supprimer » fonctionnent.** Le coffre répondait « 404 » avec une page HTML.

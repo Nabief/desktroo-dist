@@ -1437,6 +1437,16 @@ html:not(.dk-phone):not(.dk-kiosk) .window:has(.web-shell) { min-width:min(640px
   .rel-list code { font-family:var(--font-mono); font-size:11px; padding:1px 4px; border-radius:4px; background:rgba(128,140,160,0.16); }
   .rel-note { display:block; margin-top:3px; font-size:11px; line-height:1.5; color:var(--text-dim); border-left:2px solid var(--glass-border); padding-left:8px; }
   .rel-v.is-new .rel-num { color:var(--accent); }
+  /* Fenêtre « Notes de version » : versions plus aérées, détails techniques masquables, retour au début */
+  .reln .rel-v { margin:0 0 26px; scroll-margin-top:12px; }
+  .reln .rel-h { font-size:16px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid var(--glass-border); }
+  .reln .rel-list li { font-size:13px; }
+  .reln.no-tech .rel-note { display:none; }
+  .rel-top { position:absolute; right:22px; bottom:18px; z-index:2; display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:999px;
+    border:1px solid var(--glass-border); background:var(--surface-2,#16243f); color:var(--text); font:inherit; font-size:12.5px; cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,0.35); opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .18s, transform .18s; }
+  .rel-top.on { opacity:1; transform:none; pointer-events:auto; }
+  .rel-top:hover { border-color:rgba(var(--accent-rgb),0.6); }
   .about-up { padding:16px 18px; }
   /* « À propos » : droits et licence */
   .about-legal-lead { margin:0 0 8px; font-size:14px; line-height:1.5; color:var(--text); }
@@ -4185,6 +4195,54 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Revenir au début": "Back to top",
+"Améliorations": "Improvements",
+"Corrections": "Fixes",
+"Versions": "Versions",
+"affichés": "shown",
+"masqués": "hidden",
+"installée": "installed",
+"Aucune note de ce type.": "No notes of this kind.",
+"Continuer la traduction": "Continue translating",
+"Importer une traduction": "Import a translation",
+"Remplacer toute la langue": "Replace the whole language",
+"JSON, Excel (.xlsx), CSV ou XLIFF (.xlf). Le fichier complète ce qui est déjà traduit : vous pouvez importer les lots les uns après les autres. Cochez « Remplacer toute la langue » pour repartir de zéro.": "JSON, Excel (.xlsx), CSV or XLIFF (.xlf). The file adds to what is already translated: you can import the batches one after another. Tick “Replace the whole language” to start from scratch.",
+"{0} : {1} textes ajoutés ou modifiés, {2} textes traduits sur {3} au total.": "{0}: {1} texts added or changed, {2} of {3} texts translated in total.",
+"Ce qui n'est pas traduit reste en anglais. Une langue importée est proposée à tous ceux qui ouvrent ce bureau, même incomplète.": "Anything not translated stays in English. An imported language is offered to everyone who opens this desktop, even if incomplete.",
+"Les {0} prochains textes à traduire": "The next {0} texts to translate",
+"Lot {0} : textes {1} à {2} qui restent à traduire": "Batch {0}: texts {1} to {2} still to translate",
+"Tout le modèle ({0} textes)": "The whole template ({0} texts)",
+"Colonne C à remplir, en face du français (A) et de l’anglais (B). Il s’ouvre dans Excel, LibreOffice ou Google Sheets ; dans Google Sheets, la formule {0} en C2, recopiée vers le bas, propose une première traduction à relire. Réimportez le fichier .xlsx (ou .csv) tel quel.": "Fill in column C, next to the French (A) and the English (B). It opens in Excel, LibreOffice or Google Sheets; in Google Sheets, the formula {0} in C2, filled down, suggests a first translation to review. Import the .xlsx (or .csv) file back as it is.",
+"Le format standard des outils de traduction (OmegaT, Poedit, Weblate, Crowdin…) : le texte source est l’anglais, le français est en note. Réimportez le fichier .xlf traduit.": "The standard format of translation tools (OmegaT, Poedit, Weblate, Crowdin…): the source text is English, the French is in a note. Import the translated .xlf file back.",
+"Le fichier de Desktroo, pour un éditeur de texte : remplacez les valeurs, à droite de chaque ligne, sans toucher au français à gauche.": "Desktroo’s own file, for a text editor: replace the values on the right of each line, without touching the French on the left.",
+"Traduire": "Translate",
+"Nouvelle langue...": "New language...",
+"Textes": "Texts",
+"Format": "Format",
+"Tableur (.xlsx)": "Spreadsheet (.xlsx)",
+"XLIFF (.xlf)": "XLIFF (.xlf)",
+"Télécharger le modèle": "Download the template",
+"Les lots font {0} textes : assez peu pour un service de traduction en ligne, qui refuse les gros envois.": "Batches hold {0} texts: few enough for an online translation service, which refuses large requests.",
+"Code de la langue : deux ou trois lettres, éventuellement suivies d’une variante (« es », « de », « pt-br »).": "Language code: two or three letters, optionally followed by a variant (“es”, “de”, “pt-br”).",
+"Code de langue invalide (le français et l’anglais sont déjà fournis).": "Invalid language code (French and English are already included).",
+"Nom de la langue, écrit dans cette langue (« Español », « Deutsch ») :": "Language name, written in that language (“Español”, “Deutsch”):",
+"lot": "batch",
+"Rien à traduire : tout est déjà traduit.": "Nothing to translate: everything is already translated.",
+"Texte français (ne pas modifier)": "French text (do not change)",
+"Traduction · {0} · {1} · {2}": "Translation · {0} · {1} · {2}",
+"Comment traduire": "How to translate",
+"Remplissez la colonne C de la feuille « Traduction », en face de chaque texte. Ne modifiez ni la colonne A ni l’en-tête de la colonne C (code, nom et locale de la langue).": "Fill in column C of the “Translation” sheet, next to each text. Do not change column A or the header of column C (language code, name and locale).",
+"Gardez {0}, {1}… et les balises comme \u003cb> ou \u003ccode> à leur place. Une case laissée vide garde l’anglais.": "Keep {0}, {1}… and tags such as \u003cb> or \u003ccode> in place. A cell left empty keeps the English.",
+"Google Sheets : en C2, la formule {0} recopiée vers le bas propose une première traduction ; relisez-la avant d’importer.": "Google Sheets: in C2, the formula {0} filled down suggests a first translation; review it before importing.",
+"Importez ensuite le fichier .xlsx (ou un export .csv de la feuille) : Configuration système → Langue et fuseau horaire → Importer une traduction.": "Then import the .xlsx file (or a .csv export of the sheet): System configuration → Language and time zone → Import a translation.",
+"Traduction": "Translation",
+"Aide": "Help",
+"Modèle téléchargé : {0} textes": "Template downloaded: {0} texts",
+"Fichier .xlsx illisible.": "Unreadable .xlsx file.",
+"Ce navigateur ne sait pas lire ce fichier .xlsx : enregistrez-le en .csv.": "This browser cannot read this .xlsx file: save it as .csv.",
+"Fichier XLIFF illisible.": "Unreadable XLIFF file.",
+"Fichier trop gros.": "File too large.",
+"Ce fichier n’est pas un fichier de langue.": "This is not a language file.",
 "Envoyer un e-mail de test": "Send a test email",
 "La messagerie du NAS a changé depuis que le coffre l’a reprise : les invitations partent encore avec les anciens réglages.": "The NAS mail settings changed since the vault took them over: invitations still go out with the old settings.",
 "Reprendre la messagerie du NAS": "Use the NAS mail settings again",
@@ -10261,7 +10319,7 @@ document.documentElement.lang = DK_LANG;
    (HTML, attributs, gestionnaires onclick) : pas de guillemet droit ni de barre oblique inverse,
    seulement les balises de mise en forme nues, seulement les entités courantes. fileops nettoie
    déjà les fichiers ; ce contrôle en est le filet. */
-var DK_PACK_BAD = /["'\\]|<(?!\/?(?:b|strong|i|em|u|code|kbd|small|sub|sup|mark)>|br>)|&(?!(?:amp|lt|gt|nbsp|hellip|mdash|ndash|laquo|raquo|thinsp);)/i;
+var DK_PACK_BAD = /["']|\\(?!n)|<(?!\/?(?:b|strong|i|em|u|code|kbd|small|sub|sup|mark)>|br>)|&(?!(?:amp|lt|gt|nbsp|hellip|mdash|ndash|laquo|raquo|thinsp);)/i;
 function dkDict() {
   if (DK_DICT) return DK_DICT;
   DK_DICT = {};
@@ -16724,7 +16782,7 @@ function fsCompressSelected() {
   document.getElementById('modal-create-app').style.display = 'flex';
   let f = '<div style="display:flex;flex-direction:column;gap:12px;">';
   f += formRow(T('Nom de l\'archive'), '<input id="fsc-name" value="' + name.replace(/"/g,'&quot;') + '" style="' + iStyle() + '" />');
-  f += formRow('Format', '<select id="fsc-fmt" style="' + iStyle() + '">'
+  f += formRow(T('Format'), '<select id="fsc-fmt" style="' + iStyle() + '">'
     + '<option value="zip">ZIP (.zip)</option>'
     + '<option value="tar.gz">TAR.GZ (.tar.gz)</option>'
     + '<option value="tar.bz2">TAR.BZ2 (.tar.bz2)</option>'
@@ -21251,6 +21309,7 @@ try {   // la fenêtre a d'abord existé en grand format : la taille mémorisée
 function tndAbout() { aboutGo('desk'); }
 function openLicense() { aboutGo('lic'); }
 function aboutGo(k) {
+  if (k === 'notes' && !_about.busy) { relNotesOpen(); return; }   // les notes de version ont leur propre fenêtre
   _about.nav = _about.busy ? 'desk' : k;   // pendant une mise à jour, la page de suivi reste affichée
   var w = document.getElementById('win-about');
   if (!w || !w.classList.contains('visible')) { openApp('about'); return; }   // l'ouverture affiche la page
@@ -21515,7 +21574,7 @@ function relRender(list, installed) {
     var newer = !!(installed && v.version && dkVerCmp(v.version, installed) > 0);
     var chip = newer ? '<span class="about-chip warn">' + T('Disponible') + '</span>'
       : (installed && v.version === installed ? '<span class="about-chip ok">' + T('Installée') + '</span>' : '');
-    return '<section class="rel-v' + (newer ? ' is-new' : '') + '">'
+    return '<section class="rel-v' + (newer ? ' is-new' : '') + '" id="' + relId(v.version) + '">'
       + '<h5 class="rel-h"><span class="rel-num">' + webEsc(v.version) + '</span>'
       + (v.when ? '<span class="rel-when">' + webEsc(v.when) + '</span>' : '') + chip + '</h5>'
       + v.secs.map(function(sc) {
@@ -21525,6 +21584,97 @@ function relRender(list, installed) {
               }).join('') + '</ul>';
         }).join('') + '</section>';
   }).join('');
+}
+// ── Notes de version : fenêtre à deux volets. À gauche, le tri (nouveautés, améliorations, corrections),
+// les détails techniques à montrer ou non, et la liste des versions qui mène à chacune ; à droite, les notes. ──
+var _reln = { cat: 'all', tech: true, cur: '', raf: 0 };
+function relId(v) { return 'reln-v-' + String(v || '').replace(/[^0-9a-z.-]/gi, '').replace(/\./g, '-'); }
+function relCat(title) {
+  var t = String(title || '').toLowerCase();
+  return /^(nouveau|new)/.test(t) ? 'new' : (/^(amélior|improv)/.test(t) ? 'imp' : (/^(corrig|fix)/.test(t) ? 'fix' : 'other'));
+}
+function relNotesOpen() {
+  var win = document.getElementById('win-relnotes');
+  if (win) { win.classList.add('visible'); bringToFront(win); relNotesLoad(); return; }
+  dkStoreMakeWin('relnotes', T('Notes de version'), 980, 700,
+    '<div class="web-shell"><nav class="web-side" id="relnotes-side" aria-label="' + T('Notes de version') + '"></nav>'
+    + '<section class="web-main" style="position:relative;"><header class="web-head" id="relnotes-head"></header>'
+    + '<div class="web-body" id="relnotes-body" onscroll="relNotesScroll()"></div>'
+    + '<button class="rel-top" id="relnotes-top" onclick="relNotesTop()">↑ ' + T('Revenir au début') + '</button></section></div>', null);
+  relNotesLoad();
+}
+async function relNotesLoad() {
+  var body = wmBody('relnotes');
+  if (!body) return;
+  if (_rel.md === null || _rel.lang !== DK_LANG) {   // les notes existent dans les deux langues
+    wmHead('relnotes', T('Notes de version'));
+    body.innerHTML = '<div class="fs-empty"><div class="spinner"></div></div>';
+    _rel.lang = DK_LANG;
+    try {
+      var r = await fileops('GET', 'releases?lang=' + (DK_LANG === 'fr' ? 'fr' : 'en'));
+      _rel.md = (r && r.markdown) || '';
+      _rel.err = (!_rel.md && r && r.error) ? String(r.error) : '';
+    } catch (e) { _rel.md = ''; _rel.err = (e && e.message) || String(e); }
+  }
+  relNotesRender(true);
+}
+function relNotesRender(top) {
+  var body = wmBody('relnotes');
+  if (!body) return;
+  var list = relParse(_rel.md), installed = (_tndUpdate && _tndUpdate.version) || DK_PAGE_VERSION, c = _reln.cat;
+  var keep = function(sc) { return c === 'all' || relCat(sc.title) === c; };
+  var shown = list.map(function(v) { return { version: v.version, when: v.when, secs: v.secs.filter(keep) }; }).filter(function(v) { return v.secs.length; });
+  var count = function(k) { return list.filter(function(v) { return v.secs.some(function(sc) { return k === 'all' || relCat(sc.title) === k; }); }).length; };
+  var nav = function(k, icon, name) { return wmNav({ active: c === k, call: 'relNotesCat(\'' + k + '\')', icon: icon, name: name, count: count(k) || null }); };
+  var h = wmSideTitle(T('Afficher'))
+    + nav('all', 'list', T('Tout')) + nav('new', 'plus', T('Nouveautés')) + nav('imp', 'sliders', T('Améliorations')) + nav('fix', 'check', T('Corrections'))
+    + wmNav({ call: 'relNotesTech()', icon: _reln.tech ? 'check' : 'close', name: T('Détails techniques'), meta: _reln.tech ? T('affichés') : T('masqués') })
+    + wmSep() + wmSideTitle(T('Versions'), shown.length || '');
+  shown.forEach(function(v) {
+    var id = relId(v.version), mine = v.version === installed;
+    h += '<button class="web-nav' + (_reln.cur === id ? ' active' : '') + '" data-rel="' + id + '" onclick="relNotesGo(this.dataset.rel)" title="' + webEsc(v.version) + '">'
+      + '<span class="web-nav-text"><span class="web-nav-name">' + webEsc(v.version) + (mine ? ' · ' + T('installée') : '') + '</span>'
+      + (v.when ? '<span class="web-nav-meta">' + webEsc(v.when) + '</span>' : '') + '</span></button>';
+  });
+  wmSide('relnotes', h);
+  wmHead('relnotes', T('Notes de version'), { sub: Tf('Version installée : {0}', installed) });
+  body.innerHTML = '<div class="reln' + (_reln.tech ? '' : ' no-tech') + '">'
+    + (shown.length ? relRender(shown, installed) : '<p class="about-legal">' + (list.length ? T('Aucune note de ce type.') : T('Les notes de version ne sont pas accessibles pour le moment.')) + '</p>')
+    + (_rel.err ? '<p class="about-legal-note">' + webEsc(_rel.err) + '</p>' : '') + '</div>';
+  if (top) body.scrollTop = 0;
+  relNotesScroll();
+}
+function relNotesCat(k) { _reln.cat = k; _reln.cur = ''; relNotesRender(true); }
+function relNotesTech() {
+  _reln.tech = !_reln.tech;
+  var body = wmBody('relnotes'), y = body ? body.scrollTop : 0;
+  relNotesRender(false);
+  if (body) body.scrollTop = y;
+}
+function relNotesGo(id) {
+  var body = wmBody('relnotes'), el = document.getElementById(id);
+  if (!body || !el) return;
+  body.scrollTo({ top: el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 10, behavior: 'smooth' });
+}
+function relNotesTop() { var body = wmBody('relnotes'); if (body) body.scrollTo({ top: 0, behavior: 'smooth' }); }
+// Bouton « Revenir au début » dès qu'on a défilé, et la version lue surlignée dans la colonne de gauche.
+function relNotesScroll() {
+  if (_reln.raf) return;
+  _reln.raf = requestAnimationFrame(function() {
+    _reln.raf = 0;
+    var body = wmBody('relnotes'), btn = document.getElementById('relnotes-top'), side = document.getElementById('relnotes-side');
+    if (!body) return;
+    if (btn) btn.classList.toggle('on', body.scrollTop > 300);
+    var top = body.getBoundingClientRect().top + 40, cur = '';
+    [].some.call(body.querySelectorAll('.rel-v'), function(sec) { if (sec.getBoundingClientRect().bottom > top) { cur = sec.id; return true; } return false; });
+    if (cur === _reln.cur || !side) return;
+    _reln.cur = cur;
+    [].forEach.call(side.querySelectorAll('.web-nav[data-rel]'), function(b) {
+      var on = b.getAttribute('data-rel') === cur;
+      b.classList.toggle('active', on);
+      if (on && (b.offsetTop < side.scrollTop || b.offsetTop + b.offsetHeight > side.scrollTop + side.clientHeight)) side.scrollTop = b.offsetTop - side.clientHeight / 2;
+    });
+  });
 }
 async function aboutNotesView() {
   var box = aboutBody();
@@ -21537,7 +21687,7 @@ async function aboutNotesView() {
     el.innerHTML = '<div class="fs-empty"><div class="spinner"></div></div>';
     _rel.lang = DK_LANG;
     try {
-      var r = await fileops('GET', 'releases?lang=' + encodeURIComponent(DK_LANG));
+      var r = await fileops('GET', 'releases?lang=' + (DK_LANG === 'fr' ? 'fr' : 'en'));
       _rel.md = (r && r.markdown) || '';
       _rel.err = (!_rel.md && r && r.error) ? String(r.error) : '';
     } catch (e) { _rel.md = ''; _rel.err = (e && e.message) || String(e); }
@@ -21826,7 +21976,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.56.1';
+var DK_PAGE_VERSION = '2.57.0';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {
     v = String(v || '').trim();
@@ -30980,7 +31130,8 @@ function scSaveBtn(call, label) { return '<div class="web-foot" style="justify-c
 // ── MDM-LANGPACKS-V1 : langues ajoutées (fichiers <install>/lang/<code>.json) ─────────────────────
 // Le modèle à traduire est fabriqué ici, à partir du dictionnaire anglais de la page : ce qui reste
 // à traduire d'abord, puis ce qui l'est déjà. fileops valide et nettoie le fichier à l'import.
-var _dkLp = { d: null, loading: false, busy: '', report: null };
+var _dkLp = { d: null, loading: false, busy: '', report: null, tpl: { lang: '', part: 'next', fmt: 'xlsx' }, meta: null };
+var DK_LP_LOT = 500;   // taille d'un lot : assez petit pour passer dans un service de traduction en ligne
 function dkLpLoad() {
   _dkLp.loading = true;
   dkLangRefresh(function(d) {
@@ -30999,15 +31150,19 @@ function dkLpHtml() {
     return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(l.name) + ' <span class="dim mono" style="font-weight:400;">' + c + '</span>'
       + (c === DK_LANG ? ' <span class="dim" style="font-weight:400;">· ' + T('affichée') + '</span>' : '') + '</span>'
       + '<span class="web-row-desc">' + webEsc(Tf('{0} textes traduits sur {1} ({2} %)', dkLpNum(l.translated), dkLpNum(total), pct)) + (l.author ? ' · ' + webEsc(l.author) : '') + '</span></span>'
-      + '<button class="fs-btn" onclick="dkLpTemplate(\'' + c + '\')"' + dis + ' title="' + webEsc(T('Le fichier de cette langue, complété des textes qui lui manquent, à traduire puis à réimporter')) + '">' + T('Modèle à jour') + '</button>'
+      + '<button class="fs-btn" onclick="_dkLp.tpl.lang=\'' + c + '\';_dkLp.tpl.part=\'next\';scView(true)"' + dis + '>' + T('Continuer la traduction') + '</button>'
       + '<button class="fs-btn" onclick="dkLpRemove(\'' + c + '\')"' + dis + '>' + T('Retirer') + '</button></div>';
   }).join('') : '<div class="web-row"><span class="web-row-text"><span class="web-row-desc">' + webEsc(d.error || T('Aucune langue ajoutée pour l\'instant.')) + '</span></span></div>') + '</div>';
-  h += '<div class="web-foot" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:12px;">'
+  h += dkLpTplHtml(d, total, dis);
+  h += '<div class="web-group-title">' + T('Importer une traduction') + '</div>'
+    + '<div class="web-foot" style="justify-content:flex-start;gap:12px;flex-wrap:wrap;align-items:center;margin-top:0;">'
     + '<button class="web-open" onclick="document.getElementById(\'dk-lp-file\').click()"' + dis + '>' + (_dkLp.busy ? webEsc(_dkLp.busy) : T('Importer un fichier de langue...')) + '</button>'
-    + '<button class="fs-btn" onclick="dkLpTemplate(\'\')"' + dis + '>' + T('Télécharger le modèle à traduire') + '</button>'
-    + '<input type="file" id="dk-lp-file" accept=".json,application/json" hidden onchange="dkLpImport(this)"></div>';
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-dim);cursor:pointer;"><input type="checkbox" class="acl-check" id="dk-lp-replace"> ' + T('Remplacer toute la langue') + '</label>'
+    + '<input type="file" id="dk-lp-file" accept=".json,.xlsx,.csv,.xlf,.xliff,application/json" hidden onchange="dkLpImport(this)"></div>'
+    + '<p class="web-note" style="margin-top:6px;">' + T('JSON, Excel (.xlsx), CSV ou XLIFF (.xlf). Le fichier complète ce qui est déjà traduit : vous pouvez importer les lots les uns après les autres. Cochez « Remplacer toute la langue » pour repartir de zéro.') + '</p>';
   if (r) {
-    var lines = [Tf('{0} : {1} textes traduits sur {2}.', webEsc(r.name), dkLpNum(r.translated), dkLpNum(r.total))];
+    var lines = [r.merged ? Tf('{0} : {1} textes ajoutés ou modifiés, {2} textes traduits sur {3} au total.', webEsc(r.name), dkLpNum((r.added || 0) + (r.changed || 0)), dkLpNum(r.translated), dkLpNum(r.total))
+      : Tf('{0} : {1} textes traduits sur {2}.', webEsc(r.name), dkLpNum(r.translated), dkLpNum(r.total))];
     if (r.unchanged) lines.push(Tf('{0} textes encore en anglais : ils s\'affichent en anglais.', dkLpNum(r.unchanged)));
     if (r.unknown) lines.push(Tf('{0} textes que cette version de Desktroo n\'utilise pas (gardés pour plus tard).', dkLpNum(r.unknown)));
     if (r.cleaned) lines.push(Tf('{0} textes corrigés : guillemets droits remplacés par des guillemets typographiques, balises non permises retirées.', dkLpNum(r.cleaned)));
@@ -31015,43 +31170,267 @@ function dkLpHtml() {
     if ((r.holes || []).length) lines.push(T('Repères {0}, {1}… différents de l\'original, à vérifier :') + ' ' + r.holes.slice(0, 5).map(function(k) { return '« ' + webEsc(k) + ' »'; }).join(', ') + (r.holes.length > 5 ? '…' : ''));
     h += '<p class="web-note">' + lines.join('<br>') + '</p>';
   }
-  h += '<p class="web-note">' + T('Pour ajouter une langue : téléchargez le modèle, traduisez les valeurs (à droite de chaque ligne ; le texte français, à gauche, ne se modifie pas), renseignez le code et le nom de la langue en tête du fichier, puis importez-le ici. Ce qui n\'est pas traduit reste en anglais. La langue est alors proposée à tous ceux qui ouvrent ce bureau.') + '</p>';
+  h += '<p class="web-note">' + T('Ce qui n\'est pas traduit reste en anglais. Une langue importée est proposée à tous ceux qui ouvrent ce bureau, même incomplète.') + '</p>';
   return h;
 }
-async function dkLpTemplate(code) {
+// Panneau « Traduire » : langue (nouvelle ou déjà ajoutée), textes (tout, les 500 suivants, un lot), format.
+function dkLpTplHtml(d, total, dis) {
+  var t = _dkLp.tpl, langs = d.langs || [], cur = langs.filter(function(l) { return l.code === t.lang; })[0];
+  if (t.lang && !cur) { t.lang = ''; }
+  var left = Math.max(0, total - (cur ? cur.translated : 0)), lots = Math.ceil(left / DK_LP_LOT), parts = [];
+  if (left) parts.push(['next', Tf('Les {0} prochains textes à traduire', dkLpNum(Math.min(DK_LP_LOT, left)))]);
+  for (var i = 1; lots > 1 && i < lots; i++) parts.push(['b' + i, Tf('Lot {0} : textes {1} à {2} qui restent à traduire', i + 1, dkLpNum(i * DK_LP_LOT + 1), dkLpNum(Math.min(left, (i + 1) * DK_LP_LOT)))]);
+  parts.push(['all', Tf('Tout le modèle ({0} textes)', dkLpNum(total))]);
+  if (!parts.some(function(p) { return p[0] === t.part; })) t.part = parts[0][0];
+  var sel = function(id, val, opts, on) { return '<select class="wm-input" id="' + id + '" onchange="' + on + '"' + dis + '>' + opts.map(function(o) { return '<option value="' + webEsc(o[0]) + '"' + (o[0] === val ? ' selected' : '') + '>' + webEsc(o[1]) + '</option>'; }).join('') + '</select>'; };
+  var m = cur || _dkLp.meta, code = m ? m.code : 'xx', fmtHelp = {
+    xlsx: Tf('Colonne C à remplir, en face du français (A) et de l’anglais (B). Il s’ouvre dans Excel, LibreOffice ou Google Sheets ; dans Google Sheets, la formule {0} en C2, recopiée vers le bas, propose une première traduction à relire. Réimportez le fichier .xlsx (ou .csv) tel quel.', '<code>=GOOGLETRANSLATE(B2;"en";"' + webEsc(code) + '")</code>'),
+    xlf: T('Le format standard des outils de traduction (OmegaT, Poedit, Weblate, Crowdin…) : le texte source est l’anglais, le français est en note. Réimportez le fichier .xlf traduit.'),
+    json: T('Le fichier de Desktroo, pour un éditeur de texte : remplacez les valeurs, à droite de chaque ligne, sans toucher au français à gauche.')
+  };
+  return '<div class="web-group-title">' + T('Traduire') + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">'
+    + wmField(T('Langue'), sel('dk-lp-lang', t.lang, [['', _dkLp.meta ? _dkLp.meta.name + ' (' + _dkLp.meta.code + ')' : T('Nouvelle langue...')]].concat(langs.map(function(l) { return [l.code, l.name + ' (' + l.code + ')']; })), '_dkLp.tpl.lang=this.value;_dkLp.tpl.part=\'next\';scView(true)'))
+    + wmField(T('Textes'), sel('dk-lp-part', t.part, parts, '_dkLp.tpl.part=this.value'))
+    + wmField(T('Format'), sel('dk-lp-fmt', t.fmt, [['xlsx', T('Tableur (.xlsx)')], ['xlf', T('XLIFF (.xlf)')], ['json', 'JSON']], '_dkLp.tpl.fmt=this.value;scView(true)'))
+    + '</div>'
+    + '<div class="web-foot" style="justify-content:flex-start;margin-top:10px;"><button class="fs-btn" onclick="dkLpTemplate()"' + dis + '>' + T('Télécharger le modèle') + '</button></div>'
+    + '<p class="web-note" style="margin-top:6px;">' + fmtHelp[t.fmt] + ' ' + Tf('Les lots font {0} textes : assez peu pour un service de traduction en ligne, qui refuse les gros envois.', DK_LP_LOT) + '</p>';
+}
+// Code et nom d'une nouvelle langue (gardés pour les téléchargements suivants).
+async function dkLpAskMeta(def) {
+  def = def || {};
+  var code = await showPrompt(T('Code de la langue : deux ou trois lettres, éventuellement suivies d’une variante (« es », « de », « pt-br »).'), def.code || '');
+  code = String(code || '').trim().toLowerCase().replace(/_/g, '-');
+  if (!code) return null;
+  if (!/^[a-z]{2,3}(-[a-z0-9]{2,8})?$/.test(code) || code === 'fr' || code === 'en') { toast('❌ ' + T('Code de langue invalide (le français et l’anglais sont déjà fournis).'), 7000); return null; }
+  var name = await showPrompt(T('Nom de la langue, écrit dans cette langue (« Español », « Deutsch ») :'), def.name || '');
+  name = String(name || '').trim();
+  if (!name) return null;
+  var p = code.split('-');
+  return { code: code, name: name.slice(0, 40), locale: def.locale || (p[1] ? p[0] + '-' + p[1].toUpperCase() : (p[0].length === 2 ? p[0] + '-' + p[0].toUpperCase() : p[0])) };
+}
+function dkLpBase() { return JSON.parse(document.getElementById('dk-i18n-en').textContent); }
+async function dkLpFetch(code) {
+  var resp = await fetch('/fileops/lang/' + encodeURIComponent(code) + '.json', { cache: 'no-cache' });
+  if (!resp.ok) throw new Error(T('Fichier de langue introuvable.'));
+  return resp.json();
+}
+function dkLpSave(blob, name) {
+  var a = document.createElement('a'), href = URL.createObjectURL(blob);
+  a.href = href; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function() { URL.revokeObjectURL(href); }, 60000);
+}
+// Texte sûr dans un document XML (caractères interdits retirés) ; attr : aussi les retours à la ligne.
+function dkLpXml(v, attr) {
+  v = String(v == null ? '' : v).replace(/\u001b/g, '\u241b').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return attr ? v.replace(/\n/g, '&#10;').replace(/\r/g, '&#13;').replace(/\t/g, '&#9;') : v;
+}
+async function dkLpTemplate() {
+  var t = _dkLp.tpl, pack = {}, meta;
   try {
-    var base = JSON.parse(document.getElementById('dk-i18n-en').textContent), pack = {}, meta, todo = [], done = [], out = {};
-    if (code) {
-      var resp = await fetch('/fileops/lang/' + encodeURIComponent(code) + '.json', { cache: 'no-cache' });
-      if (!resp.ok) throw new Error(T('Fichier de langue introuvable.'));
-      pack = await resp.json();
+    if (t.lang) { pack = await dkLpFetch(t.lang); meta = pack._desktroo || {}; }
+    else {
+      if (!_dkLp.meta) { _dkLp.meta = await dkLpAskMeta(); if (!_dkLp.meta) return; scView(true); }
+      meta = _dkLp.meta;
     }
-    meta = pack._desktroo || {};
+    var base = dkLpBase(), todo = [], done = [], keys, suffix = '';
     Object.keys(base).forEach(function(k) { (typeof pack[k] === 'string' && pack[k] && pack[k] !== base[k] ? done : todo).push(k); });
-    out._desktroo = {
-      code: meta.code || 'xx', name: meta.name || '', locale: meta.locale || meta.code || 'xx-XX',
-      version: DK_PAGE_VERSION, author: meta.author || '',
-      aide: 'Traduisez chaque valeur (à droite) ; ne modifiez pas les clés (le texte français, à gauche). Les {0} premières lignes sont encore en anglais : ce sont elles qui restent à traduire. Gardez {0}, {1}… et les balises <b>, <code>… à leur place. Renseignez code (« de », « pt-br »…), name (le nom de la langue dans cette langue, « Deutsch ») et locale (« de-DE »), puis importez le fichier : Configuration système → Langue et fuseau horaire → Langues ajoutées.'.replace('{0}', todo.length),
-      help: 'Translate each value (on the right); do not change the keys (the French text, on the left). The first {0} lines are still in English: those are the ones left to translate. Keep {0}, {1}… and tags such as <b>, <code>… in place. Fill in code (“de”, “pt-br”…), name (the language’s own name, “Deutsch”) and locale (“de-DE”), then import the file: System configuration → Language and time zone → Added languages.'.replace('{0}', todo.length)
-    };
-    todo.forEach(function(k) { out[k] = base[k]; });
-    done.forEach(function(k) { out[k] = pack[k]; });
-    var blob = new Blob([JSON.stringify(out, null, 1) + '\n'], { type: 'application/json' }), a = document.createElement('a'), href = URL.createObjectURL(blob);
-    a.href = href; a.download = 'desktroo-lang-' + (code || 'template') + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(href); }, 60000);
-    toast(code ? Tf('Modèle téléchargé : {0} textes à traduire', dkLpNum(todo.length)) : T('Modèle téléchargé'), 6000);
+    if (t.part === 'all') keys = todo.concat(done);
+    else {
+      var n = t.part === 'next' ? 0 : (+t.part.slice(1) || 0);
+      keys = todo.slice(n * DK_LP_LOT, (n + 1) * DK_LP_LOT);
+      suffix = '-' + T('lot') + (n + 1);
+    }
+    if (!keys.length) { toast(T('Rien à traduire : tout est déjà traduit.'), 6000); return; }
+    var code = meta.code, name = meta.name || '', locale = meta.locale || code, file = 'desktroo-' + code + suffix, isDone = {};
+    done.forEach(function(k) { isDone[k] = 1; });
+    var hint = 'Desktroo ' + DK_PAGE_VERSION + ' · ' + code + ' · ' + name + ' · ' + locale;
+    if (t.fmt === 'json') {
+      var out = { _desktroo: { code: code, name: name, locale: locale, version: DK_PAGE_VERSION, author: meta.author || '',
+        aide: 'Traduisez chaque valeur (à droite) ; ne modifiez pas les clés (le texte français, à gauche). Gardez {0}, {1}… et les balises <b>, <code>… à leur place. Ce qui n’est pas traduit reste en anglais. Importez le fichier : Configuration système → Langue et fuseau horaire → Importer une traduction.',
+        help: 'Translate each value (on the right); do not change the keys (the French text, on the left). Keep {0}, {1}… and tags such as <b>, <code>… in place. Anything not translated stays in English. Import the file: System configuration → Language and time zone → Import a translation.' } };
+      keys.forEach(function(k) { out[k] = isDone[k] ? pack[k] : base[k]; });
+      dkLpSave(new Blob([JSON.stringify(out, null, 1) + '\n'], { type: 'application/json' }), file + '.json');
+    } else if (t.fmt === 'xlf') {
+      var x = '<?xml version="1.0" encoding="UTF-8"?>\n<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">\n'
+        + '<file original="' + dkLpXml(['desktroo', code, name, locale].join('|'), true) + '" source-language="en" target-language="' + dkLpXml(code, true) + '" datatype="plaintext">\n'
+        + '<header><note>' + dkLpXml(hint + '. Source: English. The French original is in each note. Keep {0}, {1}… and tags such as <b> in place.') + '</note></header>\n<body>\n';
+      keys.forEach(function(k, i) {
+        x += '<trans-unit id="' + (i + 1) + '" resname="' + dkLpXml(k, true) + '"><source xml:space="preserve">' + dkLpXml(base[k]) + '</source>'
+          + (isDone[k] ? '<target state="translated" xml:space="preserve">' + dkLpXml(pack[k]) + '</target>' : '')
+          + '<note>fr: ' + dkLpXml(k) + '</note></trans-unit>\n';
+      });
+      dkLpSave(new Blob([x + '</body>\n</file>\n</xliff>\n'], { type: 'application/xliff+xml' }), file + '.xlf');
+    } else {
+      var rows = [[T('Texte français (ne pas modifier)'), 'English', Tf('Traduction · {0} · {1} · {2}', code, name, locale)]];
+      keys.forEach(function(k) { rows.push([k, base[k], isDone[k] ? pack[k] : '']); });
+      var help = [[T('Comment traduire')], [T('Remplissez la colonne C de la feuille « Traduction », en face de chaque texte. Ne modifiez ni la colonne A ni l’en-tête de la colonne C (code, nom et locale de la langue).')],
+        [T('Gardez {0}, {1}… et les balises comme <b> ou <code> à leur place. Une case laissée vide garde l’anglais.')],
+        [Tf('Google Sheets : en C2, la formule {0} recopiée vers le bas propose une première traduction ; relisez-la avant d’importer.', '=GOOGLETRANSLATE(B2;"en";"' + code + '")')],
+        [T('Importez ensuite le fichier .xlsx (ou un export .csv de la feuille) : Configuration système → Langue et fuseau horaire → Importer une traduction.')], [hint]];
+      dkLpSave(dkLpXlsx([[T('Traduction'), rows], [T('Aide'), help]]), file + '.xlsx');
+    }
+    toast(Tf('Modèle téléchargé : {0} textes', dkLpNum(keys.length)), 6000);
   } catch (e) { wmToastErr(e); }
 }
+
+// ── Tableur .xlsx sans bibliothèque : archive zip « stockée » (non compressée) et XML minimal ──
+var _dkCrcT = null;
+function dkCrc32(u8) {
+  if (!_dkCrcT) { _dkCrcT = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; _dkCrcT[n] = c >>> 0; } }
+  var r = 0xFFFFFFFF;
+  for (var i = 0; i < u8.length; i++) r = _dkCrcT[(r ^ u8[i]) & 255] ^ (r >>> 8);
+  return (r ^ 0xFFFFFFFF) >>> 0;
+}
+function dkZipStore(files, type) {
+  var enc = new TextEncoder(), parts = [], central = [], off = 0, csz = 0;
+  files.forEach(function(f) {
+    var nm = enc.encode(f[0]), d = enc.encode(f[1]), crc = dkCrc32(d), h = new DataView(new ArrayBuffer(30)), c = new DataView(new ArrayBuffer(46));
+    [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [12, 0x21, 2], [14, crc, 4], [18, d.length, 4], [22, d.length, 4], [26, nm.length, 2]].forEach(function(v) { v[2] === 4 ? h.setUint32(v[0], v[1], true) : h.setUint16(v[0], v[1], true); });
+    [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [14, 0x21, 2], [16, crc, 4], [20, d.length, 4], [24, d.length, 4], [28, nm.length, 2], [42, off, 4]].forEach(function(v) { v[2] === 4 ? c.setUint32(v[0], v[1], true) : c.setUint16(v[0], v[1], true); });
+    parts.push(new Uint8Array(h.buffer), nm, d);
+    central.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + d.length; csz += 46 + nm.length;
+  });
+  var e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csz, true); e.setUint32(16, off, true);
+  return new Blob(parts.concat(central, [new Uint8Array(e.buffer)]), { type: type });
+}
+// sheets : [[nom, lignes]] ; la première ligne de chaque feuille est en gras et figée.
+function dkLpXlsx(sheets) {
+  var NS = 'http://schemas.openxmlformats.org/', files = [], wb = '', rels = '', ct = '';
+  sheets.forEach(function(sh, i) {
+    var x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="' + NS + 'spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+      + '<cols><col min="1" max="1" width="' + (i ? 120 : 60) + '" customWidth="1"/><col min="2" max="3" width="60" customWidth="1"/></cols><sheetData>';
+    sh[1].forEach(function(row, r) {
+      x += '<row r="' + (r + 1) + '">';
+      row.forEach(function(v, c) { if (v !== '' && v != null) x += '<c r="' + 'ABC'.charAt(c) + (r + 1) + '" t="inlineStr"' + (r ? '' : ' s="1"') + '><is><t xml:space="preserve">' + dkLpXml(v) + '</t></is></c>'; });
+      x += '</row>';
+    });
+    files.push(['xl/worksheets/sheet' + (i + 1) + '.xml', x + '</sheetData></worksheet>']);
+    wb += '<sheet name="' + dkLpXml(sh[0], true) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>';
+    rels += '<Relationship Id="rId' + (i + 1) + '" Type="' + NS + 'officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>';
+    ct += '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  });
+  var n = sheets.length + 1;
+  return dkZipStore([
+    ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="' + NS + 'package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
+      + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' + ct + '</Types>'],
+    ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + NS + 'package/2006/relationships"><Relationship Id="rId1" Type="' + NS + 'officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="' + NS + 'spreadsheetml/2006/main" xmlns:r="' + NS + 'officeDocument/2006/relationships"><sheets>' + wb + '</sheets></workbook>'],
+    ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="' + NS + 'package/2006/relationships">' + rels + '<Relationship Id="rId' + n + '" Type="' + NS + 'officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+    ['xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="' + NS + 'spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+      + '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+      + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>']
+  ].concat(files), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+}
+// Lecture d'un .xlsx (Excel, LibreOffice, Google Sheets) : première feuille, colonnes A et C.
+async function dkUnzip(buf, want) {
+  var u8 = new Uint8Array(buf), dv = new DataView(buf), i = u8.length - 22, out = {}, dec = new TextDecoder();
+  while (i >= 0 && dv.getUint32(i, true) !== 0x06054b50) i--;
+  if (i < 0) throw new Error(T('Fichier .xlsx illisible.'));
+  for (var k = 0, n = dv.getUint16(i + 10, true), p = dv.getUint32(i + 16, true); k < n && dv.getUint32(p, true) === 0x02014b50; k++) {
+    var meth = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), lo = dv.getUint32(p + 42, true);
+    var name = dec.decode(u8.subarray(p + 46, p + 46 + nl));
+    p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+    if (!want.test(name)) continue;
+    var ds = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true), raw = u8.slice(ds, ds + csz);
+    if (meth === 0) out[name] = dec.decode(raw);
+    else if (meth === 8 && window.DecompressionStream) out[name] = await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+    else throw new Error(T('Ce navigateur ne sait pas lire ce fichier .xlsx : enregistrez-le en .csv.'));
+  }
+  return out;
+}
+async function dkLpXlsxRows(buf) {
+  var f = await dkUnzip(buf, /^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/[^/]+\.xml)$/), P = new DOMParser(), ss = [], sheet = f['xl/worksheets/sheet1.xml'];
+  try {   // première feuille du classeur, quel que soit le nom de son fichier
+    var wb = P.parseFromString(f['xl/workbook.xml'], 'application/xml'), first = wb.getElementsByTagName('sheet')[0], rid = first && (first.getAttribute('r:id') || first.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id'));
+    var rl = P.parseFromString(f['xl/_rels/workbook.xml.rels'], 'application/xml');
+    [].forEach.call(rl.documentElement.childNodes, function(r) { if (!/^Relationship$/.test(r.nodeName)) return; if (r.getAttribute('Id') === rid) { var tg = r.getAttribute('Target').replace(/^\/?(xl\/)?/, ''); if (f['xl/' + tg]) sheet = f['xl/' + tg]; } });
+  } catch (_) {}
+  if (!sheet) throw new Error(T('Fichier .xlsx illisible.'));
+  if (f['xl/sharedStrings.xml']) {
+    var sd = P.parseFromString(f['xl/sharedStrings.xml'], 'application/xml');
+    ss = [].map.call(sd.getElementsByTagName('si'), function(si) { return [].filter.call(si.getElementsByTagName('t'), function(t) { return t.parentNode.nodeName !== 'rPh'; }).map(function(t) { return t.textContent; }).join(''); });
+  }
+  var wd = P.parseFromString(sheet, 'application/xml'), rows = [];
+  [].forEach.call(wd.getElementsByTagName('row'), function(r) {
+    var row = [], ri = (+r.getAttribute('r') || rows.length + 1) - 1;
+    [].forEach.call(r.getElementsByTagName('c'), function(c) {
+      var ref = (c.getAttribute('r') || '').replace(/\d+/g, ''), col = ref ? ref.charCodeAt(ref.length - 1) - 65 + (ref.length > 1 ? 26 : 0) : row.length, t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0], val;
+      if (t === 's') val = ss[+(v ? v.textContent : -1)];
+      else if (t === 'inlineStr') val = [].map.call(c.getElementsByTagName('t'), function(x) { return x.textContent; }).join('');
+      else val = v ? v.textContent : '';
+      row[col] = val == null ? '' : String(val);
+    });
+    rows[ri] = row;
+  });
+  return rows.filter(Boolean);
+}
+function dkLpCsvRows(text) {
+  text = text.replace(/^﻿/, '');
+  var first = text.split(/\r?\n/, 1)[0], delim = [';', ',', '\t'].sort(function(a, b) { return first.split(b).length - first.split(a).length; })[0];
+  var rows = [], row = [], f = '', q = false;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === delim) { row.push(f); f = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += ch;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+// Lignes de tableur → fichier de langue ; l'en-tête de la colonne C donne « Traduction · code · nom · locale ».
+function dkLpRowsPack(rows) {
+  var head = rows[0] || [], m = String(head[2] || '').split(/\s*·\s*/), meta = {}, out = {};
+  if (m.length >= 2 && /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/i.test(m[1])) meta = { code: m[1].toLowerCase(), name: m[2] || '', locale: m[3] || '' };
+  rows.slice(1).forEach(function(r) { var k = r[0], v = r[2]; if (k && k.charAt(0) !== '_' && typeof v === 'string' && v.trim()) out[k.replace(/\u241b/g, '\u001b')] = v.replace(/\u241b/g, '\u001b'); });
+  return { meta: meta, texts: out };
+}
+function dkLpXliffPack(text) {
+  var d = new DOMParser().parseFromString(text, 'application/xml');
+  if (d.getElementsByTagName('parsererror').length) throw new Error(T('Fichier XLIFF illisible.'));
+  var f = d.getElementsByTagName('file')[0], o = (f && f.getAttribute('original') || '').split('|'), meta = {}, out = {};
+  if (o[0] === 'desktroo' && o.length >= 3) meta = { code: o[1], name: o[2], locale: o[3] || '' };
+  else meta = { code: String((f && (f.getAttribute('target-language') || f.getAttribute('trgLang'))) || d.documentElement.getAttribute('trgLang') || '').toLowerCase() };
+  [].forEach.call(d.querySelectorAll('trans-unit, unit'), function(u) {
+    var k = u.getAttribute('resname') || u.getAttribute('name'), t = u.getElementsByTagName('target')[0];
+    if (k && t && t.textContent.trim()) out[k.replace(/\u241b/g, '\u001b')] = t.textContent.replace(/\u241b/g, '\u001b');
+  });
+  return { meta: meta, texts: out };
+}
 async function dkLpImport(inp) {
-  var file = inp && inp.files && inp.files[0];
+  var file = inp && inp.files && inp.files[0], replace = !!(document.getElementById('dk-lp-replace') || {}).checked;
   if (!file) return;
   inp.value = '';
-  if (file.size > 4 * 1024 * 1024) { toast('❌ ' + T('Fichier trop gros (4 Mo au plus).'), 7000); return; }
+  if (file.size > 12 * 1024 * 1024) { toast('❌ ' + T('Fichier trop gros.'), 7000); return; }
   _dkLp.busy = T('Import...'); _dkLp.report = null; scView(true);
   try {
-    var text = await file.text(), r = await fileops('POST', 'lang/import', { content: text });
+    var ext = (file.name.match(/\.([a-z]+)$/i) || [])[1] || '', pk, meta;
+    ext = ext.toLowerCase();
+    if (ext === 'xlsx') pk = dkLpRowsPack(await dkLpXlsxRows(await file.arrayBuffer()));
+    else if (ext === 'csv') pk = dkLpRowsPack(dkLpCsvRows(await file.text()));
+    else if (ext === 'xlf' || ext === 'xliff') pk = dkLpXliffPack(await file.text());
+    else {
+      var j = JSON.parse(await file.text());
+      if (!j || typeof j !== 'object' || Array.isArray(j)) throw new Error(T('Ce fichier n’est pas un fichier de langue.'));
+      pk = { meta: j._desktroo || {}, texts: j }; delete pk.texts._desktroo;
+    }
+    meta = pk.meta || {};
+    if (!meta.code || meta.code === 'xx' || !meta.name) {   // fichier sans en-tête (ou en-tête effacé) : on demande
+      var langs = (_dkLp.d && _dkLp.d.langs) || [], known = langs.filter(function(l) { return l.code === (meta.code || _dkLp.tpl.lang); })[0];
+      meta = known ? { code: known.code, name: known.name, locale: known.locale } : await dkLpAskMeta(meta.code && meta.code !== 'xx' ? meta : (_dkLp.meta || {}));
+      if (!meta) { _dkLp.busy = ''; scView(true); return; }
+    }
+    var body = Object.assign({ _desktroo: { code: meta.code, name: meta.name, locale: meta.locale || '', author: meta.author || '', version: meta.version || '' } }, pk.texts);
+    var r = await fileops('POST', 'lang/import', { content: JSON.stringify(body), mode: replace ? 'replace' : 'merge' });
     if (!r || !r.ok) throw new Error((r && r.error) || T('Import refusé.'));
     _dkLp.report = r;
+    if (_dkLp.meta && _dkLp.meta.code === r.code) _dkLp.meta = null;
+    _dkLp.tpl.lang = r.code; _dkLp.tpl.part = 'next';
     toast(r.replaced ? Tf('{0} mis à jour', r.name) : Tf('{0} ajouté', r.name), 6000);
   } catch (e) { wmToastErr(e); }
   _dkLp.busy = ''; _dkLp.d = null;

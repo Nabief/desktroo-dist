@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.56.1'
+APP_VERSION = '2.57.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9536,8 +9536,8 @@ _lp_stat_cache = {}
 def _lp_clean(v):
     """Rend un texte sûr partout où le bureau l'insère (HTML, attributs, onclick) : guillemets
     typographiques, balises de mise en forme nues seulement, entités courantes seulement."""
-    v = ''.join(c for c in str(v) if c in '\n\t' or ord(c) >= 32)
-    v = v.replace('"', '”').replace("'", '’').replace('\\', '＼')
+    v = ''.join(c for c in str(v) if c in '\n\t\x1b' or ord(c) >= 32)   # ESC : couleurs du terminal
+    v = re.sub(r'\\(?!n)', '＼', v.replace('"', '”').replace("'", '’'))   # « \n » des clés gardé
 
     def tag(m):
         t = m.group(2).lower()
@@ -9673,13 +9673,33 @@ def lang_import(body):
     path = _lp_path(meta['code'])
     os.makedirs(LANG_DIR, exist_ok=True)
     existed = os.path.exists(path)
+    # Par défaut, le fichier complète la langue déjà en place (travail par lots) ; « replace » repart de zéro.
+    merge = existed and str(body.get('mode') or 'merge') != 'replace'
+    added, changed = len(texts), 0
+    if merge:
+        try:
+            old_meta, old_texts, _r = _lp_read(meta['code'])
+        except Exception:
+            old_meta, old_texts = {}, {}
+        added = sum(1 for k in texts if k not in old_texts)
+        changed = sum(1 for k in texts if k in old_texts and old_texts[k] != texts[k])
+        merged = dict(old_texts)
+        merged.update(texts)
+        texts = merged
+        for f in ('author', 'version'):
+            if not meta.get(f):
+                meta[f] = old_meta.get(f, '')
+        if meta.get('locale') == meta['code'] and old_meta.get('locale'):
+            meta['locale'] = old_meta['locale']
+    base = _lp_base()
+    rep['translated'] = sum(1 for k in texts if k in base)
     tmp = path + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as fh:
         json.dump(dict({'_desktroo': meta}, **texts), fh, ensure_ascii=False, indent=1)
         fh.write('\n')
     os.replace(tmp, path)
     _lp_stat_cache.pop(meta['code'] + '.json', None)
-    return dict(rep, ok=True, code=meta['code'], name=meta['name'], replaced=existed)
+    return dict(rep, ok=True, code=meta['code'], name=meta['name'], replaced=existed, merged=merge, added=added, changed=changed)
 
 
 def lang_delete(code):

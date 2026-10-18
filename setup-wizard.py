@@ -2160,7 +2160,7 @@ document.documentElement.lang = DK_LANG;
    (HTML, attributs, gestionnaires onclick) : pas de guillemet droit ni de barre oblique inverse,
    seulement les balises de mise en forme nues, seulement les entités courantes. fileops nettoie
    déjà les fichiers ; ce contrôle en est le filet. */
-var DK_PACK_BAD = /["'\\]|<(?!\/?(?:b|strong|i|em|u|code|kbd|small|sub|sup|mark)>|br>)|&(?!(?:amp|lt|gt|nbsp|hellip|mdash|ndash|laquo|raquo|thinsp);)/i;
+var DK_PACK_BAD = /["']|\\(?!n)|<(?!\/?(?:b|strong|i|em|u|code|kbd|small|sub|sup|mark)>|br>)|&(?!(?:amp|lt|gt|nbsp|hellip|mdash|ndash|laquo|raquo|thinsp);)/i;
 function dkDict() {
   if (DK_DICT) return DK_DICT;
   DK_DICT = {};
