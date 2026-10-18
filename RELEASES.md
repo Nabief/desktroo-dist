@@ -3,7 +3,13 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.58.0 — à paraître
+## 2.58.1 — à paraître
+
+### Corrigé
+- **« Voir ce qu'apporte la mise à jour » montre bien la nouvelle version.** Les notes de version affichées dataient parfois d'avant sa publication : elles s'arrêtaient à la version installée.
+  > Les notes sont relues dès qu'elles ne contiennent pas la dernière version annoncée par version.txt, côté bureau (cache de la page) comme côté service (cache de 15 minutes) ; une copie encore en cache chez GitHub est contournée.
+
+## 2.58.0 — 18 octobre 2026
 
 ### Nouveau
 - **Programme bêta.** Ceux qui le souhaitent reçoivent les nouvelles versions de Desktroo quelques jours avant tout le monde, et aident à les mettre au point. L'invitation apparaît une fois dans les alertes ; on s'inscrit ou on se désinscrit à tout moment dans À propos → Programme bêta.

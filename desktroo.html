@@ -27592,15 +27592,20 @@ function relNotesOpen() {
     + '<button class="rel-top" id="relnotes-top" onclick="relNotesTop()">↑ ' + T('Revenir au début') + '</button></section></div>', null);
   relNotesLoad();
 }
+// Les notes doivent contenir la dernière version annoncée : sinon, elles datent d'avant sa publication.
+function relHasLatest() {
+  var l = _tndUpdate && _tndUpdate.latest;
+  return !l || new RegExp('^##\\s+' + l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\s|$)', 'm').test(_rel.md || '');
+}
 async function relNotesLoad() {
   var body = wmBody('relnotes');
   if (!body) return;
-  if (_rel.md === null || _rel.lang !== DK_LANG) {   // les notes existent dans les deux langues
+  if (_rel.md === null || _rel.lang !== DK_LANG || !relHasLatest()) {   // les notes existent dans les deux langues
     wmHead('relnotes', T('Notes de version'));
     body.innerHTML = '<div class="fs-empty"><div class="spinner"></div></div>';
     _rel.lang = DK_LANG;
     try {
-      var r = await fileops('GET', 'releases?lang=' + (DK_LANG === 'fr' ? 'fr' : 'en'));
+      var r = await fileops('GET', 'releases?lang=' + (DK_LANG === 'fr' ? 'fr' : 'en') + (_rel.md && !relHasLatest() ? '&force=1' : ''));
       _rel.md = (r && r.markdown) || '';
       _rel.err = (!_rel.md && r && r.error) ? String(r.error) : '';
     } catch (e) { _rel.md = ''; _rel.err = (e && e.message) || String(e); }
@@ -28010,7 +28015,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.58.0';
+var DK_PAGE_VERSION = '2.58.1';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

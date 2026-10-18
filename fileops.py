@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.58.0'
+APP_VERSION = '2.58.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -800,6 +800,8 @@ def _version_status():
         nums = [int(x) for x in re.findall(r'\d+', m.group(1) if m else v)[:4]]
         return nums + [0] * (4 - len(nums)) + ([0, int(m.group(2) or 0)] if m else [1, 0])
 
+    if latest:
+        _RELEASES_LATEST['v'] = latest
     upd = False
     if latest:
         try:
@@ -817,13 +819,21 @@ def _version_status():
 _RELEASES = {}          # langue -> {'t', 'v', 'src'}
 _RELEASES_TTL = 900.0
 _RELEASES_FILES = {'fr': 'RELEASES.md', 'en': 'RELEASES.en.md'}
+_RELEASES_LATEST = {'v': ''}   # dernière version annoncée par version.txt (voir _version_status)
+
+
+def _releases_has(text, ver):
+    """Les notes contiennent-elles la version « ver » (titre « ## 2.58.0 — … ») ?"""
+    return not ver or bool(re.search(r'^##\s+' + re.escape(ver) + r'(\s|$)', text or '', re.M))
 
 
 def _releases_text(force=False, lang='fr'):
     lang = 'en' if str(lang or '').lower().startswith('en') else 'fr'
     now = _login_time.time()
     hit = _RELEASES.get(lang)
-    if not force and hit and hit['v'] and now - hit['t'] < _RELEASES_TTL:
+    want = _RELEASES_LATEST['v']
+    # En cache, sauf si une version plus récente a été annoncée depuis : ses notes doivent apparaître.
+    if not force and hit and hit['v'] and now - hit['t'] < _RELEASES_TTL and _releases_has(hit['v'], want):
         return hit['v'], hit['src']
     # Les notes anglaises peuvent manquer (NAS resté sur une distribution plus ancienne) :
     # mieux vaut les notes françaises que rien du tout, et la source le dit.
@@ -835,6 +845,14 @@ def _releases_text(force=False, lang='fr'):
             text = _fetch_text(_dist_raw() + '/' + nom, timeout=20)[:200000]
         except Exception:
             text = ''
+        # Copie encore en cache chez GitHub (quelques minutes après une publication) : on la contourne.
+        if text and not _releases_has(text, want):
+            try:
+                fresh = _fetch_text(_dist_raw() + '/' + nom + '?v=' + re.sub(r'[^0-9A-Za-z.]', '', want) + '.' + str(int(now)), timeout=20)[:200000]
+                if _releases_has(fresh, want):
+                    text = fresh
+            except Exception:
+                pass
         if text:
             src = 'remote' + suffixe
             break

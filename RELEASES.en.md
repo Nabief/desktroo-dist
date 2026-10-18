@@ -3,7 +3,13 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.58.0 — unreleased
+## 2.58.1 — unreleased
+
+### Fixed
+- **“See what the update brings” now shows the new version.** The release notes shown sometimes dated from before its release: they stopped at the installed version.
+  > The notes are read again as soon as they do not contain the latest version announced by version.txt, on the desktop side (page cache) as well as in the service (15-minute cache); a copy still cached by GitHub is bypassed.
+
+## 2.58.0 — 18 October 2026
 
 ### New
 - **Beta programme.** Those who wish get new Desktroo versions a few days before everyone else, and help polish them. The invitation appears once in the alerts; you can join or leave at any time in About → Beta programme.
