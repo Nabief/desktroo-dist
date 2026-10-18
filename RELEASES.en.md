@@ -3,6 +3,15 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.3 — 18 October 2026
+
+### Improved
+- **OnlyOffice for everyone.** The OnlyOffice app leaves the test channel: it appears in Desktroo Apps on every NAS, whether or not it has joined the beta programme.
+
+### Fixed
+- **Icons of apps installed as applications.** Desktroo Apps and Access rights now have their icon when installed on a computer or phone, and the browser console no longer shows a series of 404 errors each time the desktop opens.
+  > Preparing the PNG icons requested Store apps by their internal id (dkapp-…) and tried two addresses for each app: it now asks for the short name, at the one right address, and remembers apps without an icon until the next version. System icons added for store and access.
+
 ## 2.60.2 — 18 October 2026
 
 ### Fixed

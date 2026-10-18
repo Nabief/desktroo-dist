@@ -3,6 +3,15 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.3 — 18 octobre 2026
+
+### Amélioré
+- **OnlyOffice pour tout le monde.** L'app OnlyOffice quitte le canal test : elle apparaît dans Desktroo Apps sur tous les NAS, inscrits ou non au programme bêta.
+
+### Corrigé
+- **Icônes des apps installées comme application.** Desktroo Apps et Droits d'accès ont maintenant leur icône quand on les installe sur l'ordinateur ou le téléphone, et la console du navigateur n'affiche plus une série d'erreurs 404 à chaque ouverture du bureau.
+  > La préparation des icônes PNG demandait les apps du Magasin sous leur identifiant interne (dkapp-…) et essayait deux adresses pour chaque app : elle demande maintenant le nom court, à la seule bonne adresse, et retient les apps sans icône jusqu'à la version suivante. Icônes système ajoutées pour store et access.
+
 ## 2.60.2 — 18 octobre 2026
 
 ### Corrigé

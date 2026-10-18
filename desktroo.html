@@ -28553,7 +28553,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.2';
+var DK_PAGE_VERSION = '2.60.3';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -41872,9 +41872,12 @@ async function dkKioskRender(svg, size) {
     return c.toDataURL('image/png').split(',')[1];
   } finally { URL.revokeObjectURL(url); }
 }
+// L'icône d'une app du Magasin est sous son nom court (« jellyfin », pas « dkapp-jellyfin ») ; celle d'une app du bureau
+// est une icône système. Une seule adresse, la bonne : plus de 404 inutiles dans la console.
 async function dkKioskIconUpload(id) {
-  var r = await fetch('/fileops/store/icon/' + encodeURIComponent(id), { cache: 'no-cache' });
-  if (!r.ok) r = await fetch('/fileops/store/sys-icon/' + encodeURIComponent(id), { cache: 'no-cache' });
+  id = dkKioskNorm(id);
+  var store = (typeof ALL_APPS !== 'undefined') && ALL_APPS.some(function(a) { return a.id === 'dkapp-' + id && a.store; });
+  var r = await fetch('/fileops/store/' + (store ? 'icon/' : 'sys-icon/') + encodeURIComponent(id), { cache: 'no-cache' });
   if (!r.ok) throw new Error('icon');
   var svg = await r.text();
   await fileops('POST', 'store/kiosk-icon', { id: id, png192: await dkKioskRender(svg, 192), png512: await dkKioskRender(svg, 512) });
@@ -41884,8 +41887,16 @@ async function dkKioskIconSync() {
   if (window.DK_KIOSK || _dkKioskSyncing) return;
   _dkKioskSyncing = true;
   try {
-    var have = (await fileops('GET', 'store/kiosk-icons')).ids || [], todo = ALL_APPS.map(function(a) { return a.id; }).filter(function(i) { return have.indexOf(i) < 0; });
-    for (var k = 0; k < todo.length && k < 80; k++) { try { await dkKioskIconUpload(todo[k]); } catch (_) {} }
+    // Une app sans icône sur le NAS n'est plus redemandée à chaque chargement : on s'en souvient jusqu'à la prochaine version.
+    var miss = [];
+    try { var m = JSON.parse(localStorage.getItem('dk_kiosk_noicon') || 'null'); if (m && m.v === DK_PAGE_VERSION && Array.isArray(m.ids)) miss = m.ids; } catch (_) {}
+    var have = (await fileops('GET', 'store/kiosk-icons')).ids || [], seen = {};
+    var todo = ALL_APPS.map(function(a) { return dkKioskNorm(a.id); }).filter(function(i) {
+      if (!i || seen[i] || have.indexOf(i) >= 0 || miss.indexOf(i) >= 0) return false;
+      seen[i] = 1; return true;
+    });
+    for (var k = 0; k < todo.length && k < 80; k++) { try { await dkKioskIconUpload(todo[k]); } catch (_) { miss.push(todo[k]); } }
+    try { localStorage.setItem('dk_kiosk_noicon', JSON.stringify({ v: DK_PAGE_VERSION, ids: miss })); } catch (_) {}
   } catch (_) {}
   _dkKioskSyncing = false;
 }
