@@ -6,7 +6,7 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 ## 2.60.10 — 19 octobre 2026
 
 ### Nouveau
-- **Pi-hole dans Desktroo Apps (en test).** Un filtre de publicités et de traqueurs pour tout le réseau, comme AdGuard Home, avec sa propre fenêtre Desktroo : vue d'ensemble avec graphique, journal des requêtes (bloquer ou autoriser un site en un clic), listes de blocage, sites autorisés ou bloqués à la main, pause de la protection, serveurs DNS en amont.
+- **Pi-hole dans Desktroo Apps.** Un filtre de publicités et de traqueurs pour tout le réseau, comme AdGuard Home, avec sa propre fenêtre Desktroo : vue d'ensemble avec graphique, journal des requêtes (bloquer ou autoriser un site en un clic), listes de blocage, sites autorisés ou bloqués à la main, pause de la protection, serveurs DNS en amont.
   > Entrée `pihole` du catalogue (canal test, image `pihole/pihole`, port 53, `FTLCONF_*`, mot de passe d'API dérivé). La fenêtre `dkPh*` passe par `/store/pihole/api` : le NAS ouvre la session de l'API v6 (sid, renouvelé à l'expiration) et ne relaie que les chemins d'une liste blanche ; seul le réglage `dns.upstreams` peut être modifié.
 - **Pi-hole sur une autre machine.** Si vous avez déjà un Pi-hole (Raspberry Pi, machine virtuelle…), « Relier un Pi-hole existant » le pilote depuis la même fenêtre. Le mot de passe reste sur le NAS.
   > `/store/pihole/link`, `/unlink` ; fichier `data/store/pihole.json` en 0600 ; version 6 exigée ; entrée injectée dans la liste des apps installées comme pour AdGuard.
