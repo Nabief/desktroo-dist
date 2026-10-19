@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.5'
+APP_VERSION = '2.60.7'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -397,7 +397,7 @@ def auth_login(body):
     if not ok:
         _login_note_failure()
         log.warning('Connexion refusée : %s', 'jeton de session TrueNAS refusé' if session_token else 'identifiants TrueNAS incorrects')
-        return 401, {'error': 'Session TrueNAS refusée : reconnecte-toi.' if session_token else 'Identifiants TrueNAS incorrects.'}
+        return 401, {'error': 'Session TrueNAS refusée : reconnecte-toi.' if session_token else "Identifiant ou mot de passe incorrect, ou compte sans droits d'administration du NAS."}
     if not _truenas_is_full_admin(me):
         log.warning('Connexion refusée : compte sans les pleins droits (%s)',
                     (me or {}).get('pw_name') or username or 'clé API')
@@ -10047,13 +10047,206 @@ def store_access_get():
     return d if isinstance(d, dict) else {}
 
 
-def store_user_allowed(app_id, user):
-    """L'administrateur choisit qui a accès à chaque app (décision du plan). Liste absente = tous les comptes
-    Desktroo : la fenêtre de choix arrive en phase 1."""
-    acl = store_access_get().get(app_id)
-    if acl is None:
+# ── MDM-ACCESS-UNIFIED-V1 : un seul réglage d'accès aux apps, celui de « Droits d'accès » ─────────────────────────
+# Une app de Desktroo Apps y porte le nom de son app TrueNAS (dt-<id>). Même règle que le bureau : le choix du compte
+# (Autorisé / Refusé), sinon ceux de ses groupes (un refus l'emporte), sinon autorisé. Un nouveau compte a donc accès
+# tant qu'on ne le lui refuse pas. Les anciennes listes « Qui peut l'utiliser » (data/store/access.json) sont reprises
+# une fois, en refus explicites pour les administrateurs qui n'y figuraient pas : personne ne gagne ni ne perd d'accès.
+_ACC_IDS = {'at': 0.0, 'fail_at': 0.0, 'users': {}, 'busy': False}
+_ACC_IDS_LOCK = _threading.Lock()
+_ACC_ALWAYS = ('root', 'truenas_admin')   # comptes propriétaires du NAS : toujours autorisés, comme sur le bureau
+
+
+def _access_ids_load():
+    users = _store_midclt('user.query', [], {'select': ['username', 'uid', 'groups', 'builtin', 'roles']}, timeout=60) or []
+    groups = _store_midclt('group.query', [], {'select': ['id', 'gid']}, timeout=60) or []
+    gids = {g['id']: int(g['gid']) for g in groups if isinstance(g, dict) and g.get('id') is not None and g.get('gid') is not None}
+    rows = [u for u in users if isinstance(u, dict) and u.get('username') and u.get('uid') is not None]
+    any_role = any(u.get('roles') for u in rows)
+    out = {}
+    for u in rows:
+        admin = ('FULL_ADMIN' in (u.get('roles') or [])) if any_role else not u.get('builtin')
+        out[str(u['username']).lower()] = {'username': str(u['username']), 'uid': int(u['uid']), 'builtin': bool(u.get('builtin')),
+                                           'admin': admin, 'groups': [gids[i] for i in (u.get('groups') or []) if i in gids]}
+    with _ACC_IDS_LOCK:
+        _ACC_IDS.update(at=_st_time.time(), users=out)
+    return out
+
+
+def _access_ids():
+    """Comptes du NAS (uid, groupes, administrateur ou non), relus au plus une fois par minute, en arrière-plan quand une copie
+    existe déjà : le contrôle d'accès passe à chaque requête vers une app et ne doit pas attendre TrueNAS."""
+    now = _st_time.time()
+    with _ACC_IDS_LOCK:
+        have = bool(_ACC_IDS['users'])
+        refresh = have and now - _ACC_IDS['at'] > 60 and not _ACC_IDS['busy']
+        if refresh:
+            _ACC_IDS['busy'] = True
+        recent_fail = now - _ACC_IDS['fail_at'] < 30
+    if not have:
+        if recent_fail:
+            return {}
+        try:
+            return _access_ids_load()
+        except Exception as e:
+            with _ACC_IDS_LOCK:
+                _ACC_IDS['fail_at'] = now
+            log.warning('Droits d\'accès : comptes du NAS illisibles : %s', e)
+            return {}
+    if refresh:
+        def run():
+            try:
+                _access_ids_load()
+            except Exception as e:
+                log.warning('Droits d\'accès : comptes du NAS illisibles : %s', e)
+            finally:
+                with _ACC_IDS_LOCK:
+                    _ACC_IDS['busy'] = False
+        _threading.Thread(target=run, name='access-ids', daemon=True).start()
+    return _ACC_IDS['users']
+
+
+def _access_app_key(app_id):
+    return 'dt-' + str(app_id)
+
+
+def access_app_effective(app_name, username, subjects=None, ids=None, direct=True):
+    """ALLOW ou DENY, exactement comme le calcule la fenêtre Droits d'accès (acEffectiveApplication)."""
+    u = str(username or '').lower()
+    if u in _ACC_ALWAYS:
+        return 'ALLOW'
+    ids = _access_ids() if ids is None else ids
+    info = ids.get(u)
+    if not info:
+        return 'ALLOW'
+    if subjects is None:
+        subjects = access_policy_get().get('subjects') or {}
+
+    def mode(key):
+        v = ((subjects.get(key) or {}).get('applications') or {}).get(app_name)
+        return v if v in ('ALLOW', 'DENY') else None
+    if direct:
+        d = mode('user:%d' % info['uid'])
+        if d:
+            return d
+    if 'DENY' in [mode('group:%d' % g) for g in info['groups']]:
+        return 'DENY'
+    return 'ALLOW'
+
+
+def _store_access_migrate():
+    """Reprise unique des listes « Qui peut l'utiliser ». Rend False si elle n'a pas encore pu se faire (comptes illisibles)."""
+    if not os.path.exists(STORE_ACCESS_FILE):
         return True
-    return isinstance(acl, list) and user in acl
+    old = store_access_get()
+    ids = _access_ids() if old else {}
+    if old and not ids:
+        return False
+    n = 0
+    if old:
+        with _access_lock:
+            policy = access_policy_get()
+            subjects = policy.setdefault('subjects', {})
+            for app_id, allowed in old.items():
+                if not isinstance(allowed, list):
+                    continue
+                ok = {str(x).lower() for x in allowed}
+                for u, info in ids.items():
+                    if info['builtin'] or not info['admin'] or u in _ACC_ALWAYS or u in ok:
+                        continue
+                    apps = subjects.setdefault('user:%d' % info['uid'], {}).setdefault('applications', {})
+                    if apps.get(_access_app_key(app_id)) not in ('ALLOW', 'DENY'):
+                        apps[_access_app_key(app_id)] = 'DENY'
+                        n += 1
+            policy['updated_at'] = _access_datetime.now(_access_timezone.utc).isoformat()
+            _access_write_json(ACCESS_POLICY_FILE, policy)
+    try:
+        os.replace(STORE_ACCESS_FILE, STORE_ACCESS_FILE + '.repris')
+    except OSError as e:
+        log.warning('Droits d\'accès : %s non renommé : %s', STORE_ACCESS_FILE, e)
+        return True
+    if old:
+        access_history_add({'actor': 'Desktroo', 'action': "Reprise des accès de Desktroo Apps", 'subject': '',
+                            'resource': ', '.join(sorted(old)), 'before': None, 'after': '%d refus' % n})
+        log.info('Droits d\'accès : listes de Desktroo Apps reprises (%d refus explicites)', n)
+    return True
+
+
+def store_user_allowed(app_id, user):
+    """Le compte peut-il ouvrir cette app de Desktroo Apps ? Décidé par Droits d'accès (MDM-ACCESS-UNIFIED-V1)."""
+    if not _store_access_migrate():   # comptes du NAS illisibles avant la reprise : l'ancienne liste vaut encore
+        acl = store_access_get().get(app_id)
+        return acl is None or (isinstance(acl, list) and user in acl)
+    return access_app_effective(_access_app_key(app_id), user) != 'DENY'
+
+
+def store_access_users(app_id):
+    """Administrateurs qui ont accès à l'app (pour sa fiche dans Desktroo Apps)."""
+    _store_access_migrate()
+    ids = _access_ids()
+    subjects = access_policy_get().get('subjects') or {}
+    key = _access_app_key(app_id)
+    out = [i['username'] for u, i in ids.items() if (i['admin'] or u in _ACC_ALWAYS) and access_app_effective(key, u, subjects, ids) != 'DENY']
+    return sorted(set(out + [u for u in _ACC_ALWAYS if u in ids]))
+
+
+def _store_access_apply(app_id, allowed, actor='Desktroo'):
+    """La fiche de l'app (« Qui peut l'utiliser ») écrit dans Droits d'accès : un choix explicite pour un compte seulement
+    quand il diffère de ce que lui donnent ses groupes ; sinon le compte reste sur « Hérité »."""
+    _store_access_migrate()
+    ids = _access_ids()
+    if not ids:
+        raise RuntimeError('Comptes du NAS illisibles : réessayez dans un instant.')
+    key, ok, changed = _access_app_key(app_id), {str(x).lower() for x in allowed or []}, []
+    with _access_lock:
+        policy = access_policy_get()
+        subjects = policy.setdefault('subjects', {})
+        for u, info in ids.items():
+            if info['builtin'] or not info['admin'] or u in _ACC_ALWAYS:
+                continue
+            base = access_app_effective(key, u, subjects, ids, direct=False)
+            want = 'ALLOW' if u in ok else 'DENY'
+            skey = 'user:%d' % info['uid']
+            entry = dict(subjects.get(skey) or {})
+            apps = dict(entry.get('applications') or {})
+            before = apps.get(key, 'INHERIT')
+            if want == base:
+                apps.pop(key, None)
+            else:
+                apps[key] = want
+            if apps.get(key, 'INHERIT') != before:
+                changed.append((skey, before, apps.get(key, 'INHERIT')))
+            if apps:
+                entry['applications'] = apps
+                subjects[skey] = entry
+            else:
+                entry.pop('applications', None)
+                if entry:
+                    subjects[skey] = entry
+                else:
+                    subjects.pop(skey, None)
+        policy['updated_at'] = _access_datetime.now(_access_timezone.utc).isoformat()
+        _access_write_json(ACCESS_POLICY_FILE, policy)
+    for skey, before, after in changed:
+        access_history_add({'actor': actor, 'action': 'Accès à une app modifié depuis Desktroo Apps', 'subject': skey,
+                            'resource': key, 'before': before, 'after': after})
+
+
+def _store_access_forget(app_id):
+    """App désinstallée : ses choix disparaissent de Droits d'accès."""
+    key = _access_app_key(app_id)
+    with _access_lock:
+        policy = access_policy_get()
+        subjects = policy.get('subjects') or {}
+        for skey in list(subjects):
+            apps = (subjects[skey] or {}).get('applications') or {}
+            if key in apps:
+                apps.pop(key)
+                if not apps:
+                    subjects[skey].pop('applications', None)
+                    if not subjects[skey]:
+                        subjects.pop(skey)
+        _access_write_json(ACCESS_POLICY_FILE, policy)
 
 
 def store_auth_check(handler):
@@ -10730,7 +10923,7 @@ def store_installed_list():
     for app_id, rec in reg.items():
         r = dict(rec or {}); r['id'] = app_id
         r['state'] = states.get('dt-' + app_id, 'MISSING' if states else 'UNKNOWN')
-        r['users'] = store_access_get().get(app_id)
+        r['users'] = store_access_users(app_id)
         if app_id == STORE_NPM_ID:   # ports seulement (le secret des cookies reste sur le NAS)
             r['ports'] = store_npm_settings()['ports']
         out.append(r)
@@ -11148,9 +11341,11 @@ def _store_install_job(app, users, update=False):
                        'installed_at': (reg.get(app_id) or {}).get('installed_at') or int(_st_time.time()),
                        'updated_at': int(_st_time.time())}
         _store_installed_set(reg)
-        if users is not None:
-            acl = store_access_get(); acl[app_id] = sorted(set(users))
-            os.makedirs(STORE_DIR, exist_ok=True); _lic_write_json(STORE_ACCESS_FILE, acl)
+        if users is not None:   # MDM-ACCESS-UNIFIED-V1 : les comptes décochés à l'installation sont refusés dans Droits d'accès
+            try:
+                _store_access_apply(app_id, users)
+            except Exception as e:
+                log.warning('Magasin : accès de %s non enregistrés : %s', app_id, e)
         _store_job_set(app_id, step="Vérification que l'app répond")
         if npm_s and _store_npm_wait(npm_s):
             try:
@@ -11262,9 +11457,10 @@ def store_uninstall(body):
         reg = store_installed_get(); reg.pop(app_id, None); _store_installed_set(reg)
         _store_nas_set(app_id, None)
         _store_fields_set(app_id, None)
-        acl = store_access_get()
-        if app_id in acl:
-            acl.pop(app_id); _lic_write_json(STORE_ACCESS_FILE, acl)
+        try:
+            _store_access_forget(app_id)
+        except Exception as e:
+            log.warning('Magasin : droits de %s non retirés : %s', app_id, e)
         log.info('Magasin : %s désinstallée (données %s)', app_id, 'conservées' if keep else 'supprimées')
         return 200, {'ok': True}
     except Exception as e:
@@ -11291,11 +11487,13 @@ def store_access_set(body):
     users = (body or {}).get('users')
     if not _STORE_ID_RE.match(app_id) or app_id not in store_installed_get():
         return 404, {'ok': False, 'error': 'App non installée.'}
-    if not isinstance(users, list) or not [u for u in users if u]:
-        return 400, {'ok': False, 'error': 'Choisissez au moins un utilisateur.'}
-    acl = store_access_get(); acl[app_id] = sorted(set(str(u)[:64] for u in users if u))[:50]
-    os.makedirs(STORE_DIR, exist_ok=True); _lic_write_json(STORE_ACCESS_FILE, acl)
-    return 200, {'ok': True, 'users': acl[app_id]}
+    if not isinstance(users, list):
+        return 400, {'ok': False, 'error': 'Liste des comptes invalide.'}
+    try:
+        _store_access_apply(app_id, [str(u)[:64] for u in users if u][:200], actor=str((body or {}).get('actor') or 'Desktroo')[:64])
+    except RuntimeError as e:
+        return 502, {'ok': False, 'error': str(e)}
+    return 200, {'ok': True, 'users': store_access_users(app_id)}
 
 
 def _store_icons_fetch(cat):
@@ -11461,7 +11659,7 @@ def store_login(handler):
     if state != 'ok':
         _login_note_failure()
         log.warning('Connexion aux apps refusée pour %s', user)
-        return reply(401, {'ok': False, 'error': 'Identifiants incorrects.' if not otp else 'Identifiants ou code incorrects.'})
+        return reply(401, {'ok': False, 'error': "Identifiant ou mot de passe incorrect, ou compte sans droits d'administration du NAS." if not otp else "Identifiant, mot de passe ou code incorrect, ou compte sans droits d'administration du NAS."})
     if not _truenas_is_full_admin(me):
         return reply(403, {'ok': False, 'error': "Ce compte n'a pas accès à Desktroo."})
     name = str((me or {}).get('pw_name') or user)[:64]

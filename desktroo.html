@@ -5092,6 +5092,15 @@ select option{ background:#101b2e; color:#e9eef7; }
 "📌 Raccourci ajouté au bureau": "📌 Shortcut added to desktop",
 "Sur le bureau": "On the desktop",
 "Identifiants TrueNAS incorrects.": "Incorrect TrueNAS credentials.",
+"Compte propriétaire du NAS : il a toujours accès aux apps.": "NAS owner account: it always has access to the apps.",
+"Gérer dans Droits d’accès": "Manage in Access rights",
+"Un nouveau compte a accès tant qu’on ne le lui refuse pas. Pour un groupe, et pour toutes les apps d’un coup : Droits d’accès.": "A new account has access unless it is denied. For a group, and for all apps at once: Access rights.",
+"<p class=\"web-note\">Pour les apps de <strong>Desktroo Apps</strong> (dt-…), ce réglage est appliqué par le NAS : un compte refusé ne peut pas ouvrir l’app, même par son adresse. C’est le même réglage que « Qui peut l’utiliser » dans la fiche de l’app. Pour les autres applications, un refus désactive le bouton d’ouverture dans Desktroo.</p>": "<p class=\"web-note\">For <strong>Desktroo Apps</strong> apps (dt-…), this setting is enforced by the NAS: a denied account cannot open the app, not even by its address. It is the same setting as “Who can use it” in the app's page. For other applications, a denial disables the open button in Desktroo.</p>",
+"Identifiant ou mot de passe incorrect, ou compte sans droits d'administration du NAS.": "Incorrect username or password, or account without NAS administration rights.",
+"Administrateur du NAS": "NAS administrator",
+"Peut ouvrir le bureau Desktroo et tout gérer sur le NAS. Sans ce droit, le compte sert seulement aux partages.": "Can open the Desktroo desktop and manage everything on the NAS. Without this right, the account is only used for shares.",
+"Vous ne pouvez pas retirer vos propres droits d'administration : faites-le depuis un autre compte administrateur.": "You cannot remove your own administration rights: do it from another administrator account.",
+"Utilisateur (partages)": "User (shares)",
 "Erreur JSON-RPC": "JSON-RPC error",
 "Connexion JSON-RPC TrueNAS impossible.": "Unable to connect to TrueNAS JSON-RPC.",
 "WebSocket connecté": "WebSocket connected",
@@ -11128,6 +11137,15 @@ select option{ background:#101b2e; color:#e9eef7; }
 "📌 Raccourci ajouté au bureau": "📌 Acceso directo añadido al escritorio",
 "Sur le bureau": "En el escritorio",
 "Identifiants TrueNAS incorrects.": "Credenciales de TrueNAS incorrectas.",
+"Compte propriétaire du NAS : il a toujours accès aux apps.": "Cuenta propietaria del NAS: siempre tiene acceso a las apps.",
+"Gérer dans Droits d’accès": "Gestionar en Derechos de acceso",
+"Un nouveau compte a accès tant qu’on ne le lui refuse pas. Pour un groupe, et pour toutes les apps d’un coup : Droits d’accès.": "Una cuenta nueva tiene acceso mientras no se le deniegue. Para un grupo, y para todas las apps a la vez: Derechos de acceso.",
+"<p class=\"web-note\">Pour les apps de <strong>Desktroo Apps</strong> (dt-…), ce réglage est appliqué par le NAS : un compte refusé ne peut pas ouvrir l’app, même par son adresse. C’est le même réglage que « Qui peut l’utiliser » dans la fiche de l’app. Pour les autres applications, un refus désactive le bouton d’ouverture dans Desktroo.</p>": "<p class=\"web-note\">Para las apps de <strong>Desktroo Apps</strong> (dt-…), este ajuste lo aplica el NAS: una cuenta denegada no puede abrir la app, ni siquiera por su dirección. Es el mismo ajuste que «Quién puede usarla» en la ficha de la app. Para las demás aplicaciones, una denegación desactiva el botón de apertura en Desktroo.</p>",
+"Identifiant ou mot de passe incorrect, ou compte sans droits d'administration du NAS.": "Usuario o contraseña incorrectos, o cuenta sin derechos de administración del NAS.",
+"Administrateur du NAS": "Administrador del NAS",
+"Peut ouvrir le bureau Desktroo et tout gérer sur le NAS. Sans ce droit, le compte sert seulement aux partages.": "Puede abrir el escritorio Desktroo y gestionarlo todo en el NAS. Sin este derecho, la cuenta solo sirve para las carpetas compartidas.",
+"Vous ne pouvez pas retirer vos propres droits d'administration : faites-le depuis un autre compte administrateur.": "No puedes quitarte tus propios derechos de administración: hazlo desde otra cuenta de administrador.",
+"Utilisateur (partages)": "Usuario (carpetas compartidas)",
 "Erreur JSON-RPC": "Error JSON-RPC",
 "Connexion JSON-RPC TrueNAS impossible.": "No se puede conectar con JSON-RPC de TrueNAS.",
 "WebSocket connecté": "WebSocket conectado",
@@ -20298,9 +20316,10 @@ function dkStoreRender() {
 }
 function dkStoreUsersHtml(checked) {
   var list = _dkStore.users || [{ username: currentUser || '' }];
+  // MDM-ACCESS-UNIFIED-V1 : ces choix s'enregistrent dans Droits d'accès ; root et truenas_admin y ont toujours accès.
   return '<div class="dks-users" id="dks-users">' + list.map(function(u) {
-    var on = checked.indexOf(u.username) >= 0;
-    return '<label><input type="checkbox" value="' + webEsc(u.username) + '"' + (on ? ' checked' : '') + '> ' + webEsc(u.username)
+    var always = u.username === 'root' || u.username === 'truenas_admin', on = always || checked.indexOf(u.username) >= 0;
+    return '<label' + (always ? ' title="' + webEsc(T('Compte propriétaire du NAS : il a toujours accès aux apps.')) + '"' : '') + '><input type="checkbox" value="' + webEsc(u.username) + '"' + (on ? ' checked' : '') + (always ? ' disabled' : '') + '> ' + webEsc(u.username)
       + (u.full_name ? ' <span class="dim">(' + webEsc(u.full_name) + ')</span>' : '') + (u.username === currentUser ? ' <span class="dim">— ' + T('vous') + '</span>' : '') + '</label>';
   }).join('') + '</div>';
 }
@@ -20417,7 +20436,9 @@ function dkStoreRenderDetail(body, a) {
       }
       h += '<div class="web-group-title">' + T('Qui peut l’utiliser') + '</div><div class="web-group dks-pad">'
         + dkStoreUsersHtml(inst.users || (_dkStore.users || []).map(function(u) { return u.username; }))
-        + '<div class="dks-acts"><button class="fs-btn" onclick="dkStoreAct(\'access\',\'' + a.id + '\')">' + T('Enregistrer les accès') + '</button></div></div>'
+        + '<div class="dks-acts"><button class="fs-btn" onclick="dkStoreAct(\'access\',\'' + a.id + '\')">' + T('Enregistrer les accès') + '</button>'
+        + '<button class="fs-btn" onclick="openApp(\'access\')">' + T('Gérer dans Droits d’accès') + '</button></div>'
+        + '<p class="web-note" style="margin:8px 0 0;">' + T('Un nouveau compte a accès tant qu’on ne le lui refuse pas. Pour un groupe, et pour toutes les apps d’un coup : Droits d’accès.') + '</p></div>'
         + '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
         + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateText(a, inst)) + '</dd>'
         + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
@@ -28632,7 +28653,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.5';
+var DK_PAGE_VERSION = '2.60.7';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -30522,10 +30543,10 @@ async function wsAuthenticate() {
     if (r2 && r2.response_type === 'SUCCESS') { wsOtpMark(true); return; }
     throw wsOtpError(T('Code refusé. Vérifiez l\'heure du téléphone, puis donnez le code suivant.'));
   }
-  if (type) throw new Error(T('Identifiants TrueNAS incorrects.'));
+  if (type) throw new Error(T('Identifiant ou mot de passe incorrect, ou compte sans droits d\'administration du NAS.'));
   // TrueNAS n'a pas compris « login_ex » : l'ancien appel, qui prend aussi le code
   _wsLegacyAuth = true;   // il ne dit pas si un code manquait : l'écran de connexion proposera le champ
-  if (await rpcRawCall('auth.login', [user, pass, code || null], 12000) !== true) throw new Error(T('Identifiants TrueNAS incorrects.'));
+  if (await rpcRawCall('auth.login', [user, pass, code || null], 12000) !== true) throw new Error(T('Identifiant ou mot de passe incorrect, ou compte sans droits d\'administration du NAS.'));
   wsOtpMark(!!code);
 }
 async function wsTokenRenew() {
@@ -35227,10 +35248,26 @@ async function secTfaUnset(u) {
 }
 
 function usGroupName(g) { return String((g && (g.group || g.name)) || ''); }
+// MDM-USERS-SIMPLE-V1 : le groupe personnel est celui que TrueNAS crée avec chaque compte, sous le même nom
+// (compte fabien, groupe fabien). Il ne sert qu'en coulisse : Desktroo ne le montre pas, pour qu'un « groupe »
+// soit toujours un ensemble de personnes. Les appartenances existantes sont gardées à l'enregistrement.
+function dkPersonalGroup(g, users) {
+  var n = usGroupName(g).toLowerCase();
+  return !!n && ensureArray(users).some(function(u) {
+    return u && String(u.username || '').toLowerCase() === n && u.group && (u.group.id === g.id || Number(u.group.bsdgrp_gid) === Number(g.gid));
+  });
+}
+// Les pleins droits d'administration (rôle FULL_ADMIN), nécessaires pour ouvrir Desktroo, viennent de ce groupe système.
+function usAdminGroup() { return _us.groups.find(function(g) { return usGroupName(g) === 'builtin_administrators'; }) || null; }
+function usIsAdmin(u) { var a = usAdminGroup(); return !!(a && u && (ensureArray(u.groups).indexOf(a.id) >= 0 || (u.group && u.group.id === a.id))); }
+function usShownGroups(u) {
+  var teams = usTeams().map(function(g) { return g.id; }), ids = [u && u.group && u.group.id].concat(ensureArray(u && u.groups));
+  return ids.filter(function(id, i, a) { return id != null && a.indexOf(id) === i && teams.indexOf(id) >= 0; }).map(function(id) { return usGroupName(usGroup(id)); });
+}
 function usUser(id) { return _us.users.find(function(u) { return u.id === id; }) || null; }
 function usGroup(id) { return _us.groups.find(function(g) { return g.id === id; }) || null; }
 function usPeople() { return _us.users.filter(function(u) { return u.builtin !== true; }); }
-function usTeams() { return _us.groups.filter(function(g) { return g.builtin !== true; }); }
+function usTeams() { return _us.groups.filter(function(g) { return g.builtin !== true && !dkPersonalGroup(g, _us.users); }); }
 function usPrimary(u) { var g = u && u.group; return g ? String(g.bsdgrp_group || g.group || g.name || '') : ''; }
 function usGroupsOf(u) { return ensureArray(u && u.groups).map(usGroup).filter(Boolean); }
 function usMembers(g) { return _us.users.filter(function(u) { return ensureArray(u.groups).indexOf(g.id) >= 0 || (u.group && u.group.id === g.id); }); }
@@ -35304,9 +35341,9 @@ function usUsersView(soft) {
   }
   var h = '<div class="web-table us-list"><div class="web-tr head"><span>' + T('Utilisateur') + '</span><span>' + T('Groupes') + '</span><span>' + T('Partages Windows') + '</span><span>' + T('État') + '</span></div>';
   people.forEach(function(u) {
-    var st = usState(u), groups = [usPrimary(u)].concat(usGroupsOf(u).map(usGroupName)).filter(function(x, i, a) { return x && a.indexOf(x) === i; });
+    var st = usState(u), groups = usShownGroups(u);
     h += '<button class="web-tr" data-us="' + Number(u.id) + '"><span class="cron-two"><strong>' + webEsc(u.username) + '</strong><span class="dim">' + webEsc(u.full_name && u.full_name !== u.username ? u.full_name : '') + '</span></span>'
-      + '<span class="dim">' + webEsc(groups.join(', ') || '—') + '</span><span>' + (u.smb ? T('Oui') : '<span class="dim">' + T('Non') + '</span>') + '</span>'
+      + '<span class="dim">' + (usIsAdmin(u) ? '<span style="color:var(--accent);font-weight:600;">' + T('Administrateur') + '</span>' + (groups.length ? ' · ' : '') : '') + webEsc(groups.join(', ') || (usIsAdmin(u) ? '' : '—')) + '</span><span>' + (u.smb ? T('Oui') : '<span class="dim">' + T('Non') + '</span>') + '</span>'
       + '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span></button>';
   });
   el.innerHTML = h + '</div>';
@@ -35320,13 +35357,15 @@ function usSystemView(soft) {
   wmBody('us').innerHTML = h + '</div>';
 }
 function usUserView(soft) {
-  var u = usUser(_us.sel), st = usState(u), id = Number(u.id), others = usGroupsOf(u).map(usGroupName).filter(function(n) { return n !== usPrimary(u); });
+  var u = usUser(_us.sel), st = usState(u), id = Number(u.id), shown = usShownGroups(u);
   wmHead('us', u.username, { keepScroll: soft, back: [T('Utilisateurs'), 'usGo(\'users\')'],
     sub: '<span class="apps-state"><span class="web-dot' + (st.dot ? ' ' + st.dot : '') + '"></span>' + webEsc(st.label) + '</span>',
     actions: u.builtin ? '' : '<button class="web-open" onclick="usGo(\'edituser\',' + id + ')">' + T('Modifier') + '</button>' });
   var h = netFacts([
     [T('Identifiant'), '<span class="mono">' + webEsc(u.username) + '</span>'], [T('Nom complet'), webEsc(u.full_name || '')], ['E-mail', webEsc(u.email || '')],
-    ['UID', '<span class="mono">' + webEsc(u.uid) + '</span>'], [T('Groupe principal'), webEsc(usPrimary(u))], [T('Autres groupes'), webEsc(others.join(', '))],
+    ['UID', '<span class="mono">' + webEsc(u.uid) + '</span>'],
+    [T('Droits'), usIsAdmin(u) ? T('Administrateur du NAS') : '<span class="dim">' + T('Utilisateur (partages)') + '</span>'],
+    [T('Groupes'), shown.length ? webEsc(shown.join(', ')) : '<span class="dim">' + T('Aucun') + '</span>'],
     [T('Dossier personnel'), u.home && !/^\/(var\/empty|nonexistent)/.test(u.home) ? '<span class="mono">' + webEsc(u.home) + '</span>' : '<span class="dim">' + T('Aucun') + '</span>'],
     [T('Ligne de commande'), /nologin|false$/.test(u.shell || '') || !u.shell ? '<span class="dim">' + T('Non autorisée') + '</span>' : '<span class="mono">' + webEsc(u.shell) + '</span>'],
     [T('Partages Windows'), u.smb ? T('Peut s\'y connecter') : '<span class="dim">' + T('Non autorisé') + '</span>'],
@@ -35360,6 +35399,7 @@ function usUserForm(u) {
   if (!u) h += wmField(T('Mot de passe'), '<input class="wm-input" id="us-pw1" type="password" autocomplete="new-password">')
     + wmField(T('Mot de passe, une seconde fois'), '<input class="wm-input" id="us-pw2" type="password" autocomplete="new-password">');
   h += wmField(T('Groupes'), usGroupChecks(u));
+  if (usAdminGroup()) h += '<div class="web-group">' + wmSwitch('us-admin', T('Administrateur du NAS'), T('Peut ouvrir le bureau Desktroo et tout gérer sur le NAS. Sans ce droit, le compte sert seulement aux partages.'), !!(u && usIsAdmin(u))) + '</div>';
   if (u) h += wmField(T('Dossier personnel'), wmInput('us-home', u.home && !/^\/(var\/empty|nonexistent)/.test(u.home) ? u.home : '', 'placeholder="/mnt/…" class="wm-input mono"'),
       T('Un dossier du NAS qui existe déjà. Vide : aucun dossier personnel.'));
   if (u) h += wmField(T('Ligne de commande (SSH)'), '<select class="wm-input" id="us-shell">' + usShellOptions(u.shell || '/usr/sbin/nologin') + '</select>');
@@ -35374,7 +35414,7 @@ async function usUserSave() {
   var p = { full_name: wmVal('us-fullname'), email: wmVal('us-email') || null, groups: groups };
   if (u) {
     // les groupes cachés du formulaire (groupes du système) sont conservés
-    var hidden = ensureArray(u.groups).filter(function(g) { var x = usGroup(g); return x && x.builtin === true; });
+    var hidden = ensureArray(u.groups).filter(function(g) { var x = usGroup(g); return x && (x.builtin === true || dkPersonalGroup(x, _us.users)); });
     p.groups = groups.concat(hidden);
     p.shell = wmVal('us-shell') || u.shell;
     var home = wmVal('us-home').replace(/\/+$/, ''), was = u.home && !/^\/(var\/empty|nonexistent)/.test(u.home) ? u.home : '';
@@ -35391,6 +35431,13 @@ async function usUserSave() {
     if (a !== b) { toast(T('Les deux mots de passe ne sont pas identiques')); return; }
     if (!p.full_name) p.full_name = p.username;
     p.password = a; p.group_create = true; p.smb = wmOn('us-smb');
+  }
+  var adm = usAdminGroup();
+  if (adm && document.getElementById('us-admin')) {   // MDM-USERS-SIMPLE-V1
+    var wantAdm = wmOn('us-admin');
+    if (u && !wantAdm && usIsAdmin(u) && String(u.username) === String(currentUser)) { toast(T('Vous ne pouvez pas retirer vos propres droits d\'administration : faites-le depuis un autre compte administrateur.'), 8000); return; }
+    p.groups = p.groups.filter(function(gid) { return gid !== adm.id; });
+    if (wantAdm) p.groups.push(adm.id);
   }
   if (btn) btn.disabled = true;
   try {
@@ -50018,10 +50065,10 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
     });
   }
 
-  function acVisibleGroups(groups) {
+  function acVisibleGroups(groups, users) {
     return (groups || []).filter(function (group) {
       return group && (group.name || group.group) && Number.isFinite(Number(group.gid)) &&
-        group.builtin !== true && group.local !== false;
+        group.builtin !== true && group.local !== false && !dkPersonalGroup(group, users);
     }).sort(function (a, b) {
       return String(a.name || a.group).localeCompare(String(b.name || b.group), 'fr');
     });
@@ -50064,7 +50111,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       ]);
 
       _ac.users = acVisibleUsers(Array.isArray(data[0]) ? data[0] : []);
-      _ac.groups = acVisibleGroups(Array.isArray(data[1]) ? data[1] : []);
+      _ac.groups = acVisibleGroups(Array.isArray(data[1]) ? data[1] : [], Array.isArray(data[0]) ? data[0] : []);
       _ac.shares = (Array.isArray(data[2]) ? data[2] : []).filter(function (share) {
         return share && share.name && share.enabled !== false;
       }).sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'fr'); });
@@ -50370,7 +50417,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
       panel.innerHTML =
         T('<div class="ac-matrix-wrap"><table class="ac-matrix"><thead><tr><th>Application installée</th><th>Hérité</th><th>Refusé</th><th>Autorisé</th></tr></thead><tbody>') +
         (appRows || T('<tr><td colspan="4"><div class="ac-empty">Aucune application installée.</div></td></tr>')) + '</tbody></table></div>' +
-        T('<p class="web-note">Le droit Application est appliqué dans <strong>Desktroo</strong> : un accès refusé désactive le bouton d’ouverture. Il ne remplace pas l’authentification propre de l’application et ne bloque pas encore une URL directe connue.</p>');
+        T('<p class="web-note">Pour les apps de <strong>Desktroo Apps</strong> (dt-…), ce réglage est appliqué par le NAS : un compte refusé ne peut pas ouvrir l’app, même par son adresse. C’est le même réglage que « Qui peut l’utiliser » dans la fiche de l’app. Pour les autres applications, un refus désactive le bouton d’ouverture dans Desktroo.</p>');
       return;
     }
 
@@ -50599,7 +50646,7 @@ if (typeof renderLibvirt2Detail === 'function' && !window._lv2DetailTabsWrapped)
         var users = await acQuery('user.query', [[], {}], 60000);
         _ac.users = acVisibleUsers(Array.isArray(users) ? users : []);
         var groups = await acQuery('group.query', [[], {}], 60000);
-        _ac.groups = acVisibleGroups(Array.isArray(groups) ? groups : []);
+        _ac.groups = acVisibleGroups(Array.isArray(groups) ? groups : [], Array.isArray(users) ? users : []);
       }
       await acRefreshCurrentContext();
     } catch (_) {}

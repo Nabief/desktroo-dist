@@ -3,6 +3,22 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.7 — 19 October 2026
+
+### Improved
+- **A single setting for app access.** “Access rights” and “Who can use it” (app page in Desktroo Apps) are now the same setting, enforced by the NAS: a denied account cannot open the app, not even by its address. A new account has access unless it is denied; a denial can also come from a group. The lists saved so far are carried over as they are on update: nobody gains or loses access.
+  > /store/auth check based on data/access-policy.json (same rule as acEffectiveApplication: account, then groups, denial first, otherwise allowed; root and truenas_admin always allowed). One-time carry-over of data/store/access.json as explicit denials for administrators missing from the lists, file renamed access.json.repris. NAS accounts read at most once a minute.
+
+## 2.60.6 — 19 October 2026
+
+### Improved
+- **Simpler users.** A “NAS administrator” switch in the account page grants or removes administration rights, needed to open Desktroo; the account list and page show this role. The personal groups TrueNAS creates with each account, under the same name (account fabien, group fabien), are no longer shown: a group is now always a set of people, in Users as in Access rights.
+  > FULL_ADMIN role carried by the system group builtin_administrators, hidden until now. Personal group: an account's primary group with the same name; its memberships are kept on save. You cannot remove your own rights.
+
+### Fixed
+- **Sign-in of an account without administration rights.** The message said “Incorrect TrueNAS credentials” although the password was right: it now says the account may lack NAS administration rights.
+  > TrueNAS refuses API sign-in (AUTH_ERR) to an account without any privilege, just as for a wrong password.
+
 ## 2.60.5 — 19 October 2026
 
 ### New

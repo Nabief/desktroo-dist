@@ -3,6 +3,22 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.7 — 19 octobre 2026
+
+### Amélioré
+- **Un seul réglage pour l'accès aux apps.** « Droits d'accès » et « Qui peut l'utiliser » (fiche de l'app dans Desktroo Apps) sont maintenant le même réglage, et c'est le NAS qui l'applique : un compte refusé ne peut pas ouvrir l'app, même par son adresse. Un nouveau compte a accès tant qu'on ne le lui refuse pas ; un refus peut aussi venir d'un groupe. Les listes enregistrées jusqu'ici sont reprises telles quelles à la mise à jour : personne ne gagne ni ne perd d'accès.
+  > Contrôle /store/auth fondé sur data/access-policy.json (même règle que acEffectiveApplication : compte, puis groupes, refus prioritaire, sinon autorisé ; root et truenas_admin toujours autorisés). Reprise unique de data/store/access.json en refus explicites pour les administrateurs absents des listes, fichier renommé access.json.repris. Comptes du NAS relus au plus une fois par minute.
+
+## 2.60.6 — 19 octobre 2026
+
+### Amélioré
+- **Utilisateurs plus simples.** Un interrupteur « Administrateur du NAS » dans la fiche du compte donne ou retire les droits d'administration, nécessaires pour ouvrir Desktroo ; la liste et la fiche des comptes affichent ce rôle. Les groupes personnels que TrueNAS crée avec chaque compte, sous le même nom (compte fabien, groupe fabien), ne sont plus montrés : un groupe est maintenant toujours un ensemble de personnes, dans Utilisateurs comme dans Droits d'accès.
+  > Rôle FULL_ADMIN porté par le groupe système builtin_administrators, masqué jusqu'ici. Groupe personnel : groupe principal d'un compte, de même nom ; ses appartenances sont conservées à l'enregistrement. On ne peut pas retirer ses propres droits.
+
+### Corrigé
+- **Connexion d'un compte sans droits d'administration.** Le message disait « Identifiants TrueNAS incorrects » alors que le mot de passe était bon : il indique maintenant que le compte n'a peut-être pas les droits d'administration du NAS.
+  > TrueNAS refuse la connexion à son API (AUTH_ERR) à un compte sans aucun privilège, comme pour un mauvais mot de passe.
+
 ## 2.60.5 — 19 octobre 2026
 
 ### Nouveau
