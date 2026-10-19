@@ -8361,6 +8361,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Par où prévenir": "How to notify",
 "Pour chaque type d'alerte : sa gravité, et le rythme auquel les services d'alerte vous préviennent.": "For each alert type: its severity, and how often the alert services notify you.",
 "Pour l'e-mail, le serveur d'envoi se règle dans Configuration système, « Messagerie ».": "For email, the outgoing server is set in System configuration, “Email”.",
+"Pour les SMS, Free Mobile ou OVHcloud et les numéros se règlent dans l'app SMS, « Réglages ».": "For text messages, Free Mobile or OVHcloud and the numbers are set in the SMS app, “Settings”.",
+"SMS (app SMS)": "SMS (SMS app)",
 "Prévenir à partir de": "Notify from",
 "Prévenir": "Notify",
 "Sans service, les alertes ne se voient que dans Desktroo et dans TrueNAS.": "Without a service, alerts are only visible in Desktroo and in TrueNAS.",
@@ -14395,6 +14397,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Par où prévenir": "Por dónde avisar",
 "Pour chaque type d'alerte : sa gravité, et le rythme auquel les services d'alerte vous préviennent.": "Para cada tipo de alerta: su gravedad y la frecuencia con la que te avisan los servicios de alertas.",
 "Pour l'e-mail, le serveur d'envoi se règle dans Configuration système, « Messagerie ».": "Para el correo electrónico, el servidor de envío se ajusta en Configuración del sistema, «Correo».",
+"Pour les SMS, Free Mobile ou OVHcloud et les numéros se règlent dans l'app SMS, « Réglages ».": "Para los SMS, Free Mobile u OVHcloud y los números se ajustan en la app SMS, «Ajustes».",
+"SMS (app SMS)": "SMS (app SMS)",
 "Prévenir à partir de": "Avisar a partir de",
 "Prévenir": "Avisar",
 "Sans service, les alertes ne se voient que dans Desktroo et dans TrueNAS.": "Sin servicio, las alertas solo se ven en Desktroo y en TrueNAS.",
@@ -28628,7 +28632,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.4';
+var DK_PAGE_VERSION = '2.60.5';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -42215,7 +42219,11 @@ async function loadFailover() {
 // Les services d'alerte (e-mail, Telegram, Slack…) et, pour chaque type d'alerte, sa gravité et son rythme d'envoi.
 // Tout vient de TrueNAS : alertservice.*, alert.list_categories, alertclasses.*.
 // ============================================================
-var _al = { nav: 'svc', cat: null, cats: null, cfg: null, draft: {}, err: null, seq: 0, busy: false, newShape: true, testBusy: false };
+var _al = { nav: 'svc', cat: null, cats: null, cfg: null, draft: {}, err: null, seq: 0, busy: false, newShape: true, testBusy: false, smsHook: '' };
+// MDM-STORE-SMS-V1 : avec l'app SMS installée, « SMS » est une sorte de service d'alerte. Pour TrueNAS, c'est un service
+// « Slack » dont l'adresse est celle où l'app SMS reçoit les alertes (Free Mobile ou OVHcloud se choisit dans l'app).
+var AL_SMS_URL_RE = /^http:\/\/[^\/]+:\d+\/hook\/[0-9a-f]{32}$/;
+function alIsSms(r) { return alType(r) === 'Slack' && !!(r && r.attributes && AL_SMS_URL_RE.test(String(r.attributes.url || ''))); }
 WEB_ICONS.bell = WEB_ICONS.bell || '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>';
 var AL_LEVELS = ['INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
 function alLevelLabel(l) {
@@ -42223,7 +42231,7 @@ function alLevelLabel(l) {
 }
 function alPolicyLabel(p) { return ({ IMMEDIATELY: T('Tout de suite'), HOURLY: T('Une fois par heure'), DAILY: T('Une fois par jour'), NEVER: T('Jamais') })[p] || String(p || ''); }
 function alTypeLabel(t) {
-  return ({ Mail: T('E-mail'), Telegram: 'Telegram', Slack: 'Slack', Mattermost: 'Mattermost', PagerDuty: 'PagerDuty', OpsGenie: 'OpsGenie', VictorOps: 'Splunk On-Call (VictorOps)',
+  return ({ SMS: T('SMS (app SMS)'), Mail: T('E-mail'), Telegram: 'Telegram', Slack: 'Slack', Mattermost: 'Mattermost', PagerDuty: 'PagerDuty', OpsGenie: 'OpsGenie', VictorOps: 'Splunk On-Call (VictorOps)',
             SNMPTrap: T('Trappe SNMP'), AWSSNS: 'Amazon SNS', InfluxDB: 'InfluxDB' })[t] || String(t || '');
 }
 function alType(r) { return (r && (r.type || (r.attributes && r.attributes.type))) || ''; }
@@ -42271,12 +42279,16 @@ var AL_ATTRS = {
 };
 // Le formulaire à plat : l'entrée de TrueNAS, ses attributs préfixés.
 function alFlat(r) {
-  var d = { name: r ? r.name : '', type: alType(r) || 'Mail', level: r ? r.level : 'WARNING', enabled: r ? r.enabled !== false : true }, a = (r && r.attributes) || {};
+  var d = { name: r ? r.name : '', type: alIsSms(r) ? 'SMS' : (alType(r) || (_al.smsHook ? 'SMS' : 'Mail')), level: r ? r.level : 'WARNING', enabled: r ? r.enabled !== false : true }, a = (r && r.attributes) || {};
   alTypeFields().forEach(function(f) { var k = f.k.slice(2); if (d[f.k] === undefined) d[f.k] = a[k] === undefined ? (f.t === 'bool' ? false : (f.t === 'list' ? [] : (f.t === 'num' ? (k === 'port' ? 162 : null) : ''))) : a[k]; });
   return d;
 }
 // L'objet complet attendu par TrueNAS, d'après le formulaire. Un secret laissé vide garde sa valeur d'origine.
 function alWire(v, r) {
+  if (v.type === 'SMS') {   // MDM-STORE-SMS-V1 : un service Slack vers l'app SMS
+    if (!_al.smsHook) return { miss: 'url' };
+    v = Object.assign({}, v, { type: 'Slack', a_url: _al.smsHook });
+  }
   var t = v.type, attrs = {}, old = (r && alType(r) === t && r.attributes) || {}, miss = '';
   (AL_ATTRS[t] || []).forEach(function(spec) {
     var k = spec.replace('*', ''), req = spec.indexOf('*') > 0, val = v['a_' + k];
@@ -42299,18 +42311,19 @@ function alSvcSpec() {
   return { key: 'svc', api: 'alertservice', title: T('Services d\'alerte'), sub: T('Par où le NAS vous prévient quand quelque chose demande votre attention.'), add: T('Nouveau service'),
     empty: T('Aucun service d\'alerte'), emptyHint: T('Sans service, les alertes ne se voient que dans Desktroo et dans TrueNAS.'),
     name: function(r) { return r.name; }, off: function(r) { return r.enabled === false; },
-    desc: function(r) { return alTypeLabel(alType(r)) + ' · ' + Tf('à partir de « {0} »', alLevelLabel(r.level)); },
+    desc: function(r) { return alTypeLabel(alIsSms(r) ? 'SMS' : alType(r)) + ' · ' + Tf('à partir de « {0} »', alLevelLabel(r.level)); },
     formTitle: function(r) { return r ? r.name : T('Nouveau service d\'alerte'); },
     flat: alFlat,
     fields: function(r) { return [ { f: [
         { k: 'name', l: T('Nom'), t: 'text', req: 1 },
-        { k: 'type', l: T('Par où prévenir'), t: 'sel', live: 1, opts: Object.keys(AL_ATTRS).map(function(t) { return [t, alTypeLabel(t)]; }) } ].concat(alTypeFields()).concat([
+        { k: 'type', l: T('Par où prévenir'), t: 'sel', live: 1, opts: (_al.smsHook || alIsSms(r) ? ['SMS'] : []).concat(Object.keys(AL_ATTRS)).map(function(t) { return [t, alTypeLabel(t)]; }) } ].concat(alTypeFields()).concat([
         { k: 'level', l: T('Prévenir à partir de'), t: 'sel', opts: AL_LEVELS.map(function(l) { return [l, alLevelLabel(l)]; }), h: T('Les alertes moins graves ne passent pas par ce service.') },
         { k: 'enabled', l: T('Actif'), t: 'bool' } ]) } ]; },
     body: function(b, v) { return alWire(v, _cls.al && _cls.al.sel); },
     check: function(v) { var w = alWire(v, _cls.al && _cls.al.sel); return w.miss ? T('Il manque un réglage obligatoire pour ce service.') : ''; },
     formExtra: function() { return '<button class="fs-btn" onclick="alTest()">' + T('Envoyer une alerte d\'essai') + '</button>'; },
-    formNote: T('Pour l\'e-mail, le serveur d\'envoi se règle dans Configuration système, « Messagerie ».') };
+    formNote: T('Pour l\'e-mail, le serveur d\'envoi se règle dans Configuration système, « Messagerie ».')
+      + (_al.smsHook ? ' ' + T('Pour les SMS, Free Mobile ou OVHcloud et les numéros se règlent dans l\'app SMS, « Réglages ».') : '') };
 }
 async function alTest() {
   var c = _cfs.al;
@@ -42356,6 +42369,7 @@ async function loadAlertconfig() {
   var seq = ++_al.seq;
   if (!_al.cats) { wmHead('al', T('Configuration des alertes')); alSide(); }
   if (_al.nav !== 'cat') { if (!_cfs.al) clClose('al'); alRender(); }   // les services s'affichent sans attendre les types d'alerte ; un formulaire en cours reste en place
+  fileops('GET', 'store/sms/hook').then(function(h) { _al.smsHook = (h && h.ok && AL_SMS_URL_RE.test(String(h.url || ''))) ? h.url : ''; }).catch(function() { _al.smsHook = ''; });   // MDM-STORE-SMS-V1
   var r = await Promise.allSettled([wsCall('alert.list_categories', [], 60000), wsCall('alertclasses.config', [], 60000), wsCall('system.info', [], 60000), wsCall('alertservice.query', [[], {}], 60000)]);
   if (seq !== _al.seq) return;
   _al.cats = r[0].status === 'fulfilled' ? ensureArray(r[0].value).filter(function(c) { return c && ensureArray(c.classes).length; }) : null;

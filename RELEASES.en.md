@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.5 — 19 October 2026
+
+### New
+- **NAS alerts by text message.** With the new SMS app in Desktroo Apps, “SMS” becomes a kind of alert service in Alert configuration: the NAS warns you by text, through Free Mobile (free, for subscribers, to your own number) or OVHcloud (to the numbers of your choice). The channel and numbers are set in the SMS app, which can also send texts with an OVHcloud account.
+  > For TrueNAS, a “Slack” service whose address is where the SMS app receives alerts: port 8135 open on the local network only, derived token unique to the installation (DESKTROO_HOOK_TOKEN). Address returned by GET /store/sms/hook.
+
 ## 2.60.4 — 19 October 2026
 
 ### New

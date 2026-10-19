@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.4'
+APP_VERSION = '2.60.5'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10367,6 +10367,9 @@ def _store_get(handler, path, qs):
     if path == '/store/nas/choices':
         handler._json(200, store_nas_choices())
         return True
+    if path == '/store/sms/hook':   # MDM-STORE-SMS-V1 : adresse où TrueNAS poste ses alertes pour l'app SMS
+        handler._json(200, store_sms_hook())
+        return True
     if path == '/store/kiosk-icons':
         handler._json(200, {'ok': True, 'ids': store_kiosk_icon_ids()})
         return True
@@ -14658,6 +14661,20 @@ def _store_app_quarantine_dir(app):
         if str(v.get('mount', '')) == '/data' and re.match(r'^[a-z0-9][a-z0-9_-]{0,30}$', str(v.get('name', ''))):
             return '/mnt/%s/%s/quarantine' % (_store_dataset(app['id']), v['name'])
     return None
+
+
+def store_sms_hook():
+    """MDM-STORE-SMS-V1 : l'app SMS reçoit les alertes du NAS comme un webhook Slack, sur un port ouvert au réseau local
+    (host_ports, vers son port 8081) et un jeton propre à cette installation. Rend l'adresse à donner à TrueNAS."""
+    app_id = 'sms'
+    app = store_app_entry(app_id)
+    if not app or app_id not in store_installed_get():
+        return {'ok': False, 'installed': False}
+    hp = [x for x in _store_host_ports(app) if x['to'] == 8081 and x['proto'] in ('tcp', 'both')]
+    if not hp:
+        return {'ok': False, 'installed': True}
+    ip = _store_bind_ip() or str(_truenas_ip() or SSH_HOST or '')
+    return {'ok': True, 'installed': True, 'url': 'http://%s:%d/hook/%s' % (ip, hp[0]['port'], _store_derive(app_id, 'sms-hook'))}
 
 
 def store_app_quarantine(handler):
