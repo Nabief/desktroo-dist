@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.8 — 19 October 2026
+
+### Fixed
+- **“Advanced settings” for an NPMplus installed on another machine.** In Desktroo Apps, the button opened the administration at the NAS address (port 81) instead of the linked NPMplus's own; it now opens the right address, like the Domains window.
+  > dkStoreNpmOpen uses the linked NPMplus address (installed.remote, else npm.linked.url) before falling back to the NAS address and the administration port.
+
 ## 2.60.7 — 19 October 2026
 
 ### Improved

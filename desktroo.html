@@ -20520,8 +20520,11 @@ function dkNasHost(a) {
   return (a && a.nas_ip) || location.hostname;
 }
 function dkStoreNpmPorts(a) { return (a && a.npm && a.npm.ports) || _dkStore.npmPorts || { http: 8090, https: 8453, admin: 8181 }; }
+// NPMplus relié sur une autre machine : son adresse à lui, pas celle du NAS.
 function dkStoreNpmOpen() {
-  var a = dkStoreApp('npmplus');
+  var a = dkStoreApp('npmplus'), inst = (a && a.installed) || {}, lk = (a && a.npm && a.npm.linked) || {};
+  var r = String(inst.remote || (lk.remote && lk.url) || (typeof _dkNpm !== 'undefined' && _dkNpm.st && _dkNpm.st.remote) || '');
+  if (/^https?:\/\//i.test(r)) { window.open(r.replace(/\/+$/, '') + '/', '_blank', 'noopener'); return; }
   window.open('https://' + dkNasHost(a) + ':' + dkStoreNpmPorts(a).admin + '/', '_blank', 'noopener');
 }
 function dkStoreNpmFacts(a, inst) {
@@ -28653,7 +28656,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.7';
+var DK_PAGE_VERSION = '2.60.8';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
