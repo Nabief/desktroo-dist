@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.4 — 19 octobre 2026
+
+### Nouveau
+- **Veille des apps : la mémoire du NAS libérée quand une app ne sert pas.** OnlyOffice s'arrête de lui-même après 15 minutes sans activité, et redémarre tout seul quand on l'ouvre : depuis son icône, en ouvrant un document dans Fichiers ou par son adresse. On attend alors quelques dizaines de secondes. Aucun document n'est perdu : la veille attend que tous les documents soient fermés et enregistrés. Le délai (5 min à 2 h) se règle, ou la veille se coupe, dans la fiche de l'app dans Desktroo Apps, où l'app apparaît « En veille ».
+  > Activité relevée à chaque requête vers /a/<app>/ (vérification /store/auth) et, pour la bureautique, à chaque échange avec le serveur de documents ; pas d'arrêt tant qu'une séance OnlyOffice est ouverte. Vérification chaque minute, arrêt par app.stop ; réveil POST /store/wake (état GET /store/wake), et depuis la page « l'app ne répond pas » (bloc nginx V6, qui transmet l'app). Capacité déclarée par « idle_stop » dans la fiche du catalogue ; réglage dans data/store/idle.json.
+
 ## 2.60.3 — 18 octobre 2026
 
 ### Amélioré

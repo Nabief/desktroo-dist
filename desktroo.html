@@ -4235,6 +4235,20 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"L’app ne démarre pas.": "The app does not start.",
+"L’app met trop de temps à démarrer. Réessayez dans une minute.": "The app is taking too long to start. Try again in a minute.",
+"{0} min": "{0} min",
+"Veille": "Sleep",
+"Arrêter l’app quand elle ne sert pas, pour libérer la mémoire du NAS": "Stop the app when it is not in use, to free the NAS's memory",
+"Après": "After",
+"sans activité": "without activity",
+"Elle redémarre toute seule quand on l’ouvre, depuis son icône, un document ou son adresse : comptez quelques dizaines de secondes d’attente.": "It restarts by itself when opened, from its icon, a document or its address: expect a wait of a few tens of seconds.",
+"Veille activée : l’app s’arrêtera après {0} sans activité.": "Sleep on: the app will stop after {0} without activity.",
+"Veille désactivée : l’app reste en marche.": "Sleep off: the app keeps running.",
+"En veille": "Asleep",
+"OnlyOffice démarre… Il était en veille pour économiser la mémoire.": "OnlyOffice is starting… It was asleep to save memory.",
+"({0} s)": "({0} s)",
+"OnlyOffice est en veille pour économiser la mémoire : il redémarre tout seul à l’ouverture d’un document.": "OnlyOffice is asleep to save memory: it restarts by itself when a document is opened.",
 "Le document ne s’ouvre pas : OnlyOffice ne répond pas comme prévu.": "The document is not opening: OnlyOffice is not responding as expected.",
 "Favoris gardés sur ce navigateur seulement : ": "Favorites kept on this browser only: ",
 "Retiré des favoris": "Removed from favorites",
@@ -10255,6 +10269,20 @@ select option{ background:#101b2e; color:#e9eef7; }
      au dictionnaire anglais doit l'être ici aussi (« node tools/i18n/i18n.js check » compte ce qui manque). -->
 <script type="application/json" id="dk-i18n-es">
 {
+"L’app ne démarre pas.": "La app no arranca.",
+"L’app met trop de temps à démarrer. Réessayez dans une minute.": "La app tarda demasiado en arrancar. Vuelve a intentarlo en un minuto.",
+"{0} min": "{0} min",
+"Veille": "Reposo",
+"Arrêter l’app quand elle ne sert pas, pour libérer la mémoire du NAS": "Detener la app cuando no se usa, para liberar la memoria del NAS",
+"Après": "Tras",
+"sans activité": "sin actividad",
+"Elle redémarre toute seule quand on l’ouvre, depuis son icône, un document ou son adresse : comptez quelques dizaines de secondes d’attente.": "Vuelve a arrancar sola al abrirla, desde su icono, un documento o su dirección: cuenta con unas decenas de segundos de espera.",
+"Veille activée : l’app s’arrêtera après {0} sans activité.": "Reposo activado: la app se detendrá tras {0} sin actividad.",
+"Veille désactivée : l’app reste en marche.": "Reposo desactivado: la app sigue en marcha.",
+"En veille": "En reposo",
+"OnlyOffice démarre… Il était en veille pour économiser la mémoire.": "OnlyOffice está arrancando… Estaba en reposo para ahorrar memoria.",
+"({0} s)": "({0} s)",
+"OnlyOffice est en veille pour économiser la mémoire : il redémarre tout seul à l’ouverture d’un document.": "OnlyOffice está en reposo para ahorrar memoria: vuelve a arrancar solo al abrir un documento.",
 "Le document ne s’ouvre pas : OnlyOffice ne répond pas comme prévu.": "El documento no se abre: OnlyOffice no responde como se esperaba.",
 "Favoris gardés sur ce navigateur seulement : ": "Favoritos guardados solo en este navegador: ",
 "Retiré des favoris": "Quitado de favoritos",
@@ -19763,6 +19791,7 @@ async function dkStoreOpenApp(id, title, opts) {
   var frame = win.querySelector('iframe');
   _dkStoreWins[wid] = { id: id, frame: frame, win: win };
   frame.addEventListener('load', function() { dkStoreSend(frame, 'theme', dkStoreTheme()); });
+  fileops('POST', 'store/wake', { id: id }).catch(function() {});   // en veille : elle redémarre, la page d'attente se recharge
   frame.src = '/a/' + id + '/';
   win.classList.add('visible');
   bringToFront(win);
@@ -19856,7 +19885,15 @@ async function dkOfficeOpen(path) {
   try {
     var st = await dkOfficeStatus(true);
     if (!st.app) throw new Error(T('Aucune suite bureautique n’est installée : ajoutez OnlyOffice depuis Desktroo Apps.'));
-    if (!st.running) throw new Error(T('OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.'));
+    if (!st.running || st.waking) {
+      if (!st.idle) throw new Error(T('OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.'));
+      var wt0 = win.querySelector('.dkoff-wait span');
+      await dkStoreWakeWait(st.app, function(sec) {
+        if (wt0) wt0.textContent = T('OnlyOffice démarre… Il était en veille pour économiser la mémoire.') + (sec > 5 ? ' ' + Tf('({0} s)', sec) : '');
+      });
+      if (wt0) wt0.textContent = T('Ouverture du document…');
+      st = await dkOfficeStatus(true);
+    }
     await dkStoreSession(true);
     var r = await fileops('POST', 'office/open', { path: path, lang: DK_LANG,
       theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark', close_text: T('Fermer') });
@@ -19942,7 +19979,8 @@ function dkOfficeHomeRender() {
     + wmNav({ call: 'dkOfficePick()', icon: 'out', name: T('Ouvrir un fichier…') })
     + wmNav({ call: 'openNewFsWindow()', icon: 'storage', name: T('Ouvrir Fichiers') }));
   var st = _dkOffice.st, rec = dkOfficeRecent();
-  var sub = (st && st.app && !st.running) ? '<span style="color:var(--warning)">' + webEsc(T('OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.')) + '</span>'
+  var sub = (st && st.app && !st.running && st.idle) ? webEsc(T('OnlyOffice est en veille pour économiser la mémoire : il redémarre tout seul à l’ouverture d’un document.'))
+    : (st && st.app && !st.running) ? '<span style="color:var(--warning)">' + webEsc(T('OnlyOffice est arrêté : démarrez-le dans Desktroo Apps.')) + '</span>'
     : webEsc(T('Vos documents s’enregistrent tout seuls sur le NAS.'));
   wmHead('dkoffice', T('Documents récents'), { sub: sub, keepScroll: true,
     actions: rec.length ? '<button class="web-mini" onclick="dkOfficeRecentClear()">' + T('Vider la liste') + '</button>' : '' });
@@ -19999,6 +20037,43 @@ function dkOfficeCtxSync(ctx) {
   ctx.querySelectorAll('.fsctx-office').forEach(function(x) { x.style.display = on ? '' : 'none'; });
   if (!_dkOffice.st || Date.now() - _dkOffice.at > 60000) dkOfficeStatus();
 }
+// ── MDM-STORE-IDLE-V1 : réveil d'une app en veille, réglage de la veille dans Desktroo Apps ─────────────────────
+// Réveille l'app et attend qu'elle réponde (6 min au plus). onWait(texte) reçoit l'étape à afficher.
+async function dkStoreWakeWait(id, onWait) {
+  var r = await fileops('POST', 'store/wake', { id: id, start: true });
+  var t0 = Date.now();
+  while (!r || r.state !== 'ready') {
+    if (r && r.state === 'error') throw new Error(r.error || T('L’app ne démarre pas.'));
+    if (Date.now() - t0 > 360000) throw new Error(T('L’app met trop de temps à démarrer. Réessayez dans une minute.'));
+    if (onWait) onWait(Math.round((Date.now() - t0) / 1000));
+    await new Promise(function(ok) { setTimeout(ok, 3000); });
+    try { r = await fileops('GET', 'store/wake?id=' + encodeURIComponent(id)); } catch (e) { if (e && e.status && e.status < 500) throw e; }
+  }
+}
+function dkStoreIdleHtml(a, inst) {
+  var i = a.idle;
+  if (!i || !inst) return '';
+  var opt = [5, 15, 30, 60, 120].map(function(m) {
+    return '<option value="' + m + '"' + (m === i.minutes ? ' selected' : '') + '>' + (m < 60 ? Tf('{0} min', m) : Tf('{0} h', m / 60)) + '</option>';
+  }).join('');
+  return '<div class="web-group-title">' + T('Veille') + '</div><div class="web-group dks-pad">'
+    + '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" id="dks-idle-on"' + (i.on ? ' checked' : '') + ' onchange="dkStoreIdleSave(\'' + a.id + '\')">'
+    + '<span>' + T('Arrêter l’app quand elle ne sert pas, pour libérer la mémoire du NAS') + '</span></label>'
+    + '<div style="display:flex;align-items:center;gap:8px;margin:10px 0 0 32px;font-size:13px;">' + T('Après') + ' <select class="wm-input" id="dks-idle-min" style="width:auto;" onchange="dkStoreIdleSave(\'' + a.id + '\')"' + (i.on ? '' : ' disabled') + '>' + opt + '</select> ' + T('sans activité') + '</div>'
+    + '<div class="dks-tag" style="margin:8px 0 0 32px;">' + T('Elle redémarre toute seule quand on l’ouvre, depuis son icône, un document ou son adresse : comptez quelques dizaines de secondes d’attente.') + '</div></div>';
+}
+async function dkStoreIdleSave(id) {
+  var on = document.getElementById('dks-idle-on'), min = document.getElementById('dks-idle-min');
+  if (!on || !min) return;
+  min.disabled = !on.checked;
+  try {
+    var r = await fileops('POST', 'store/idle', { id: id, on: on.checked, minutes: parseInt(min.value, 10) });
+    var a = dkStoreApp(id); if (a && r && r.idle) a.idle = r.idle;
+    toast(on.checked ? Tf('Veille activée : l’app s’arrêtera après {0} sans activité.', min.options[min.selectedIndex].text) : T('Veille désactivée : l’app reste en marche.'), 4000);
+  } catch (e) { toast('❌ ' + dkErrText(e), 6000); }
+}
+// État affiché : « En veille » plutôt que « Arrêtée » quand c'est la veille qui l'a arrêtée.
+function dkStoreStateText(a, inst) { return inst && inst.state === 'STOPPED' && a && a.idle && a.idle.asleep ? T('En veille') : dkStoreStateLabel(inst && inst.state); }
 function dkStoreCloseApp(wid) {
   var win = document.getElementById('win-' + wid);
   if (win) win.remove();
@@ -20340,7 +20415,7 @@ function dkStoreRenderDetail(body, a) {
         + dkStoreUsersHtml(inst.users || (_dkStore.users || []).map(function(u) { return u.username; }))
         + '<div class="dks-acts"><button class="fs-btn" onclick="dkStoreAct(\'access\',\'' + a.id + '\')">' + T('Enregistrer les accès') + '</button></div></div>'
         + '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
-        + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateLabel(inst.state)) + '</dd>'
+        + '<dt>' + T('État') + '</dt><dd><span class="web-dot' + (inst.state === 'RUNNING' ? '' : inst.state === 'DEPLOYING' ? ' warn' : ' off') + '"></span>' + webEsc(dkStoreStateText(a, inst)) + '</dd>'
         + '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version || '?') + '</dd>'
         + '<dt>' + T('Données') + '</dt><dd class="mono">' + webEsc('/mnt/' + (inst.dataset || '')) + '</dd>'
         + (a.host_ports && a.host_ports.length ? '<dt>' + T('Ports ouverts sur le réseau') + '</dt><dd>' + webEsc(dkStorePortsText(a)) + '</dd>' : '')
@@ -20354,7 +20429,7 @@ function dkStoreRenderDetail(body, a) {
         + (!window.DK_KIOSK && dkInstalled() ? '<dt>' + T('Application de l’ordinateur') + '</dt><dd>' + T('Pour installer cette app seule, ouvrez Desktroo dans le navigateur (et non dans l’application Desktroo).') + '</dd>' : '')
         + (dkKioskCanInstall(a.id) ? '<dt>' + T('Application de l’ordinateur') + '</dt><dd>' + T('Ouvre l’app seule dans sa fenêtre, avec son icône sur le bureau Windows ou dans la barre des tâches.') + ' <button class="web-mini" onclick="dkKioskInstallOpen(\'' + a.id + '\')">' + T('Installer') + '</button></dd>' : '')
         + (!(inst.standalone || a.standalone) && a.open_url ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(dkStoreDirectUrl(a)) + '</span><button class="web-mini" onclick="dkStoreCopyDirect(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
-        + '</dl>' + dkStoreNetHtml(a, true) + dkStoreLicenseHtml(a)
+        + '</dl>' + dkStoreIdleHtml(a, inst) + dkStoreNetHtml(a, true) + dkStoreLicenseHtml(a)
         + (a.nas_access && a.nas_access.mode !== 'all' ? (_dkStore.nasEdit === a.id ? dkStoreNasHtml(a, a.nas) + '<div class="dks-acts"><button class="web-open" onclick="dkStoreAct(\'nas\',\'' + a.id + '\')">' + T('Enregistrer les accès aux dossiers') + '</button><button class="fs-btn" onclick="_dkStore.nasEdit=null;dkStoreRender()">' + T('Annuler') + '</button></div>' : '') : '')
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
         + (a.nas_access && a.nas_access.mode !== 'all' && _dkStore.nasEdit !== a.id ? wmRow('_dkStore.nasEdit=\'' + a.id + '\';dkStoreRender()', T('Changer les dossiers du NAS'), T('Le compte prêté à l’app et les dossiers qu’elle peut voir.')) : '')
@@ -28553,7 +28628,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.3';
+var DK_PAGE_VERSION = '2.60.4';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

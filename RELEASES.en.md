@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.4 — 19 October 2026
+
+### New
+- **App sleep: the NAS's memory freed when an app is not in use.** OnlyOffice stops by itself after 15 minutes without activity, and restarts by itself when opened: from its icon, by opening a document in Files or through its address. You then wait a few tens of seconds. No document is lost: sleep waits until every document is closed and saved. The delay (5 min to 2 h) can be set, or sleep turned off, in the app's page in Desktroo Apps, where the app shows as “Asleep”.
+  > Activity recorded on every request to /a/<app>/ (/store/auth check) and, for office, on every exchange with the document server; no stop while an OnlyOffice session is open. Checked every minute, stopped with app.stop; woken by POST /store/wake (state GET /store/wake), and from the “app not responding” page (nginx block V6, which passes the app). Capability declared by “idle_stop” in the catalog entry; setting in data/store/idle.json.
+
 ## 2.60.3 — 18 October 2026
 
 ### Improved

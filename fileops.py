@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.3'
+APP_VERSION = '2.60.4'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9090,7 +9090,7 @@ def _lic_is_readonly():
 
 # Routes POST dont l'écriture reste autorisée même en lecture seule (on doit pouvoir signaler un problème sans abonnement).
 _LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/license/refresh', '/report', '/terms/accept',
-                            '/uninstall/run', '/store/uninstall', '/store/start', '/store/access',
+                            '/uninstall/run', '/store/uninstall', '/store/start', '/store/access', '/store/wake', '/store/idle',
                             '/dkbackup/run', '/dkbackup/settings', '/dkbackup/delete', '/dkbackup/restore', '/dkbackup/restore-local'}
 
 
@@ -10068,6 +10068,7 @@ def store_auth_check(handler):
         return 401, None, None
     if not store_user_allowed(app, user):
         return 403, None, None
+    store_activity_touch(app)   # MDM-STORE-IDLE-V1
     return 200, user, store_app_secret(app)
 
 
@@ -10147,8 +10148,8 @@ def store_catalog(force=False):
 
 
 # Bloc nginx des apps. Posé par fileops dans nginx.conf (toutes les méthodes d'installation), une seule fois.
-_STORE_NGINX_MARK = 'MDM-STORE-NGINX-V5'   # à changer à chaque évolution du bloc : fileops remplace l'ancien
-_STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V5 : apps du Magasin Desktroo, derrière la session du bureau (posé par fileops) ──
+_STORE_NGINX_MARK = 'MDM-STORE-NGINX-V6'   # à changer à chaque évolution du bloc : fileops remplace l'ancien
+_STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V6 : apps du Magasin Desktroo, derrière la session du bureau (posé par fileops) ──
     location = /_store_auth {
         internal;
         proxy_pass              http://fileops:8765/store/auth;
@@ -10248,7 +10249,7 @@ _STORE_NGINX = r'''    # ── MDM-STORE-V1 · MDM-STORE-NGINX-V5 : apps du Mag
         proxy_pass http://fileops:8765;
     }
     location @dks_403 { rewrite ^ /store/error/403 break; proxy_pass http://fileops:8765; }
-    location @dks_502 { rewrite ^ /store/error/502 break; proxy_pass http://fileops:8765; }
+    location @dks_502 { rewrite ^ /store/error/502/$dt_app break; proxy_pass http://fileops:8765; }
 
 '''
 
@@ -10393,6 +10394,9 @@ def _store_get(handler, path, qs):
     if path == '/store/npm/state':
         handler._json(200, store_npm_state())
         return True
+    if path == '/store/wake':
+        handler._json(200, store_wake_status(qs.get('id', '')))
+        return True
     if path == '/store/view':
         if qs.get('refresh') == '1':
             store_catalog(force=True)
@@ -10424,6 +10428,8 @@ _STORE_POST = {
     '/store/update': lambda b: store_install(b, update=True),
     '/store/uninstall': lambda b: store_uninstall(b),     # lambdas : les fonctions sont définies plus bas
     '/store/start': lambda b: store_start(b),
+    '/store/wake': lambda b: store_wake(b),
+    '/store/idle': lambda b: store_idle_set(b),
     '/store/access': lambda b: store_access_set(b),
     '/store/adopt': lambda b: store_npm_adopt(b),
     '/store/npm/credentials': lambda b: store_npm_credentials(b),
@@ -10484,6 +10490,16 @@ def _store_error_page(code):
             '<body><div class="box"><div class="ic" aria-hidden="true">%s</div><h1>%s</h1><p class="dk-muted">%s</p>'
             '<p><button class="dk-btn" onclick="location.reload()">Réessayer</button></p></div></body></html>'
             % (_h.escape(title), {401: '🔑', 403: '🔒'}.get(code, '⏳'), _h.escape(title), _h.escape(text)))
+
+
+def _store_waking_page():
+    return ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<meta http-equiv="refresh" content="5"><title>Démarrage…</title><link rel="stylesheet" href="/a/_sdk/desktroo-app.css">'
+            '<script src="/a/_sdk/desktroo-app.js"></script><style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}'
+            '.box{max-width:420px;text-align:center}.ic{font-size:34px;margin-bottom:10px}</style></head>'
+            '<body><div class="box"><div class="ic" aria-hidden="true">⏳</div><h1>L’app démarre…</h1>'
+            '<p class="dk-muted">Elle était en veille pour économiser la mémoire du NAS. Cette page se recharge toute seule '
+            'dès qu’elle répond, en général en moins d’une minute.</p></div></body></html>')
 
 
 def _store_public_get(handler, path):
@@ -10579,8 +10595,19 @@ def _store_public_get(handler, path):
         handler.wfile.write(body)
         return True
     if path.startswith('/store/error/'):
-        code = {'401': 401, '403': 403, '502': 502}.get(path[len('/store/error/'):], 502)
-        body = _store_error_page(code).encode('utf-8')
+        parts = path[len('/store/error/'):].split('/')
+        code = {'401': 401, '403': 403, '502': 502}.get(parts[0], 502)
+        body = None
+        app_id = parts[1] if len(parts) > 1 else ''
+        # App en veille, ouverte par son adresse : on la réveille et la page se recharge jusqu'à ce qu'elle réponde.
+        if code == 502 and _STORE_ID_RE.match(app_id) and store_cookie_user(handler.headers.get('Cookie', '')):
+            try:
+                wc, wr = store_wake({'id': app_id})
+                if wc == 200 and wr.get('state') in ('starting', 'ready'):
+                    body = _store_waking_page().encode('utf-8')
+            except Exception as e:
+                log.warning('Veille : réveil de %s depuis son adresse : %s', app_id, e)
+        body = body or _store_error_page(code).encode('utf-8')
         handler.send_response(code)
         handler.send_header('Content-Type', 'text/html; charset=utf-8')
         handler.send_header('Cache-Control', 'no-store')
@@ -11248,6 +11275,9 @@ def store_start(body):
     try:
         store_net_ensure()
         _store_midclt('app.start', 'dt-' + app_id, job=True, timeout=600)
+        store_activity_touch(app_id)
+        if (_store_idle_all().get(app_id) or {}).get('asleep'):
+            _store_idle_put(app_id, asleep=None)
         return 200, {'ok': True}
     except Exception as e:
         return 502, {'ok': False, 'error': str(e)}
@@ -11326,6 +11356,8 @@ def store_view():
             a['nas_ip'] = _truenas_ip() or SSH_HOST
         if inst and _store_install_fields(a):
             a['fields'] = _store_fields_get(a['id'])
+        if inst and a.get('kind') != 'module':
+            a['idle'] = store_idle_get(a['id'], a)
         cr = a.get('credentials')
         if inst and isinstance(cr, dict) and re.match(r'^[a-z][a-z0-9-]{0,30}$', str(cr.get('derive') or '')):
             a['credentials'] = {'user': str(cr.get('user') or ''), 'password': _store_derive(a['id'], cr['derive'])}
@@ -14827,6 +14859,11 @@ def office_status(force=False):
             out['running'] = bool(_store_container_info('dt-' + app)[1])
         except Exception:
             out['running'] = False
+        try:
+            out['idle'] = store_idle_get(app)
+            out['waking'] = bool((_store_waking.get(app) or {}).get('busy'))
+        except Exception:
+            out['idle'] = None
     _office_cache.update(t=now, v=out)
     return out
 
@@ -14898,6 +14935,7 @@ def office_open(handler, body):
     if editable and not os.access(path, os.W_OK):
         editable = False
     user = _px_by(handler) or 'admin'
+    store_activity_touch(app)
     lang = re.sub(r'[^a-zA-Z-]', '', str((body or {}).get('lang') or 'fr'))[:10] or 'fr'
     tok = _office_ticket(path, app, user)
     key = _office_doc_key(path, app)
@@ -15042,6 +15080,7 @@ def office_save(handler, tok):
     if not t:
         return reply(1)
     path, app, user = t
+    store_activity_touch(app)
     try:
         n = int(handler.headers.get('Content-Length', 0) or 0)
         raw = json.loads(handler.rfile.read(min(n, 2 * 1024 * 1024)).decode('utf-8')) if n > 0 else {}
@@ -15235,6 +15274,188 @@ def office_new(handler, body):
     _px_log('office.new', _px_by(handler), path=path)
     return 200, {'ok': True, 'path': path, 'name': name}
 # ── MDM-OFFICE-V1 (fin) ──────────────────────────────────────────────────────────────────────────
+
+
+# ── MDM-STORE-IDLE-V1 : veille des apps du Magasin ──────────────────────────────────────────────────────────────
+# Une app qui le permet (« idle_stop » dans sa fiche du catalogue) s'arrête d'elle-même après un délai sans activité,
+# pour libérer la mémoire, et redémarre quand on l'ouvre (icône du bureau, document, adresse directe). L'activité :
+# chaque requête vers /a/<app>/ (vérifiée par /store/auth), et pour la bureautique les documents ouverts ou pas encore
+# enregistrés (séances). Réglage par app dans Desktroo Apps (data/store/idle.json).
+STORE_IDLE_FILE = os.path.join(STORE_DIR, 'idle.json')
+STORE_IDLE_MINUTES = (5, 15, 30, 60, 120)
+_STORE_IDLE_BOOT = _st_time.time()
+_STORE_IDLE_LOCK = _threading.Lock()
+_store_activity = {}
+_store_waking = {}
+
+
+def store_activity_touch(app_id):
+    _store_activity[str(app_id)] = _st_time.time()
+
+
+def _store_idle_spec(app):
+    s = (app or {}).get('idle_stop')
+    if not isinstance(s, dict):
+        return None
+    try:
+        m = int(s.get('minutes') or 15)
+    except (TypeError, ValueError):
+        m = 15
+    return {'default': bool(s.get('default')), 'minutes': m if m in STORE_IDLE_MINUTES else 15}
+
+
+def _store_idle_all():
+    d = _lic_read_json(STORE_IDLE_FILE)
+    return d if isinstance(d, dict) else {}
+
+
+def _store_idle_put(app_id, **kw):
+    with _STORE_IDLE_LOCK:
+        d = _store_idle_all()
+        rec = d.get(app_id) if isinstance(d.get(app_id), dict) else {}
+        for k, v in kw.items():
+            if v is None:
+                rec.pop(k, None)
+            else:
+                rec[k] = v
+        d[app_id] = rec
+        os.makedirs(STORE_DIR, exist_ok=True)
+        _lic_write_json(STORE_IDLE_FILE, d)
+
+
+def store_idle_get(app_id, app=None):
+    """Réglage de veille d'une app : {on, minutes, asleep}, ou None si l'app ne la permet pas."""
+    if app is None:
+        cat, _e = store_catalog()
+        app = next((a for a in (cat or {}).get('apps', []) if isinstance(a, dict) and a.get('id') == app_id), None)
+    spec = _store_idle_spec(app)
+    if not spec:
+        return None
+    rec = _store_idle_all().get(app_id) or {}
+    on = rec['on'] if isinstance(rec.get('on'), bool) else spec['default']
+    m = rec.get('minutes') if rec.get('minutes') in STORE_IDLE_MINUTES else spec['minutes']
+    return {'on': on, 'minutes': m, 'asleep': bool(rec.get('asleep'))}
+
+
+def store_idle_set(body):
+    app_id = str((body or {}).get('id') or '')
+    if not _STORE_ID_RE.match(app_id) or app_id not in store_installed_get():
+        return 404, {'ok': False, 'error': 'App non installée.'}
+    if not store_idle_get(app_id):
+        return 409, {'ok': False, 'error': 'Cette app ne peut pas se mettre en veille.'}
+    try:
+        m = int((body or {}).get('minutes') or 15)
+    except (TypeError, ValueError):
+        m = 15
+    if m not in STORE_IDLE_MINUTES:
+        return 400, {'ok': False, 'error': 'Délai inconnu.'}
+    _store_idle_put(app_id, on=bool((body or {}).get('on')), minutes=m)
+    store_activity_touch(app_id)   # le délai repart de maintenant
+    return 200, {'ok': True, 'idle': store_idle_get(app_id)}
+
+
+def _store_idle_busy(app_id):
+    """Une opération du Magasin, ou (bureautique) un document ouvert ou pas encore enregistré : pas de veille."""
+    if _store_running(app_id) or (_store_waking.get(app_id) or {}).get('busy'):
+        return True
+    if app_id in OFFICE_APP_IDS:
+        now = _st_time.time()
+        for rec in _office_sessions().values():
+            if (rec or {}).get('app') == app_id and now - float((rec or {}).get('at', 0)) < 12 * 3600:
+                return True
+    return False
+
+
+def _store_idle_tick():
+    reg = store_installed_get()
+    if not reg:
+        return
+    cat, _e = store_catalog()
+    apps = {a.get('id'): a for a in (cat or {}).get('apps', []) if isinstance(a, dict)}
+    now = _st_time.time()
+    for app_id in list(reg):
+        st = store_idle_get(app_id, apps.get(app_id))
+        if not st or not st['on']:
+            continue
+        last = max(_store_activity.get(app_id, 0), _STORE_IDLE_BOOT, float((_store_waking.get(app_id) or {}).get('at', 0)))
+        if now - last < st['minutes'] * 60 or _store_idle_busy(app_id):
+            continue
+        if not _store_container_info('dt-' + app_id)[1]:
+            continue
+        log.info('Veille : arrêt de %s après %d min sans activité', app_id, st['minutes'])
+        try:
+            _store_midclt('app.stop', 'dt-' + app_id, job=True, timeout=300)
+            _store_idle_put(app_id, asleep=int(now))
+            _office_cache['v'] = None
+        except Exception as e:
+            log.warning('Veille : arrêt de %s impossible : %s', app_id, e)
+
+
+def _store_idle_loop():
+    _st_time.sleep(180)
+    while True:
+        try:
+            _store_idle_tick()
+        except Exception as e:
+            log.warning('Veille des apps : %s', e)
+        _st_time.sleep(60)
+
+
+def _store_wake_state(app_id, app):
+    w = _store_waking.get(app_id) or {}
+    if w.get('busy'):
+        return 'starting', ''
+    if not _store_container_info('dt-' + app_id)[1]:
+        return ('error', w['error']) if w.get('error') else ('stopped', '')
+    if _store_health(app, tries=1):
+        if (_store_idle_all().get(app_id) or {}).get('asleep'):
+            _store_idle_put(app_id, asleep=None)
+        return 'ready', ''
+    return 'starting', ''
+
+
+def store_wake(body):
+    """Réveille une app en veille (ou arrêtée) : rend tout de suite {state: ready | starting | error}."""
+    app_id = str((body or {}).get('id') or '')
+    if not _STORE_ID_RE.match(app_id) or app_id not in store_installed_get():
+        return 404, {'ok': False, 'error': 'App non installée.'}
+    app = store_app_entry(app_id)
+    if not store_idle_get(app_id, app):
+        return 409, {'ok': False, 'error': 'Cette app ne se réveille pas toute seule : démarrez-la dans Desktroo Apps.'}
+    store_activity_touch(app_id)
+    with _STORE_IDLE_LOCK:
+        state, err = _store_wake_state(app_id, app)
+        if state != 'stopped' and not (state == 'error' and (body or {}).get('start')):
+            return 200, {'ok': state != 'error', 'state': state, 'error': err}
+        _store_waking[app_id] = {'busy': True, 'at': _st_time.time(), 'error': ''}
+
+    def run():
+        err = ''
+        try:
+            store_net_ensure()
+            _store_midclt('app.start', 'dt-' + app_id, job=True, timeout=600)
+            _office_cache['v'] = None
+            if not _store_health(app, tries=100):
+                err = "L'app a démarré mais ne répond pas encore."
+        except Exception as e:
+            err = _store_explain(e)
+            log.warning('Veille : réveil de %s en échec : %s', app_id, e)
+        _store_waking[app_id] = {'busy': False, 'at': _st_time.time(), 'error': err}
+        store_activity_touch(app_id)
+        if not err:
+            _store_idle_put(app_id, asleep=None)
+            log.info('Veille : %s réveillée', app_id)
+    _threading.Thread(target=run, name='store-wake-' + app_id, daemon=True).start()
+    return 200, {'ok': True, 'state': 'starting', 'error': ''}
+
+
+def store_wake_status(app_id):
+    if not _STORE_ID_RE.match(str(app_id or '')) or app_id not in store_installed_get():
+        return {'ok': False, 'state': 'error', 'error': 'App non installée.'}
+    app = store_app_entry(app_id) or {'id': app_id}
+    state, err = _store_wake_state(app_id, app)
+    return {'ok': state != 'error', 'state': state, 'error': err}
+# ── MDM-STORE-IDLE-V1 (fin) ──────────────────────────────────────────────────────────────────────
 
 
 class FileOpsHandler(BaseHTTPRequestHandler):
@@ -18753,6 +18974,7 @@ _threading.Thread(target=_dkbk_loop, name='dkbackup', daemon=True).start()
 
 # MDM-STORE-V1 : réseau des apps et bloc nginx /a/
 _threading.Thread(target=_store_boot, name='store-boot', daemon=True).start()
+_threading.Thread(target=_store_idle_loop, name='store-idle', daemon=True).start()   # MDM-STORE-IDLE-V1
 
 # MDM-NAS-GATEWAY-V1 : remet nginx.conf sur une adresse du NAS qui répond
 _threading.Thread(target=_heal_nginx_conf, name='nas-gateway-heal', daemon=True).start()
