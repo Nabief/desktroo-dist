@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.9 — 19 October 2026
+
+### Fixed
+- **“Link an existing AdGuard Home” failed with “Operation not permitted”.** Desktroo did save the link, then tried to restrict the file's permissions, which ACL-based NAS folders refuse. It now skips that step: the link is saved. Same fix for the antivirus putting a file in quarantine.
+  > `os.chmod` made optional after creating the file as 0600 (`store_ag_link`, quarantine `isolate`).
+
 ## 2.60.8 — 19 October 2026
 
 ### Fixed

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.8'
+APP_VERSION = '2.60.9'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -12767,7 +12767,10 @@ def store_adguard_link(body):
         fd = os.open(STORE_AG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, 'w', encoding='utf-8') as fh:
             json.dump({'linked': {'url': url, 'user': user, 'password': pw, 'version': str(st.get('version') or ''), 'at': int(_st_time.time())}}, fh)
-        os.chmod(STORE_AG_FILE, 0o600)
+        try:
+            os.chmod(STORE_AG_FILE, 0o600)
+        except OSError:
+            pass   # dossier à ACL : le mode ne se change pas ; le fichier est déjà créé en 0600
     except OSError as e:
         return 500, {'ok': False, 'error': 'Impossible d’enregistrer la liaison : %s' % e}
     log.info('AdGuard Home distant relié : %s', url)
@@ -14911,7 +14914,10 @@ def store_app_quarantine(handler):
             st = os.lstat(norm)
             os.makedirs(qdir, mode=0o700, exist_ok=True)
             _sh_shutil.move(norm, binp)
-            os.chmod(binp, 0o600)
+            try:
+                os.chmod(binp, 0o600)
+            except OSError:
+                pass   # dossier à ACL
             with open(meta, 'w') as f:
                 json.dump({'uid': st.st_uid, 'gid': st.st_gid, 'mode': st.st_mode & 0o7777}, f)
             return 200, {'ok': True, 'size': st.st_size}

@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.9 — 19 octobre 2026
+
+### Corrigé
+- **« Relier un AdGuard Home existant » échouait sur « Operation not permitted ».** Desktroo enregistrait bien la liaison, puis tentait de restreindre les droits du fichier, ce que les dossiers du NAS à ACL refusent. Il laisse maintenant ce réglage de côté : la liaison s'enregistre. Même correction pour la mise en quarantaine d'un fichier par l'antivirus.
+  > `os.chmod` rendu facultatif après création en 0600 (`store_ag_link`, quarantaine `isolate`).
+
 ## 2.60.8 — 19 octobre 2026
 
 ### Corrigé
