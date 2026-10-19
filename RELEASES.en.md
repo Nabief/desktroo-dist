@@ -3,6 +3,18 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.10 — 19 October 2026
+
+### New
+- **Pi-hole in Desktroo Apps (test).** An ad and tracker filter for your whole network, like AdGuard Home, with its own Desktroo window: overview with chart, query log (block or allow a site in one click), block lists, sites allowed or blocked by hand, protection pause, upstream DNS servers.
+  > `pihole` catalog entry (test channel, `pihole/pihole` image, port 53, `FTLCONF_*`, derived API password). The `dkPh*` window goes through `/store/pihole/api`: the NAS opens the v6 API session (sid, renewed on expiry) and only relays allow-listed paths; only the `dns.upstreams` setting can be changed.
+- **Pi-hole on another machine.** If you already run Pi-hole (Raspberry Pi, virtual machine…), “Link an existing Pi-hole” controls it from the same window. The password stays on the NAS.
+  > `/store/pihole/link`, `/unlink`; `data/store/pihole.json` as 0600; version 6 required; entry injected into the installed apps list as for AdGuard.
+
+### Improved
+- **Pi-hole and AdGuard Home: a clear message instead of a port error.** Both use port 53 and cannot run together on the same NAS. If one is installed, installing the other is refused with an explanation and what to do (uninstall the first, or link a server running on another machine).
+  > `_store_dns_conflict` before the generic “port already in use” message; an app whose image digest is not pinned yet is cleanly refused.
+
 ## 2.60.9 — 19 October 2026
 
 ### Fixed

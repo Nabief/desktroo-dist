@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.9'
+APP_VERSION = '2.60.10'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10640,6 +10640,9 @@ _STORE_POST = {
     '/store/adguard/link': lambda b: store_adguard_link(b),
     '/store/adguard/unlink': lambda b: store_adguard_unlink(b),
     '/store/adguard/api': lambda b: store_adguard_api(b),
+    '/store/pihole/link': lambda b: store_pihole_link(b),
+    '/store/pihole/unlink': lambda b: store_pihole_unlink(b),
+    '/store/pihole/api': lambda b: store_pihole_api(b),
     '/store/wireguard/api': lambda b: store_wireguard_api(b),
     '/store/uptime-kuma/api': lambda b: store_uptimekuma_api(b),
     '/store/photoprism/api': lambda b: store_photoprism_api(b),
@@ -10920,6 +10923,10 @@ def store_installed_list():
     if ag:   # AdGuard Home relié : icône et fenêtre au bureau, sans que Desktroo Apps le gère
         out.append({'id': STORE_AG_ID, 'name': {'fr': 'AdGuard Home', 'en': 'AdGuard Home'}, 'kind': 'app', 'linked': True,
                     'version': ag.get('version') or '', 'state': 'RUNNING', 'users': None, 'remote': ag['url']})
+    ph = store_ph_linked() if STORE_PH_ID not in reg else None
+    if ph:   # Pi-hole relié : icône et fenêtre au bureau, sans que Desktroo Apps le gère
+        out.append({'id': STORE_PH_ID, 'name': {'fr': 'Pi-hole', 'en': 'Pi-hole'}, 'kind': 'app', 'linked': True,
+                    'version': ph.get('version') or '', 'state': 'RUNNING', 'users': None, 'remote': ph['url']})
     for app_id, rec in reg.items():
         r = dict(rec or {}); r['id'] = app_id
         r['state'] = states.get('dt-' + app_id, 'MISSING' if states else 'UNKNOWN')
@@ -11130,6 +11137,8 @@ def store_compose(app):
     app_id = app['id']
     if not app.get('image') or not app.get('digest'):
         raise RuntimeError("Fiche de l'app incomplète dans le catalogue (image) : contactez Mdm-services.fr.")
+    if re.match(r'^sha256:0{64}$', str(app.get('digest'))):
+        raise RuntimeError("Cette app n'est pas encore prête dans le catalogue (image non figée) : réessayez plus tard.")
     base = '/mnt/' + _store_dataset(app_id)
     env = {}
     for k, v in (app.get('env') or {}).items():
@@ -11405,6 +11414,8 @@ def store_install(body, update=False):
             return 400, {'ok': False, 'error': str(e)}
     if app_id == STORE_AG_ID and not update and store_ag_linked():
         return 409, {'ok': False, 'error': 'AdGuard Home est déjà relié (autre machine) : déliez-le d’abord pour l’installer ici.'}
+    if app_id == STORE_PH_ID and not update and store_ph_linked():
+        return 409, {'ok': False, 'error': 'Pi-hole est déjà relié (autre machine) : déliez-le d’abord pour l’installer ici.'}
     if app_id == STORE_WEB_ID and not update and store_webserver_legacy():
         return 409, {'ok': False, 'error': 'Le serveur web tourne encore dans Desktroo : il sera migré automatiquement.'}
     if app_id == STORE_NPM_ID and not update and app_id not in store_installed_get():
@@ -11420,6 +11431,8 @@ def store_install(body, update=False):
         return 409, {'ok': False, 'error': 'Une opération est déjà en cours sur cette app.'}
     if not update:
         busy = _store_ports_busy(_store_host_ports(app), _store_bind_ip()) if _store_host_ports(app) else {}
+        if busy and _store_dns_conflict(app_id, busy):
+            return 409, {'ok': False, 'error': _store_dns_conflict(app_id, busy)}
         if busy:
             who = ', '.join('%d (%s)' % (k, v or 'programme inconnu') for k, v in sorted(busy.items()))
             return 409, {'ok': False, 'error': 'Port déjà utilisé sur ce NAS : %s. Arrêtez ce service avant d’installer cette app.' % who}
@@ -12802,6 +12815,191 @@ def store_adguard_api(body):
     except Exception as e:
         return 502, {'ok': False, 'error': 'AdGuard Home ne répond pas : ' + str(e)[:160]}
     return 200, {'ok': True, 'status': code, 'text': txt}
+
+
+# ── MDM-STORE-V1 · Pi-hole : sur ce NAS (conteneur dt-pihole) ou sur une autre machine (Raspberry Pi, VM…) ────────
+# Dans les deux cas le navigateur ne parle jamais à Pi-hole : la fenêtre passe par /store/pihole/api, le NAS ouvre la
+# session Pi-hole (API v6, identifiant de session « sid ») avec le mot de passe qu'il garde, et relaie la requête.
+# Le mot de passe d'un Pi-hole relié reste sur le NAS (data/store/pihole.json) ; celui d'un Pi-hole local est dérivé.
+STORE_PH_ID = 'pihole'
+STORE_PH_FILE = os.path.join(STORE_DIR, 'pihole.json')
+_PH_LOCAL_BASE = 'http://dt-pihole:8080'
+_PH_ALLOWED = (   # (méthode, motif) : seules ces requêtes passent
+    ('GET', re.compile(r'^/api/(info/version|dns/blocking|config/dns|config/webserver|lists|domains(/(allow|deny)(/(exact|regex))?)?|stats/(summary|history|top_domains|top_clients|upstreams)|history(/clients)?)(\?[A-Za-z0-9=&%._~:+,-]{0,200})?$')),
+    ('GET', re.compile(r'^/api/queries(\?[A-Za-z0-9=&%._~:+,*.-]{0,300})?$')),
+    ('POST', re.compile(r'^/api/dns/blocking$')),
+    ('POST', re.compile(r'^/api/lists(\?[A-Za-z0-9=&%._~:+-]{0,100})?$')),
+    ('PUT', re.compile(r'^/api/lists/[A-Za-z0-9%._~:/?=&+@-]{1,400}$')),
+    ('DELETE', re.compile(r'^/api/lists/[A-Za-z0-9%._~:/?=&+@-]{1,400}$')),
+    ('POST', re.compile(r'^/api/domains/(allow|deny)/(exact|regex)$')),
+    ('DELETE', re.compile(r'^/api/domains/(allow|deny)/(exact|regex)/[A-Za-z0-9%._~:/?=&+@^|$()\\*-]{1,300}$')),
+    ('PATCH', re.compile(r'^/api/config$')),
+    ('POST', re.compile(r'^/api/action/(gravity|restartdns|flush/logs|flush/network)$')),
+)
+_PH_SIDS = {}   # base → (sid, échéance) ; '' = Pi-hole sans mot de passe
+_PH_LOCK = _threading.Lock()
+
+
+def store_ph_linked():
+    l = (_lic_read_json(STORE_PH_FILE) or {}).get('linked')
+    return l if isinstance(l, dict) and l.get('url') else None
+
+
+def _ph_target():
+    """(adresse, mot de passe) du Pi-hole piloté : relié d'abord, sinon celui installé ici ; (None, None) si aucun."""
+    lk = store_ph_linked()
+    if lk:
+        return lk['url'], lk.get('password') or ''
+    if STORE_PH_ID in store_installed_get():
+        return _PH_LOCAL_BASE, _store_derive(STORE_PH_ID, 'ph-admin')
+    return None, None
+
+
+def _ph_raw(base, method, path, body=None, sid='', timeout=15):
+    import ssl, urllib.request, urllib.error
+    ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+
+    class _NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect, urllib.request.HTTPSHandler(context=ctx))
+    data = json.dumps(body).encode('utf-8') if body is not None else None
+    req = urllib.request.Request(base + path, data=data, method=method)
+    req.add_header('Accept', 'application/json')
+    if data is not None:
+        req.add_header('Content-Type', 'application/json')
+    if sid:
+        req.add_header('sid', sid)
+    try:
+        with opener.open(req, timeout=timeout) as r:
+            raw, code = r.read(4 * 1024 * 1024), r.status
+    except urllib.error.HTTPError as e:
+        raw, code = e.read(4 * 1024 * 1024), e.code
+    return code, raw.decode('utf-8', 'replace')
+
+
+def _ph_login(base, password, timeout=15):
+    """Ouvre une session Pi-hole : rend (sid, None) — sid vide si Pi-hole n'a pas de mot de passe — ou ('', message)."""
+    code, txt = _ph_raw(base, 'POST', '/api/auth', {'password': password or ''}, timeout=timeout)
+    try:
+        j = json.loads(txt)
+    except Exception:
+        j = None
+    if code in (401, 403) or (isinstance(j, dict) and isinstance(j.get('session'), dict) and j['session'].get('valid') is False):
+        return '', 'Mot de passe refusé par Pi-hole.'
+    if code != 200 or not isinstance(j, dict) or not isinstance(j.get('session'), dict):
+        return '', 'Ce n’est pas Pi-hole version 6 (ou plus récent).'
+    return str(j['session'].get('sid') or ''), None
+
+
+def _ph_http(method, path, body=None, timeout=25):
+    """Appel à l'API du Pi-hole piloté, avec session (renouvelée si elle a expiré). Rend (code, texte)."""
+    base, pw = _ph_target()
+    if not base:
+        raise RuntimeError('Pi-hole n’est ni installé ni relié.')
+    for attempt in (0, 1):
+        with _PH_LOCK:
+            ent = _PH_SIDS.get(base)
+        if not ent or ent[1] < _st_time.time() or attempt:
+            sid, err = _ph_login(base, pw, timeout=timeout)
+            if err:
+                raise RuntimeError(err)
+            ent = (sid, _st_time.time() + 240)
+            with _PH_LOCK:
+                _PH_SIDS[base] = ent
+        code, txt = _ph_raw(base, method, path, body, ent[0], timeout)
+        if code != 401 or attempt:
+            return code, txt
+    return code, txt
+
+
+def store_pihole_api(body):
+    """Relaie une requête de la fenêtre Pi-hole : { method, path, body } → { status, text }."""
+    base, _pw = _ph_target()
+    if not base:
+        return 409, {'ok': False, 'error': 'Pi-hole n’est ni installé ni relié.'}
+    method, path = str((body or {}).get('method') or 'GET').upper(), str((body or {}).get('path') or '')
+    if not path.startswith('/api/'):
+        path = '/api/' + path.lstrip('/')
+    if not any(m == method and rx.match(path) for m, rx in _PH_ALLOWED):
+        return 400, {'ok': False, 'error': 'Requête non autorisée.'}
+    payload = (body or {}).get('body')
+    if payload is not None and not isinstance(payload, (dict, list)):
+        return 400, {'ok': False, 'error': 'Requête invalide.'}
+    if method == 'PATCH':   # seule la liste des serveurs DNS en amont se modifie d'ici
+        up = (((payload or {}).get('config') or {}).get('dns') or {}).get('upstreams') if isinstance(payload, dict) else None
+        if not (isinstance(payload, dict) and list(payload) == ['config'] and list(payload['config']) == ['dns'] and list(payload['config']['dns']) == ['upstreams']
+                and isinstance(up, list) and 0 < len(up) <= 20 and all(isinstance(u, str) and re.match(r'^[A-Za-z0-9.:\[\]#_-]{1,200}$', u) for u in up)):
+            return 400, {'ok': False, 'error': 'Réglage non autorisé.'}
+    try:
+        code, txt = _ph_http(method, path, payload, timeout=180 if path == '/api/action/gravity' else 25)
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'Pi-hole ne répond pas : ' + str(e)[:160]}
+    return 200, {'ok': True, 'status': code, 'text': txt}
+
+
+def store_pihole_link(body):
+    gate = store_gate('install')
+    if not gate['ok']:
+        return 402, {'ok': False, 'error': 'Abonnement requis pour relier Pi-hole.', 'gate': gate}
+    if STORE_PH_ID in store_installed_get():
+        return 409, {'ok': False, 'error': 'Pi-hole est déjà installé sur ce NAS.'}
+    try:
+        url = _ag_remote_url((body or {}).get('url'))
+    except ValueError as e:
+        return 400, {'ok': False, 'error': str(e).replace('AdGuard Home', 'Pi-hole')}
+    pw = str((body or {}).get('password') or '')[:256]
+    try:
+        sid, err = _ph_login(url, pw, timeout=10)
+    except Exception as e:
+        return 502, {'ok': False, 'error': 'Aucune réponse de %s : %s. Vérifiez l’adresse, le port et que cette machine est joignable depuis le NAS.' % (url, str(e)[:120])}
+    if err:
+        return (403 if 'refusé' in err else 502), {'ok': False, 'error': err}
+    try:
+        code, txt = _ph_raw(url, 'GET', '/api/info/version', sid=sid, timeout=10)
+        j = json.loads(txt) if code == 200 else None
+    except Exception:
+        j = None
+    if not isinstance(j, dict) or not isinstance(j.get('version'), dict):
+        return 502, {'ok': False, 'error': 'Ce n’est pas Pi-hole version 6 (ou plus récent), ou le mot de passe est requis pour lire ses informations.'}
+    core = ((j['version'].get('core') or {}).get('local') or {}).get('version') or ''
+    os.makedirs(STORE_DIR, exist_ok=True)
+    try:
+        fd = os.open(STORE_PH_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+            json.dump({'linked': {'url': url, 'password': pw, 'version': str(core), 'at': int(_st_time.time())}}, fh)
+        try:
+            os.chmod(STORE_PH_FILE, 0o600)
+        except OSError:
+            pass   # dossier à ACL : le mode ne se change pas ; le fichier est déjà créé en 0600
+    except OSError as e:
+        return 500, {'ok': False, 'error': 'Impossible d’enregistrer la liaison : %s' % e}
+    with _PH_LOCK:
+        _PH_SIDS.clear()
+    log.info('Pi-hole distant relié : %s', url)
+    return 200, {'ok': True}
+
+
+def store_pihole_unlink(body=None):
+    try:
+        if os.path.exists(STORE_PH_FILE):
+            os.remove(STORE_PH_FILE)   # le mot de passe disparaît avec la liaison
+    except OSError as e:
+        return 500, {'ok': False, 'error': str(e)}
+    with _PH_LOCK:
+        _PH_SIDS.clear()
+    return 200, {'ok': True}
+
+
+def _store_dns_conflict(app_id, busy):
+    """Message clair quand Pi-hole et AdGuard Home se disputent le port 53 de ce NAS (sinon None)."""
+    other = {STORE_PH_ID: STORE_AG_ID, STORE_AG_ID: STORE_PH_ID}.get(app_id)
+    if not other or 53 not in busy or other not in store_installed_get():
+        return None
+    names = {STORE_PH_ID: 'Pi-hole', STORE_AG_ID: 'AdGuard Home'}
+    return ('%s est déjà installé sur ce NAS et utilise le port 53 (DNS) : deux serveurs DNS ne peuvent pas tourner ensemble. '
+            'Désinstallez d’abord %s, ou gardez-le et reliez plutôt un %s qui tourne sur une autre machine.'
+            % (names[other], names[other], names[app_id]))
 
 
 # ── MDM-STORE-V1 · fenêtre « WireGuard » : le NAS relaie les requêtes vers l'API de wg-easy ─────────────────────

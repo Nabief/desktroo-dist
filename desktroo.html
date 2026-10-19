@@ -10061,6 +10061,39 @@ select option{ background:#101b2e; color:#e9eef7; }
 "… et {0} autres": "… and {0} more",
 "Une application qui utilise l'un d'eux cessera de fonctionner. Pour confirmer, tapez le nom du dataset :": "An app that uses one of them will stop working. To confirm, type the dataset name:",
 "Le nom ne correspond pas : rien n'a été supprimé.": "The name does not match: nothing was deleted.",
+"Adresse de Pi-hole": "Pi-hole address",
+"Appareils actifs": "Active devices",
+"Aucun site autorisé ou bloqué à la main.": "No site allowed or blocked by hand.",
+"Bloqué par le serveur amont": "Blocked by the upstream server",
+"Ce Pi-hole tourne sur une autre machine. Desktroo ne parle qu’à son interface : vous le pilotez ici sans toucher à son installation. Ses mises à jour se font sur cette machine.": "This Pi-hole runs on another machine. Desktroo only talks to its interface: you control it here without touching its installation. Its updates are done on that machine.",
+"Chercher un site": "Search for a site",
+"Délier Pi-hole de Desktroo ?": "Unlink Pi-hole from Desktroo?",
+"Indiquez l’adresse de l’interface de Pi-hole (version 6 ou plus récente) et, s’il est protégé, son mot de passe. Desktroo garde ce mot de passe sur le NAS. Le NAS doit pouvoir joindre cette machine.": "Enter the address of Pi-hole's interface (version 6 or newer) and, if it is protected, its password. Desktroo keeps this password on the NAS. The NAS must be able to reach that machine.",
+"Indiquez un nom de site, par exemple exemple.com.": "Enter a site name, for example example.com.",
+"Installé sur un Raspberry Pi, une machine virtuelle ou un autre ordinateur du réseau : Desktroo le pilote à distance, depuis la même fenêtre.": "Installed on a Raspberry Pi, a virtual machine or another computer on the network: Desktroo controls it remotely, from the same window.",
+"Interface complète de Pi-hole": "Full Pi-hole interface",
+"La fenêtre Desktroo ne pilote plus ce Pi-hole. Lui continue de tourner et de filtrer.": "The Desktroo window no longer controls this Pi-hole. It keeps running and filtering.",
+"La protection reprendra dans {0} min.": "Protection will resume in {0} min.",
+"Lecture de Pi-hole…": "Reading Pi-hole…",
+"Les serveurs qui répondent quand Pi-hole ne connaît pas un site. Un par ligne (adresse IP, éventuellement suivie de #port).": "The servers that answer when Pi-hole does not know a site. One per line (IP address, optionally followed by #port).",
+"Listes mises à jour.": "Lists updated.",
+"Mes sites": "My sites",
+"Pause {0}": "Pause {0}",
+"Pi-hole est relié : son icône est sur votre bureau.": "Pi-hole is linked: its icon is on your desktop.",
+"Pi-hole indisponible": "Pi-hole unavailable",
+"Pi-hole ne répond pas pour le moment.": "Pi-hole is not responding right now.",
+"Pi-hole sur une autre machine": "Pi-hole on another machine",
+"Pour l’utiliser, indiquez l’adresse IP de la machine qui héberge Pi-hole comme serveur DNS, dans votre box ou sur vos appareils.": "To use it, set the IP address of the machine hosting Pi-hole as the DNS server, in your router or on your devices.",
+"Protection": "Protection",
+"Protection en pause.": "Protection paused.",
+"Redémarrer le DNS": "Restart DNS",
+"Redémarrer le DNS ?": "Restart DNS?",
+"Relier un Pi-hole existant": "Link an existing Pi-hole",
+"Règle de blocage": "Block rule",
+"Réponse en mémoire": "Answered from cache",
+"Serveurs DNS en amont, entretien": "Upstream DNS servers, maintenance",
+"Site ajouté.": "Site added.",
+"Sites dans les listes de blocage": "Sites in the block lists",
 "Administration complète": "Full administration",
   "Audio": "Audio",
   "Sous-titres": "Subtitles",
@@ -20421,13 +20454,16 @@ function dkStoreRenderDetail(body, a) {
       if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Cette app demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
       else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Abonnement requis pour installer une app.') + '</p>';
       if (a.id === 'adguard' && a.compatible && gateOk) h += dkAgRemoteHtml();
+      if (a.id === 'pihole' && a.compatible && gateOk) h += dkPhRemoteHtml();
     } else if (inst.linked) {
-      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + T('Cet AdGuard Home tourne sur une autre machine. Desktroo ne parle qu’à son interface : vous le pilotez ici sans toucher à son installation. Ses mises à jour se font sur cette machine.') + '</div>'
+      var isPh = a.id === 'pihole';
+      h += '<div class="dks-sec dks-tag" style="max-width:680px;">' + (isPh ? T('Ce Pi-hole tourne sur une autre machine. Desktroo ne parle qu’à son interface : vous le pilotez ici sans toucher à son installation. Ses mises à jour se font sur cette machine.') : T('Cet AdGuard Home tourne sur une autre machine. Desktroo ne parle qu’à son interface : vous le pilotez ici sans toucher à son installation. Ses mises à jour se font sur cette machine.')) + '</div>'
         + '<div class="web-group-title">' + T('Détails') + '</div><dl class="web-facts">'
         + '<dt>' + T('Adresse de l’administration') + '</dt><dd class="mono">' + webEsc(inst.remote || '') + '</dd>'
         + (inst.version ? '<dt>' + T('Version installée') + '</dt><dd>' + webEsc(inst.version) + '</dd>' : '') + '</dl>'
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
-        + wmRow('dkAgRemoteUnlink()', T('Délier'), T('La fenêtre Desktroo ne pilote plus cet AdGuard Home. Lui continue de tourner et de filtrer.'), 'danger') + '</div>';
+        + (isPh ? wmRow('dkPhRemoteUnlink()', T('Délier'), T('La fenêtre Desktroo ne pilote plus ce Pi-hole. Lui continue de tourner et de filtrer.'), 'danger')
+                : wmRow('dkAgRemoteUnlink()', T('Délier'), T('La fenêtre Desktroo ne pilote plus cet AdGuard Home. Lui continue de tourner et de filtrer.'), 'danger')) + '</div>';
     } else {
       if (a.update_available) {
         h += '<div class="web-group-title">' + T('Mise à jour') + '</div><div class="web-group">'
@@ -21055,6 +21091,320 @@ async function dkAgClear(what) {
   try { await dkAgApi('POST', what, {}); toast(T('C’est fait.')); }
   catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
   dkAgLoad(true);
+}
+// ── MDM-STORE-V1 · fenêtre « Pi-hole » : l'interface Desktroo, pilotée par l'API de Pi-hole (v6) ─────────────────
+// Local (conteneur dt-pihole) ou relié (autre machine) : dans les deux cas le NAS ouvre la session Pi-hole et relaie
+// la requête (/store/pihole/api). Aucun mot de passe ne passe par le navigateur. Les styles « dkag-* » sont partagés.
+var _dkPh = { nav: 'home', sum: null, hist: null, blk: null, top: null, topb: null, cli: null, log: null, lists: null, doms: null, cfg: null, q: '', status: 'all', timer: null, linked: false };
+async function dkPhOpen() {
+  var win = document.getElementById('win-dkph'), a = dkStoreApp('pihole');
+  _dkPh.linked = !!(a && a.installed && a.installed.linked);
+  if (win) { win.classList.add('visible'); bringToFront(win); dkPhLoad(); return; }
+  dkStoreCss(); dkAgCss();
+  win = dkStoreMakeWin('dkph', T('Pi-hole'), 980, 660,
+    '<div class="web-shell"><nav class="web-side" id="dkph-side" aria-label="' + T('Pi-hole') + '"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dkph-head"></header><div class="web-body" id="dkph-body"></div></section></div>',
+    function() { clearTimeout(_dkPh.timer); _dkPh.timer = null; });
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('pihole', 18) + '</span>');
+  _dkPh.nav = 'home';
+  dkPhLoad();
+}
+async function dkPhApi(method, path, body) {
+  var rr;
+  try { rr = await fileops('POST', 'store/pihole/api', { method: method, path: path, body: body }); }
+  catch (e) { var et = new Error(e && e.message ? e.message : T('Pi-hole ne répond pas pour le moment.')); et.transient = true; throw et; }
+  var rt = rr.text || '';
+  if (rr.status >= 500) { var e5 = new Error(T('Pi-hole ne répond pas pour le moment.')); e5.transient = true; throw e5; }
+  if (rr.status >= 400) {
+    var msg = '';
+    try { var j = JSON.parse(rt); msg = (j.error && (j.error.message || j.error.key)) || ''; if (msg && j.error.hint) msg += ' (' + j.error.hint + ')'; } catch (_) {}
+    throw new Error(msg || String(rt).replace(/<[^>]*>/g, ' ').trim().slice(0, 240) || ('HTTP ' + rr.status));
+  }
+  if (!rt) return {};
+  try { return JSON.parse(rt); } catch (_) { return { text: rt }; }
+}
+function dkPhFull() {
+  var a = dkStoreApp('pihole'), u = a && a.installed && a.installed.remote;
+  if (u && /^https?:\/\//.test(u)) window.open(u.replace(/\/+$/, '') + '/admin/', '_blank', 'noopener');
+}
+function dkPhGo(nav) { _dkPh.nav = nav; dkPhLoad(); }
+function dkPhSide() {
+  var n = _dkPh.lists ? _dkPh.lists.filter(function(x) { return x.enabled && x.type === 'block'; }).length : '';
+  wmSide('dkph', wmNav({ active: _dkPh.nav === 'home', call: 'dkPhGo(\'home\')', icon: 'chart', name: T('Vue d’ensemble') })
+    + wmNav({ active: _dkPh.nav === 'log', call: 'dkPhGo(\'log\')', icon: 'list', name: T('Journal des requêtes') })
+    + wmNav({ active: _dkPh.nav === 'lists', call: 'dkPhGo(\'lists\')', icon: 'shield', name: T('Listes de blocage'), count: n })
+    + wmSep()
+    + wmNav({ active: _dkPh.nav === 'settings', call: 'dkPhGo(\'settings\')', icon: 'settings', name: T('Réglages') }));
+}
+async function dkPhLoad(quiet) {
+  var body = wmBody('dkph'); if (!body) return;
+  var nav = _dkPh.nav;
+  clearTimeout(_dkPh.timer);
+  dkPhSide();
+  if (!quiet) body.innerHTML = dkWaitHtml('busy', T('Lecture de Pi-hole…'));
+  try {
+    if (nav === 'home') {
+      var r = await Promise.all([dkPhApi('GET', 'stats/summary'), dkPhApi('GET', 'dns/blocking'), dkPhApi('GET', 'history'),
+        dkPhApi('GET', 'stats/top_domains?count=8'), dkPhApi('GET', 'stats/top_domains?blocked=true&count=8'), dkPhApi('GET', 'stats/top_clients?count=8')]);
+      _dkPh.sum = r[0]; _dkPh.blk = r[1]; _dkPh.hist = r[2]; _dkPh.top = r[3]; _dkPh.topb = r[4]; _dkPh.cli = r[5];
+    }
+    else if (nav === 'log') {
+      var qs = 'length=200' + (_dkPh.q ? '&domain=' + encodeURIComponent('*' + _dkPh.q + '*') : '');
+      _dkPh.log = await dkPhApi('GET', 'queries?' + qs);
+    }
+    else if (nav === 'lists') {
+      var l = await Promise.all([dkPhApi('GET', 'lists'), dkPhApi('GET', 'domains')]);
+      _dkPh.lists = l[0].lists || []; _dkPh.doms = l[1].domains || [];
+    }
+    else if (nav === 'settings') {
+      var s = await Promise.all([dkPhApi('GET', 'config/dns'), dkPhApi('GET', 'dns/blocking'), dkPhApi('GET', 'info/version')]);
+      _dkPh.cfg = s[0]; _dkPh.blk = s[1]; _dkPh.ver = s[2];
+    }
+  } catch (e) { if (nav === _dkPh.nav) wmFail('dkph', T('Pi-hole indisponible'), e, 'dkPhLoad()'); return; }
+  if (nav !== _dkPh.nav) return;
+  dkPhRender();
+  if (nav === 'home') _dkPh.timer = setTimeout(function() { dkPhLoad(true); }, 15000);
+}
+function dkPhRender() {
+  var body = wmBody('dkph'); if (!body) return;
+  dkPhSide();
+  if (_dkPh.nav === 'log') return dkPhRenderLog(body);
+  if (_dkPh.nav === 'lists') return dkPhRenderLists(body);
+  if (_dkPh.nav === 'settings') return dkPhRenderSettings(body);
+  dkPhRenderHome(body);
+}
+function dkPhNote() {
+  var a = dkStoreApp('pihole') || {};
+  if (_dkPh.linked) return T('Pour l’utiliser, indiquez l’adresse IP de la machine qui héberge Pi-hole comme serveur DNS, dans votre box ou sur vos appareils.');
+  return a.setup_note ? dkStoreName(a.setup_note).replace('{ip}', dkNasHost(a)) : '';
+}
+function dkPhTop(title, arr, key, label) {
+  var items = (arr || []).slice(0, 8).map(function(o) { return [String(o[key] || o.ip || '?'), o.count || 0, label ? label(o) : '']; });
+  var max = items.length ? Math.max.apply(null, items.map(function(x) { return x[1]; })) : 0;
+  return '<div class="dkag-box"><h5>' + title + '</h5>' + (items.length ? items.map(function(x) {
+    return '<div class="dkag-r"><i style="width:' + (max ? Math.max(3, Math.round(x[1] * 100 / max)) : 0) + '%"></i><span title="' + webEsc(x[0]) + '">' + webEsc(x[2] || x[0]) + '</span><em>' + dkAgN(x[1]) + '</em></div>';
+  }).join('') : '<div class="dkag-empty">' + T('Rien pour l’instant.') + '</div>') + '</div>';
+}
+function dkPhRenderHome(body) {
+  var s = _dkPh.sum || {}, qs = s.queries || {}, g = s.gravity || {}, q = qs.total || 0, b = qs.blocked || 0;
+  var pct = q ? Math.round(b * 1000 / q) / 10 : (qs.percent_blocked || 0), on = (_dkPh.blk || {}).blocking === 'enabled';
+  var timer = (_dkPh.blk || {}).timer;
+  wmHead('dkph', T('Vue d’ensemble'), {
+    sub: '<span class="dks-badge ' + (on ? 'ok' : 'warn') + '">' + webEsc(on ? T('Protection active') : T('Protection en pause')) + '</span> ' + webEsc(T('24 dernières heures')),
+    actions: on ? '<button class="fs-btn" onclick="dkPhProtect(false)">' + T('Mettre en pause 1 h') + '</button>'
+                : '<button class="web-open" onclick="dkPhProtect(true)">' + T('Réactiver la protection') + '</button>' });
+  var h = '<div class="dkag-tiles">'
+    + '<div class="dkag-tile"><b>' + dkAgN(q) + '</b><span>' + T('Requêtes') + '</span></div>'
+    + '<div class="dkag-tile"><b>' + dkAgN(b) + '</b><span>' + Tf('Bloquées ({0} %)', String(pct).replace('.', ',')) + '</span></div>'
+    + '<div class="dkag-tile"><b>' + dkAgN(g.domains_being_blocked) + '</b><span>' + T('Sites dans les listes de blocage') + '</span></div>'
+    + '<div class="dkag-tile"><b>' + dkAgN((s.clients || {}).active) + '</b><span>' + T('Appareils actifs') + '</span></div></div>';
+  if (!on && timer) h += '<div class="dkag-note">' + webEsc(Tf('La protection reprendra dans {0} min.', Math.max(1, Math.round(timer / 60)))) + '</div>';
+  if (!q) h += '<div class="dkag-note">' + (dkPhNote() ? webEsc(dkPhNote()) : T('Aucune requête reçue pour l’instant.')) + '</div>';
+  var hist = ((_dkPh.hist || {}).history || []);
+  h += dkAgChart(hist.map(function(x) { return x.total || 0; }), hist.map(function(x) { return x.blocked || 0; }))
+    + '<div class="dkag-cols">' + dkPhTop(T('Sites les plus demandés'), (_dkPh.top || {}).domains, 'domain')
+    + dkPhTop(T('Sites les plus bloqués'), (_dkPh.topb || {}).domains, 'domain')
+    + dkPhTop(T('Appareils les plus actifs'), (_dkPh.cli || {}).clients, 'ip', function(o) { return o.name || o.ip; }) + '</div>';
+  body.innerHTML = h;
+}
+async function dkPhProtect(on) {
+  try { await dkPhApi('POST', 'dns/blocking', on ? { blocking: true, timer: null } : { blocking: false, timer: 3600 }); toast(on ? T('Protection réactivée.') : T('Protection en pause pour 1 h.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkPhLoad(true);
+}
+// ── Journal des requêtes ──
+function dkPhIsBlocked(st) { return /^(GRAVITY|REGEX|DENYLIST|EXTERNAL_BLOCKED)/.test(st || ''); }
+function dkPhWhy(st) {
+  var s = String(st || '');
+  if (/^GRAVITY/.test(s)) return T('Liste de blocage');
+  if (/^(REGEX|DENYLIST)/.test(s)) return T('Règle de blocage');
+  if (/^EXTERNAL_BLOCKED/.test(s)) return T('Bloqué par le serveur amont');
+  if (s === 'CACHE' || s === 'CACHE_STALE') return T('Réponse en mémoire');
+  return '';
+}
+function dkPhTime(ts) {
+  var d = new Date(Number(ts) * 1000); if (isNaN(d)) return '';
+  var now = new Date(), same = d.toDateString() === now.toDateString();
+  return same ? d.toLocaleTimeString() : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+function dkPhRenderLog(body) {
+  var rows = ((_dkPh.log && _dkPh.log.queries) || []).filter(function(r) {
+    var bl = dkPhIsBlocked(r.status);
+    return _dkPh.status === 'all' || (_dkPh.status === 'filtered' ? bl : !bl);
+  });
+  wmHead('dkph', T('Journal des requêtes'), { sub: T('Ce que vos appareils demandent, et ce qui est bloqué'),
+    actions: '<button class="fs-btn" onclick="dkPhLoad()">' + T('Actualiser') + '</button>' });
+  var h = '<div class="dkag-bar"><input type="text" id="dkph-q" placeholder="' + T('Chercher un site') + '" value="' + webEsc(_dkPh.q) + '" onkeydown="if(event.key===\'Enter\')dkPhSearch()">'
+    + '<select id="dkph-st" onchange="dkPhSearch()">'
+    + [['all', T('Tout')], ['filtered', T('Bloquées')], ['processed', T('Autorisées')]].map(function(o) { return '<option value="' + o[0] + '"' + (_dkPh.status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('')
+    + '</select><button class="fs-btn" onclick="dkPhSearch()">' + T('Chercher') + '</button></div>';
+  if (!rows.length) h += '<div class="dks-empty">' + T('Aucune requête à afficher.') + '</div>';
+  else {
+    h += '<div class="web-group">';
+    rows.slice(0, 150).forEach(function(r) {
+      var name = String(r.domain || '?').replace(/\.$/, ''), blocked = dkPhIsBlocked(r.status), why = dkPhWhy(r.status);
+      var c = r.client || {}, cl = c.name || c.ip || '';
+      h += '<div class="dkag-log"><span class="t">' + webEsc(dkPhTime(r.time)) + '</span>'
+        + '<span class="d"><b title="' + webEsc(name) + '">' + webEsc(name) + '</b><small>' + webEsc(cl + (r.type ? ' · ' + r.type : '') + (why ? ' · ' + why : '')) + '</small></span>'
+        + '<span class="dks-badge ' + (blocked ? 'warn' : 'ok') + '">' + (blocked ? T('Bloqué') : T('Autorisé')) + '</span>'
+        + '<button class="web-mini" onclick="dkPhRule(' + wmQ(name) + ',' + (blocked ? 'true' : 'false') + ')">' + (blocked ? T('Autoriser') : T('Bloquer')) + '</button></div>';
+    });
+    h += '</div>';
+  }
+  body.innerHTML = h;
+}
+function dkPhSearch() {
+  var q = document.getElementById('dkph-q'), s = document.getElementById('dkph-st');
+  _dkPh.q = q ? q.value.trim() : ''; _dkPh.status = s ? s.value : 'all';
+  dkPhLoad();
+}
+// Autoriser ou bloquer un site : une entrée dans « Mes sites » (le reste de la configuration ne bouge pas).
+async function dkPhRule(domEnc, allow) {
+  var dom = decodeURIComponent(domEnc).replace(/\.$/, '');
+  if (!/^[A-Za-z0-9._-]+$/.test(dom)) return;
+  if (!(await showConfirm(allow ? Tf('Autoriser {0} ?', webEsc(dom)) : Tf('Bloquer {0} ?', webEsc(dom)),
+        { ok: allow ? T('Autoriser') : T('Bloquer'), danger: !allow }))) return;
+  try {
+    try { await dkPhApi('DELETE', 'domains/' + (allow ? 'deny' : 'allow') + '/exact/' + encodeURIComponent(dom)); } catch (_) {}
+    await dkPhApi('POST', 'domains/' + (allow ? 'allow' : 'deny') + '/exact', { domain: dom, comment: 'Desktroo', groups: [0], enabled: true });
+    toast(allow ? Tf('{0} est autorisé.', dom) : Tf('{0} est bloqué.', dom));
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkPhLoad(true);
+}
+// ── Listes de blocage et sites autorisés/bloqués ──
+function dkPhRenderLists(body) {
+  var all = _dkPh.lists || [], list = all.filter(function(x) { return x.type === 'block'; });
+  wmHead('dkph', T('Listes de blocage'), { sub: T('Les listes qui disent quoi bloquer'),
+    actions: '<button class="fs-btn" onclick="dkPhGravity()">' + T('Mettre à jour les listes') + '</button>' });
+  var h = '<div class="web-group">' + (list.length ? list.map(function(x) {
+    var dt = x.date_updated ? wmAgo(new Date(x.date_updated * 1000).toISOString()) : '';
+    return '<div class="web-row" style="cursor:default;align-items:center;gap:12px;flex-wrap:wrap;"><span class="web-dot' + (x.enabled ? '' : ' off') + '"></span>'
+      + '<span class="web-row-text" style="min-width:200px;flex:1;"><span class="web-row-name">' + webEsc(x.comment || x.address) + '</span>'
+      + '<span class="web-row-desc">' + webEsc(Tf('{0} règles', dkAgN(x.number)) + (x.comment ? ' · ' + x.address : '')) + (dt ? ' · ' + webEsc(T('mise à jour ') + dt) : '') + '</span></span>'
+      + '<span style="display:flex;gap:6px;"><button class="web-mini" onclick="dkPhListAct(\'toggle\',' + wmQ(x.address) + ')">' + (x.enabled ? T('Désactiver') : T('Activer')) + '</button>'
+      + '<button class="web-mini" style="color:var(--danger);" onclick="dkPhListAct(\'remove\',' + wmQ(x.address) + ')">' + T('Retirer') + '</button></span></div>';
+  }).join('') : '<div class="dks-empty">' + T('Aucune liste.') + '</div>') + '</div>'
+    + '<div class="web-group-title">' + T('Ajouter une liste') + '</div><div class="dkag-form dkag-bar">'
+    + '<input type="text" id="dkph-ln" placeholder="' + T('Nom') + '" style="max-width:200px;"><input type="text" id="dkph-lu" placeholder="https://…">'
+    + '<button class="web-open" onclick="dkPhListAdd()">' + T('Ajouter') + '</button></div>';
+  var doms = (_dkPh.doms || []).filter(function(d) { return d.kind === 'exact'; });
+  h += '<div class="web-group-title">' + T('Mes sites') + '</div><div class="web-group">' + (doms.length ? doms.map(function(d) {
+    var deny = d.type === 'deny';
+    return '<div class="web-row" style="cursor:default;align-items:center;gap:12px;"><span class="web-row-text" style="flex:1;min-width:0;"><span class="web-row-name">' + webEsc(d.unicode || d.domain) + '</span></span>'
+      + '<span class="dks-badge ' + (deny ? 'warn' : 'ok') + '">' + (deny ? T('Bloqué') : T('Autorisé')) + '</span>'
+      + '<button class="web-mini" style="color:var(--danger);" onclick="dkPhDomDel(' + wmQ(d.type) + ',' + wmQ(d.domain) + ')">' + T('Retirer') + '</button></div>';
+  }).join('') : '<div class="dks-empty">' + T('Aucun site autorisé ou bloqué à la main.') + '</div>') + '</div>'
+    + '<div class="dkag-form dkag-bar" style="margin-top:12px;"><input type="text" id="dkph-dn" placeholder="exemple.com">'
+    + '<select id="dkph-dt"><option value="deny">' + T('Bloquer') + '</option><option value="allow">' + T('Autoriser') + '</option></select>'
+    + '<button class="web-open" onclick="dkPhDomAdd()">' + T('Ajouter') + '</button></div>';
+  body.innerHTML = h;
+}
+async function dkPhListAct(act, addrEnc) {
+  var addr = decodeURIComponent(addrEnc), x = (_dkPh.lists || []).filter(function(y) { return y.address === addr && y.type === 'block'; })[0];
+  if (!x) return;
+  var path = 'lists/' + encodeURIComponent(addr) + '?type=block';
+  try {
+    if (act === 'remove') {
+      if (!(await showConfirm(Tf('Retirer la liste « {0} » ?', webEsc(x.comment || x.address)), { danger: true, ok: T('Retirer') }))) return;
+      await dkPhApi('DELETE', path);
+    } else await dkPhApi('PUT', path, { type: 'block', comment: x.comment || '', groups: x.groups || [0], enabled: !x.enabled });
+  } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkPhLoad(true);
+}
+async function dkPhListAdd() {
+  var n = document.getElementById('dkph-ln'), u = document.getElementById('dkph-lu');
+  var name = n ? n.value.trim() : '', url = u ? u.value.trim() : '';
+  if (!/^https?:\/\//i.test(url)) { toast(T('Indiquez l’adresse de la liste (https://…).')); return; }
+  try { await dkPhApi('POST', 'lists?type=block', { address: url, type: 'block', comment: name, groups: [0], enabled: true }); toast(T('Liste ajoutée.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); return; }
+  dkPhLoad(true);
+}
+async function dkPhGravity() {
+  toast(T('Mise à jour des listes…'), 5000);
+  try { await dkPhApi('POST', 'action/gravity'); toast(T('Listes mises à jour.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); }
+  dkPhLoad(true);
+}
+async function dkPhDomAdd() {
+  var n = document.getElementById('dkph-dn'), t = document.getElementById('dkph-dt');
+  var dom = n ? n.value.trim().toLowerCase() : '', type = t && t.value === 'allow' ? 'allow' : 'deny';
+  if (!/^[a-z0-9]([a-z0-9._-]*[a-z0-9])?$/.test(dom) || dom.indexOf('.') < 0) { toast(T('Indiquez un nom de site, par exemple exemple.com.')); return; }
+  try { await dkPhApi('POST', 'domains/' + type + '/exact', { domain: dom, comment: 'Desktroo', groups: [0], enabled: true }); toast(T('Site ajouté.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); return; }
+  dkPhLoad(true);
+}
+async function dkPhDomDel(typeEnc, domEnc) {
+  var type = decodeURIComponent(typeEnc), dom = decodeURIComponent(domEnc);
+  try { await dkPhApi('DELETE', 'domains/' + (type === 'allow' ? 'allow' : 'deny') + '/exact/' + encodeURIComponent(dom)); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkPhLoad(true);
+}
+// ── Réglages ──
+function dkPhRenderSettings(body) {
+  var d = ((_dkPh.cfg || {}).config || {}).dns || {}, v = ((_dkPh.ver || {}).version || {}), core = ((v.core || {}).local || {}).version || '';
+  var on = (_dkPh.blk || {}).blocking === 'enabled';
+  wmHead('dkph', T('Réglages'), { sub: T('Serveurs DNS en amont, entretien') + (core ? ' · Pi-hole ' + webEsc(core) : ''),
+    actions: _dkPh.linked ? '<button class="fs-btn" onclick="dkPhFull()">' + T('Interface complète de Pi-hole') + '</button>' : '' });
+  var note = dkPhNote(), h = note ? '<div class="dkag-note" style="margin-top:0;">' + webEsc(note) + '</div>' : '';
+  h += '<div class="dkag-form"><label for="dkph-up">' + T('Serveurs DNS en amont') + '</label>'
+    + '<textarea id="dkph-up" spellcheck="false">' + webEsc((d.upstreams || []).join('\n')) + '</textarea>'
+    + '<div class="dks-tag">' + T('Les serveurs qui répondent quand Pi-hole ne connaît pas un site. Un par ligne (adresse IP, éventuellement suivie de #port).') + '</div>'
+    + '<div class="dks-acts"><button class="web-open" onclick="dkPhDnsSave()">' + T('Enregistrer') + '</button></div>'
+    + '<label>' + T('Protection') + '</label><div class="dks-acts" style="margin-top:0;">'
+    + (on ? [[300, T('5 min')], [3600, T('1 h')], [28800, T('8 h')]].map(function(o) { return '<button class="fs-btn" onclick="dkPhPause(' + o[0] + ')">' + Tf('Pause {0}', o[1]) + '</button>'; }).join('')
+          : '<button class="web-open" onclick="dkPhProtect(true)">' + T('Réactiver la protection') + '</button>') + '</div>'
+    + '<label>' + T('Entretien') + '</label><div class="dks-acts" style="margin-top:0;">'
+    + '<button class="fs-btn" onclick="dkPhAct(\'action/restartdns\',T(\'Redémarrer le DNS ?\'))">' + T('Redémarrer le DNS') + '</button>'
+    + '<button class="fs-btn" style="color:var(--danger);" onclick="dkPhAct(\'action/flush/logs\',T(\'Vider le journal des requêtes ?\'))">' + T('Vider le journal') + '</button></div></div>';
+  body.innerHTML = h;
+}
+async function dkPhDnsSave() {
+  var t = document.getElementById('dkph-up'), up = t ? t.value.split('\n').map(function(x) { return x.trim(); }).filter(Boolean) : [];
+  if (!up.length) { toast(T('Indiquez au moins un serveur DNS.')); return; }
+  try { await dkPhApi('PATCH', 'config', { config: { dns: { upstreams: up } } }); toast(T('Serveurs DNS enregistrés.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 9000); }
+  dkPhLoad(true);
+}
+async function dkPhPause(sec) {
+  try { await dkPhApi('POST', 'dns/blocking', { blocking: false, timer: sec }); toast(T('Protection en pause.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkPhLoad(true);
+}
+async function dkPhAct(path, q) {
+  if (!(await showConfirm(q, { danger: true, ok: T('Confirmer') }))) return;
+  try { await dkPhApi('POST', path); toast(T('C’est fait.')); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+  dkPhLoad(true);
+}
+// Relier un Pi-hole qui tourne sur une AUTRE machine : Desktroo ne parle qu'à son API, par le NAS.
+function dkPhRemoteHtml() {
+  if (!_dkStore.phRemote) return '<div class="web-group-title">' + T('Pi-hole sur une autre machine') + '</div><div class="web-group">'
+    + wmRow('_dkStore.phRemote=true;dkStoreRender()', T('Relier un Pi-hole existant'), T('Installé sur un Raspberry Pi, une machine virtuelle ou un autre ordinateur du réseau : Desktroo le pilote à distance, depuis la même fenêtre.')) + '</div>';
+  return '<div class="web-group-title">' + T('Relier un Pi-hole existant') + '</div><div class="web-group dks-pad" style="display:flex;flex-direction:column;gap:12px;max-width:520px;">'
+    + '<div class="dks-tag">' + T('Indiquez l’adresse de l’interface de Pi-hole (version 6 ou plus récente) et, s’il est protégé, son mot de passe. Desktroo garde ce mot de passe sur le NAS. Le NAS doit pouvoir joindre cette machine.') + '</div>'
+    + formRow(T('Adresse de Pi-hole'), '<input id="dks-phr-url" style="' + iStyle() + '" placeholder="http://192.168.0.50" autocomplete="off" spellcheck="false" value="' + webEsc(_dkStore.phRemoteUrl || '') + '">')
+    + formRow(T('Mot de passe (facultatif)'), '<input id="dks-phr-pw" type="password" style="' + iStyle() + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')dkPhRemoteLink()">')
+    + '<div class="dks-acts" style="margin-top:0;"><button class="web-open" onclick="dkPhRemoteLink()">' + T('Relier') + '</button>'
+    + '<button class="fs-btn" onclick="_dkStore.phRemote=false;dkStoreRender()">' + T('Annuler') + '</button></div></div>';
+}
+async function dkPhRemoteLink() {
+  var url = (document.getElementById('dks-phr-url').value || '').trim();
+  _dkStore.phRemoteUrl = url;
+  try { await fileops('POST', 'store/pihole/link', { url: url, password: document.getElementById('dks-phr-pw').value }); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 9000); return; }
+  _dkStore.phRemote = false;
+  toast(T('Pi-hole est relié : son icône est sur votre bureau.'), 6000);
+  try { var sc = getShortcuts(); if (sc.indexOf('dkapp-pihole') < 0) { sc.push('dkapp-pihole'); saveShortcuts(sc); } } catch (_) {}
+  await dkStoreLoad();
+  dkPhOpen();
+}
+async function dkPhRemoteUnlink() {
+  if (!(await showConfirm(T('Délier Pi-hole de Desktroo ?') + '<br><span style="font-size:12px;">' + T('Il continue de tourner et de filtrer. Seule la fenêtre Desktroo ne le pilote plus.') + '</span>', { danger: true, ok: T('Délier') }))) return;
+  try { await fileops('POST', 'store/pihole/unlink', {}); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); return; }
+  dkStoreCloseApp('dkapp-pihole');
+  var w = document.getElementById('win-dkph'); if (w) w.classList.remove('visible');
+  await dkStoreLoad();
 }
 // ── MDM-STORE-V1 · fenêtre « WireGuard » : l'interface Desktroo, pilotée par l'API de wg-easy ─────────────────
 // Le NAS relaie les requêtes (/store/wireguard/api) avec le compte administrateur de l'app : le navigateur ne le voit pas.
@@ -22759,6 +23109,7 @@ async function dkJfUserDel(i) {
 }
 function dkStoreOpenInstalled(id) {
   if (id === 'adguard') return dkAgOpen();
+  if (id === 'pihole') return dkPhOpen();
   if (id === 'wireguard') return dkWgOpen();
   if (id === 'uptime-kuma') return dkUkOpen();
   if (id === 'photoprism') return dkPpOpen();
@@ -23185,7 +23536,7 @@ function dkStoreRegisterApps(list) {
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
     if (entry) { entry.label = label; return; }
     ALL_APPS.push({ id: key, label: label, store: true,
-      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : id === 'uptime-kuma' ? function() { dkUkOpen(); } : id === 'photoprism' ? function() { dkPpOpen(); } : id === 'jellyfin' ? function() { dkJfOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'pihole' ? function() { dkPhOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : id === 'uptime-kuma' ? function() { dkUkOpen(); } : id === 'photoprism' ? function() { dkPpOpen(); } : id === 'jellyfin' ? function() { dkJfOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
       imgStyle: 'background:transparent;box-shadow:none;padding:0;border-color:transparent;',
       svg: dkStoreIcon(id, 52) });
   });
@@ -28656,7 +29007,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.9';
+var DK_PAGE_VERSION = '2.60.10';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -41984,7 +42335,7 @@ dkGlassApply();
 function dkKioskNorm(id) { return String(id || '').replace(/^dkapp-/, ''); }
 function dkKioskOpenFn(id) {
   id = dkKioskNorm(id);
-  return { jellyfin: dkJfOpen, photoprism: dkPpOpen, adguard: dkAgOpen, wireguard: dkWgOpen, 'uptime-kuma': dkUkOpen, npmplus: dkNpmOpen }[id]
+  return { jellyfin: dkJfOpen, photoprism: dkPpOpen, adguard: dkAgOpen, pihole: dkPhOpen, wireguard: dkWgOpen, 'uptime-kuma': dkUkOpen, npmplus: dkNpmOpen }[id]
     || (function() { var a = drawerApp(id); return a && !a.store ? a.action : null; })()
     || function() { dkStoreOpenInstalled(id); };
 }
