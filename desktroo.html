@@ -10094,6 +10094,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Serveurs DNS en amont, entretien": "Upstream DNS servers, maintenance",
 "Site ajouté.": "Site added.",
 "Sites dans les listes de blocage": "Sites in the block lists",
+"Trop de tentatives : AdGuard bloque l’accès pour quelques minutes. Réessayez plus tard.": "Too many attempts: AdGuard is blocking access for a few minutes. Try again later.",
 "Administration complète": "Full administration",
   "Audio": "Audio",
   "Sous-titres": "Subtitles",
@@ -20810,9 +20811,10 @@ async function dkAgApi(method, path, body) {
   if (_dkAg.linked) {   // AdGuard sur une autre machine : le NAS relaie la requête
     var rr;
     try { rr = await fileops('POST', 'store/adguard/api', { method: method, path: path, body: body }); }
-    catch (e) { var et = new Error(T('AdGuard ne répond pas pour le moment.')); et.transient = true; throw et; }
+    catch (e) { var et = new Error(e && e.message ? e.message : T('AdGuard ne répond pas pour le moment.')); et.transient = true; throw et; }   // le motif réel (adresse injoignable, délai…) vient du NAS
     var rt = rr.text || '';
-    if (rr.status === 401) throw new Error(T('Identifiants refusés : reliez à nouveau AdGuard Home.'));
+    if (rr.status === 401 || rr.status === 403) throw new Error(T('Identifiants refusés : reliez à nouveau AdGuard Home.'));
+    if (rr.status === 429) throw new Error(T('Trop de tentatives : AdGuard bloque l’accès pour quelques minutes. Réessayez plus tard.'));
     if (rr.status >= 500) { var e5 = new Error(T('AdGuard ne répond pas pour le moment.')); e5.transient = true; throw e5; }
     if (rr.status >= 400) throw new Error(String(rt).replace(/<[^>]*>/g, ' ').trim().slice(0, 240) || ('HTTP ' + rr.status));
     if (!rt) return {};
