@@ -20306,6 +20306,11 @@ async function dkStoreLoad(refresh) {
   _dkStore.sig = JSON.stringify(_dkStore.view.apps || []); _dkStore.stale = false;
   dkStoreRender();
 }
+// Lit la liste des apps sans ouvrir la fenêtre Desktroo Apps (icône du bureau cliquée après un redémarrage ou une reconnexion).
+async function dkStoreEnsure() {
+  if (_dkStore.view) return;
+  try { _dkStore.view = await fileops('GET', 'store/view'); } catch (_) {}
+}
 function dkStoreApp(id) { return ((_dkStore.view && _dkStore.view.apps) || []).filter(function(a) { return a.id === id; })[0] || null; }
 function dkStoreRefreshBtn() { return '<button class="fs-btn" onclick="_dkStore.view=null;dkStoreLoad(true)">' + T('Actualiser') + '</button>'; }
 function dkStoreRender() {
@@ -20792,6 +20797,7 @@ function dkAgCss() {
   document.head.appendChild(st);
 }
 async function dkAgOpen() {
+  await dkStoreEnsure();
   var win = document.getElementById('win-dkag'), ag = dkStoreApp('adguard');
   _dkAg.linked = !!(ag && ag.installed && ag.installed.linked);
   if (win) { win.classList.add('visible'); bringToFront(win); dkAgLoad(); return; }
@@ -21099,6 +21105,7 @@ async function dkAgClear(what) {
 // la requête (/store/pihole/api). Aucun mot de passe ne passe par le navigateur. Les styles « dkag-* » sont partagés.
 var _dkPh = { nav: 'home', sum: null, hist: null, blk: null, top: null, topb: null, cli: null, log: null, lists: null, doms: null, cfg: null, q: '', status: 'all', timer: null, linked: false };
 async function dkPhOpen() {
+  await dkStoreEnsure();
   var win = document.getElementById('win-dkph'), a = dkStoreApp('pihole');
   _dkPh.linked = !!(a && a.installed && a.installed.linked);
   if (win) { win.classList.add('visible'); bringToFront(win); dkPhLoad(); return; }
