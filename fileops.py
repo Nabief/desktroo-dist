@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.12'
+APP_VERSION = '2.60.13'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -17682,9 +17682,14 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     try:
                         os.rename(src, dst)
                     except OSError:
-                        # Inter-dataset ou ACL ZFS/SMB : délègue au 'mv' du host
-                        # (vrai root, gère les ACL et la suppression de la source).
-                        out, err, code = ssh_exec("sudo -n mv -f " + shq(src) + " " + shq(dst), timeout=7200)
+                        # Inter-dataset ou ACL ZFS/SMB : délègue au host (vrai root, gère les ACL
+                        # et la suppression de la source). MDM-MOVE-BCLONE-V1 : d'abord un clonage de
+                        # blocs ZFS (cp --reflink=always : quasi instantané, sans place en plus) puis
+                        # suppression de la source ; si le pool ne sait pas cloner, 'mv' classique.
+                        _mvcmd = ('if cp -a --reflink=always -- ' + shq(src) + ' ' + shq(dst) + ' 2>/dev/null; '
+                                  'then rm -rf -- ' + shq(src) + '; '
+                                  'else rm -rf -- ' + shq(dst) + '; mv -f -- ' + shq(src) + ' ' + shq(dst) + '; fi')
+                        out, err, code = ssh_exec("sudo -n sh -c " + shq(_mvcmd), timeout=7200)
                         if code != 0:
                             raise RuntimeError('Déplacement (host) : ' + (err or out or 'échec').strip()[:200])
                     # Vérifie que la source a bien disparu.

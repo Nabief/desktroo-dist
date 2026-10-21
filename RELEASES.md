@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.13 — 22 octobre 2026
+
+### Amélioré
+- **Déplacer des fichiers d'un dataset à un autre du même pool est maintenant quasi instantané.** Avant, Desktroo recopiait chaque fichier puis supprimait l'original (plusieurs heures pour une bibliothèque de films). Il utilise désormais le clonage de blocs de ZFS ; si le pool ne le permet pas, il fait comme avant.
+  > `/move` : repli hôte `cp -a --reflink=always` puis `rm -rf` de la source, sinon `mv -f` (nettoyage de la destination partielle entre les deux).
+
 ## 2.60.12 — 21 octobre 2026
 
 ### Amélioré
