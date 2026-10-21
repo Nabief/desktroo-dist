@@ -3,13 +3,15 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
-## 2.60.11 — 21 octobre 2026
+## 2.60.12 — 21 octobre 2026
 
 ### Amélioré
 - **Bouton « Tout sélectionner » dans Fichiers.** Un clic sélectionne tout le dossier (un second clic désélectionne) ; Ctrl+A fonctionnait déjà. Sur téléphone, une fois une sélection commencée, un appui sur un fichier le coche ou le décoche au lieu de l'ouvrir.
   > `fsSelectAllToggle()`, même sélection que Ctrl+A.
 - **Configuration des alertes en français.** Les catégories et les types d'alerte de TrueNAS (« Certificate Is Expiring », « Pool Status Is Not Healthy »…) s'affichent maintenant traduits.
   > Table `AL_FR` (≈250 titres du dépôt TrueNAS) appliquée par `alTr()` ; un titre inconnu reste en anglais.
+
+## 2.60.11 — 21 octobre 2026
 
 ### Corrigé
 - **Installer NPMplus, AdGuard Home ou Pi-hole « reliés » comme application de l'ordinateur.** Une app reliée (installée ailleurs que par Desktroo Apps, par exemple NPMplus sur une autre machine) s'installait avec l'icône de Desktroo, et le navigateur proposait seulement « Ouvrir dans l'application Desktroo » au lieu d'ajouter une nouvelle application. Elle a maintenant son propre nom et sa propre icône.
