@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.14 — 22 octobre 2026
+
+### Nouveau
+- **Un SMS quand une mise à jour est disponible.** Avec l'app SMS installée, Desktroo vous envoie un SMS pour une mise à jour de Desktroo, d'une app de Desktroo Apps, d'une app TrueNAS ou de TrueNAS lui-même : un seul SMS par vérification (toutes les 6 heures), et seulement pour ce qui est nouveau.
+  > `_upd_sms_loop` : sources `_version_status`, `store_view`, `midclt app.query` (`upgrade_available`) et `update.check_available` ; mémoire dans `store/update-notified.json` ; envoi au webhook de l'app SMS. Pour l'éteindre, créer le fichier `store/update-sms-off`.
+
 ## 2.60.13 — 22 octobre 2026
 
 ### Amélioré

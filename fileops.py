@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.13'
+APP_VERSION = '2.60.14'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -19398,6 +19398,87 @@ def dkbackup_snap_restore(app_id, snap):
         return 502, {'ok': False, 'error': str(e)}
 
 
+# MDM-UPD-SMS-V1 : prévient par SMS (app SMS installée) des mises à jour disponibles : Desktroo, apps de Desktroo Apps,
+# apps TrueNAS et TrueNAS lui-même. Un seul SMS par vérification, et seulement pour ce qui est nouveau depuis le dernier.
+# Pour l'éteindre : créer le fichier <données>/store/update-sms-off.
+UPD_SMS_FILE = os.path.join(STORE_DIR, 'update-notified.json')
+UPD_SMS_OFF = os.path.join(STORE_DIR, 'update-sms-off')
+
+
+def _upd_sms_pending():
+    """{clé: texte} de ce qui attend une mise à jour. Chaque source échoue sans gêner les autres."""
+    out = {}
+    try:
+        v = _version_status()
+        if v.get('update_available') and v.get('latest'):
+            out['desktroo:' + v['latest']] = 'Desktroo ' + v['latest']
+    except Exception as e:
+        log.debug('SMS mises à jour (Desktroo) : %s', e)
+    try:
+        for a in (store_view().get('apps') or []):
+            if a.get('update_available'):
+                nm = a.get('name')
+                nm = (nm.get('fr') or nm.get('en') or a.get('id')) if isinstance(nm, dict) else (nm or a.get('id'))
+                out['store:%s:%s' % (a.get('id'), a.get('version'))] = '%s %s' % (nm, a.get('version') or '')
+    except Exception as e:
+        log.debug('SMS mises à jour (apps) : %s', e)
+    try:
+        o, _e, code = ssh_exec("sudo -n midclt call app.query '[[\"upgrade_available\",\"=\",true]]' '{\"select\":[\"name\",\"latest_version\"]}'", timeout=60)
+        if code == 0 and o.strip():
+            for r in json.loads(o):
+                out['truenas-app:%s:%s' % (r.get('name'), r.get('latest_version'))] = 'app TrueNAS %s %s' % (r.get('name'), r.get('latest_version') or '')
+    except Exception as e:
+        log.debug('SMS mises à jour (apps TrueNAS) : %s', e)
+    try:
+        o, _e, code = ssh_exec("sudo -n midclt call update.check_available", timeout=90)
+        if code == 0 and o.strip():
+            r = json.loads(o)
+            if str(r.get('status')) == 'AVAILABLE':
+                ver = str(((r.get('new_version') or {}).get('version')) or r.get('version') or '')
+                out['truenas:' + ver] = 'TrueNAS ' + ver
+    except Exception as e:
+        log.debug('SMS mises à jour (TrueNAS) : %s', e)
+    return out
+
+
+def _upd_sms_tick():
+    if os.path.exists(UPD_SMS_OFF):
+        return
+    hook = store_sms_hook()
+    if not hook.get('ok'):
+        return
+    pending = _upd_sms_pending()
+    try:
+        with open(UPD_SMS_FILE, encoding='utf-8') as f:
+            done = json.load(f)
+        if not isinstance(done, dict):
+            done = {}
+    except Exception:
+        done = {}
+    new = [(k, t) for k, t in pending.items() if k not in done]
+    if new:
+        import urllib.request as _ur
+        msg = 'NAS : mises à jour disponibles — ' + ' ; '.join(t.strip() for _k, t in new)
+        req = _ur.Request(hook['url'], data=json.dumps({'text': msg}).encode('utf-8'), headers={'Content-Type': 'application/json'}, method='POST')
+        _ur.urlopen(req, timeout=20).read()
+        log.info('SMS mises à jour : %s', msg)
+    # On garde seulement ce qui est encore en attente : une mise à jour faite puis une nouvelle version préviennent à nouveau.
+    keep = {k: done.get(k) or int(_login_time.time()) for k in pending}
+    os.makedirs(STORE_DIR, exist_ok=True)
+    with open(UPD_SMS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(keep, f)
+
+
+def _upd_sms_loop():
+    _login_time.sleep(600)
+    while True:
+        try:
+            _upd_sms_tick()
+        except Exception as e:
+            log.warning('SMS mises à jour : %s', e)
+        _login_time.sleep(6 * 3600)
+
+
 def _dkbk_loop():
     _lic_time.sleep(120)
     while True:
@@ -19412,6 +19493,7 @@ def _dkbk_loop():
 
 
 _threading.Thread(target=_dkbk_loop, name='dkbackup', daemon=True).start()
+_threading.Thread(target=_upd_sms_loop, name='update-sms', daemon=True).start()   # MDM-UPD-SMS-V1
 
 # MDM-STORE-V1 : réseau des apps et bloc nginx /a/
 _threading.Thread(target=_store_boot, name='store-boot', daemon=True).start()
