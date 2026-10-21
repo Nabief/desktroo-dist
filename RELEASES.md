@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.18 — 22 octobre 2026
+
+### Amélioré
+- **Jellyfin : tous les types de bibliothèque sont proposés.** À « Clips musicaux » et « Films et séries mélangés » près, la liste de Desktroo était déjà là : elle s'enrichit de ces deux types, et « Vidéos personnelles » devient « Vidéos et photos personnelles », comme dans Jellyfin.
+  > `_JF_TYPES` + `musicvideos` (`MusicVideo`) et `mixed` (création sans `collectionType`).
+
 ## 2.60.17 — 22 octobre 2026
 
 ### Corrigé

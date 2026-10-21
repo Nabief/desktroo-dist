@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.18 — 22 October 2026
+
+### Improved
+- **Jellyfin: every library type is offered.** Desktroo's list lacked “Music videos” and “Mixed movies and shows”: both are added, and “Home videos” becomes “Home videos and photos”, as in Jellyfin.
+  > `_JF_TYPES` + `musicvideos` (`MusicVideo`) and `mixed` (created without `collectionType`).
+
 ## 2.60.17 — 22 October 2026
 
 ### Fixed

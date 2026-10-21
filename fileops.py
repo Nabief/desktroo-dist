@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.17'
+APP_VERSION = '2.60.18'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -13714,7 +13714,7 @@ _JF_LOCK = _threading.Lock()
 _JF_SETUP_LOCK = _threading.Lock()
 _jf_sess = {}
 _JF_ID = re.compile(r'^[a-f0-9]{32}$')
-_JF_TYPES = ('movies', 'tvshows', 'music', 'homevideos', 'books')
+_JF_TYPES = ('movies', 'tvshows', 'music', 'musicvideos', 'homevideos', 'books', 'mixed')
 _JF_AUTH = 'MediaBrowser Client="Desktroo", Device="Desktroo NAS", DeviceId="desktroo-nas", Version="1.0"'
 
 
@@ -13843,7 +13843,7 @@ def _jf_libraries(busy=False):
         iid = _jf_hexid(f.get('ItemId'))
         typ = str(f.get('CollectionType') or '')
         count = 0
-        incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo'}.get(typ)
+        incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo', 'musicvideos': 'MusicVideo'}.get(typ)
         if incl and _JF_ID.match(iid):
             old = _JF_CNT.get(iid)
             if busy and old and _st_time.time() - old[1] < 60:
@@ -14392,7 +14392,7 @@ def store_jellyfin_api(body):
                 if not _JF_ID.match(lib):
                     return 400, {'ok': False, 'error': 'Bibliothèque inconnue.'}
                 prm['ParentId'] = lib
-                incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo'}.get(typ)
+                incl = {'movies': 'Movie', 'tvshows': 'Series', 'music': 'MusicAlbum', 'books': 'Book', 'homevideos': 'Video,Photo', 'musicvideos': 'MusicVideo'}.get(typ)
                 if incl:
                     prm['IncludeItemTypes'] = incl
             flt = str(b.get('filter') or '')
@@ -14591,7 +14591,10 @@ def store_jellyfin_api(body):
             if any(l['name'].lower() == name.lower() for l in _jf_libraries()):
                 return 400, {'ok': False, 'error': 'Une bibliothèque porte déjà ce nom.'}
             opts = {'PathInfos': [{'Path': p} for p in paths], 'PreferredMetadataLanguage': 'fr', 'MetadataCountryCode': 'FR'}
-            _jf_call('POST', '/Library/VirtualFolders', {'name': name, 'collectionType': typ, 'refreshLibrary': 'true'}, {'LibraryOptions': opts})
+            _qp = {'name': name, 'refreshLibrary': 'true'}
+            if typ != 'mixed':   # « Films et séries mélangés » : bibliothèque sans type
+                _qp['collectionType'] = typ
+            _jf_call('POST', '/Library/VirtualFolders', _qp, {'LibraryOptions': opts})
             return 200, {'ok': True, 'libraries': _jf_libraries(), 'scan': _jf_scan_state()}
         if action == 'library_remove':
             name = str(b.get('name') or '')

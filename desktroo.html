@@ -4487,6 +4487,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouveau document": "New document",
 "Fichier": "File",
 "Uploader ici": "Upload here",
+"Clips musicaux": "Music videos",
+"Vidéos et photos personnelles": "Home videos and photos",
+"Films et séries mélangés": "Mixed movies and shows",
 "Opérations en cours sur le NAS": "Operations running on the NAS",
 "Opération annulée": "Operation cancelled",
 "annulé": "cancelled",
@@ -10573,6 +10576,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouveau document": "Nuevo documento",
 "Fichier": "Archivo",
 "Uploader ici": "Subir aquí",
+"Clips musicaux": "Videoclips",
+"Vidéos et photos personnelles": "Vídeos y fotos personales",
+"Films et séries mélangés": "Películas y series mezcladas",
 "Opérations en cours sur le NAS": "Operaciones en curso en el NAS",
 "Opération annulée": "Operación cancelada",
 "annulé": "cancelado",
@@ -22331,7 +22337,7 @@ function dkJfLibIcon(l) {
   var n = String(l.name || '').toLowerCase();
   if (l.type === 'movies') return 'film';
   if (l.type === 'tvshows') return 'tv';
-  if (l.type === 'music') return 'music';
+  if (l.type === 'music' || l.type === 'musicvideos') return 'music';
   if (l.type === 'homevideos') return 'camcorder';
   if (l.type === 'books') return 'book';
   if (/clip|concert|musi/.test(n)) return 'music';
@@ -22954,7 +22960,7 @@ function dkJfSeekTo(sec) {
   else p.v.currentTime = sec;
 }
 function dkJfTypeName(t) {
-  return { movies: T('Films'), tvshows: T('Séries'), music: T('Musique'), homevideos: T('Vidéos personnelles'), books: T('Livres') }[t] || T('Mixte');
+  return { movies: T('Films'), tvshows: T('Séries'), music: T('Musique'), musicvideos: T('Clips musicaux'), homevideos: T('Vidéos et photos personnelles'), books: T('Livres'), mixed: T('Films et séries mélangés') }[t] || T('Mixte');
 }
 function dkJfPoll(r) {
   clearTimeout(_dkJf.timer); _dkJf.timer = null;
@@ -23058,7 +23064,7 @@ function dkJfRenderAdd(body) {
   var up = f.path !== '/nas' ? '<button class="web-row" onclick="dkJfPick(\'' + 'UP' + '\')"><span class="web-row-text"><span class="web-row-name">&lsaquo; ' + T('Dossier parent') + '</span></span></button>' : '';
   body.innerHTML = '<div class="dkjf-form"><label class="dkjf-lab">' + T('Nom') + '</label><input class="dkjf-in" id="dkjf-lname" maxlength="60" value="' + webEsc(f.name) + '" onchange="dkJfFormKeep()">'
     + '<label class="dkjf-lab">' + T('Type de contenu') + '</label><select class="dkjf-in" id="dkjf-ltype" onchange="dkJfFormKeep()">'
-    + ['movies', 'tvshows', 'music', 'homevideos', 'books'].map(function(t) { return '<option value="' + t + '"' + (f.type === t ? ' selected' : '') + '>' + webEsc(dkJfTypeName(t)) + '</option>'; }).join('') + '</select>'
+    + ['movies', 'tvshows', 'music', 'musicvideos', 'homevideos', 'books', 'mixed'].map(function(t) { return '<option value="' + t + '"' + (f.type === t ? ' selected' : '') + '>' + webEsc(dkJfTypeName(t)) + '</option>'; }).join('') + '</select>'
     + '<label class="dkjf-lab">' + T('Dossiers choisis') + '</label><div style="margin:6px 0 12px;">'
     + (f.sel.length ? f.sel.map(function(p, i) { return '<span class="dkjf-chip">' + webEsc(p) + '<button title="' + webEsc(T('Retirer')) + '" onclick="dkJfUnsel(' + i + ')">&times;</button></span>'; }).join('') : '<span style="font-size:12.5px;color:var(--text-dim);">' + T('Aucun pour l’instant : ouvrez un dossier ci-dessous et cliquez sur « Choisir ».') + '</span>') + '</div>'
     + '<label class="dkjf-lab">' + webEsc(f.path) + '</label>'
@@ -29038,7 +29044,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.17';
+var DK_PAGE_VERSION = '2.60.18';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
