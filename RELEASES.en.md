@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.15 — 22 October 2026
+
+### New
+- **Long moves and copies are visible and cancellable from any device.** An “Operations running on the NAS” panel lists what is running (name, destination, duration) with a “Cancel” button, even if the operation was started from another computer or phone of the same user, or if the page was closed.
+  > Server-side `_FS_JOBS` registry (`_fs_job_ssh`), `GET /fs/jobs` and `POST /fs/jobs/cancel` routes (stops the `cp`/`mv` on the NAS through a per-job pattern), polled every 8 s by `fsJobsPoll`. Only covers operations handed to the host (across datasets, ACLs); quick operations do not show.
+
 ## 2.60.14 — 22 October 2026
 
 ### New

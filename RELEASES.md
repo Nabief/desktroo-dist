@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.15 — 22 octobre 2026
+
+### Nouveau
+- **Les déplacements et copies longs sont visibles et annulables depuis n'importe quel appareil.** Une fenêtre « Opérations en cours sur le NAS » liste ce qui tourne (nom, destination, durée) avec un bouton « Annuler », même si l'opération a été lancée depuis un autre ordinateur ou téléphone du même utilisateur, ou si la page a été fermée.
+  > Registre `_FS_JOBS` côté serveur (`_fs_job_ssh`), routes `GET /fs/jobs` et `POST /fs/jobs/cancel` (arrêt du `cp`/`mv` sur le NAS par un motif propre à la tâche), sondage toutes les 8 s par `fsJobsPoll`. Ne concerne que les opérations confiées à l'hôte (entre datasets, ACL) ; les opérations rapides ne s'affichent pas.
+
 ## 2.60.14 — 22 octobre 2026
 
 ### Nouveau

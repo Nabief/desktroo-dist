@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.14'
+APP_VERSION = '2.60.15'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -5047,6 +5047,47 @@ def _px_is_dataset_root(p):
         return os.path.isdir(p) and not os.path.islink(p) and _px_dev(p) != _px_dev(os.path.dirname(p))
     except OSError:
         return False
+
+
+# MDM-FS-JOBS-V1 : les déplacements / copies lancés sur le NAS sont inscrits ici, côté serveur : tous les appareils
+# du même utilisateur les voient, et n'importe lequel peut les annuler (le navigateur qui les a lancés n'est plus requis).
+_FS_JOBS = {}
+_FS_JOBS_LOCK = _threading.Lock()
+
+
+def _fs_job_ssh(by, kind, src, dst, script, timeout=7200):
+    """Exécute `script` sur le NAS (root) en tant que tâche suivie. Rend (out, err, code) ; lève 'Annulé' si on l'a annulée."""
+    jid = _sh_secrets.token_hex(4)
+    job = {'id': jid, 'kind': kind, 'src': src, 'dst': dst, 'by': by or '', 't0': int(_login_time.time()), 'cancel': False}
+    with _FS_JOBS_LOCK:
+        _FS_JOBS[jid] = job
+    try:
+        out, err, code = ssh_exec('sudo -n sh -c ' + shq(': dtjob-' + jid + '; ' + script), timeout=timeout)
+    finally:
+        with _FS_JOBS_LOCK:
+            _FS_JOBS.pop(jid, None)
+    if job['cancel']:
+        raise RuntimeError('Opération annulée.')
+    return out, err, code
+
+
+def _fs_jobs_list(by):
+    with _FS_JOBS_LOCK:
+        jobs = [dict(j) for j in _FS_JOBS.values() if not by or not j.get('by') or j.get('by') == by]
+    now = int(_login_time.time())
+    return [{'id': j['id'], 'kind': j['kind'], 'src': j['src'], 'dst': j['dst'], 'by': j['by'], 'elapsed': now - j['t0']} for j in sorted(jobs, key=lambda x: x['t0'])]
+
+
+def _fs_job_cancel(jid, by):
+    with _FS_JOBS_LOCK:
+        job = _FS_JOBS.get(jid)
+    if not job or (by and job.get('by') and job['by'] != by):
+        raise ValueError('Tâche introuvable (déjà terminée ?).')
+    job['cancel'] = True
+    # Le motif « dtjo[b]- » ne se trouve pas lui-même dans cette commande. On coupe le shell d'abord, puis ses enfants (cp, mv).
+    script = ("pids=$(pgrep -f 'dtjo[b]-%s'); kids=''; for p in $pids; do kids=\"$kids $(pgrep -P $p)\"; done; "
+              "[ -n \"$pids\" ] && kill -TERM $pids; [ -n \"$kids\" ] && kill -TERM $kids; true") % jid
+    ssh_exec('sudo -n sh -c ' + shq(script), timeout=30)
 
 
 def _px_move(src, dst, timeout=7200):
@@ -16415,6 +16456,11 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        # MDM-FS-JOBS-V1 : tâches de déplacement / copie en cours (visibles de tous les appareils de l'utilisateur)
+        if path == '/fs/jobs':
+            self._json(200, {'jobs': _fs_jobs_list(_px_by(self))})
+            return
+
         # MDM-CT-UPDATE-V1 : suivi d'une mise à jour de conteneurs lancée par POST /containers/update
         if path == '/containers/update/status':
             try:
@@ -17642,6 +17688,16 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
 
+        if path == '/fs/jobs/cancel':
+            try:
+                _fs_job_cancel(str(self._body().get('id', '')), _px_by(self))
+                self._json(200, {'ok': True})
+            except ValueError as e:
+                self._json(400, {'error': str(e)})
+            except Exception as e:
+                self._json(500, {'error': str(e)})
+            return
+
         # MDM-FILEOPS-MOVE-V1 : renommer / déplacer / copier (src -> dst)
         if path == '/rename' or path == '/move' or path == '/copy':
             import shutil as _shutil
@@ -17675,7 +17731,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     except Exception:
                         # ACL ZFS/SMB : délègue la copie au host (vrai root).
                         _cmd = 'rm -rf ' + shq(dst) + '; cp -a ' + shq(src) + ' ' + shq(dst)
-                        out, err, code = ssh_exec("sudo -n sh -c " + shq(_cmd), timeout=7200)
+                        out, err, code = _fs_job_ssh(_px_by(self), 'copy', src, dst, _cmd)
                         if code != 0 or not os.path.exists(dst):
                             raise RuntimeError('Copie (host) : ' + (err or out or 'échec').strip()[:200])
                 else:
@@ -17689,7 +17745,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                         _mvcmd = ('if cp -a --reflink=always -- ' + shq(src) + ' ' + shq(dst) + ' 2>/dev/null; '
                                   'then rm -rf -- ' + shq(src) + '; '
                                   'else rm -rf -- ' + shq(dst) + '; mv -f -- ' + shq(src) + ' ' + shq(dst) + '; fi')
-                        out, err, code = ssh_exec("sudo -n sh -c " + shq(_mvcmd), timeout=7200)
+                        out, err, code = _fs_job_ssh(_px_by(self), 'move', src, dst, _mvcmd)
                         if code != 0:
                             raise RuntimeError('Déplacement (host) : ' + (err or out or 'échec').strip()[:200])
                     # Vérifie que la source a bien disparu.

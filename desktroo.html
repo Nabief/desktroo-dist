@@ -4487,6 +4487,10 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouveau document": "New document",
 "Fichier": "File",
 "Uploader ici": "Upload here",
+"Opérations en cours sur le NAS": "Operations running on the NAS",
+"Opération annulée": "Operation cancelled",
+"Copie": "Copy",
+"Déplacement": "Move",
 "Tout sélectionner": "Select all",
 "Tout sélectionner (Ctrl+A)": "Select all (Ctrl+A)",
 "Nouvel onglet": "New tab",
@@ -10568,6 +10572,10 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouveau document": "Nuevo documento",
 "Fichier": "Archivo",
 "Uploader ici": "Subir aquí",
+"Opérations en cours sur le NAS": "Operaciones en curso en el NAS",
+"Opération annulée": "Operación cancelada",
+"Copie": "Copia",
+"Déplacement": "Traslado",
 "Tout sélectionner": "Seleccionar todo",
 "Tout sélectionner (Ctrl+A)": "Seleccionar todo (Ctrl+A)",
 "Nouvel onglet": "Nueva pestaña",
@@ -29027,7 +29035,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.14';
+var DK_PAGE_VERSION = '2.60.15';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -44534,6 +44542,45 @@ function fsPickFolder(startPath, cb) {
   document.getElementById('modal-filepicker').style.display = 'flex';
   _fpLoad(_fpCurPath);
 }
+// MDM-FS-JOBS-V1 : déplacements / copies en cours sur le NAS, vus de tous les appareils de l'utilisateur, avec « Annuler ».
+var _fsJobsTimer = null;
+function fsJobsRender(jobs) {
+  var el = document.getElementById('fs-jobs');
+  if (!jobs || !jobs.length) { if (el) el.style.display = 'none'; return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'fs-jobs';
+    el.style.cssText = 'position:fixed;bottom:calc(var(--wa-b) + 190px);right:calc(var(--wa-r) + 20px);z-index:5990;min-width:290px;max-width:380px;'
+      + 'background:var(--glass,#131f34);border:1px solid var(--glass-border,rgba(255,255,255,.12));border-radius:12px;'
+      + 'box-shadow:0 14px 44px rgba(0,0,0,.5);padding:12px 14px;color:var(--text,#e9eef7);font-size:13px;';
+    document.body.appendChild(el);
+  }
+  var esc = function(x) { return String(x || '').replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+  var base = function(p) { p = String(p || '').replace(/\/+$/, ''); return p.slice(p.lastIndexOf('/') + 1); };
+  var mins = function(s) { return s < 90 ? s + ' s' : Math.round(s / 60) + ' min'; };
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-weight:700;margin-bottom:8px;">' + esc(T('Opérations en cours sur le NAS')) + '</div>'
+    + jobs.map(function(j) {
+      return '<div style="display:flex;align-items:center;gap:9px;padding:6px 0;border-top:1px solid rgba(255,255,255,.08);">'
+        + '<div class="spinner" style="width:14px;height:14px;flex:0 0 auto;"></div>'
+        + '<div style="flex:1;min-width:0;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(j.kind === 'copy' ? T('Copie') : T('Déplacement')) + ' · ' + esc(base(j.src)) + '</div>'
+        + '<div style="font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + esc(j.dst) + '">→ ' + esc(j.dst) + ' · ' + esc(mins(j.elapsed)) + '</div></div>'
+        + '<button class="fs-btn" data-jid="' + esc(j.id) + '" style="flex:0 0 auto;">' + esc(T('Annuler')) + '</button></div>';
+    }).join('');
+  el.querySelectorAll('button[data-jid]').forEach(function(b) {
+    b.onclick = function() {
+      b.disabled = true;
+      fileops('POST', 'fs/jobs/cancel', { id: b.getAttribute('data-jid') })
+        .then(function() { toast(T('Opération annulée')); fsJobsPoll(); })
+        .catch(function(e) { b.disabled = false; toast('❌ ' + ((e && e.message) || e)); });
+    };
+  });
+}
+function fsJobsPoll() {
+  if (document.hidden || !(apiKey || basicAuth)) return Promise.resolve();
+  return fileops('GET', 'fs/jobs').then(function(r) { fsJobsRender((r && r.jobs) || []); }).catch(function() {});
+}
+if (!_fsJobsTimer) _fsJobsTimer = setInterval(fsJobsPoll, 8000);
 // ── Indicateur de progression des opérations fichiers ──
 function fsOp(label) {
   var el = document.getElementById('fs-op');
