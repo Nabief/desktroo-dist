@@ -11709,11 +11709,28 @@ KIOSK_ICON_DIR = os.path.join(STORE_DIR, 'kiosk-icons')
 _KIOSK_ICON_NAME = re.compile(r'^([a-z0-9][a-z0-9-]{0,40})-(192|512)\.png$')
 
 
+def _store_kiosk_inst(app_id):
+    """Fiche d'une app pour son manifeste « Desktroo <app> » : app installée par Desktroo Apps, ou app RELIÉE
+    (NPMplus, AdGuard Home, Pi-hole sur une autre machine). Sans cela, une app reliée n'avait ni manifeste ni icône
+    à elle : le navigateur installait la page avec l'icône de Desktroo, ou proposait d'ouvrir l'app Desktroo."""
+    inst = store_installed_get().get(app_id)
+    if inst:
+        return inst
+    try:
+        for aid, label, fn in ((STORE_NPM_ID, 'NPMplus', store_npm_linked), (STORE_AG_ID, 'AdGuard Home', store_ag_linked),
+                               (STORE_PH_ID, 'Pi-hole', store_ph_linked)):
+            if app_id == aid and fn():
+                return {'name': {'fr': label, 'en': label}, 'linked': True}
+    except Exception:
+        pass
+    return None
+
+
 def store_kiosk_icon_put(b):
     import base64 as _b64
     b = b if isinstance(b, dict) else {}
     app = str(b.get('id') or '')
-    if not re.match(r'^[a-z0-9][a-z0-9-]{0,40}$', app) or not (app in _KIOSK_SYS or app in store_installed_get()):
+    if not re.match(r'^[a-z0-9][a-z0-9-]{0,40}$', app) or not (app in _KIOSK_SYS or _store_kiosk_inst(app)):
         return 400, {'ok': False, 'error': 'App inconnue.'}
     os.makedirs(KIOSK_ICON_DIR, exist_ok=True)
     saved = 0
@@ -11759,7 +11776,7 @@ def store_kiosk_manifest(app_id):
     """Manifeste « Desktroo <app> » : la fenêtre de l'app, seule, dans sa propre fenêtre Windows/Mac/Linux."""
     if not _STORE_ID_RE.match(app_id or ''):
         return None
-    inst = store_installed_get().get(app_id)
+    inst = _store_kiosk_inst(app_id)
     if not inst and app_id in _KIOSK_SYS:
         d = _KIOSK_SYS[app_id]
         return {'name': 'Desktroo ' + d['l'], 'short_name': d['l'][:12], 'id': '/k/' + app_id + '/', 'start_url': '/k/' + app_id + '/',

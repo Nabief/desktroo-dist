@@ -15,6 +15,10 @@ the grey line underneath gives the technical detail, when there is one.
 - **Pi-hole and AdGuard Home: a clear message instead of a port error.** Both use port 53 and cannot run together on the same NAS. If one is installed, installing the other is refused with an explanation and what to do (uninstall the first, or link a server running on another machine).
   > `_store_dns_conflict` before the generic “port already in use” message; an app whose image digest is not pinned yet is cleanly refused.
 
+### Fixed
+- **Installing a “linked” NPMplus, AdGuard Home or Pi-hole as a computer app.** A linked app (installed outside Desktroo Apps, for example NPMplus on another machine) was installed with the Desktroo icon, and the browser only offered “Open in the Desktroo app” instead of adding a new app. It now has its own name and icon.
+  > `store_kiosk_manifest` and `store_kiosk_icon_put` only knew the local registry apps: linked apps, injected only into the displayed list, had no manifest (404) and no PNG icon. New `_store_kiosk_inst` function.
+
 ## 2.60.9 — 19 October 2026
 
 ### Fixed
