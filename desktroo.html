@@ -4489,6 +4489,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Uploader ici": "Upload here",
 "Opérations en cours sur le NAS": "Operations running on the NAS",
 "Opération annulée": "Operation cancelled",
+"annulé": "cancelled",
 "Copie": "Copy",
 "Déplacement": "Move",
 "Tout sélectionner": "Select all",
@@ -10574,6 +10575,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Uploader ici": "Subir aquí",
 "Opérations en cours sur le NAS": "Operaciones en curso en el NAS",
 "Opération annulée": "Operación cancelada",
+"annulé": "cancelado",
 "Copie": "Copia",
 "Déplacement": "Traslado",
 "Tout sélectionner": "Seleccionar todo",
@@ -18783,14 +18785,15 @@ async function fsPaste() {
   const items = _fsClipboard.items;
   const base = fsActiveTabPath ? fsActiveTabPath() : currentFsPath;
   const op = wasCut ? 'move' : 'copy';
-  const prog = fsOp(wasCut ? T('Déplacement…') : T('Copie…'));
-  let okc = 0, errc = 0, skc = 0, lastErr = '', i = 0; const ctx = { batch: null };
+  const prog = fsOp(wasCut ? T('Déplacement…') : T('Copie…'), true);
+  let okc = 0, errc = 0, skc = 0, lastErr = '', i = 0; const ctx = { batch: null, bid: prog.bid };
   for (const it of items) {
     i++; prog.update(i, items.length, it.name);
     const dst = (base.endsWith('/') ? base : base + '/') + it.name;
     if (dst === it.path) { errc++; lastErr = T('même dossier'); continue; }
     const r = await fsRunWithConflict(op, it.path, { src: it.path, dst: dst, name: it.name }, ctx);
     if (r === 'ok') okc++; else if (r === 'skip') skc++; else { errc++; lastErr = r.slice(4); }
+    if (prog.cancelled) { lastErr = T('annulé'); break; }
   }
   if (wasCut) _fsClipboard = null;
   prog.done((wasCut ? T('Déplacé : ') : T('Collé : ')) + okc + T(' élément(s)')
@@ -29035,7 +29038,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.15';
+var DK_PAGE_VERSION = '2.60.16';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -44582,7 +44585,7 @@ function fsJobsPoll() {
 }
 if (!_fsJobsTimer) _fsJobsTimer = setInterval(fsJobsPoll, 8000);
 // ── Indicateur de progression des opérations fichiers ──
-function fsOp(label) {
+function fsOp(label, cancellable) {
   var el = document.getElementById('fs-op');
   if (!el) {
     el = document.createElement('div');
@@ -44594,25 +44597,31 @@ function fsOp(label) {
   }
   el.style.display = 'block';
   if (fsOp._t) { clearTimeout(fsOp._t); fsOp._t = null; }
-  return {
-    update: function (i, n, name) {
+  var self = { bid: Math.random().toString(36).slice(2, 10), cancelled: false };
+  self.update = function (i, n, name) {
       var pct = n ? Math.round(i / n * 100) : 0;
       el.innerHTML =
         '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px;">'
         + '<div class="spinner" style="width:15px;height:15px;flex:0 0 auto;"></div>'
         + '<b style="flex:1;">' + label + '</b>'
-        + '<span style="color:var(--text-dim);font-size:11px;">' + i + ' / ' + n + '</span></div>'
+        + '<span style="color:var(--text-dim);font-size:11px;">' + i + ' / ' + n + '</span>'
+        + (cancellable ? '<button class="fs-btn" id="fs-op-cancel"' + (self.cancelled ? ' disabled' : '') + '>' + T('Annuler') + '</button>' : '') + '</div>'
         + '<div style="height:7px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;margin-bottom:7px;">'
         + '<div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--accent),var(--info));transition:width .2s;"></div></div>'
         + '<div style="font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + String(name || '').replace(/</g, '&lt;') + '</div>';
-    },
-    done: function (msg, isError) {
+      var cb = el.querySelector('#fs-op-cancel');
+      if (cb) cb.onclick = function () {
+        self.cancelled = true; cb.disabled = true;
+        fileops('POST', 'fs/jobs/cancel', { bid: self.bid }).catch(function () {});
+      };
+    };
+  self.done = function (msg, isError) {
       el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:9px;line-height:1.5;">'
         + '<span style="font-size:15px;flex:0 0 auto;">' + (isError ? '⚠️' : '✅') + '</span>'
         + '<span style="flex:1;word-break:break-word;">' + String(msg).replace(/</g, '&lt;') + '</span></div>';
       fsOp._t = setTimeout(function () { if (el) el.style.display = 'none'; }, isError ? 7000 : 3500);
-    }
   };
+  return self;
 }
 // Dialogue de conflit : Écraser / Garder les deux / Annuler (+ appliquer à tout).
 function fsConflictDialog(name) {
@@ -44642,6 +44651,7 @@ function fsConflictDialog(name) {
 async function fsRunWithConflict(op, src, dstOrBody, ctx) {
   var body = (typeof dstOrBody === 'object') ? dstOrBody : { src: src, dst: dstOrBody };
   var conflict = ctx.batch || 'error';
+  if (ctx.bid) body.bid = ctx.bid;
   while (true) {
     try {
       body.conflict = conflict;
@@ -44667,14 +44677,15 @@ function _fsTransfer(op) {
   if (!list.length) { toast(T('Sélectionnez un élément')); return; }
   fsPickFolder(fsActiveTabPath ? fsActiveTabPath() : currentFsPath, async function(destDir){
     if (!destDir) return;
-    const prog = fsOp(op === 'move' ? T('Déplacement…') : T('Copie…'));
-    let okc = 0, errc = 0, skc = 0, lastErr = '', i = 0; const ctx = { batch: null };
+    const prog = fsOp(op === 'move' ? T('Déplacement…') : T('Copie…'), true);
+    let okc = 0, errc = 0, skc = 0, lastErr = '', i = 0; const ctx = { batch: null, bid: prog.bid };
     for (const it of list) {
       i++; prog.update(i, list.length, it.name);
       const dst = destDir.replace(/\/$/, '') + '/' + it.name;
       if (dst === it.path) { errc++; lastErr = T('déjà dans ce dossier'); continue; }
       const r = await fsRunWithConflict(op, it.path, { src: it.path, dst: dst, name: it.name }, ctx);
       if (r === 'ok') okc++; else if (r === 'skip') skc++; else { errc++; lastErr = r.slice(4); }
+      if (prog.cancelled) { lastErr = T('annulé'); break; }
     }
     prog.done((op === 'move' ? T('Déplacé : ') : T('Copié : ')) + okc + T(' élément(s)')
       + (skc ? ' · ' + skc + T(' ignoré(s)') : '') + (errc ? ' · ' + errc + T(' échec(s) — ') + lastErr : ''), errc > 0);

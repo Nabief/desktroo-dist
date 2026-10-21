@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.16 — 22 October 2026
+
+### Fixed
+- **Cancelling a move or a copy now really stops the whole operation.** When you move a selection of files, Desktroo sends them one by one: cancelling the current file let the next one start. The operation now carries a shared identifier; “Cancel” (in the “Operations running on the NAS” panel, or on the progress indicator of the device that started it) stops the current file and refuses all the following ones, even if the operation was started from another device.
+  > `bid` field sent with every `/move` and `/copy`, server-side `_FS_BATCH_CANCELLED` registry (1 h), `POST /fs/jobs/cancel` accepts `id` or `bid`. A page opened before this version does not send `bid`: closing it is enough to stop its loop.
+
 ## 2.60.15 — 22 October 2026
 
 ### New

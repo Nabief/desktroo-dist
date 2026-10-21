@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.15'
+APP_VERSION = '2.60.16'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -5055,10 +5055,10 @@ _FS_JOBS = {}
 _FS_JOBS_LOCK = _threading.Lock()
 
 
-def _fs_job_ssh(by, kind, src, dst, script, timeout=7200):
+def _fs_job_ssh(by, kind, src, dst, script, timeout=7200, bid=''):
     """Exécute `script` sur le NAS (root) en tant que tâche suivie. Rend (out, err, code) ; lève 'Annulé' si on l'a annulée."""
     jid = _sh_secrets.token_hex(4)
-    job = {'id': jid, 'kind': kind, 'src': src, 'dst': dst, 'by': by or '', 't0': int(_login_time.time()), 'cancel': False}
+    job = {'id': jid, 'kind': kind, 'src': src, 'dst': dst, 'by': by or '', 'bid': bid or '', 't0': int(_login_time.time()), 'cancel': False}
     with _FS_JOBS_LOCK:
         _FS_JOBS[jid] = job
     try:
@@ -5075,14 +5075,38 @@ def _fs_jobs_list(by):
     with _FS_JOBS_LOCK:
         jobs = [dict(j) for j in _FS_JOBS.values() if not by or not j.get('by') or j.get('by') == by]
     now = int(_login_time.time())
-    return [{'id': j['id'], 'kind': j['kind'], 'src': j['src'], 'dst': j['dst'], 'by': j['by'], 'elapsed': now - j['t0']} for j in sorted(jobs, key=lambda x: x['t0'])]
+    return [{'id': j['id'], 'kind': j['kind'], 'src': j['src'], 'dst': j['dst'], 'by': j['by'], 'bid': j.get('bid', ''), 'elapsed': now - j['t0']} for j in sorted(jobs, key=lambda x: x['t0'])]
 
 
-def _fs_job_cancel(jid, by):
+_FS_BATCH_CANCELLED = {}   # lot (une sélection déplacée fichier par fichier par un navigateur) -> heure d'annulation
+
+
+def _fs_batch_check(bid):
+    """Un lot annulé n'envoie plus rien : les fichiers suivants sont refusés tout de suite."""
+    now = _login_time.time()
+    for k in [k for k, t in _FS_BATCH_CANCELLED.items() if now - t > 3600]:
+        _FS_BATCH_CANCELLED.pop(k, None)
+    if bid and bid in _FS_BATCH_CANCELLED:
+        raise ValueError('Opération annulée.')
+
+
+def _fs_job_cancel(jid, by, bid=''):
     with _FS_JOBS_LOCK:
         job = _FS_JOBS.get(jid)
-    if not job or (by and job.get('by') and job['by'] != by):
+        if not job and bid:   # annulation d'un lot : toutes ses tâches en cours
+            jobs = [j for j in _FS_JOBS.values() if j.get('bid') == bid]
+            job = jobs[0] if jobs else None
+    if not bid and job and job.get('bid'):
+        bid = job['bid']
+    if bid:
+        _FS_BATCH_CANCELLED[bid] = _login_time.time()
+    if not job:
+        if bid:
+            return
         raise ValueError('Tâche introuvable (déjà terminée ?).')
+    if by and job.get('by') and job['by'] != by:
+        raise ValueError('Tâche introuvable (déjà terminée ?).')
+    jid = job['id']
     job['cancel'] = True
     # Le motif « dtjo[b]- » ne se trouve pas lui-même dans cette commande. On coupe le shell d'abord, puis ses enfants (cp, mv).
     script = ("pids=$(pgrep -f 'dtjo[b]-%s'); kids=''; for p in $pids; do kids=\"$kids $(pgrep -P $p)\"; done; "
@@ -17690,7 +17714,8 @@ class FileOpsHandler(BaseHTTPRequestHandler):
 
         if path == '/fs/jobs/cancel':
             try:
-                _fs_job_cancel(str(self._body().get('id', '')), _px_by(self))
+                _b = self._body()
+                _fs_job_cancel(str(_b.get('id', '')), _px_by(self), str(_b.get('bid', ''))[:32])
                 self._json(200, {'ok': True})
             except ValueError as e:
                 self._json(400, {'error': str(e)})
@@ -17711,6 +17736,8 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     raise ValueError('Source introuvable')
                 if os.path.realpath(src) == os.path.realpath(dst):
                     raise ValueError('Source et destination identiques')
+                bid = str(body.get('bid', ''))[:32]
+                _fs_batch_check(bid)
                 conflict = str(body.get('conflict', 'error'))
                 if os.path.exists(dst):
                     if conflict == 'overwrite':
@@ -17731,7 +17758,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     except Exception:
                         # ACL ZFS/SMB : délègue la copie au host (vrai root).
                         _cmd = 'rm -rf ' + shq(dst) + '; cp -a ' + shq(src) + ' ' + shq(dst)
-                        out, err, code = _fs_job_ssh(_px_by(self), 'copy', src, dst, _cmd)
+                        out, err, code = _fs_job_ssh(_px_by(self), 'copy', src, dst, _cmd, bid=bid)
                         if code != 0 or not os.path.exists(dst):
                             raise RuntimeError('Copie (host) : ' + (err or out or 'échec').strip()[:200])
                 else:
@@ -17745,7 +17772,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                         _mvcmd = ('if cp -a --reflink=always -- ' + shq(src) + ' ' + shq(dst) + ' 2>/dev/null; '
                                   'then rm -rf -- ' + shq(src) + '; '
                                   'else rm -rf -- ' + shq(dst) + '; mv -f -- ' + shq(src) + ' ' + shq(dst) + '; fi')
-                        out, err, code = _fs_job_ssh(_px_by(self), 'move', src, dst, _mvcmd)
+                        out, err, code = _fs_job_ssh(_px_by(self), 'move', src, dst, _mvcmd, bid=bid)
                         if code != 0:
                             raise RuntimeError('Déplacement (host) : ' + (err or out or 'échec').strip()[:200])
                     # Vérifie que la source a bien disparu.
