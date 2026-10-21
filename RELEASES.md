@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.11 — 21 octobre 2026
+
+### Corrigé
+- **Installer NPMplus, AdGuard Home ou Pi-hole « reliés » comme application de l'ordinateur.** Une app reliée (installée ailleurs que par Desktroo Apps, par exemple NPMplus sur une autre machine) s'installait avec l'icône de Desktroo, et le navigateur proposait seulement « Ouvrir dans l'application Desktroo » au lieu d'ajouter une nouvelle application. Elle a maintenant son propre nom et sa propre icône.
+  > `store_kiosk_manifest` et `store_kiosk_icon_put` ne connaissaient que les apps du registre local : les apps reliées, injectées seulement dans la liste affichée, n'avaient ni manifeste (404) ni icône PNG. Nouvelle fonction `_store_kiosk_inst`.
+
 ## 2.60.10 — 19 octobre 2026
 
 ### Nouveau
@@ -14,10 +20,6 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 ### Amélioré
 - **Pi-hole et AdGuard Home : un message clair au lieu d'une erreur de port.** Les deux utilisent le port 53 et ne peuvent pas tourner ensemble sur le même NAS. Si l'un est installé, l'installation de l'autre est refusée avec une explication et la piste à suivre (désinstaller le premier, ou relier un serveur sur une autre machine).
   > `_store_dns_conflict` avant le message générique « port déjà utilisé » ; un app dont l'empreinte d'image n'est pas encore figée est refusée proprement.
-
-### Corrigé
-- **Installer NPMplus, AdGuard Home ou Pi-hole « reliés » comme application de l'ordinateur.** Une app reliée (installée ailleurs que par Desktroo Apps, par exemple NPMplus sur une autre machine) s'installait avec l'icône de Desktroo, et le navigateur proposait seulement « Ouvrir dans l'application Desktroo » au lieu d'ajouter une nouvelle application. Elle a maintenant son propre nom et sa propre icône.
-  > `store_kiosk_manifest` et `store_kiosk_icon_put` ne connaissaient que les apps du registre local : les apps reliées, injectées seulement dans la liste affichée, n'avaient ni manifeste (404) ni icône PNG. Nouvelle fonction `_store_kiosk_inst`.
 
 ## 2.60.9 — 19 octobre 2026
 
