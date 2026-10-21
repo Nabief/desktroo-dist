@@ -29038,7 +29038,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.16';
+var DK_PAGE_VERSION = '2.60.17';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -44546,8 +44546,9 @@ function fsPickFolder(startPath, cb) {
   _fpLoad(_fpCurPath);
 }
 // MDM-FS-JOBS-V1 : déplacements / copies en cours sur le NAS, vus de tous les appareils de l'utilisateur, avec « Annuler ».
-var _fsJobsTimer = null;
+var _fsJobsTimer = null, _fsLocalBids = {};   // lots lancés par cette page : leur indicateur local suffit
 function fsJobsRender(jobs) {
+  jobs = (jobs || []).filter(function(j) { return !(j.bid && _fsLocalBids[j.bid]); });
   var el = document.getElementById('fs-jobs');
   if (!jobs || !jobs.length) { if (el) el.style.display = 'none'; return; }
   if (!el) {
@@ -44598,6 +44599,7 @@ function fsOp(label, cancellable) {
   el.style.display = 'block';
   if (fsOp._t) { clearTimeout(fsOp._t); fsOp._t = null; }
   var self = { bid: Math.random().toString(36).slice(2, 10), cancelled: false };
+  _fsLocalBids[self.bid] = 1;
   self.update = function (i, n, name) {
       var pct = n ? Math.round(i / n * 100) : 0;
       el.innerHTML =
@@ -44616,6 +44618,7 @@ function fsOp(label, cancellable) {
       };
     };
   self.done = function (msg, isError) {
+      delete _fsLocalBids[self.bid];
       el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:9px;line-height:1.5;">'
         + '<span style="font-size:15px;flex:0 0 auto;">' + (isError ? '⚠️' : '✅') + '</span>'
         + '<span style="flex:1;word-break:break-word;">' + String(msg).replace(/</g, '&lt;') + '</span></div>';

@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.17 — 22 October 2026
+
+### Fixed
+- **An operation started from this device no longer shows twice.** Its progress indicator is enough; the “Operations running on the NAS” panel only shows those started from another device.
+
 ## 2.60.16 — 22 October 2026
 
 ### Fixed

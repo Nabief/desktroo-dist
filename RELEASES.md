@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.17 — 22 octobre 2026
+
+### Corrigé
+- **Une opération lancée depuis cet appareil ne s'affiche plus deux fois.** Son indicateur de progression suffit ; la fenêtre « Opérations en cours sur le NAS » ne montre que celles lancées depuis un autre appareil.
+
 ## 2.60.16 — 22 octobre 2026
 
 ### Corrigé
