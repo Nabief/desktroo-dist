@@ -4487,6 +4487,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouveau document": "New document",
 "Fichier": "File",
 "Uploader ici": "Upload here",
+"Tout sélectionner": "Select all",
+"Tout sélectionner (Ctrl+A)": "Select all (Ctrl+A)",
 "Nouvel onglet": "New tab",
 "Volet aperçu": "Preview pane",
 "Mosaïque": "Grid",
@@ -10566,6 +10568,8 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouveau document": "Nuevo documento",
 "Fichier": "Archivo",
 "Uploader ici": "Subir aquí",
+"Tout sélectionner": "Seleccionar todo",
+"Tout sélectionner (Ctrl+A)": "Seleccionar todo (Ctrl+A)",
 "Nouvel onglet": "Nueva pestaña",
 "Volet aperçu": "Panel de vista previa",
 "Mosaïque": "Mosaico",
@@ -18561,6 +18565,7 @@ function buildFsWindowHtml(wid, top, left) {
           <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsMkdirPrompt()" title="Nouveau dossier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg><span>Dossier</span></button>
           <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsNewFile()" title="Nouveau document"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg><span>Fichier</span></button>
           <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsUploadPrompt()" title="Uploader ici"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Upload</span></button>
+          <button class="fstb-btn" onclick="setActiveFsWin('${wid}');fsSelectAllToggle()" title="Tout sélectionner (Ctrl+A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Tout sélectionner</span></button>
           <span class="fs-sel-acts" id="${wid}-fs-sel-acts">
             <button class="fstb-btn primary" id="${wid}-fs-btn-dl" onclick="setActiveFsWin('${wid}');fsDownloadSelected()" style="display:none" title="Télécharger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Télécharger</span></button>
             <button class="fstb-btn" id="${wid}-fs-btn-reveal" onclick="setActiveFsWin('${wid}');fsRevealSelected()" style="display:none" title="Ouvrir le dossier qui contient cet élément"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="12 11 15 14 12 17"/><line x1="9" y1="14" x2="15" y2="14"/></svg><span>Emplacement</span></button>
@@ -19282,7 +19287,7 @@ function fsRenderEntries(el, items) {
       + '<div class="fs-file-type">' + webEsc(kind === 'pool' ? 'Pool' : fsKindLabel(item.name, isDir)) + '</div>'
       + '<div class="fs-file-size">' + (isDir ? '—' : fmtBytes(item.size || 0)) + '</div>'
       + '<div class="fs-file-date" title="' + webEsc(fsFmtDate(item.mtime)) + '">' + webEsc(fsFmtWhen(item.mtime) || '—') + '</div>';
-    div.onclick      = function(e){ e.stopPropagation(); fsCtxHide(); setActiveFsWin(wid); if (dkIsPhone() && !e.shiftKey && !e.ctrlKey && !e.metaKey) { fsOpenEntry(entry); return; } fsTileClick(e, entry, idx); try { el.focus({ preventScroll:true }); } catch (_) {} };
+    div.onclick      = function(e){ e.stopPropagation(); fsCtxHide(); setActiveFsWin(wid); if (dkIsPhone() && !e.shiftKey && !e.ctrlKey && !e.metaKey && !(_fsSel && _fsSel.length)) { fsOpenEntry(entry); return; } fsTileClick(e, entry, idx); try { el.focus({ preventScroll:true }); } catch (_) {} };
     div.ondblclick   = function(){ setActiveFsWin(wid); fsOpenEntry(entry); };
     div.oncontextmenu = function(e){ setActiveFsWin(wid); fsShowCtx(e, entry); };
     if (S) {
@@ -19499,8 +19504,8 @@ function fsTileClick(e, entry, idx){
   if (e.shiftKey && _fsSelAnchor >= 0 && _fsEntries.length) {
     const a = Math.min(_fsSelAnchor, idx), b = Math.max(_fsSelAnchor, idx);
     _fsSel = _fsEntries.slice(a, b + 1);
-  } else if (e.ctrlKey || e.metaKey) {
-    if (fsInSel(entry.path)) _fsSel = _fsSel.filter(function(s){ return s.path !== entry.path; });
+  } else if (e.ctrlKey || e.metaKey || (dkIsPhone() && _fsSel && _fsSel.length)) {   // téléphone : une sélection en cours → un appui coche ou décoche
+    if (fsInSel(entry.path)) { _fsSel = _fsSel.filter(function(s){ return s.path !== entry.path; }); if (!_fsSel.length) { fsDeselect(); return; } }
     else _fsSel = _fsSel.concat([entry]);
     _fsSelAnchor = idx;
   } else {
@@ -19551,6 +19556,12 @@ function fsSelect(item) {
   var _st=fsEl('fs-status'); if(_st) _st.textContent = item.name + (isFile ? '  —  ' + fmtBytes(item.size || 0) : '');
 }
 
+// Bouton « Tout sélectionner » : tout le dossier ; s'il l'est déjà, on désélectionne.
+function fsSelectAllToggle() {
+  if (!_fsEntries || !_fsEntries.length) return;
+  if (_fsSel && _fsSel.length === _fsEntries.length) { fsDeselect(); return; }
+  _fsSel = _fsEntries.slice(); fsRenderSel();
+}
 function fsDeselect() {
   fsScope().querySelectorAll('.fs-file.selected').forEach(el => el.classList.remove('selected'));
   fsSelected = null;
@@ -42635,6 +42646,97 @@ var _al = { nav: 'svc', cat: null, cats: null, cfg: null, draft: {}, err: null, 
 var AL_SMS_URL_RE = /^http:\/\/[^\/]+:\d+\/hook\/[0-9a-f]{32}$/;
 function alIsSms(r) { return alType(r) === 'Slack' && !!(r && r.attributes && AL_SMS_URL_RE.test(String(r.attributes.url || ''))); }
 WEB_ICONS.bell = WEB_ICONS.bell || '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>';
+// MDM-ALERT-TR-V1 : TrueNAS fournit les noms de catégories et de types d'alerte en anglais ; en français on les traduit ici.
+// Un nom inconnu (ajouté par une version plus récente de TrueNAS) reste en anglais.
+var AL_FR = {
+  'Applications': 'Applications', 'Audit': 'Audit', 'Certificates': 'Certificats', 'Clustering': 'Grappe (cluster)', 'Directory Service': 'Annuaire (Active Directory, LDAP)',
+  'High-Availability': 'Haute disponibilité', 'Hardware': 'Matériel', 'Key Management Interoperability Protocol (KMIP)': 'Gestion des clés (KMIP)', 'Plugins': 'Extensions',
+  'Network': 'Réseau', 'Reporting': 'Rapports', 'Security': 'Sécurité', 'Sharing': 'Partages', 'Storage': 'Stockage', 'System': 'Système', 'Tasks': 'Tâches',
+  'TrueNAS Connect Service': 'Service TrueNAS Connect', 'Key Management Integration': 'Gestion des clés',
+  'API Key Revoked': 'Clé d\'API révoquée', 'API Login Failures': 'Échecs de connexion à l\'API', 'Admin User Is Overridden': 'Le compte administrateur est remplacé',
+  'Administrator account activity': 'Activité du compte administrateur', 'Alert Check Failed (Standby Controller)': 'Échec de la vérification des alertes (contrôleur de secours)',
+  'Alert Check Failed': 'Échec de la vérification des alertes', 'All local full administrator accounts are expired.': 'Tous les comptes administrateurs locaux ont expiré.',
+  'Audit Database Contains Corrupted Records': 'La base d\'audit contient des enregistrements corrompus', 'Audit Service Backend Failed': 'Le moteur du service d\'audit est en échec',
+  'Audit Service Health Failure': 'Le service d\'audit est en mauvaise santé', 'Automatic Sync to Peer Failed': 'Échec de la synchronisation automatique avec l\'autre contrôleur',
+  'Automatic alert (%s)': 'Alerte automatique (%s)', 'BOND Interface references missing ports': 'L\'interface BOND référence des ports absents',
+  'Boot Pool Is Not Healthy': 'Le pool de démarrage n\'est pas sain', 'Certificate Has Expired': 'Certificat expiré', 'Certificate Is Expiring Soon': 'Certificat bientôt expiré',
+  'Certificate Is Expiring': 'Certificat en cours d\'expiration', 'Certificate Parsing Failed': 'Échec de lecture du certificat', 'Cloud Backup Task Failed': 'Échec de la tâche de sauvegarde cloud',
+  'Cloud Backup Task': 'Tâche de sauvegarde cloud', 'Cloud Provider Was Removed': 'Un fournisseur cloud a été retiré', 'Cloud Sync Task Failed': 'Échec de la tâche de synchronisation cloud',
+  'CloudSync Task': 'Tâche de synchronisation cloud', 'Configured Timezone Not Available': 'Le fuseau horaire configuré n\'est pas disponible', 'Core Files Detected': 'Fichiers core détectés',
+  'Correctable Memory Errors': 'Erreurs mémoire corrigibles', 'Creating VMWare Snapshot Failed': 'Échec de la création d\'un instantané VMware',
+  'Critical IPMI Firmware Update Available': 'Mise à jour critique du micrologiciel IPMI disponible', 'Critical Quota Exceeded on Dataset': 'Quota critique dépassé sur un dataset',
+  'Currently Running System Version Does Not Match Selected Update Profile': 'La version du système en cours ne correspond pas au profil de mise à jour choisi',
+  'Deprecated Service is Running': 'Un service obsolète est en cours d\'exécution', 'DirectoryService Bind Is Not Healthy': 'La liaison au service d\'annuaire n\'est pas saine',
+  'DirectoryService DNS Update Failed': 'Échec de la mise à jour DNS du service d\'annuaire', 'Disk Temperature Is Too Hot': 'Température du disque trop élevée',
+  'Email': 'E-mail', 'Enclosure Status Is Healthy': 'Le boîtier est en bon état', 'Enclosure Status Is Not Healthy': 'Le boîtier n\'est pas en bon état',
+  'FIPS misconfiguration': 'Mauvaise configuration FIPS', 'Failed Selftest': 'Échec de l\'auto-test', 'Failed to Notify TrueNAS About Alert': 'Échec de l\'envoi de l\'alerte à TrueNAS',
+  'Failover Event Caused System Reboot': 'Un basculement a provoqué un redémarrage du système', 'Fenced Caused System Reboot': 'Fenced a provoqué un redémarrage du système',
+  'GMail OAuth Configuration Discarded': 'Configuration OAuth Gmail abandonnée', 'High Erase Cycle Count': 'Nombre de cycles d\'effacement élevé',
+  'IPMI System Event Log Low Space Left': 'Journal des événements IPMI presque plein', 'IPMI System Event': 'Événement système IPMI',
+  'Incus Virtual Machines Were Not Migrated': 'Des machines virtuelles Incus n\'ont pas été migrées', 'Invalid NVDIMM Firmware Version': 'Version de micrologiciel NVDIMM invalide',
+  'JBOF removal may require reboot': 'Le retrait d\'un JBOF peut nécessiter un redémarrage', 'Local User Accounts Are Expired': 'Des comptes utilisateurs locaux ont expiré',
+  'Local User Accounts Must Change Password': 'Des comptes utilisateurs locaux doivent changer de mot de passe', 'Low Spare Block Reserve': 'Réserve de blocs de secours faible',
+  'NFS export entry blocked': 'Entrée d\'export NFS bloquée', 'NFS host list excessively long': 'Liste d\'hôtes NFS excessivement longue', 'NFS network list excessively long': 'Liste de réseaux NFS excessivement longue',
+  'NFS shares reference hosts that could not be resolved': 'Des partages NFS référencent des hôtes introuvables', 'NFS start is blocked by entries in /etc/exports.d': 'Le démarrage de NFS est bloqué par des entrées de /etc/exports.d',
+  'NTLMv1 authentication has been attempted in the last 24 hours': 'Une authentification NTLMv1 a été tentée ces dernières 24 heures', 'NTP Health Check Failed': 'Échec du contrôle de santé NTP',
+  'NVDIMM Energy Source Lifetime Is Less Than 10%': 'Durée de vie de la source d\'énergie NVDIMM inférieure à 10 %', 'NVDIMM Energy Source Lifetime Is Less Than 20%': 'Durée de vie de la source d\'énergie NVDIMM inférieure à 20 %',
+  'NVDIMM Firmware Version Should Be Upgraded': 'Le micrologiciel NVDIMM devrait être mis à jour', 'NVDIMM Memory Module Lifetime Is Less Than 10%': 'Durée de vie du module mémoire NVDIMM inférieure à 10 %',
+  'NVDIMM Memory Module Lifetime Is Less Than 20%': 'Durée de vie du module mémoire NVDIMM inférieure à 20 %', 'New Feature Flags Are Available for Pool': 'De nouvelles fonctionnalités sont disponibles pour le pool',
+  'Old BIOS Version': 'Version de BIOS ancienne', 'Pool Space Usage Is Above 85%': 'Le pool est utilisé à plus de 85 %', 'Pool Space Usage Is Above 90%': 'Le pool est utilisé à plus de 90 %',
+  'Pool Space Usage Is Above 95%': 'Le pool est utilisé à plus de 95 %', 'Pool Status Is Not Healthy': 'L\'état du pool n\'est pas sain', 'Ports are Not ACTIVE on BOND Interface': 'Des ports ne sont pas ACTIFS sur l\'interface BOND',
+  'Power Supply Error': 'Erreur d\'alimentation', 'Proactive Support Is Not Configured': 'Le support proactif n\'est pas configuré', 'Quota Exceeded on Dataset': 'Quota dépassé sur un dataset',
+  'Replication Failed': 'Échec de la réplication', 'Replication Succeeded': 'Réplication réussie', 'Replication': 'Réplication', 'Root User Can Still Log In To The Web UI': 'L\'utilisateur root peut encore se connecter à l\'interface web',
+  'Rsync Task': 'Tâche Rsync', 'S3 Bucket Dataset Is Missing': 'Le dataset du bucket S3 est manquant', 'S3 Bucket': 'Bucket S3', 'S3 Service': 'Service S3',
+  'SMB share audit configuration contains invalid groups': 'La configuration d\'audit d\'un partage SMB contient des groupes invalides', 'SMB share path has unresolvable issues': 'Le chemin d\'un partage SMB a des problèmes irrésolubles',
+  'SMB shares use incorrect recordsize value for Veeam Fast Clone': 'Des partages SMB utilisent une mauvaise taille d\'enregistrement pour Veeam Fast Clone', 'SMB user is missing required password hash': 'Un utilisateur SMB n\'a pas l\'empreinte de mot de passe requise',
+  'SMB1 connections to TrueNAS server have been performed in last 24 hours': 'Des connexions SMB1 au serveur ont eu lieu ces dernières 24 heures', 'SNMP Service': 'Service SNMP', 'SNMP Trap': 'Trappe SNMP',
+  'SSH Key Pair': 'Paire de clés SSH', 'SSH Login Failures': 'Échecs de connexion SSH', 'SSH Service': 'Service SSH', 'SSH credentials': 'Identifiants SSH', 'Scrub Failed to Start': 'Le scrub n\'a pas pu démarrer',
+  'Scrub Is Paused': 'Le scrub est en pause', 'Scrub Started': 'Scrub démarré', 'Sensor Value Is Outside of Working Range': 'Valeur d\'un capteur hors de la plage de fonctionnement', 'Snapshot Task Failed': 'Échec de la tâche d\'instantanés',
+  'Special Allocation Class Space Critical': 'Espace critique de la classe d\'allocation spéciale', 'Special Allocation Class Space Warning': 'Espace de la classe d\'allocation spéciale bientôt saturé',
+  'Support Contract Has Expired': 'Le contrat de support a expiré', 'Support Contract Is Expiring': 'Le contrat de support arrive à expiration', 'Syncing Encryption Keys to Peer Failed': 'Échec de la synchronisation des clés de chiffrement avec l\'autre contrôleur',
+  'Syncing KMIP Keys to Peer Failed': 'Échec de la synchronisation des clés KMIP avec l\'autre contrôleur', 'System mocking endpoints used': 'Points d\'accès de simulation du système utilisés', 'Test alert': 'Alerte de test',
+  'There Is An Issue With NVDIMM': 'Un problème affecte le NVDIMM', 'There are No ACTIVE Ports on BOND Interface': 'Aucun port ACTIF sur l\'interface BOND', 'Tier Migration Job Complete': 'Migration de niveau terminée',
+  'Tier Migration Job Error': 'Erreur de migration de niveau', 'Too Many Snapshots Exist For Dataset': 'Trop d\'instantanés pour un dataset', 'Too Many Snapshots Exist': 'Trop d\'instantanés existent', 'TrueNAS License Issue': 'Problème de licence TrueNAS',
+  'TrueNAS Verify Service: Changes detected in root file system.': 'Service de vérification TrueNAS : modifications détectées dans le système de fichiers racine.', 'Uncorrected Errors Detected': 'Erreurs non corrigées détectées', 'Update Available': 'Mise à jour disponible',
+  'V-Series DMI Hardware Version Unreadable': 'Version matérielle DMI de la série V illisible', 'VMWare Login Failed': 'Échec de connexion à VMware', 'VMWare Snapshot Deletion Failed': 'Échec de la suppression d\'un instantané VMware',
+  'Web UI HTTPS Certificate Setup Failed': 'Échec de la mise en place du certificat HTTPS de l\'interface web', 'iSCSI Discovery Authorization Global': 'Autorisation de découverte iSCSI globale',
+  'iSCSI Discovery Authorization Multiple Mutual CHAP': 'Autorisation de découverte iSCSI : plusieurs CHAP mutuels', 'iSCSI Discovery Authorization merged': 'Autorisation de découverte iSCSI fusionnée', 'syslog-ng Is Not Running': 'syslog-ng ne tourne pas',
+  'A USB Storage Device Has Been Connected to This System': 'Un périphérique de stockage USB a été branché', 'ARC Available Memory': 'Mémoire disponible de l\'ARC', 'ARC Free Memory': 'Mémoire libre de l\'ARC', 'ARC Size': 'Taille de l\'ARC',
+  'Application Update Available': 'Mise à jour d\'application disponible', 'Apps': 'Apps', 'At Least 1 Network Interface Is Required To Be Marked Critical For Failover': 'Au moins une interface réseau doit être marquée critique pour le basculement',
+  'CONTAINER': 'CONTENEUR', 'CPU Temperature': 'Température du processeur', 'CPU Usage': 'Utilisation du processeur', 'Catalog Not Healthy': 'Catalogue en mauvais état', 'Controllers VRRP States Do Not Agree': 'Les états VRRP des contrôleurs ne concordent pas',
+  'Demand Accesses per Second': 'Accès à la demande par seconde', 'Demand Data Accesses per Second': 'Accès aux données à la demande par seconde', 'Demand Data Hit Percentage': 'Taux de succès des données à la demande',
+  'Demand Data Hits per Second': 'Succès de données à la demande par seconde', 'Demand Data I/O Hit Percentage': 'Taux de succès E/S des données à la demande', 'Demand Data I/O Hits per Second': 'Succès E/S de données à la demande par seconde',
+  'Demand Data Miss Percentage': 'Taux d\'échec des données à la demande', 'Demand Data Misses per Second': 'Échecs de données à la demande par seconde', 'Demand Metadata Accesses per Second': 'Accès aux métadonnées à la demande par seconde',
+  'Demand Metadata Hit Percentage': 'Taux de succès des métadonnées à la demande', 'Demand Metadata Hits per Second': 'Succès de métadonnées à la demande par seconde', 'Demand Metadata I/O Hit Percentage': 'Taux de succès E/S des métadonnées à la demande',
+  'Demand Metadata I/O Hits per Second': 'Succès E/S de métadonnées à la demande par seconde', 'Demand Metadata Miss Percentage': 'Taux d\'échec des métadonnées à la demande', 'Demand Metadata Misses per Second': 'Échecs de métadonnées à la demande par seconde',
+  'Disk I/O Bandwidth': 'Débit E/S des disques', 'Disk(s) Are Formatted With Data Integrity Feature (DIF).': 'Des disques sont formatés avec la fonction d\'intégrité des données (DIF).', 'Disks Temperature': 'Température des disques',
+  'FTP Service': 'Service FTP', 'Failed to Check Failover Status with the Other Controller': 'Impossible de vérifier l\'état du basculement avec l\'autre contrôleur', 'Failed to Communicate with JBOF': 'Communication impossible avec le JBOF',
+  'Failed to Communicate with KMIP Server': 'Communication impossible avec le serveur KMIP', 'Failed to Sync SED Global Password with KMIP Server': 'Échec de synchronisation du mot de passe global SED avec le serveur KMIP',
+  'Failed to Sync SED Keys with KMIP Server': 'Échec de synchronisation des clés SED avec le serveur KMIP', 'Failed to Sync ZFS Keys with KMIP Server': 'Échec de synchronisation des clés ZFS avec le serveur KMIP', 'Failover Failed': 'Échec du basculement',
+  'Failover Internal Interface Not Found': 'Interface interne de basculement introuvable', 'Fibre Channel HBAs added.': 'Cartes Fibre Channel ajoutées.', 'Fibre Channel HBAs replaced.': 'Cartes Fibre Channel remplacées.',
+  'IP Addresses Bound to an iSCSI Portal Were Not Found': 'Adresses IP d\'un portail iSCSI introuvables', 'Interface Traffic': 'Trafic des interfaces', 'JBOF element critical': 'Élément JBOF critique', 'JBOF element non-critical': 'Élément JBOF non critique',
+  'JBOF has invalid data': 'Le JBOF renvoie des données invalides', 'KMIP Service': 'Service KMIP', 'L2ARC Bytes Read per Second': 'Octets lus du L2ARC par seconde', 'L2ARC Bytes Written per Second': 'Octets écrits dans le L2ARC par seconde',
+  'L2ARC Hit Percentage': 'Taux de succès du L2ARC', 'L2ARC Hits per Second': 'Succès du L2ARC par seconde', 'L2ARC Miss Percentage': 'Taux d\'échec du L2ARC', 'L2ARC Misses per Second': 'Échecs du L2ARC par seconde',
+  'Memory Size Mismatch Detected': 'Taille de mémoire incohérente détectée', 'NFS Service': 'Service NFS', 'NFS Share': 'Partage NFS', 'NVMe-oF Namespace': 'Espace de noms NVMe-oF', 'Other Controller is Inaccessible': 'L\'autre contrôleur est inaccessible',
+  'Pending Confirmation From iX Portal for TrueCommand API Key': 'Confirmation du portail iX en attente pour la clé d\'API TrueCommand', 'Physical memory available': 'Mémoire physique disponible',
+  'Reboot Required: GPU Configuration Updated': 'Redémarrage requis : configuration GPU modifiée', 'Reporting Service': 'Service de rapports', 'Rsync Task Failed': 'Échec de la tâche Rsync', 'Rsync Task Succeeded': 'Tâche Rsync réussie',
+  'SMB Service': 'Service SMB', 'SMB Share': 'Partage SMB', 'Share Is Unavailable Because It Uses A Locked Dataset': 'Partage indisponible : il utilise un dataset verrouillé', 'Snapshot Task': 'Tâche d\'instantanés',
+  'System Load Average': 'Charge moyenne du système', 'System Not Ready For Kdump': 'Le système n\'est pas prêt pour Kdump', 'System Uptime': 'Durée de fonctionnement du système', 'Task Is Unavailable Because It Uses A Locked Dataset': 'Tâche indisponible : elle utilise un dataset verrouillé',
+  'Total L2ARC Accesses per Second': 'Total des accès au L2ARC par seconde', 'TrueCommand API Key Disabled by iX Portal': 'Clé d\'API TrueCommand désactivée par le portail iX', 'TrueCommand Container Failed Scheduled Health Check': 'Le conteneur TrueCommand a échoué au contrôle de santé planifié',
+  'TrueCommand Service Failed Scheduled Health Check': 'Le service TrueCommand a échoué au contrôle de santé planifié', 'TrueNAS Connect Disabled - Service Unconfigured': 'TrueNAS Connect désactivé : service non configuré',
+  'TrueNAS Software Versions Must Match Between Storage Controllers': 'Les versions de TrueNAS doivent être identiques sur les deux contrôleurs', 'UPS Battery LOW': 'Batterie de l\'onduleur faible', 'UPS Battery Needs Replacement': 'Batterie de l\'onduleur à remplacer',
+  'UPS Charging': 'Onduleur en charge', 'UPS Communication Established': 'Communication avec l\'onduleur rétablie', 'UPS Communication Lost': 'Communication avec l\'onduleur perdue', 'UPS Input Current': 'Courant d\'entrée de l\'onduleur',
+  'UPS Input Frequency': 'Fréquence d\'entrée de l\'onduleur', 'UPS Input Load': 'Charge de l\'onduleur', 'UPS On Battery': 'Onduleur sur batterie', 'UPS On Line Power': 'Onduleur sur secteur', 'UPS Runtime': 'Autonomie de l\'onduleur',
+  'UPS Temperature': 'Température de l\'onduleur', 'UPS Voltage': 'Tension de l\'onduleur', 'Unable to Configure Applications': 'Impossible de configurer les applications', 'Unable to Start Applications': 'Impossible de démarrer les applications',
+  'Unable to Sync Catalog': 'Impossible de synchroniser le catalogue', 'Unable to connect to TrueNAS Connect Heartbeat Service': 'Connexion impossible au service de pulsation TrueNAS Connect', 'Uncorrected Memory Errors Detected': 'Erreurs mémoire non corrigées détectées',
+  'Unencrypted datasets detected within encrypted datasets': 'Datasets non chiffrés détectés dans des datasets chiffrés', 'VM Device Service': 'Service des périphériques de VM', 'VM': 'VM', 'WebUI Service': 'Service de l\'interface web',
+  'Webshare Share': 'Partage Webshare', 'iSCSI Authorized Access has an invalid character': 'Un accès autorisé iSCSI contient un caractère invalide', 'iSCSI Authorized Access has leading or trailing whitespace': 'Un accès autorisé iSCSI contient des espaces en début ou en fin',
+  'iSCSI Extent': 'Extent iSCSI', 'iSCSI Service': 'Service iSCSI'
+};
+function alTr(s) {
+  if (typeof s !== 'string' || DK_LANG !== 'fr') return s;
+  return Object.prototype.hasOwnProperty.call(AL_FR, s) ? AL_FR[s] : s;
+}
 var AL_LEVELS = ['INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
 function alLevelLabel(l) {
   return ({ INFO: T('Information'), NOTICE: T('Notification'), WARNING: T('Avertissement'), ERROR: T('Erreur'), CRITICAL: T('Critique'), ALERT: T('Alerte'), EMERGENCY: T('Urgence') })[l] || String(l || '');
@@ -42752,7 +42854,7 @@ async function alTest() {
 function alSide() {
   var h = wmNav({ active: _al.nav === 'svc', call: 'alGo(\'svc\')', icon: 'bell', name: T('Services d\'alerte') });
   h += wmSep() + wmSideTitle(T('Types d\'alerte'));
-  if (_al.cats) _al.cats.forEach(function(c) { h += wmNav({ active: _al.nav === 'cat' && _al.cat === c.id, call: 'alGo(\'cat\',decodeURIComponent(' + wmQ(c.id) + '))', icon: 'list', name: c.title, count: ensureArray(c.classes).length }); });
+  if (_al.cats) _al.cats.forEach(function(c) { h += wmNav({ active: _al.nav === 'cat' && _al.cat === c.id, call: 'alGo(\'cat\',decodeURIComponent(' + wmQ(c.id) + '))', icon: 'list', name: alTr(c.title), count: ensureArray(c.classes).length }); });
   h += wmSep() + wmSideTitle(T('Voir aussi'))
     + wmNav({ call: 'openApp(\'notifs\')', icon: 'bell', name: T('Alertes en cours') })
     + wmNav({ call: 'openApp(\'sysconfig\');setTimeout(function(){scGo(\'mail\')},300)', icon: 'mail', name: T('Messagerie') });
@@ -42802,12 +42904,12 @@ function alCatView(soft) {
   var cat = (_al.cats || []).find(function(c) { return c.id === _al.cat; });
   if (!cat || !_al.cfg) { wmHead('al', T('Types d\'alerte'), { narrow: true }); wmFail('al', T('Les types d\'alerte ne répondent pas'), _al.err || new Error(T('Réponse invalide')), 'loadAlertconfig()'); return; }
   var dirty = Object.keys(_al.draft).length;
-  wmHead('al', cat.title, { keepScroll: soft, sub: T('Pour chaque type d\'alerte : sa gravité, et le rythme auquel les services d\'alerte vous préviennent.'),
+  wmHead('al', alTr(cat.title), { keepScroll: soft, sub: T('Pour chaque type d\'alerte : sa gravité, et le rythme auquel les services d\'alerte vous préviennent.'),
     actions: '<button class="web-open" id="al-save" onclick="alCatSave()"' + (dirty && !_al.busy ? '' : ' disabled') + '>' + (_al.busy ? T('Enregistrement...') : T('Enregistrer')) + '</button>' });
   var h = '<div class="web-table al-classes"><div class="web-tr head"><span>' + T('Type d\'alerte') + '</span><span>' + T('Gravité') + '</span><span>' + T('Prévenir') + '</span></div>';
   ensureArray(cat.classes).forEach(function(cl, i) {
     var v = alClassVal(cl);
-    h += '<div class="web-tr"><span>' + webEsc(cl.title || cl.id) + '</span>'
+    h += '<div class="web-tr"><span>' + webEsc(alTr(cl.title || cl.id)) + '</span>'
       + '<span><select class="wm-input" aria-label="' + webEsc(T('Gravité')) + '" onchange="alSet(' + i + ',\'level\',this.value)">' + AL_LEVELS.map(function(l) { return '<option value="' + l + '"' + (l === v.level ? ' selected' : '') + '>' + webEsc(alLevelLabel(l)) + (l === cl.level ? ' *' : '') + '</option>'; }).join('') + '</select></span>'
       + '<span><select class="wm-input" aria-label="' + webEsc(T('Prévenir')) + '" onchange="alSet(' + i + ',\'policy\',this.value)">' + ['IMMEDIATELY', 'HOURLY', 'DAILY', 'NEVER'].map(function(p) { return '<option value="' + p + '"' + (p === v.policy ? ' selected' : '') + '>' + webEsc(alPolicyLabel(p)) + '</option>'; }).join('') + '</select></span></div>';
   });

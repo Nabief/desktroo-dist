@@ -5,6 +5,12 @@ the grey line underneath gives the technical detail, when there is one.
 
 ## 2.60.11 — 21 October 2026
 
+### Improved
+- **“Select all” button in Files.** One click selects the whole folder (a second click deselects); Ctrl+A already worked. On a phone, once a selection has started, tapping a file checks or unchecks it instead of opening it.
+  > `fsSelectAllToggle()`, same selection as Ctrl+A.
+- **Alert settings in French.** TrueNAS alert categories and types (“Certificate Is Expiring”, “Pool Status Is Not Healthy”…) are now translated when the interface is in French.
+  > `AL_FR` table (≈250 titles from the TrueNAS repository) applied by `alTr()`; an unknown title stays in English.
+
 ### Fixed
 - **Installing a “linked” NPMplus, AdGuard Home or Pi-hole as a computer app.** A linked app (installed outside Desktroo Apps, for example NPMplus on another machine) was installed with the Desktroo icon, and the browser only offered “Open in the Desktroo app” instead of adding a new app. It now has its own name and icon.
   > `store_kiosk_manifest` and `store_kiosk_icon_put` only knew the local registry apps: linked apps, injected only into the displayed list, had no manifest (404) and no PNG icon. New `_store_kiosk_inst` function.
