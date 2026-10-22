@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.21'
+APP_VERSION = '2.60.22'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10631,6 +10631,9 @@ def _store_get(handler, path, qs):
     if path == '/store/kiosk-icons':
         handler._json(200, {'ok': True, 'ids': store_kiosk_icon_ids()})
         return True
+    if path == '/store/cameras/media':
+        store_cameras_media(handler, qs)
+        return True
     if path == '/store/jellyfin/img':
         code, ctype, data = store_jellyfin_img(qs.get('i', ''), qs.get('s', ''))
         handler.send_response(code)
@@ -10712,6 +10715,7 @@ _STORE_POST = {
     '/store/uptime-kuma/api': lambda b: store_uptimekuma_api(b),
     '/store/photoprism/api': lambda b: store_photoprism_api(b),
     '/store/jellyfin/api': lambda b: store_jellyfin_api(b),
+    '/store/cameras/api': lambda b: store_cameras_api(b),
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
     '/store/pass/domain': lambda b: store_pass_domain(b),
@@ -11352,6 +11356,8 @@ def _store_health(app, tries=30):
     port = STORE_APP_PORT
     if app.get('id') in OFFICE_APP_IDS:   # seul port autre que 8080 permis : celui du serveur de documents
         port = int(app.get('port') or OFFICE_PORT)
+    if app.get('health_port'):   # app pilotée par sa fenêtre Desktroo (Caméras) : le moteur écoute sur son propre port
+        port = max(1, min(65535, int(app['health_port'])))
     if tries > 1:   # premier démarrage long (base de données, polices) : « health_wait » secondes au plus
         tries = max(tries, min(200, int(app.get('health_wait') or 0) // 6))
     for i in range(tries):
@@ -14587,6 +14593,272 @@ def _jf_adm(b):
         _jf_call('POST', '/Users/%s/Policy' % uid, None, _jf_merge(pol, vals, _JF_POLICY_KEYS))
         return ok()
     raise ValueError('Opération inconnue.')
+
+
+# ── MDM-CAM-V1 : app Caméras (moteur Frigate) ──
+# Desktroo garde la liste des caméras, en écrit la configuration Frigate et relaie images, événements et enregistrements :
+# le navigateur ne parle jamais à Frigate (aucun port ouvert, tout passe par la session Desktroo).
+STORE_CAM_ID = 'cameras'
+_CAM_HOST, _CAM_PORT = 'dt-cameras', 5000
+_CAM_BASE = 'http://%s:%d' % (_CAM_HOST, _CAM_PORT)
+_CAM_NAME = re.compile(r'^[a-z0-9][a-z0-9_]{0,29}$')
+_CAM_EVT = re.compile(r'^[0-9]{6,12}\.[0-9]{1,8}-[a-z0-9]{3,12}$')
+_CAM_URL = re.compile(r'^(rtsp|rtsps|rtmp|http|https)://[^\s"\'\\]{4,400}$')
+_CAM_LOCK = _threading.Lock()
+
+
+def _cam_list():
+    try:
+        l = json.loads(str(_store_fields_get(STORE_CAM_ID).get('cams') or '[]'))
+    except ValueError:
+        l = []
+    return [c for c in l if isinstance(c, dict) and _CAM_NAME.match(str(c.get('id') or ''))]
+
+
+def _cam_save_list(l):
+    f = _store_fields_get(STORE_CAM_ID)
+    f['cams'] = json.dumps(l, ensure_ascii=False)
+    _store_fields_set(STORE_CAM_ID, f)
+
+
+def _cam_yaml_str(s):
+    return json.dumps(str(s), ensure_ascii=False)   # JSON est du YAML valide : aucune injection possible
+
+
+def _cam_config(cams):
+    """Configuration Frigate complète d'après la liste des caméras de Desktroo."""
+    o = ['mqtt:', '  enabled: false', 'detect:', '  enabled: false', 'snapshots:', '  enabled: true', '  bounding_box: true', 'go2rtc:']
+    o.append('  streams:' if cams else '  streams: {}')
+    for c in cams:
+        o.append('    %s:' % c['id'])
+        o.append('      - %s' % _cam_yaml_str(c['url']))
+        if c.get('sub'):
+            o.append('    %s_sub:' % c['id'])
+            o.append('      - %s' % _cam_yaml_str(c['sub']))
+    o.append('cameras:' if cams else 'cameras: {}')
+    for c in cams:
+        rec, days = c.get('record', 'motion'), max(1, min(365, int(c.get('days') or 7)))
+        o += ['  %s:' % c['id'], '    enabled: %s' % ('true' if c.get('on', True) else 'false'), '    ffmpeg:', '      inputs:']
+        main = '%s' % c['id']
+        o += ['        - path: rtsp://127.0.0.1:8554/%s' % main, '          input_args: preset-rtsp-restream', '          roles:']
+        if c.get('sub'):
+            o += ['            - record', '        - path: rtsp://127.0.0.1:8554/%s_sub' % c['id'], '          input_args: preset-rtsp-restream', '          roles:', '            - detect']
+        else:
+            o += ['            - record', '            - detect']
+        o += ['    detect:', '      enabled: %s' % ('true' if c.get('detect') else 'false')]
+        o += ['    record:', '      enabled: %s' % ('true' if rec != 'off' else 'false')]
+        if rec != 'off':
+            o += ['      continuous:', '        days: %d' % (days if rec == 'continuous' else 0), '      motion:', '        days: %d' % days]
+        o += ['    objects:', '      track:', '        - person', '        - car', '        - dog', '        - cat']
+    return '\n'.join(o) + '\n'
+
+
+def _cam_http(method, path, data=None, ctype=None, timeout=20, limit=8 * 1024 * 1024):
+    import urllib.request, urllib.error
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    req = urllib.request.Request(_CAM_BASE + path, data=data, method=method, headers={'Content-Type': ctype} if ctype else {})
+    try:
+        with opener.open(req, timeout=timeout) as r:
+            return r.status, r.headers.get('Content-Type', ''), r.read(limit)
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, e.headers.get('Content-Type', ''), e.read(65536)
+        except Exception:
+            return e.code, '', b''
+    except Exception as e:
+        raise RuntimeError(str(e)[:120])
+
+
+def _cam_json(path, **kw):
+    st, _ct, raw = _cam_http('GET', path, **kw)
+    if st != 200:
+        raise RuntimeError('HTTP %d' % st)
+    return json.loads(raw.decode('utf-8', 'replace'))
+
+
+def _cam_push(cams, restart=True):
+    """Écrit la configuration dans Frigate (qui la valide) ; ValueError avec son message si elle est refusée."""
+    txt = _cam_config(cams)
+    st, _ct, raw = _cam_http('POST', '/api/config/save?save_option=' + ('restart' if restart else 'saveonly'), txt.encode('utf-8'), 'text/plain', timeout=60)
+    if st != 200:
+        msg = raw.decode('utf-8', 'replace')
+        try:
+            d = json.loads(msg)
+            msg = str(d.get('message') or d.get('detail') or msg)
+        except ValueError:
+            pass
+        raise ValueError('Frigate refuse cette configuration : ' + msg[:300])
+
+
+def _cam_mask(u):
+    return re.sub(r'(://)[^/@]*@', r'\1***@', str(u))
+
+
+def _cam_public(c):
+    return {'id': c['id'], 'name': c.get('name') or c['id'], 'url': _cam_mask(c['url']), 'sub': _cam_mask(c.get('sub') or ''), 'record': c.get('record', 'motion'),
+            'detect': bool(c.get('detect')), 'days': int(c.get('days') or 7), 'on': c.get('on', True) is not False}
+
+
+def store_cameras_api(body):
+    """{ action: state | cam_save | cam_del | cam_test | events | event_del } → { ok, ... }."""
+    if STORE_CAM_ID not in store_installed_get():
+        return 409, {'ok': False, 'error': 'L’app Caméras n’est pas installée.'}
+    b = body if isinstance(body, dict) else {}
+    action = str(b.get('action') or '')
+    try:
+        if action == 'state':
+            cams = _cam_list()
+            out = {'ok': True, 'cams': [_cam_public(c) for c in cams], 'up': False}
+            try:
+                out['version'] = _cam_http('GET', '/api/version', timeout=4)[2].decode('utf-8', 'replace').strip()[:30]
+                out['up'] = True
+                st = _cam_json('/api/stats', timeout=6)
+                out['stats'] = {k: {'fps': v.get('camera_fps'), 'det': v.get('detection_fps'), 'pid': v.get('pid')} for k, v in (st.get('cameras') or {}).items()}
+                out['cpu_detect'] = bool(st.get('detectors'))
+            except RuntimeError:
+                pass
+            return 200, out
+        if action == 'cam_save':
+            name = str(b.get('name') or '').strip()[:40]
+            url = str(b.get('url') or '').strip()
+            sub = str(b.get('sub') or '').strip()
+            if not name:
+                return 400, {'ok': False, 'error': 'Donnez un nom à la caméra.'}
+            if not _CAM_URL.match(url) or (sub and not _CAM_URL.match(sub)):
+                return 400, {'ok': False, 'error': 'Adresse invalide : rtsp://identifiant:mot-de-passe@adresse:554/flux'}
+            rec = str(b.get('record') or 'motion')
+            if rec not in ('off', 'motion', 'continuous'):
+                rec = 'motion'
+            with _CAM_LOCK:
+                cams = _cam_list()
+                cid = str(b.get('id') or '')
+                if cid:
+                    cur = [c for c in cams if c['id'] == cid]
+                    if not cur:
+                        return 404, {'ok': False, 'error': 'Caméra inconnue.'}
+                    cur = cur[0]
+                    if '***@' in url:   # adresse masquée renvoyée telle quelle : on garde le mot de passe enregistré
+                        url = cur['url']
+                    if '***@' in sub:
+                        sub = cur.get('sub') or ''
+                else:
+                    base = re.sub(r'[^a-z0-9]+', '_', name.lower().encode('ascii', 'ignore').decode()).strip('_')[:24] or 'camera'
+                    cid, n = base, 2
+                    while any(c['id'] == cid for c in cams):
+                        cid = '%s_%d' % (base, n)
+                        n += 1
+                    cur = None
+                new = {'id': cid, 'name': name, 'url': url, 'sub': sub, 'record': rec, 'detect': bool(b.get('detect')),
+                       'days': max(1, min(365, int(b.get('days') or 7))), 'on': b.get('on', True) is not False}
+                nl = [new if c['id'] == cid else c for c in cams] + ([] if cur else [new])
+                _cam_push(nl)
+                _cam_save_list(nl)
+            return 200, {'ok': True, 'cams': [_cam_public(c) for c in nl], 'id': cid}
+        if action == 'cam_del':
+            cid = str(b.get('id') or '')
+            with _CAM_LOCK:
+                nl = [c for c in _cam_list() if c['id'] != cid]
+                _cam_push(nl)
+                _cam_save_list(nl)
+            return 200, {'ok': True, 'cams': [_cam_public(c) for c in nl]}
+        if action == 'cam_test':
+            url = str(b.get('url') or '').strip()
+            if '***@' in url:
+                c = [c for c in _cam_list() if c['id'] == str(b.get('id') or '')]
+                url = c[0]['url'] if c else ''
+            if not _CAM_URL.match(url):
+                return 400, {'ok': False, 'error': 'Adresse invalide.'}
+            import urllib.parse as _up
+            r = _cam_json('/api/ffprobe?paths=' + _up.quote(url, safe=''), timeout=25)
+            r = r[0] if isinstance(r, list) and r else r
+            if not isinstance(r, dict) or r.get('return_code') not in (0, '0'):
+                err = str((r or {}).get('stderr') or '')[-160:] if isinstance(r, dict) else ''
+                return 200, {'ok': True, 'works': False, 'detail': err or 'La caméra ne répond pas.'}
+            vid = ''
+            try:
+                st = json.loads(r.get('stdout') or '{}').get('streams') or []
+                v = [s for s in st if s.get('codec_type') == 'video']
+                if v:
+                    vid = '%s %sx%s' % (v[0].get('codec_name', ''), v[0].get('width', '?'), v[0].get('height', '?'))
+            except ValueError:
+                pass
+            return 200, {'ok': True, 'works': True, 'detail': vid}
+        if action == 'events':
+            q = ['limit=%d' % max(1, min(100, int(b.get('limit') or 40))), 'include_thumbnails=0']
+            cam = str(b.get('camera') or '')
+            if cam:
+                if not _CAM_NAME.match(cam):
+                    return 400, {'ok': False, 'error': 'Caméra invalide.'}
+                q.append('cameras=' + cam)
+            lab = str(b.get('label') or '')
+            if lab:
+                if not re.match(r'^[a-z_]{2,20}$', lab):
+                    return 400, {'ok': False, 'error': 'Objet invalide.'}
+                q.append('labels=' + lab)
+            names = {c['id']: c.get('name') or c['id'] for c in _cam_list()}
+            ev = _cam_json('/api/events?' + '&'.join(q), timeout=15)
+            return 200, {'ok': True, 'events': [{'id': e.get('id'), 'cam': e.get('camera'), 'camName': names.get(e.get('camera'), e.get('camera')),
+                                                 'label': e.get('label'), 'start': e.get('start_time'), 'end': e.get('end_time'),
+                                                 'clip': bool(e.get('has_clip')), 'snap': bool(e.get('has_snapshot')),
+                                                 'score': (e.get('data') or {}).get('top_score')} for e in (ev if isinstance(ev, list) else []) if _CAM_EVT.match(str(e.get('id') or ''))]}
+        if action == 'event_del':
+            eid = str(b.get('id') or '')
+            if not _CAM_EVT.match(eid):
+                return 400, {'ok': False, 'error': 'Événement invalide.'}
+            st, _ct, _raw = _cam_http('DELETE', '/api/events/' + eid)
+            return (200, {'ok': True}) if st == 200 else (502, {'ok': False, 'error': 'HTTP %d' % st})
+        return 400, {'ok': False, 'error': 'Action inconnue.'}
+    except ValueError as e:
+        return 400, {'ok': False, 'error': str(e)[:300]}
+    except RuntimeError as e:
+        return 502, {'ok': False, 'error': 'Frigate ne répond pas (%s). S’il vient de redémarrer, patientez une minute.' % str(e)[:80]}
+
+
+def store_cameras_media(handler, qs):
+    """Image d’une caméra, vignette, instantané ou enregistrement d’un événement (avec lecture par morceaux, pour avancer dans la vidéo)."""
+    import http.client
+    if STORE_CAM_ID not in store_installed_get():
+        handler.send_error(404)
+        return
+    k, c, i = qs.get('k', ''), qs.get('c', ''), qs.get('i', '')
+    if k == 'live' and _CAM_NAME.match(c):
+        path = '/api/%s/latest.jpg?h=%d' % (c, 720 if qs.get('s') == 'big' else 360)
+    elif k in ('thumb', 'snap', 'clip') and _CAM_EVT.match(i):
+        path = '/api/events/%s/%s' % (i, {'thumb': 'thumbnail.jpg', 'snap': 'snapshot.jpg', 'clip': 'clip.mp4'}[k])
+    else:
+        handler.send_error(400)
+        return
+    hd = {}
+    if handler.headers.get('Range') and re.match(r'^bytes=\d*-\d*$', handler.headers.get('Range')):
+        hd['Range'] = handler.headers.get('Range')
+    try:
+        cn = http.client.HTTPConnection(_CAM_HOST, _CAM_PORT, timeout=30)
+        cn.request('GET', path, headers=hd)
+        r = cn.getresponse()
+    except Exception:
+        handler.send_error(502)
+        return
+    try:
+        ct = r.getheader('Content-Type', 'application/octet-stream')
+        if r.status not in (200, 206) or not (ct.startswith('image/') or ct.startswith('video/')):
+            handler.send_error(404)
+            return
+        handler.send_response(r.status)
+        handler.send_header('Content-Type', ct.split(';')[0])
+        for h in ('Content-Length', 'Content-Range', 'Accept-Ranges'):
+            if r.getheader(h):
+                handler.send_header(h, r.getheader(h))
+        handler.send_header('Cache-Control', 'no-store' if k == 'live' else 'private, max-age=3600')
+        handler.end_headers()
+        while True:
+            chunk = r.read(65536)
+            if not chunk:
+                break
+            handler.wfile.write(chunk)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+    finally:
+        cn.close()
 
 
 def store_jellyfin_api(body):

@@ -3,10 +3,10 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
-## 2.60.21 — 22 October 2026
+## 2.60.22 — 22 October 2026
 
 ### New
-- **Cameras: a new app in Desktroo Apps.** Your IP cameras live, continuous or motion-triggered recording, recognition of people, vehicles and animals. Everything stays on the NAS, with no account or cloud. It opens in its own window.
+- **Cameras: a new app in Desktroo Apps.** Your IP cameras live, continuous or motion-triggered recording, recognition of people, vehicles and animals. Everything stays on the NAS, with no account or cloud. Its Desktroo window lets you add a camera by its RTSP address (with a test), watch all cameras live, browse detected events and play recordings.
 
 ## 2.60.20 — 22 October 2026
 
