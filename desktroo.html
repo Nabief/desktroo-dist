@@ -22337,6 +22337,11 @@ function dkCamCss() {
     + '.dkcam-pad button,.dkcam-zb button{border-radius:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:inherit;font-size:18px;cursor:pointer;touch-action:none;user-select:none}'
     + '.dkcam-pad button:active,.dkcam-zb button:active{background:rgba(59,130,246,.35)}'
     + '.dkcam-zb{display:flex;flex-direction:column;gap:6px}.dkcam-zb button{width:44px;height:44px}'
+    + '#win-dkcam:fullscreen{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;transform:none!important;border-radius:0!important;resize:none!important}'
+    + '#win-dkcam:fullscreen .dkcam-grid{grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))}'
+    + '#dkjf-modal:fullscreen .tnd-panel{width:100vw!important;max-width:none!important;height:100vh;max-height:100vh!important;border-radius:0!important;box-sizing:border-box}'
+    + '#dkjf-modal:fullscreen #dkjf-mb{flex:1}#dkjf-modal:fullscreen .dkcam-zoom{display:flex;align-items:center;justify-content:center;height:calc(100vh - 250px)}'
+    + '#dkjf-modal:fullscreen .dkcam-zoom img{max-height:100%;width:auto;max-width:100%;object-fit:contain}'
     + '.dkcam-zoom{position:relative;background:#000;border-radius:10px;overflow:hidden;touch-action:none}.dkcam-zoom img{width:100%;display:block;transform-origin:0 0;user-select:none;-webkit-user-drag:none}'
     + '.dkcam-zbar{position:absolute;right:8px;bottom:8px;display:flex;gap:6px}.dkcam-zbar button{width:32px;height:32px;border-radius:8px;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;cursor:pointer}';
   document.head.appendChild(st);
@@ -22377,7 +22382,7 @@ function dkCamEmpty(body, title) {
 function dkCamRenderLive(body) {
   var cams = (_dkCam.cams || []).filter(function(c) { return c.on; });
   if (!cams.length) return dkCamEmpty(body, T('En direct'));
-  wmHead('dkcam', T('En direct'), { sub: Tf('{0} caméra(s)', cams.length), actions: '<button class="fs-btn" onclick="dkCamScan()">' + T('Chercher les caméras du réseau') + '</button> <button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button>' });
+  wmHead('dkcam', T('En direct'), { sub: Tf('{0} caméra(s)', cams.length), actions: '<button class="fs-btn" onclick="dkCamFull(\'win-dkcam\')" title="' + webEsc(T('Plein écran')) + '">⛶ ' + T('Plein écran') + '</button> <button class="fs-btn" onclick="dkCamScan()">' + T('Chercher les caméras du réseau') + '</button> <button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button>' });
   var stt = (_dkCam.st && _dkCam.st.stats) || {};
   body.innerHTML = '<div class="dkcam-grid">' + cams.map(function(c) {
     var s = stt[c.id], ok = s && s.fps > 0;
@@ -22436,7 +22441,7 @@ async function dkCamTick(gen, cid, kind, imgId, size, every) {
 function dkCamBig(cid) {
   var c = (_dkCam.cams || []).filter(function(x) { return x.id === cid; })[0]; if (!c) return;
   _dkCam.big = cid;
-  dkJfModal(c.name, '<div class="dkcam-zoom" id="dkcam-zoom"><img id="dkcam-big" alt="" draggable="false" style="min-height:120px;"><div class="dkcam-zbar"><button onclick="dkCamZoom(1.5)" title="' + webEsc(T('Zoom +')) + '">+</button><button onclick="dkCamZoom(1/1.5)" title="' + webEsc(T('Zoom −')) + '">−</button><button onclick="dkCamZoom(0)" title="' + webEsc(T('Réinitialiser')) + '" style="font-size:14px;">1:1</button></div></div>' + (c.ptz ? dkCamPtzHtml() : '') + '<div id="dkcam-err" class="dkjf-m" style="margin-top:8px;color:var(--danger);word-break:break-word;"></div><div class="dkjf-m" style="margin-top:4px;">' + T('Molette ou boutons pour zoomer, glissez pour déplacer l’image.') + (c.battery ? ' ' + T('Une caméra sur batterie peut mettre 10 à 20 secondes à se réveiller.') : '') + '</div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; if (_dkCam.stream) _dkCam.stream.abort(); dkJfModalClose(); } }], true);
+  dkJfModal(c.name, '<div class="dkcam-zoom" id="dkcam-zoom"><img id="dkcam-big" alt="" draggable="false" style="min-height:120px;"><div class="dkcam-zbar"><button onclick="dkCamZoom(1.5)" title="' + webEsc(T('Zoom +')) + '">+</button><button onclick="dkCamZoom(1/1.5)" title="' + webEsc(T('Zoom −')) + '">−</button><button onclick="dkCamZoom(0)" title="' + webEsc(T('Réinitialiser')) + '" style="font-size:14px;">1:1</button><button onclick="dkCamFull(\'dkjf-modal\')" title="' + webEsc(T('Plein écran')) + '" style="font-size:16px;">⛶</button></div></div>' + (c.ptz ? dkCamPtzHtml() : '') + '<div id="dkcam-err" class="dkjf-m" style="margin-top:8px;color:var(--danger);word-break:break-word;"></div><div class="dkjf-m" style="margin-top:4px;">' + T('Molette ou boutons pour zoomer, glissez pour déplacer l’image.') + (c.battery ? ' ' + T('Une caméra sur batterie peut mettre 10 à 20 secondes à se réveiller.') : '') + '</div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; if (_dkCam.stream) _dkCam.stream.abort(); dkJfModalClose(); } }], true);
   dkCamZoomInit();
   if (c.ptz) dkCamPtzInit(cid);
   dkCamStream(cid, 'dkcam-big', c.battery ? 2500 : 1000);
@@ -22465,6 +22470,14 @@ function dkCamPtzInit(cid) {
     Array.prototype.forEach.call(box.querySelectorAll('[data-pre]'), function(x) { x.onclick = function() { dkCamPtzSend(cid, 'preset_' + x.getAttribute('data-pre')); }; });
   }).catch(function(e) { var box = document.getElementById('dkcam-presets'); if (box) box.innerHTML = '<span class="dkjf-m" style="color:var(--danger);">' + webEsc((e && e.message) || String(e)) + '</span>'; });
 }
+function dkCamFull(id) {
+  var el = document.getElementById(id); if (!el) return;
+  try {
+    if (document.fullscreenElement === el) document.exitFullscreen();
+    else el.requestFullscreen().then(function() { setTimeout(dkCamZoomApply, 100); }).catch(function() { toast(T('Le navigateur refuse le plein écran.')); });
+  } catch (_) { toast(T('Le navigateur refuse le plein écran.')); }
+}
+document.addEventListener('fullscreenchange', function() { setTimeout(function() { try { dkCamZoomApply(); } catch (_) {} }, 120); });
 var _dkZ = { k: 1, x: 0, y: 0 };
 function dkCamZoomApply() {
   var im = document.getElementById('dkcam-big'), box = document.getElementById('dkcam-zoom'); if (!im || !box) return;
@@ -23083,7 +23096,7 @@ function dkJfModal(title, html, buttons, wide) {
   ov.innerHTML = '<div class="tnd-panel tnd-panel-pad" style="width:min(' + (wide ? 720 : 520) + 'px,95vw);max-height:90vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 70px rgba(0,0,0,.5);">'
     + '<div style="font-weight:700;font-size:15px;">' + dkJfEsc(title) + '</div><div id="dkjf-mb" style="overflow:auto;min-height:40px;">' + html + '</div>'
     + '<div id="dkjf-mbtn" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;"></div></div>';
-  document.body.appendChild(ov);
+  (document.fullscreenElement || document.body).appendChild(ov);
   ov.onclick = function(e) { if (e.target === ov) dkJfModalClose(); };
   var bx = ov.querySelector('#dkjf-mbtn');
   (buttons || [{ l: T('Fermer') }]).forEach(function(b) {
@@ -29910,7 +29923,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.33';
+var DK_PAGE_VERSION = '2.60.34';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

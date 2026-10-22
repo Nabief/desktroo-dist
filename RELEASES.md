@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.34 — 22 octobre 2026
+
+### Nouveau
+- **Caméras : plein écran.** Bouton « Plein écran » dans « En direct » (toute la fenêtre des caméras, fenêtres d'image comprises) et bouton ⛶ dans la vue agrandie (image, zoom et commandes PTZ en plein écran). Échap pour quitter.
+
 ## 2.60.33 — 22 octobre 2026
 
 ### Amélioré

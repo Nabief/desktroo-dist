@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.34 — October 22, 2026
+
+### New
+- **Cameras: full screen.** A "Full screen" button in "Live" (the whole cameras window, popups included) and a ⛶ button in the enlarged view (image, zoom and PTZ controls). Esc to exit.
+
 ## 2.60.33 — October 22, 2026
 
 ### Improved
