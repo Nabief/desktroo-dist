@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.31 — October 22, 2026
+
+### Improved
+- **Cameras: the form's dropdowns are now proper choice buttons** (camera type, recording, sensitivity).
+
 ## 2.60.30 — October 22, 2026
 
 ### New

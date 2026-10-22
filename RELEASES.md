@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.31 — 22 octobre 2026
+
+### Amélioré
+- **Caméras : les listes déroulantes du formulaire sont remplacées par de vrais boutons de choix** (type de caméra, enregistrement, sensibilité), plus lisibles.
+
 ## 2.60.30 — 22 octobre 2026
 
 ### Nouveau
