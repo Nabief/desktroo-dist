@@ -22353,13 +22353,13 @@ function dkCamWaiting(body) {
 }
 function dkCamEmpty(body, title) {
   wmHead('dkcam', title, {});
-  body.innerHTML = '<div class="dks-empty">' + T('Aucune caméra pour l’instant.') + '<div style="margin-top:14px;"><button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button></div></div>';
+  body.innerHTML = '<div class="dks-empty">' + T('Aucune caméra pour l’instant.') + '<div style="margin-top:14px;"><button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button> <button class="fs-btn" onclick="dkCamScan()">' + T('Chercher les caméras du réseau') + '</button></div></div>';
 }
 // ── En direct : une image par caméra, renouvelée en continu ──
 function dkCamRenderLive(body) {
   var cams = (_dkCam.cams || []).filter(function(c) { return c.on; });
   if (!cams.length) return dkCamEmpty(body, T('En direct'));
-  wmHead('dkcam', T('En direct'), { sub: Tf('{0} caméra(s)', cams.length), actions: '<button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button>' });
+  wmHead('dkcam', T('En direct'), { sub: Tf('{0} caméra(s)', cams.length), actions: '<button class="fs-btn" onclick="dkCamScan()">' + T('Chercher les caméras du réseau') + '</button> <button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button>' });
   var stt = (_dkCam.st && _dkCam.st.stats) || {};
   body.innerHTML = '<div class="dkcam-grid">' + cams.map(function(c) {
     var s = stt[c.id], ok = s && s.fps > 0;
@@ -22426,7 +22426,7 @@ function dkCamRenderCams(body) {
   var cams = _dkCam.cams || [];
   if (!cams.length) return dkCamEmpty(body, T('Mes caméras'));
   var stt = (_dkCam.st && _dkCam.st.stats) || {};
-  wmHead('dkcam', T('Mes caméras'), { sub: _dkCam.st && _dkCam.st.version ? 'Frigate ' + _dkCam.st.version : '', actions: '<button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button>' });
+  wmHead('dkcam', T('Mes caméras'), { sub: _dkCam.st && _dkCam.st.version ? 'Frigate ' + _dkCam.st.version : '', actions: '<button class="fs-btn" onclick="dkCamScan()">' + T('Chercher les caméras du réseau') + '</button> <button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button>' });
   body.innerHTML = '<div class="web-group">' + cams.map(function(c, i) {
     var s = stt[c.id], st = !c.on ? T('Désactivée') : c.battery ? T('Sur batterie : image à la demande') : (s && s.fps > 0 ? Tf('{0} images/s', Math.round(s.fps)) : T('Pas de signal'));
     return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(c.name) + (c.detect ? '<span class="dkjf-badge">' + T('Détection') + '</span>' : '') + '</span>'
@@ -22434,8 +22434,8 @@ function dkCamRenderCams(body) {
       + '<button class="fs-btn" onclick="dkCamForm(' + i + ')">' + T('Modifier') + '</button><button class="fs-btn" style="color:var(--danger);" onclick="dkCamDel(' + i + ')">' + T('Retirer') + '</button></div>';
   }).join('') + '</div><div class="dkjf-m" style="margin-top:12px;">' + T('Les images et enregistrements restent sur votre NAS.') + '</div>';
 }
-function dkCamForm(i) {
-  var c = i == null ? { name: '', url: '', sub: '', record: 'motion', detect: true, days: 7, on: true, battery: false } : (_dkCam.cams || [])[i]; if (!c) return;
+function dkCamForm(i, pre) {
+  var c = i == null ? Object.assign({ name: '', url: '', sub: '', record: 'motion', detect: true, days: 7, on: true, battery: false }, pre || {}) : (_dkCam.cams || [])[i]; if (!c) return;
   var tapo = /^tapo:\/\//.test(c.url), ip = tapo ? c.url.replace(/^tapo:\/\/[^@]*@/, '').replace(/[\/?].*$/, '') : '';
   var f = function(l, id, v, ph, h, type) { return '<div style="margin:8px 0;"><div class="dkjf-m" style="margin:0 0 3px;">' + l + '</div><input class="dkjf-in" id="' + id + '" type="' + (type || 'text') + '" value="' + webEsc(v) + '" placeholder="' + webEsc(ph || '') + '" autocomplete="off" style="max-width:none;width:100%;margin:0;">' + (h ? '<div class="dkjf-m" style="margin:3px 0 0;font-size:11.5px;">' + h + '</div>' : '') + '</div>'; };
   dkJfModal(i == null ? T('Ajouter une caméra') : T('Modifier la caméra'),
@@ -22449,7 +22449,7 @@ function dkCamForm(i) {
     + '<label style="display:block;margin-top:10px;font-size:13px;"><input type="checkbox" id="dkcam-f-det"' + (c.detect ? ' checked' : '') + '> ' + T('Reconnaître personnes, véhicules et animaux') + '</label></div>'
     + '<div id="dkcam-k-tapo" style="display:none;">'
     + f(T('Adresse IP de la caméra'), 'dkcam-f-ip', ip, '192.168.1.60', T('Visible dans l’application Tapo (réglages de la caméra, « Infos sur l’appareil »). Réservez-lui une adresse fixe dans votre box.'))
-    + f(T('Mot de passe du compte Tapo'), 'dkcam-f-pw', '', tapo ? T('(inchangé)') : '', T('Le mot de passe de votre compte Tapo (celui de l’application), pas un mot de passe RTSP. Dans l’app Tapo : Moi → Compatibilité tiers → activée.'), 'password')
+    + f(T('Mot de passe du compte Tapo'), 'dkcam-f-pw', '', tapo && c.id ? T('(inchangé)') : '', T('Le mot de passe de votre compte Tapo (celui de l’application), pas un mot de passe RTSP. Dans l’app Tapo : Moi → Compatibilité tiers → activée.'), 'password')
     + '<div class="dkag-note" style="margin-top:10px;">' + T('Pour ménager la batterie, la caméra n’est réveillée que quand vous cliquez pour la voir : pas d’enregistrement ni de détection par Desktroo (la caméra garde ses propres détections et enregistrements).') + '</div></div>'
     + '<label style="display:block;margin-top:10px;font-size:13px;"><input type="checkbox" id="dkcam-f-on"' + (c.on ? ' checked' : '') + '> ' + T('Caméra active') + '</label>'
     + '<div id="dkcam-f-t" class="dkjf-m" style="margin-top:10px;min-height:18px;"></div>',
@@ -22467,6 +22467,22 @@ function dkCamFormUrl() {
   if (g('dkcam-f-k').value !== 'tapo') return g('dkcam-f-u').value.trim();
   var ip = g('dkcam-f-ip').value.trim(), pw = g('dkcam-f-pw').value;
   return 'tapo://' + (pw ? encodeURIComponent(pw) : '***') + '@' + ip;
+}
+async function dkCamScan() {
+  dkJfModal(T('Caméras du réseau'), '<div class="fs-loading" style="height:140px;flex-direction:column;gap:10px;"><div class="spinner"></div><div>' + T('Recherche en cours sur votre réseau local…') + '</div></div>', [{ l: T('Fermer') }], true);
+  try {
+    var r = await dkCamApi('cam_scan'); _dkCam.scan = r.found || [];
+    dkJfModalBody(_dkCam.scan.length ? '<div class="dkjf-m" style="margin:0 0 8px;">' + T('Appareils qui répondent comme une caméra. Les Tapo sur batterie ou solaires, endormies, peuvent ne pas apparaître : ajoutez-les à la main avec leur adresse IP.') + '</div><div class="web-group">' + _dkCam.scan.map(function(x, k) {
+      return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(x.ip) + '<span class="dkjf-badge">' + (x.kind === 'tapo' ? T('Tapo probable') : 'RTSP') + '</span>' + (x.known ? '<span class="dkjf-badge">✓ ' + T('déjà ajoutée') + '</span>' : '') + '</span>'
+        + '<span class="web-row-desc">' + webEsc(T('Ports') + ' ' + x.ports.join(', ') + (x.banner ? ' · ' + x.banner : '')) + '</span></span>'
+        + (x.known ? '' : '<button class="fs-btn" onclick="dkCamScanUse(' + k + ')">' + T('Ajouter') + '</button>') + '</div>'; }).join('') + '</div>'
+      : '<div class="dkjf-m" style="padding:20px 4px;">' + T('Aucune caméra trouvée. Vérifiez qu’elles sont allumées et sur le même réseau que le NAS. Les Tapo sur batterie ne répondent pas toujours : ajoutez-les à la main.') + '</div>');
+  } catch (e) { dkJfModalBody('<div class="dkjf-m" style="padding:20px 4px;">' + webEsc(e.message || e) + '</div>'); }
+}
+function dkCamScanUse(k) {
+  var x = (_dkCam.scan || [])[k]; if (!x) return;
+  dkJfModalClose();
+  dkCamForm(null, x.kind === 'tapo' ? { url: 'tapo://***@' + x.ip, battery: true } : { url: 'rtsp://identifiant:mot-de-passe@' + x.ip + ':' + (x.ports.indexOf(554) >= 0 ? 554 : 8554) + '/stream1' });
 }
 async function dkCamTest(id) {
   var t = document.getElementById('dkcam-f-t'); if (t) t.textContent = T('Test en cours…');
@@ -29751,7 +29767,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.23';
+var DK_PAGE_VERSION = '2.60.24';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.23'
+APP_VERSION = '2.60.24'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14702,6 +14702,64 @@ def _cam_public(c):
             'detect': bool(c.get('detect')), 'days': int(c.get('days') or 7), 'on': c.get('on', True) is not False, 'battery': bool(c.get('battery'))}
 
 
+_CAM_SCAN_PY = r"""
+import socket, json, sys, concurrent.futures as cf
+base = sys.argv[1]
+def chk(a):
+    ip, p = a
+    try:
+        s = socket.create_connection((ip, p), 0.7)
+    except Exception:
+        return None
+    ban = ''
+    if p in (554, 8554):
+        try:
+            s.settimeout(1.2)
+            s.sendall(('OPTIONS rtsp://%s:%d/ RTSP/1.0\r\nCSeq: 1\r\n\r\n' % (ip, p)).encode())
+            d = s.recv(600).decode('latin1')
+            ban = ' '.join(l.strip() for l in d.split('\n') if l.lower().startswith('server'))[:60]
+        except Exception:
+            pass
+    s.close()
+    return (ip, p, ban)
+jobs = [('%s.%d' % (base, i), p) for i in range(1, 255) for p in (554, 8554, 8800, 2020)]
+out = {}
+with cf.ThreadPoolExecutor(120) as ex:
+    for r in ex.map(chk, jobs):
+        if r:
+            d = out.setdefault(r[0], {'ip': r[0], 'ports': [], 'banner': ''})
+            d['ports'].append(r[1])
+            d['banner'] = d['banner'] or r[2]
+print(json.dumps(list(out.values())))
+"""
+
+
+def _cam_scan():
+    """Caméras du réseau local : machines qui répondent sur les ports RTSP (554, 8554) ou Tapo (8800, 2020)."""
+    ip = _store_bind_ip()
+    m = re.match(r'^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$', ip)
+    if not m:
+        raise ValueError('Adresse du NAS sur le réseau local introuvable.')
+    out, err, code = _px_host('python3 -c ' + shq(_CAM_SCAN_PY) + ' ' + shq(m.group(1)), timeout=90)
+    if code != 0:
+        raise ValueError('Recherche impossible sur le NAS : ' + str(err or out)[:120])
+    try:
+        found = json.loads(out.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        raise ValueError('Résultat de la recherche illisible.')
+    known = ' '.join(str(c.get('url') or '') for c in _cam_list())
+    res = []
+    for d in found:
+        if d['ip'] == ip or not re.match(r'^[0-9.]{7,15}$', str(d['ip'])):
+            continue
+        ports = sorted(int(p) for p in d.get('ports') or [])
+        kind = 'tapo' if (8800 in ports or 2020 in ports) else 'rtsp'
+        res.append({'ip': d['ip'], 'ports': ports, 'kind': kind, 'banner': str(d.get('banner') or '')[:60],
+                    'known': ('@%s' % d['ip']) in known or ('//%s' % d['ip']) in known})
+    res.sort(key=lambda x: tuple(int(n) for n in x['ip'].split('.')))
+    return res
+
+
 def store_cameras_api(body):
     """{ action: state | cam_save | cam_del | cam_test | events | event_del } → { ok, ... }."""
     if STORE_CAM_ID not in store_installed_get():
@@ -14721,6 +14779,8 @@ def store_cameras_api(body):
             except RuntimeError:
                 pass
             return 200, out
+        if action == 'cam_scan':
+            return 200, {'ok': True, 'found': _cam_scan()}
         if action == 'cam_save':
             name = str(b.get('name') or '').strip()[:40]
             url = str(b.get('url') or '').strip()

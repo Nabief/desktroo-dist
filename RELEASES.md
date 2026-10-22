@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.24 — 22 octobre 2026
+
+### Nouveau
+- **Caméras : recherche des caméras sur le réseau.** Le bouton « Chercher les caméras du réseau » repère les caméras RTSP et les Tapo, et préremplit le formulaire d'ajout.
+  > Balayage du réseau local du NAS (ports 554, 8554, 8800, 2020), lancé depuis le NAS.
+
 ## 2.60.23 — 22 octobre 2026
 
 ### Nouveau

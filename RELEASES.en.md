@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.24 — 22 October 2026
+
+### New
+- **Cameras: network search.** The "Search the network for cameras" button finds RTSP cameras and Tapo cameras and pre-fills the add form.
+
 ## 2.60.23 — 22 October 2026
 
 ### New
