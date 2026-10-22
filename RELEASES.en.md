@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.26 — 22 October 2026
+
+### Improved
+- **Cameras: more precise error message when no picture arrives.**
+
 ## 2.60.25 — 22 October 2026
 
 ### Improved
