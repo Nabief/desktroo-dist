@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.25 — 22 octobre 2026
+
+### Amélioré
+- **Caméras : quand l'image n'arrive pas, la fenêtre affiche la raison donnée par le moteur** (mot de passe refusé, caméra injoignable…), au lieu de rester vide.
+
 ## 2.60.24 — 22 octobre 2026
 
 ### Nouveau

@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.25 — 22 October 2026
+
+### Improved
+- **Cameras: when no picture arrives, the window shows the reason given by the engine** (password refused, camera unreachable…) instead of staying blank.
+
 ## 2.60.24 — 22 October 2026
 
 ### New

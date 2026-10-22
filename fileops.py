@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.24'
+APP_VERSION = '2.60.25'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14912,7 +14912,13 @@ def store_cameras_media(handler, qs):
     try:
         ct = r.getheader('Content-Type', 'application/octet-stream')
         if r.status not in (200, 206) or not (ct.startswith('image/') or ct.startswith('video/')):
-            handler.send_error(404)
+            msg = re.sub(r'\s+', ' ', r.read(500).decode('utf-8', 'replace')).strip()[:240] or ('HTTP %d' % r.status)
+            data = ('Le moteur répond : ' + msg).encode('utf-8')
+            handler.send_response(502)
+            handler.send_header('Content-Type', 'text/plain; charset=utf-8')
+            handler.send_header('Content-Length', str(len(data)))
+            handler.end_headers()
+            handler.wfile.write(data)
             return
         handler.send_response(r.status)
         handler.send_header('Content-Type', ct.split(';')[0])

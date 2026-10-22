@@ -22377,13 +22377,14 @@ async function dkCamTick(gen, cid, kind, imgId, size, every) {
     var b = await dkImgBlob('/fileops/store/cameras/media?k=live&c=' + encodeURIComponent(cid) + '&s=' + size + '&t=' + Date.now());
     var u = URL.createObjectURL(b), old = _dkCam.live[imgId];
     img.src = u; _dkCam.live[imgId] = u; if (old) setTimeout(function() { try { URL.revokeObjectURL(old); } catch (_) {} }, 500);
-  } catch (_) {}
+    var er = document.getElementById('dkcam-err'); if (er) er.textContent = '';
+  } catch (e) { var er2 = document.getElementById('dkcam-err'); if (er2) er2.textContent = String((e && e.message) || e); }
   setTimeout(function() { dkCamTick(gen, cid, kind, imgId, size, every); }, every);
 }
 function dkCamBig(cid) {
   var c = (_dkCam.cams || []).filter(function(x) { return x.id === cid; })[0]; if (!c) return;
   _dkCam.big = cid;
-  dkJfModal(c.name, '<div style="background:#000;border-radius:10px;overflow:hidden;"><img id="dkcam-big" alt="" style="width:100%;display:block;"></div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; dkJfModalClose(); } }], true);
+  dkJfModal(c.name, '<div style="background:#000;border-radius:10px;overflow:hidden;"><img id="dkcam-big" alt="" style="width:100%;display:block;min-height:120px;"></div><div id="dkcam-err" class="dkjf-m" style="margin-top:8px;color:var(--danger);word-break:break-word;"></div><div class="dkjf-m" style="margin-top:4px;">' + (c.battery ? T('Une caméra sur batterie peut mettre 10 à 20 secondes à se réveiller.') : '') + '</div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; dkJfModalClose(); } }], true);
   dkCamTick(_dkCam.gen, cid, 'big', 'dkcam-big', 'big', c.battery ? 2500 : 1000);
 }
 // ── Événements ──
@@ -29767,7 +29768,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.24';
+var DK_PAGE_VERSION = '2.60.25';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
