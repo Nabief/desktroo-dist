@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.33 — October 22, 2026
+
+### Improved
+- **Installing a Store app as a desktop app: the message now explains the right path** when the browser only shows "Open in app" (which opens the whole Desktroo): ⋮ menu → "Cast, save and share" → "Install Desktroo …". The app name also shows correctly.
+
 ## 2.60.32 — October 22, 2026
 
 ### New

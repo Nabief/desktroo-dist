@@ -29910,7 +29910,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.32';
+var DK_PAGE_VERSION = '2.60.33';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -43299,9 +43299,9 @@ function dkKioskBar(html) {
 function dkKioskBarRefresh() {
   var id = window.DK_KIOSK; if (!id || dkInstalled()) return dkKioskBar('');
   var wanted = /[?&]install=1/.test(location.search);
-  var sysA = drawerApp(id), name = sysA && !sysA.store ? sysA.label : (dkStoreName((dkStoreApp(id) || {}).name) || id);
+  var sysA = drawerApp(id), name = sysA && !sysA.store ? sysA.label : (dkStoreName((dkStoreApp(id) || {}).name) || ({ cameras: 'Caméras' })[id] || id);
   if (_dkInstall) dkKioskBar('<span>' + webEsc(Tf('Installer « Desktroo {0} » comme application sur cet ordinateur ?', name)) + '</span><button onclick="dkInstallApp()">' + T('Installer') + '</button><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
-  else if (wanted) dkKioskBar('<span>' + webEsc(Tf('Menu du navigateur (⋮), puis « Installer Desktroo {0} » ou « Enregistrer et partager ».', name)) + '</span><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
+  else if (wanted) dkKioskBar('<span>' + webEsc(Tf('Pour l’installer seule : menu du navigateur (⋮) → « Diffuser, enregistrer et partager » → « Installer Desktroo {0} ». (Le bouton « Ouvrir dans l’appli » de la barre d’adresse ouvre Desktroo en entier, ce n’est pas celui-là.)', name)) + '</span><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
 }
 function dkKioskStart() {
   var id = window.DK_KIOSK; if (!id) return;

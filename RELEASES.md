@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.33 — 22 octobre 2026
+
+### Amélioré
+- **Installer une app du Magasin comme application Windows : le message explique maintenant le bon chemin** quand le navigateur n'affiche que « Ouvrir dans l'appli » (qui ouvre Desktroo en entier) : menu ⋮ → « Diffuser, enregistrer et partager » → « Installer Desktroo … ». Le nom de l'app s'affiche aussi correctement (« Caméras »).
+
 ## 2.60.32 — 22 octobre 2026
 
 ### Nouveau
