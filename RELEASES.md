@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.21 — 22 octobre 2026
+
+### Nouveau
+- **Caméras : une nouvelle app dans Desktroo Apps.** Vos caméras IP en direct, enregistrement continu ou sur détection de mouvement, reconnaissance des personnes, véhicules et animaux. Tout reste sur le NAS, sans compte ni cloud. Elle s'ouvre dans sa propre fenêtre.
+  > Moteur Frigate 0.18.2 (image figée par empreinte) ; l'installeur du Magasin sait maintenant réserver de la mémoire partagée à une app (`resources.shm_mb`).
+
 ## 2.60.20 — 22 octobre 2026
 
 ### Nouveau

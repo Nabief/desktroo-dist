@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.20'
+APP_VERSION = '2.60.21'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -11249,6 +11249,11 @@ def store_compose(app):
         svc['mem_limit'] = '%dm' % int(res['memory_mb'])
     if res.get('cpus'):
         svc['cpus'] = float(res['cpus'])
+    try:   # mémoire partagée (/dev/shm) : Frigate y échange les images des caméras
+        if 64 <= int(res.get('shm_mb') or 0) <= 4096:
+            svc['shm_size'] = '%dm' % int(res['shm_mb'])
+    except (TypeError, ValueError):
+        pass
     if isinstance(app.get('command'), list) and app['command']:
         svc['command'] = [str(x) for x in app['command']]
     hp = _store_host_ports(app)
