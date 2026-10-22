@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.27'
+APP_VERSION = '2.60.28'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14907,6 +14907,8 @@ def store_cameras_media(handler, qs):
             path, port = '/api/frame.jpeg?src=%s' % c, 1984
         else:
             path = '/api/%s/latest.jpg?h=%d' % (c, 720 if qs.get('s') == 'big' else 360)
+    elif k == 'mjpeg' and _CAM_NAME.match(c):   # vidéo : flux d'images JPEG fabriqué par go2rtc (la caméra n'est réveillée que pendant la lecture)
+        path, port = '/api/stream.mjpeg?src=%s' % c, 1984
     elif k in ('thumb', 'snap', 'clip') and _CAM_EVT.match(i):
         path = '/api/events/%s/%s' % (i, {'thumb': 'thumbnail.jpg', 'snap': 'snapshot.jpg', 'clip': 'clip.mp4'}[k])
     else:
@@ -14924,7 +14926,7 @@ def store_cameras_media(handler, qs):
         return
     try:
         ct = r.getheader('Content-Type', 'application/octet-stream')
-        if r.status not in (200, 206) or not (ct.startswith('image/') or ct.startswith('video/')):
+        if r.status not in (200, 206) or not (ct.startswith('image/') or ct.startswith('video/') or ct.startswith('multipart/')):
             msg = re.sub(r'\s+', ' ', r.read(500).decode('utf-8', 'replace')).strip()[:240] or ('HTTP %d' % r.status)
             data = ('Le moteur répond : ' + msg + (' [' + ct.split(';')[0] + ']' if ct else '')).encode('utf-8')
             handler.send_response(502)
@@ -14938,10 +14940,13 @@ def store_cameras_media(handler, qs):
         for h in ('Content-Length', 'Content-Range', 'Accept-Ranges'):
             if r.getheader(h):
                 handler.send_header(h, r.getheader(h))
-        handler.send_header('Cache-Control', 'no-store' if k == 'live' else 'private, max-age=3600')
+        if k == 'mjpeg':
+            handler.send_header('Connection', 'close')
+            handler.close_connection = True
+        handler.send_header('Cache-Control', 'no-store' if k in ('live', 'mjpeg') else 'private, max-age=3600')
         handler.end_headers()
         while True:
-            chunk = r.read(65536)
+            chunk = r.read1(65536) if k == 'mjpeg' else r.read(65536)
             if not chunk:
                 break
             handler.wfile.write(chunk)

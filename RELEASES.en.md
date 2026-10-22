@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.28 — 22 October 2026
+
+### New
+- **Cameras: real video in the enlarged view.** Clicking a camera now shows its continuous video stream instead of a refreshed still picture. If the stream cannot start, the window falls back to still pictures and says why.
+
 ## 2.60.27 — 22 October 2026
 
 ### Fixed

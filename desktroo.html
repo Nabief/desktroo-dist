@@ -22370,6 +22370,40 @@ function dkCamRenderLive(body) {
   cams.filter(function(c) { return !c.battery; }).forEach(function(c, i) { setTimeout(function() { dkCamTick(gen, c.id, 'img', 'dkcam-img-' + c.id, 'small', 1500); }, i * 200); });
   _dkCam.timer = setTimeout(function() { if (gen === _dkCam.gen && _dkCam.nav === 'live') dkCamLoad(true); }, 20000);
 }
+// Vidéo : le NAS relaie un flux d'images JPEG ; on les affiche au fil de l'eau. Si le flux échoue, retour aux images fixes.
+async function dkCamStream(cid, imgId, every) {
+  if (_dkCam.stream) { try { _dkCam.stream.abort(); } catch (_) {} }
+  var ctl = new AbortController(); _dkCam.stream = ctl;
+  var er = document.getElementById('dkcam-err'), last = null, frames = 0;
+  if (er) er.textContent = T('Connexion à la caméra…');
+  try {
+    var r = await fetch('/fileops/store/cameras/media?k=mjpeg&c=' + encodeURIComponent(cid), { headers: { 'X-Fileops-Token': getFileopsToken(), 'X-Desktroo-User': encodeURIComponent(currentUser || '') }, signal: ctl.signal });
+    if (!r.ok) throw new Error((await r.text().catch(function() { return ''; })) || 'HTTP ' + r.status);
+    var rd = r.body.getReader(), buf = new Uint8Array(0);
+    for (;;) {
+      var x = await rd.read(); if (x.done) break;
+      var nb = new Uint8Array(buf.length + x.value.length); nb.set(buf); nb.set(x.value, buf.length); buf = nb;
+      for (;;) {
+        var s = -1, e = -1, i, j;
+        for (i = 0; i < buf.length - 1; i++) if (buf[i] === 0xFF && buf[i + 1] === 0xD8) { s = i; break; }
+        if (s < 0) { buf = new Uint8Array(0); break; }
+        for (j = s + 2; j < buf.length - 1; j++) if (buf[j] === 0xFF && buf[j + 1] === 0xD9) { e = j + 2; break; }
+        if (e < 0) { buf = buf.slice(s); break; }
+        var img = document.getElementById(imgId);
+        if (!img) { ctl.abort(); return; }
+        var u = URL.createObjectURL(new Blob([buf.slice(s, e)], { type: 'image/jpeg' }));
+        img.src = u; if (last) { var old = last; setTimeout(function() { URL.revokeObjectURL(old); }, 300); } last = u;
+        buf = buf.slice(e);
+        if (++frames === 1 && er) er.textContent = '';
+      }
+    }
+    if (!frames) throw new Error(T('Le flux vidéo s’est arrêté sans image.'));
+  } catch (e) {
+    if (ctl.signal.aborted) return;
+    if (er) er.textContent = T('Vidéo indisponible, images fixes à la place.') + ' ' + String((e && e.message) || e).slice(0, 200);
+    if (document.getElementById(imgId)) dkCamTick(_dkCam.gen, cid, 'big', imgId, 'big', every);
+  }
+}
 async function dkCamTick(gen, cid, kind, imgId, size, every) {
   var img = document.getElementById(imgId);
   if (!img || gen !== _dkCam.gen && kind === 'img' || (kind === 'big' && !_dkCam.big)) return;
@@ -22384,8 +22418,8 @@ async function dkCamTick(gen, cid, kind, imgId, size, every) {
 function dkCamBig(cid) {
   var c = (_dkCam.cams || []).filter(function(x) { return x.id === cid; })[0]; if (!c) return;
   _dkCam.big = cid;
-  dkJfModal(c.name, '<div style="background:#000;border-radius:10px;overflow:hidden;"><img id="dkcam-big" alt="" style="width:100%;display:block;min-height:120px;"></div><div id="dkcam-err" class="dkjf-m" style="margin-top:8px;color:var(--danger);word-break:break-word;"></div><div class="dkjf-m" style="margin-top:4px;">' + (c.battery ? T('Une caméra sur batterie peut mettre 10 à 20 secondes à se réveiller.') : '') + '</div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; dkJfModalClose(); } }], true);
-  dkCamTick(_dkCam.gen, cid, 'big', 'dkcam-big', 'big', c.battery ? 2500 : 1000);
+  dkJfModal(c.name, '<div style="background:#000;border-radius:10px;overflow:hidden;"><img id="dkcam-big" alt="" style="width:100%;display:block;min-height:120px;"></div><div id="dkcam-err" class="dkjf-m" style="margin-top:8px;color:var(--danger);word-break:break-word;"></div><div class="dkjf-m" style="margin-top:4px;">' + (c.battery ? T('Une caméra sur batterie peut mettre 10 à 20 secondes à se réveiller.') : '') + '</div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; if (_dkCam.stream) _dkCam.stream.abort(); dkJfModalClose(); } }], true);
+  dkCamStream(cid, 'dkcam-big', c.battery ? 2500 : 1000);
 }
 // ── Événements ──
 var DKCAM_LAB = { person: 'Personne', car: 'Voiture', dog: 'Chien', cat: 'Chat', truck: 'Camion', bicycle: 'Vélo', motorcycle: 'Moto', bird: 'Oiseau', package: 'Colis' };
@@ -29768,7 +29802,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.27';
+var DK_PAGE_VERSION = '2.60.28';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.28 — 22 octobre 2026
+
+### Nouveau
+- **Caméras : vraie vidéo dans la vue agrandie.** Un clic sur une caméra affiche maintenant son flux vidéo en continu, au lieu d'une image fixe rafraîchie. Si le flux ne démarre pas, la fenêtre retombe sur les images fixes et en donne la raison.
+
 ## 2.60.27 — 22 octobre 2026
 
 ### Corrigé
