@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.26'
+APP_VERSION = '2.60.27'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14625,13 +14625,26 @@ def _cam_yaml_str(s):
     return json.dumps(str(s), ensure_ascii=False)   # JSON est du YAML valide : aucune injection possible
 
 
+def _cam_sources(url):
+    """Une caméra Tapo accepte, selon son micrologiciel, le mot de passe tel quel ou son empreinte (MD5, SHA-256) :
+    go2rtc essaie les sources dans l'ordre jusqu'à ce que l'une marche."""
+    import hashlib, urllib.parse as _up
+    m = re.match(r'^tapo://([^@/]*)@([^/?]+)(.*)$', str(url))
+    if not m:
+        return [url]
+    pw = _up.unquote(m.group(1))
+    tail = '@%s%s' % (m.group(2), m.group(3))
+    return [url] + ['tapo://admin:%s%s' % (h(pw.encode('utf-8')).hexdigest().upper(), tail) for h in (hashlib.md5, hashlib.sha256)]
+
+
 def _cam_config(cams):
     """Configuration Frigate complète d'après la liste des caméras de Desktroo."""
     o = ['mqtt:', '  enabled: false', 'detect:', '  enabled: false', 'snapshots:', '  enabled: true', '  bounding_box: true', 'go2rtc:']
     o.append('  streams:' if cams else '  streams: {}')
     for c in cams:
         o.append('    %s:' % c['id'])
-        o.append('      - %s' % _cam_yaml_str(c['url']))
+        for src in _cam_sources(c['url']):
+            o.append('      - %s' % _cam_yaml_str(src))
         if c.get('sub'):
             o.append('    %s_sub:' % c['id'])
             o.append('      - %s' % _cam_yaml_str(c['sub']))

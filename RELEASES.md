@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.27 — 22 octobre 2026
+
+### Corrigé
+- **Caméras : les Tapo dont le mot de passe était refusé (« 401 Unauthorized »)** sont maintenant essayées avec les trois formes d'identification acceptées selon les micrologiciels (mot de passe, empreinte MD5, empreinte SHA-256).
+
 ## 2.60.26 — 22 octobre 2026
 
 ### Amélioré

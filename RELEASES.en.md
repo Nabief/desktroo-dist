@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.27 — 22 October 2026
+
+### Fixed
+- **Cameras: Tapo cameras whose password was refused ("401 Unauthorized")** are now tried with the three authentication forms accepted by different firmwares (password, MD5 hash, SHA-256 hash).
+
 ## 2.60.26 — 22 October 2026
 
 ### Improved
