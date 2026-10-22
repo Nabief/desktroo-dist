@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.29 — 22 October 2026
+
+### Fixed
+- **Cameras: the enlarged view's video stream works without opening many connections to the camera** (one continuous connection instead of a picture requested every two seconds, which Tapo cameras ended up refusing). The camera configuration refreshes itself after a Desktroo update.
+
 ## 2.60.28 — 22 October 2026
 
 ### New

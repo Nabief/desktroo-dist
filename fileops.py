@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.28'
+APP_VERSION = '2.60.29'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14618,6 +14618,8 @@ def _cam_list():
 def _cam_save_list(l):
     f = _store_fields_get(STORE_CAM_ID)
     f['cams'] = json.dumps(l, ensure_ascii=False)
+    import hashlib as _hl
+    f['cfg'] = _hl.sha256(_cam_config(l).encode('utf-8')).hexdigest()[:16]   # configuration envoyée à Frigate
     _store_fields_set(STORE_CAM_ID, f)
 
 
@@ -14645,6 +14647,8 @@ def _cam_config(cams):
         o.append('    %s:' % c['id'])
         for src in _cam_sources(c['url']):
             o.append('      - %s' % _cam_yaml_str(src))
+        o.append('    %s_mjpeg:' % c['id'])   # vidéo vue dans Desktroo : images JPEG tirées du flux de la caméra, à la demande
+        o.append('      - %s' % _cam_yaml_str('ffmpeg:%s#video=mjpeg' % c['id']))
         if c.get('sub'):
             o.append('    %s_sub:' % c['id'])
             o.append('      - %s' % _cam_yaml_str(c['sub']))
@@ -14789,6 +14793,20 @@ def store_cameras_api(body):
                 st = _cam_json('/api/stats', timeout=6)
                 out['stats'] = {k: {'fps': v.get('camera_fps'), 'det': v.get('detection_fps'), 'pid': v.get('pid')} for k, v in (st.get('cameras') or {}).items()}
                 out['cpu_detect'] = bool(st.get('detectors'))
+                try:   # la configuration est refaite quand une mise à jour de Desktroo change sa forme
+                    import hashlib as _hl
+                    h = _hl.sha256(_cam_config(cams).encode('utf-8')).hexdigest()[:16]
+                    f = _store_fields_get(STORE_CAM_ID)
+                    if cams and f.get('cfg') != h and _CAM_LOCK.acquire(False):
+                        try:
+                            _cam_push(cams)
+                            f['cfg'] = h
+                            _store_fields_set(STORE_CAM_ID, f)
+                            out['up'] = False
+                        finally:
+                            _CAM_LOCK.release()
+                except (ValueError, RuntimeError):
+                    pass
             except RuntimeError:
                 pass
             return 200, out
@@ -14908,7 +14926,7 @@ def store_cameras_media(handler, qs):
         else:
             path = '/api/%s/latest.jpg?h=%d' % (c, 720 if qs.get('s') == 'big' else 360)
     elif k == 'mjpeg' and _CAM_NAME.match(c):   # vidéo : flux d'images JPEG fabriqué par go2rtc (la caméra n'est réveillée que pendant la lecture)
-        path, port = '/api/stream.mjpeg?src=%s' % c, 1984
+        path, port = '/api/stream.mjpeg?src=%s_mjpeg' % c, 1984
     elif k in ('thumb', 'snap', 'clip') and _CAM_EVT.match(i):
         path = '/api/events/%s/%s' % (i, {'thumb': 'thumbnail.jpg', 'snap': 'snapshot.jpg', 'clip': 'clip.mp4'}[k])
     else:

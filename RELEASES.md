@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.29 — 22 octobre 2026
+
+### Corrigé
+- **Caméras : le flux vidéo de la vue agrandie fonctionne sans multiplier les connexions à la caméra** (une seule connexion continue au lieu d'une image redemandée toutes les deux secondes, que les Tapo finissaient par refuser). La configuration des caméras se met à jour toute seule après une mise à jour de Desktroo.
+
 ## 2.60.28 — 22 octobre 2026
 
 ### Nouveau
