@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.19 — 22 octobre 2026
+
+### Corrigé
+- **Jellyfin : les compteurs de l'accueil (films, séries, épisodes, morceaux, albums) sont justes.** Ils pouvaient afficher bien plus que le contenu réel (840 films pour 506 dans la bibliothèque). Ils comptent maintenant comme les bibliothèques.
+  > `/Items/Counts` de Jellyfin additionne des éléments en double ; remplacé par `/Items?Recursive=true&Limit=0&IncludeItemTypes=…` (`TotalRecordCount`), `/Items/Counts` restant le repli.
+
 ## 2.60.18 — 22 octobre 2026
 
 ### Amélioré

@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.19 — 22 October 2026
+
+### Fixed
+- **Jellyfin: the home counters (movies, series, episodes, songs, albums) are right.** They could show far more than the real content (840 movies for 506 in the library). They now count the way the libraries do.
+  > Jellyfin's `/Items/Counts` adds up duplicate items; replaced by `/Items?Recursive=true&Limit=0&IncludeItemTypes=…` (`TotalRecordCount`), with `/Items/Counts` as fallback.
+
 ## 2.60.18 — 22 October 2026
 
 ### Improved

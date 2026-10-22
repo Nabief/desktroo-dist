@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.18'
+APP_VERSION = '2.60.19'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14291,6 +14291,17 @@ def store_jellyfin_api(body):
             info = _jf_call('GET', '/System/Info') or {}
             scan = soft(_jf_scan_state, {'running': False, 'pct': 0})
             cnt = soft(lambda: _jf_call('GET', '/Items/Counts') or {}, {})
+            # MDM-JF-COUNTS-V1 : /Items/Counts gonfle les totaux (éléments en double, dossiers cachés…). On compte comme
+            # les bibliothèques : ce que Jellyfin renvoie réellement pour chaque type (TotalRecordCount).
+            def _jf_total(t, fb):
+                try:
+                    r = _jf_call('GET', '/Items', {'Recursive': 'true', 'Limit': 0, 'IncludeItemTypes': t}) or {}
+                    return _pp_int(r.get('TotalRecordCount')) if 'TotalRecordCount' in r else fb
+                except RuntimeError:
+                    return fb
+            _real = {'movies': _jf_total('Movie', _pp_int(cnt.get('MovieCount'))), 'series': _jf_total('Series', _pp_int(cnt.get('SeriesCount'))),
+                     'episodes': _jf_total('Episode', _pp_int(cnt.get('EpisodeCount'))), 'songs': _jf_total('Audio', _pp_int(cnt.get('SongCount'))),
+                     'albums': _jf_total('MusicAlbum', _pp_int(cnt.get('AlbumCount')))}
             playing = []
             for s in soft(lambda: _jf_call('GET', '/Sessions', {'activeWithinSeconds': 960}) or [], []):
                 npi = s.get('NowPlayingItem')
@@ -14331,9 +14342,7 @@ def store_jellyfin_api(body):
                     if it and it['img']:
                         nextup.append(it)
             return 200, {'ok': True, 'server': {'name': str(info.get('ServerName') or '')[:60], 'version': str(info.get('Version') or '')[:20]},
-                         'counts': {'movies': _pp_int(cnt.get('MovieCount')), 'series': _pp_int(cnt.get('SeriesCount')),
-                                    'episodes': _pp_int(cnt.get('EpisodeCount')), 'songs': _pp_int(cnt.get('SongCount')),
-                                    'albums': _pp_int(cnt.get('AlbumCount'))},
+                         'counts': _real,
                          'libraries': libs, 'scan': scan, 'playing': playing, 'latest': latest[:20], 'rails': rails,
                          'resume': resume[:12], 'nextup': nextup[:10]}
         if action in ('detail', 'play', 'report', 'mark'):
