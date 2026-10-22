@@ -3,6 +3,14 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.20 — 22 octobre 2026
+
+### Nouveau
+- **Jellyfin : le reste des fonctions de Jellyfin est maintenant dans la fenêtre Desktroo.** Tâches planifiées (lancer, arrêter, horaires), plugins (installer, activer, désinstaller, dépôts), transcodage (accélération matérielle), serveur et réseau (avec redémarrage de Jellyfin), clés d'API et Quick Connect, et télévision en direct (tuners, guide, chaînes, enregistrements).
+- **Jellyfin : sur la fiche d'un titre**, modification des informations, choix d'une autre affiche, recherche de sous-titres, création d'une collection et suppression définitive.
+- **Jellyfin : options de chaque bibliothèque, droits détaillés de chaque compte, message et pause sur les lectures en cours.**
+  > Nouvelle action `adm` de `/store/jellyfin/api` (`_jf_adm`) ; champs validés, réglages fusionnés avec l'existant avant envoi.
+
 ## 2.60.19 — 22 octobre 2026
 
 ### Corrigé

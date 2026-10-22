@@ -3,6 +3,13 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.20 — 22 October 2026
+
+### New
+- **Jellyfin: the rest of Jellyfin's features are now in the Desktroo window.** Scheduled tasks (run, stop, schedules), plugins (install, enable, uninstall, repositories), transcoding (hardware acceleration), server and network (with Jellyfin restart), API keys and Quick Connect, and Live TV (tuners, guide, channels, recordings).
+- **Jellyfin: on a title's page**, edit its information, pick another poster, search subtitles, create a collection and delete it permanently.
+- **Jellyfin: per-library options, detailed per-account rights, message and pause on live playbacks.**
+
 ## 2.60.19 — 22 October 2026
 
 ### Fixed

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.19'
+APP_VERSION = '2.60.20'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14241,6 +14241,349 @@ def _jf_play(iid, force_trans=False, start=None, audio=None, sub=None, alang='',
             'aidx': a_idx, 'sidx': s_idx if s_idx is not None else -1, 'segments': segs[:12], 'next_id': next_id, 'album_id': d.get('albumId', '')}
 
 
+# MDM-JF-ADM-V1 : le reste de l'API Jellyfin (tâches, plugins, transcodage, réseau, clés d'API, Quick Connect, sessions,
+# télévision en direct, sous-titres, métadonnées, collections, options de bibliothèque, droits fins par compte).
+# Une liste blanche d'opérations : le navigateur ne choisit jamais un chemin libre.
+_JF_GUID = re.compile(r'^[A-Fa-f0-9\-]{32,36}$')
+_JF_TOK = re.compile(r'^[A-Za-z0-9._\-]{1,128}$')
+_JF_LANG = re.compile(r'^[a-z]{2,3}$')
+_JF_CFG = {
+    'conf': ('/System/Configuration', ('ServerName', 'UICulture', 'PreferredMetadataLanguage', 'MetadataCountryCode', 'QuickConnectAvailable',
+                                       'LibraryMonitorDelay', 'LogFileRetentionDays', 'MinResumePct', 'MaxResumePct', 'MinResumeDurationSeconds',
+                                       'EnableGroupingMoviesIntoCollections', 'EnableGroupingShowsIntoCollections')),
+    'encoding': ('/System/Configuration/encoding', ('EnableHardwareEncoding', 'HardwareAccelerationType', 'VaapiDevice', 'QsvDevice', 'EnableTonemapping',
+                                                    'TonemappingAlgorithm', 'EnableDecodingColorDepth10Hevc', 'EnableDecodingColorDepth10Vp9',
+                                                    'EnableDecodingColorDepth10HevcRext', 'EnableDecodingColorDepth12HevcRext', 'EncoderPreset',
+                                                    'DeinterlaceMethod', 'DeinterlaceDoubleRate', 'H264Crf', 'H265Crf', 'EnableSubtitleExtraction',
+                                                    'AllowHevcEncoding', 'AllowAv1Encoding', 'EnableEnhancedNvdecDecoder', 'PreferSystemNativeHwDecoder',
+                                                    'EnableIntelLowPowerH264HwEncoder', 'EnableIntelLowPowerHevcHwEncoder', 'HardwareDecodingCodecs',
+                                                    'EncodingThreadCount', 'DownMixAudioBoost', 'EnableThrottling', 'ThrottleDelaySeconds',
+                                                    'EnableSegmentDeletion', 'SegmentKeepSeconds', 'MaxMuxingQueueSize')),
+    'network': ('/System/Configuration/network', ('EnableRemoteAccess', 'EnableIPv4', 'EnableIPv6', 'EnableUPnP', 'KnownProxies', 'LocalNetworkSubnets',
+                                                  'IgnoreVirtualInterfaces', 'RequireHttps')),
+}
+_JF_LIBOPT_KEYS = ('EnableRealtimeMonitor', 'EnableChapterImageExtraction', 'ExtractChapterImagesDuringLibraryScan', 'EnableTrickplayImageExtraction',
+                   'ExtractTrickplayImagesDuringLibraryScan', 'SaveLocalMetadata', 'EnableEmbeddedTitles', 'EnableEmbeddedEpisodeInfos',
+                   'AutomaticRefreshIntervalDays', 'PreferredMetadataLanguage', 'MetadataCountryCode', 'SubtitleDownloadLanguages',
+                   'RequirePerfectSubtitleMatch', 'SaveSubtitlesWithMedia', 'SkipSubtitlesIfEmbeddedSubtitlesPresent',
+                   'SkipSubtitlesIfAudioTrackMatches', 'EnableInternetProviders', 'EnablePhotos', 'EnableLUFSScan')
+_JF_POLICY_KEYS = ('RemoteClientBitrateLimit', 'MaxActiveSessions', 'LoginAttemptsBeforeLockout', 'EnableMediaPlayback', 'EnableAudioPlaybackTranscoding',
+                   'EnableVideoPlaybackTranscoding', 'EnablePlaybackRemuxing', 'EnableContentDownloading', 'EnableLiveTvAccess', 'EnableLiveTvManagement',
+                   'EnableRemoteAccess', 'EnableSyncTranscoding', 'EnablePublicSharing')
+_JF_ITEM_KEYS = ('Name', 'OriginalTitle', 'ForcedSortName', 'Overview', 'Taglines', 'Genres', 'Tags', 'OfficialRating', 'ProductionYear', 'CommunityRating',
+                 'CriticRating', 'PremiereDate', 'DateCreated', 'Studios', 'LockData', 'LockedFields')
+
+
+def _jf_coerce(cur, v):
+    if isinstance(cur, bool):
+        return v if isinstance(v, bool) else str(v).lower() in ('1', 'true', 'yes', 'on')
+    if isinstance(cur, int):
+        return int(v)
+    if isinstance(cur, float):
+        return float(v)
+    if isinstance(cur, list):
+        if not isinstance(v, list):
+            v = [x.strip() for x in str(v).split(',') if x.strip()]
+        return [x if isinstance(x, (dict, int, float, bool)) else str(x)[:200] for x in v][:200]
+    if isinstance(v, (bool, int, float)) or v is None:
+        return v
+    return str(v)[:300]
+
+
+def _jf_merge(cur, vals, keys):
+    cur = dict(cur or {})
+    for k in keys:
+        if k in vals:
+            cur[k] = _jf_coerce(cur.get(k), vals[k])
+    return cur
+
+
+def _jf_arg(x, rx):
+    x = str(x or '')
+    if not rx.match(x):
+        raise ValueError('Requête non autorisée.')
+    return x
+
+
+def _jf_qp(p, allowed):
+    out = {}
+    for k in allowed:
+        if k in p and p[k] is not None and p[k] != '':
+            v = p[k]
+            out[k] = ('true' if v else 'false') if isinstance(v, bool) else str(v)[:300]
+    return out
+
+
+def _jf_uid():
+    with _JF_LOCK:
+        return _jf_sess.get('uid') or ''
+
+
+def _jf_adm(b):
+    import urllib.parse as _up
+    op = str(b.get('op') or '')
+    i = b.get('id')
+    p = b.get('params') if isinstance(b.get('params'), dict) else {}
+    body = b.get('body') if isinstance(b.get('body'), (dict, list)) else None
+    vals = body if isinstance(body, dict) else {}
+
+    def ok(d=None):
+        return 200, {'ok': True, 'data': d}
+
+    def timers():
+        return ok({'timers': _jf_call('GET', '/LiveTv/Timers'), 'series': _jf_call('GET', '/LiveTv/SeriesTimers')})
+
+    def livecfg():
+        return ok(_jf_call('GET', '/System/Configuration/livetv'))
+
+    # ── Serveur : réglages, transcodage, réseau, redémarrage ──
+    for name, (path, keys) in _JF_CFG.items():
+        if op == name + '_get':
+            return ok(_jf_call('GET', path))
+        if op == name + '_set':
+            _jf_call('POST', path, None, _jf_merge(_jf_call('GET', path), vals, keys))
+            return ok(_jf_call('GET', path))
+    if op == 'restart':
+        _jf_call('POST', '/System/Restart')
+        return ok()
+    # ── Tâches planifiées ──
+    if op == 'tasks':
+        return ok(_jf_call('GET', '/ScheduledTasks', {'isHidden': 'false'}))
+    if op == 'task_run':
+        _jf_call('POST', '/ScheduledTasks/Running/' + _jf_arg(i, _JF_TOK))
+        return ok()
+    if op == 'task_stop':
+        _jf_call('DELETE', '/ScheduledTasks/Running/' + _jf_arg(i, _JF_TOK))
+        return ok()
+    if op == 'task_triggers':
+        trg = []
+        for t in (body if isinstance(body, list) else [])[:12]:
+            t = t if isinstance(t, dict) else {}
+            ty = str(t.get('Type') or '')
+            if ty not in ('DailyTrigger', 'WeeklyTrigger', 'IntervalTrigger', 'StartupTrigger'):
+                raise ValueError('Déclencheur invalide.')
+            d = {'Type': ty}
+            for k in ('TimeOfDayTicks', 'IntervalTicks', 'MaxRuntimeTicks'):
+                if t.get(k) is not None:
+                    d[k] = int(t[k])
+            if t.get('DayOfWeek') is not None:
+                d['DayOfWeek'] = str(t['DayOfWeek'])[:12]
+            trg.append(d)
+        _jf_call('POST', '/ScheduledTasks/%s/Triggers' % _jf_arg(i, _JF_TOK), None, trg)
+        return ok()
+    # ── Plugins ──
+    if op == 'plugins':
+        return ok(_jf_call('GET', '/Plugins'))
+    if op in ('plugin_on', 'plugin_off', 'plugin_del'):
+        pid, ver = _jf_arg(i, _JF_GUID), _jf_arg(b.get('version'), re.compile(r'^[0-9.]{1,32}$'))
+        if op == 'plugin_del':
+            _jf_call('DELETE', '/Plugins/%s/%s' % (pid, ver))
+        else:
+            _jf_call('POST', '/Plugins/%s/%s/%s' % (pid, ver, 'Enable' if op == 'plugin_on' else 'Disable'))
+        return ok()
+    if op == 'packages':
+        return ok(_jf_call('GET', '/Packages', None, None, 8 * 1024 * 1024))
+    if op == 'pkg_install':
+        q = _jf_qp(p, ('assemblyGuid', 'version', 'repositoryUrl'))
+        _jf_call('POST', '/Packages/Installed/' + _up.quote(_jf_arg(i, re.compile(r'^[A-Za-z0-9._\- ]{1,120}$')), safe=''), q)
+        return ok()
+    if op == 'repos':
+        return ok(_jf_call('GET', '/Repositories'))
+    if op == 'repos_set':
+        reps = []
+        for r in (body if isinstance(body, list) else [])[:20]:
+            r = r if isinstance(r, dict) else {}
+            u = str(r.get('Url') or '')
+            if not re.match(r'^https://[^\s]{4,300}$', u):
+                raise ValueError('Adresse de dépôt invalide (https:// attendu).')
+            reps.append({'Name': str(r.get('Name') or u)[:100], 'Url': u, 'Enabled': bool(r.get('Enabled', True))})
+        _jf_call('POST', '/Repositories', None, reps)
+        return ok()
+    # ── Clés d'API et Quick Connect ──
+    if op == 'keys':
+        return ok(_jf_call('GET', '/Auth/Keys'))
+    if op == 'key_add':
+        _jf_call('POST', '/Auth/Keys', {'app': _jf_arg(i, re.compile(r'^[^\x00-\x1f]{1,60}$'))})
+        return ok(_jf_call('GET', '/Auth/Keys'))
+    if op == 'key_del':
+        _jf_call('DELETE', '/Auth/Keys/' + _jf_arg(i, _JF_TOK))
+        return ok(_jf_call('GET', '/Auth/Keys'))
+    if op == 'qc_state':
+        return ok(_jf_call('GET', '/QuickConnect/Enabled'))
+    if op == 'qc_auth':
+        q = {'code': _jf_arg(i, re.compile(r'^[0-9]{4,10}$'))}
+        uid = _jf_uid()
+        if uid:
+            q['userId'] = uid
+        return ok(_jf_call('POST', '/QuickConnect/Authorize', q))
+    # ── Sessions : message et télécommande ──
+    if op == 'sess_msg':
+        _jf_call('POST', '/Sessions/%s/Message' % _jf_hexid(i), None,
+                 {'Header': str(vals.get('Header') or 'Desktroo')[:60], 'Text': str(vals.get('Text') or '')[:300], 'TimeoutMs': 8000})
+        return ok()
+    if op == 'sess_play':
+        cmd = str(b.get('command') or '')
+        if cmd not in ('Pause', 'Unpause', 'PlayPause', 'NextTrack', 'PreviousTrack'):
+            raise ValueError('Commande invalide.')
+        _jf_call('POST', '/Sessions/%s/Playing/%s' % (_jf_hexid(i), cmd))
+        return ok()
+    # ── Télévision en direct ──
+    if op == 'lt_info':
+        return ok(_jf_call('GET', '/LiveTv/Info'))
+    if op == 'lt_cfg':
+        return livecfg()
+    if op == 'lt_discover':
+        return ok(_jf_call('GET', '/LiveTv/Tuners/Discover', {'newDevicesOnly': 'false'}))
+    if op == 'lt_host_add':
+        ty = str(vals.get('Type') or '')
+        if ty not in ('hdhomerun', 'm3u'):
+            raise ValueError('Type de tuner inconnu.')
+        u = str(vals.get('Url') or '').strip()
+        if not re.match(r'^(https?://|/)[^\s]{2,400}$|^[A-Za-z0-9.\-]{3,120}(:\d+)?$', u):
+            raise ValueError('Adresse du tuner invalide.')
+        h = {'Type': ty, 'Url': u, 'FriendlyName': str(vals.get('FriendlyName') or '')[:80], 'ImportFavoritesOnly': bool(vals.get('ImportFavoritesOnly')),
+             'AllowHWTranscoding': bool(vals.get('AllowHWTranscoding')), 'TunerCount': int(vals.get('TunerCount') or 0), 'IgnoreDts': True}
+        if vals.get('Id'):
+            h['Id'] = _jf_arg(vals.get('Id'), _JF_TOK)
+        _jf_call('POST', '/LiveTv/TunerHosts', None, h)
+        return livecfg()
+    if op == 'lt_host_del':
+        _jf_call('DELETE', '/LiveTv/TunerHosts', {'id': _jf_arg(i, _JF_TOK)})
+        return livecfg()
+    if op == 'lt_prov_add':
+        ty = str(vals.get('Type') or 'xmltv')
+        if ty not in ('xmltv', 'SchedulesDirect'):
+            raise ValueError('Type de guide inconnu.')
+        d = {'Type': ty, 'EnableAllTuners': True, 'EnabledTuners': [], 'NewsCategories': ['news'], 'SportsCategories': ['sports'], 'KidsCategories': ['kids'],
+             'MovieCategories': ['movie']}
+        if ty == 'xmltv':
+            u = str(vals.get('Path') or '').strip()
+            if not re.match(r'^(https?://|/)[^\s]{2,400}$', u):
+                raise ValueError('Adresse du guide invalide (http:// ou chemin).')
+            d['Path'] = u
+        else:
+            d.update({'Username': str(vals.get('Username') or '')[:80], 'Password': str(vals.get('Password') or '')[:80],
+                      'ListingsId': str(vals.get('ListingsId') or '')[:80], 'Country': str(vals.get('Country') or '')[:3], 'ZipCode': str(vals.get('ZipCode') or '')[:12]})
+        _jf_call('POST', '/LiveTv/ListingProviders', {'validateListings': 'false', 'validateLogin': 'false'}, d)
+        return livecfg()
+    if op == 'lt_prov_del':
+        _jf_call('DELETE', '/LiveTv/ListingProviders', {'id': _jf_arg(i, _JF_TOK)})
+        return livecfg()
+    if op == 'lt_channels':
+        q = _jf_qp(p, ('startIndex', 'limit', 'searchTerm', 'isFavorite'))
+        q.setdefault('limit', '100')
+        q.setdefault('addCurrentProgram', 'true')
+        return ok(_jf_call('GET', '/LiveTv/Channels', q))
+    if op == 'lt_programs':
+        q = _jf_qp(p, ('startIndex', 'limit', 'isMovie', 'isSeries', 'isNews', 'isKids', 'isSports', 'searchTerm', 'hasAired'))
+        q.setdefault('limit', '60')
+        q['enableTotalRecordCount'] = 'true'
+        q['sortBy'] = 'StartDate'
+        return ok(_jf_call('GET', '/LiveTv/Programs', q))
+    if op == 'lt_recs':
+        return ok(_jf_call('GET', '/LiveTv/Recordings', {'limit': '100'}))
+    if op == 'lt_timers':
+        return timers()
+    if op == 'lt_timer_new':
+        d = _jf_call('GET', '/LiveTv/Timers/Defaults', {'programId': _jf_arg(i, _JF_TOK)})
+        _jf_call('POST', '/LiveTv/SeriesTimers' if b.get('series') else '/LiveTv/Timers', None, d)
+        return timers()
+    if op in ('lt_timer_del', 'lt_stimer_del'):
+        _jf_call('DELETE', ('/LiveTv/Timers/' if op == 'lt_timer_del' else '/LiveTv/SeriesTimers/') + _jf_arg(i, _JF_TOK))
+        return timers()
+    if op == 'lt_rec_del':
+        _jf_call('DELETE', '/LiveTv/Recordings/' + _jf_arg(i, _JF_TOK))
+        return ok()
+    # ── Fiche d'un élément : métadonnées, images, sous-titres, suppression ──
+    if op in ('item_get', 'item_save', 'item_delete', 'sub_search', 'sub_get', 'sub_del', 'img_search', 'img_set', 'coll_new', 'coll_add'):
+        iid = _jf_hexid(i)
+        if not _JF_ID.match(iid):
+            raise ValueError('Élément inconnu.')
+        if op == 'item_get':
+            d = _jf_call('GET', '/Items/%s/MetadataEditor' % iid) or {}
+            it = _jf_call('GET', '/Users/%s/Items/%s' % (_jf_uid(), iid)) or {}
+            return ok({'item': {k: it.get(k) for k in _JF_ITEM_KEYS + ('Id', 'Type', 'Path')}, 'ratings': d.get('ParentalRatingOptions') or []})
+        if op == 'item_save':
+            it = _jf_call('GET', '/Users/%s/Items/%s' % (_jf_uid(), iid)) or {}
+            for k in _JF_ITEM_KEYS:
+                if k not in vals:
+                    continue
+                v = vals[k]
+                if k in ('Genres', 'Tags', 'Taglines', 'LockedFields'):
+                    v = [str(x).strip()[:100] for x in (v if isinstance(v, list) else str(v).split(','))]
+                    v = [x for x in v if x][:50]
+                elif k == 'ProductionYear':
+                    v = int(v) if v not in (None, '') else None
+                elif k in ('CommunityRating', 'CriticRating'):
+                    v = float(v) if v not in (None, '') else None
+                elif k == 'LockData':
+                    v = bool(v)
+                elif k == 'Studios':
+                    v = [{'Name': str(x).strip()[:100]} for x in (v if isinstance(v, list) else str(v).split(',')) if str(x).strip()][:30]
+                else:
+                    v = str(v)[:8000] if v is not None else None
+                it[k] = v
+            if 'Genres' in vals:
+                it['GenreItems'] = [{'Name': g} for g in it.get('Genres') or []]
+            if 'Tags' in vals:
+                it['TagItems'] = [{'Name': g} for g in it.get('Tags') or []]
+            _jf_call('POST', '/Items/' + iid, None, it)
+            return ok()
+        if op == 'item_delete':
+            if b.get('confirm') is not True:
+                raise ValueError('Suppression non confirmée.')
+            _jf_call('DELETE', '/Items/' + iid)
+            return ok()
+        if op == 'sub_search':
+            return ok(_jf_call('GET', '/Items/%s/RemoteSearch/Subtitles/%s' % (iid, _jf_arg(b.get('lang'), _JF_LANG)), {'isPerfectMatch': 'false'}))
+        if op == 'sub_get':
+            sid = _jf_arg(b.get('sub'), re.compile(r'^[A-Za-z0-9_\-=.%~]{1,400}$'))
+            _jf_call('POST', '/Items/%s/RemoteSearch/Subtitles/%s' % (iid, _up.quote(sid, safe='')))
+            return ok()
+        if op == 'sub_del':
+            _jf_call('DELETE', '/Videos/%s/Subtitles/%d' % (iid, int(b.get('index'))))
+            return ok()
+        if op == 'img_search':
+            return ok(_jf_call('GET', '/Items/%s/RemoteImages' % iid, {'type': 'Primary', 'limit': '12', 'includeAllLanguages': 'false'}))
+        if op == 'img_set':
+            u = str(b.get('url') or '')
+            if not re.match(r'^https://[^\s]{4,500}$', u):
+                raise ValueError('Adresse d’image invalide.')
+            _jf_call('POST', '/Items/%s/RemoteImages/Download' % iid, {'type': 'Primary', 'imageUrl': u})
+            return ok()
+        if op == 'coll_new':
+            return ok(_jf_call('POST', '/Collections', {'name': _jf_arg(b.get('name'), re.compile(r'^[^\x00-\x1f]{1,80}$')), 'ids': iid}))
+        if op == 'coll_add':
+            coll = _jf_hexid(b.get('coll'))
+            if not _JF_ID.match(coll):
+                raise ValueError('Collection inconnue.')
+            _jf_call('POST', '/Collections/%s/Items' % coll, {'ids': iid})
+            return ok()
+    # ── Options d'une bibliothèque ──
+    if op in ('lib_opts_get', 'lib_opts_set'):
+        for f in (_jf_call('GET', '/Library/VirtualFolders') or []):
+            if _jf_hexid(f.get('ItemId')) == _jf_hexid(i):
+                o = f.get('LibraryOptions') or {}
+                if op == 'lib_opts_get':
+                    return ok({k: o.get(k) for k in _JF_LIBOPT_KEYS if k in o})
+                _jf_call('POST', '/Library/VirtualFolders/LibraryOptions', None, {'Id': f.get('ItemId'), 'LibraryOptions': _jf_merge(o, vals, _JF_LIBOPT_KEYS)})
+                return ok()
+        raise ValueError('Bibliothèque introuvable.')
+    # ── Droits fins d'un compte (hors administrateurs) ──
+    if op in ('user_policy_get', 'user_policy_set'):
+        uid = _jf_hexid(i)
+        if not _JF_ID.match(uid):
+            raise ValueError('Requête non autorisée.')
+        pol = (_jf_call('GET', '/Users/' + uid) or {}).get('Policy') or {}
+        if pol.get('IsAdministrator'):
+            raise ValueError('Les comptes administrateurs se gèrent dans Jellyfin.')
+        if op == 'user_policy_get':
+            return ok({k: pol.get(k) for k in _JF_POLICY_KEYS})
+        _jf_call('POST', '/Users/%s/Policy' % uid, None, _jf_merge(pol, vals, _JF_POLICY_KEYS))
+        return ok()
+    raise ValueError('Opération inconnue.')
+
+
 def store_jellyfin_api(body):
     """{ action: state | save_password | clear_password | overview | libraries | folders | library_add | library_remove |
     scan | users | ratings | user_add | user_set | user_delete } → { ok, ... }."""
@@ -14640,6 +14983,8 @@ def store_jellyfin_api(body):
             if _JF_ID.match(uid) and (isinstance(rating, int) or fol != 'keep'):
                 _jf_set_policy(uid, rating=rating if isinstance(rating, int) else 'keep', folders=fol)
             return 200, {'ok': True, 'users': [_jf_user_row(x) for x in (_jf_call('GET', '/Users') or [])]}
+        if action == 'adm':   # MDM-JF-ADM-V1
+            return _jf_adm(b)
         if action in ('user_set', 'user_delete'):
             uid = _jf_hexid(b.get('id'))
             if not _JF_ID.match(uid):

@@ -22330,6 +22330,10 @@ function dkJfIcons() {
   WEB_ICONS.camcorder = '<path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/>';
   WEB_ICONS.smile = '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>';
   WEB_ICONS.book = '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>';
+  WEB_ICONS.clock = '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>';
+  WEB_ICONS.puzzle = '<path d="M10 4a2 2 0 114 0v2h4v4h-2a2 2 0 100 4h2v4h-4v-2a2 2 0 10-4 0v2H6v-4h2a2 2 0 100-4H6V6h4z"/>';
+  WEB_ICONS.cpu = '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>';
+  WEB_ICONS.server = '<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01"/>';
   WEB_ICONS.stack = '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 12 10 5 10-5M2 17l10 5 10-5"/>';
 }
 // Icône d'une bibliothèque : d'après son type, et son nom pour les bibliothèques « mixtes ».
@@ -22367,6 +22371,13 @@ function dkJfSide() {
     + wmNav({ active: n === 'act', call: 'dkJfGo(\'act\')', icon: 'activity', name: T('Activité') })
     + wmNav({ active: n === 'bk', call: 'dkJfGo(\'bk\')', icon: 'save', name: T('Sauvegardes') })
     + wmNav({ active: n === 'dom', call: 'dkJfGo(\'dom\')', icon: 'globe', name: T('Domaine') })
+    + wmSep()
+    + wmNav({ active: n === 'tv', call: 'dkJfGo(\'tv\')', icon: 'tv', name: T('Télévision en direct') })
+    + wmNav({ active: n === 'tasks', call: 'dkJfGo(\'tasks\')', icon: 'clock', name: T('Tâches planifiées') })
+    + wmNav({ active: n === 'plug', call: 'dkJfGo(\'plug\')', icon: 'puzzle', name: T('Plugins') })
+    + wmNav({ active: n === 'enc', call: 'dkJfGo(\'enc\')', icon: 'cpu', name: T('Transcodage') })
+    + wmNav({ active: n === 'srv', call: 'dkJfGo(\'srv\')', icon: 'server', name: T('Serveur et réseau') })
+    + wmNav({ active: n === 'acc', call: 'dkJfGo(\'acc\')', icon: 'key', name: T('Accès') })
     + wmSep()
     + wmNav({ active: n === 'set', call: 'dkJfGo(\'set\')', icon: 'key', name: T('Connexion') }));
 }
@@ -22446,7 +22457,8 @@ function dkJfRenderAct(body) {
   h += d.sessions.length ? '<div class="web-group">' + d.sessions.map(function(s) {
     return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(s.user) + ' · ' + webEsc(s.device || s.client) + '</span><span class="web-row-desc">'
       + (s.playing ? webEsc(s.playing) + (s.paused ? ' · ' + T('en pause') : '') + ' · ' + dkJfT(s.pos) : T('Connecté, rien en lecture')) + '</span></span>'
-      + (s.playing ? '<button class="fs-btn" onclick="dkJfSessStop(\'' + s.id + '\')">' + T('Arrêter la lecture') + '</button>' : '') + '</div>';
+      + (s.playing ? '<button class="fs-btn" onclick="dkJfSessPlay(\'' + s.id + '\',\'PlayPause\')">' + (s.paused ? T('Reprendre') : T('Pause')) + '</button><button class="fs-btn" onclick="dkJfSessStop(\'' + s.id + '\')">' + T('Arrêter la lecture') + '</button>' : '')
+      + '<button class="fs-btn" onclick="dkJfSessMsg(\'' + s.id + '\')">' + T('Message') + '</button></div>';
   }).join('') + '</div>' : '<div class="dkjf-m">' + T('Personne n’est connecté.') + '</div>';
   h += '<div class="dkjf-h">' + T('Appareils') + '</div>';
   h += d.devices.length ? '<div class="web-group">' + d.devices.map(function(x, i) {
@@ -22636,6 +22648,15 @@ async function dkJfLoad(quiet) {
     }
     if (nav === 'bk') { r = await dkJfApi('backup_list'); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body); _dkJf.bk = { backups: r.backups || [] }; dkJfRenderBk(body); return; }
     if (nav === 'act') { r = await dkJfApi('activity'); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body); _dkJf.act = r; dkJfRenderAct(body); return; }
+    if (nav === 'tasks') { _dkJfA.tasks = await dkJfAdm('tasks'); if (gen !== _dkJf.gen) return; dkJfRenderTasks(body); return; }
+    if (nav === 'plug') {
+      _dkJfA.plug = await dkJfAdm('plugins'); _dkJfA.repos = await dkJfAdm('repos').catch(function() { return []; });
+      _dkJfA.pkgs = await dkJfAdm('packages').catch(function() { return []; }); if (gen !== _dkJf.gen) return; dkJfRenderPlug(body); return;
+    }
+    if (nav === 'enc') { _dkJfA.enc = await dkJfAdm('encoding_get'); if (gen !== _dkJf.gen) return; dkJfRenderEnc(body); return; }
+    if (nav === 'srv') { _dkJfA.conf = await dkJfAdm('conf_get'); _dkJfA.net = await dkJfAdm('network_get'); if (gen !== _dkJf.gen) return; dkJfRenderSrv(body); return; }
+    if (nav === 'acc') { _dkJfA.keys = await dkJfAdm('keys'); _dkJfA.qc = await dkJfAdm('qc_state').catch(function() { return false; }); if (gen !== _dkJf.gen) return; dkJfRenderAcc(body); return; }
+    if (nav === 'tv') { await dkJfTvGo(_dkJfA.tvTab); return; }
     if (nav === 'dom') { await dkJfDomLoad(); if (gen !== _dkJf.gen) return; dkJfRenderDom(body); return; }
     if (nav === 'users') {
       r = await dkJfApi('users'); if (gen !== _dkJf.gen) return; if (r.denied) return dkJfDenied(body);
@@ -22648,6 +22669,477 @@ async function dkJfLoad(quiet) {
     wmFail('dkjf', T('Jellyfin indisponible'), e, 'dkJfLoad()');
   }
 }
+// ============================================================
+// MDM-JF-ADM-V1 — Jellyfin : le reste de l'API
+// Tâches, plugins, transcodage, serveur et réseau, accès (clés d'API, Quick Connect), télévision en direct,
+// et, sur la fiche d'un élément : métadonnées, affiche, sous-titres, collection, suppression ;
+// options d'une bibliothèque ; droits fins d'un compte ; message et pause sur une session.
+// ============================================================
+var _dkJfA = { tasks: null, topen: null, plug: null, pkgs: null, repos: null, enc: null, conf: null, net: null, keys: null, qc: null,
+               tv: null, tvTab: 'cfg', tvData: null, tvQ: '', pq: '' };
+async function dkJfAdm(op, extra) { return (await dkJfApi('adm', Object.assign({ op: op }, extra || {}))).data; }
+function dkJfErr(e) { toast('⚠️ ' + ((e && e.message) || e), 8000); }
+function dkJfEsc(x) { return webEsc(x == null ? '' : String(x)); }
+// ── Formulaires générés : [{k, l, t: bool|num|text|list|sel, o: [[valeur, libellé]], h: aide}] ──
+function dkJfFormHtml(id, spec, cur) {
+  cur = cur || {};
+  return '<div class="web-group" id="' + id + '">' + spec.filter(function(f) { return cur[f.k] !== undefined; }).map(function(f) {
+    var v = cur[f.k], c;
+    if (f.t === 'bool') c = '<input type="checkbox" data-k="' + f.k + '"' + (v ? ' checked' : '') + '>';
+    else if (f.t === 'num') c = '<input class="dkjf-in" style="width:110px;margin:0;" type="number" data-k="' + f.k + '" value="' + dkJfEsc(v) + '">';
+    else if (f.t === 'list') c = '<input class="dkjf-in" style="width:240px;margin:0;" data-k="' + f.k + '" value="' + dkJfEsc((v || []).join(', ')) + '">';
+    else if (f.t === 'sel') c = '<select class="wm-input" data-k="' + f.k + '">' + f.o.map(function(o) { return '<option value="' + dkJfEsc(o[0]) + '"' + (String(v) === String(o[0]) ? ' selected' : '') + '>' + dkJfEsc(o[1]) + '</option>'; }).join('') + '</select>';
+    else c = '<input class="dkjf-in" style="width:240px;margin:0;" data-k="' + f.k + '" value="' + dkJfEsc(v) + '">';
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + dkJfEsc(f.l) + '</span>' + (f.h ? '<span class="web-row-desc">' + dkJfEsc(f.h) + '</span>' : '') + '</span>' + c + '</div>';
+  }).join('') + '</div>';
+}
+function dkJfFormRead(id, spec) {
+  var root = document.getElementById(id), out = {}; if (!root) return out;
+  spec.forEach(function(f) {
+    var el = root.querySelector('[data-k="' + f.k + '"]'); if (!el) return;
+    if (f.t === 'bool') out[f.k] = !!el.checked;
+    else if (f.t === 'num') out[f.k] = el.value === '' ? null : Number(el.value);
+    else if (f.t === 'list') out[f.k] = el.value.split(',').map(function(x) { return x.trim(); }).filter(Boolean);
+    else out[f.k] = el.value;
+  });
+  return out;
+}
+// ── Fenêtre modale simple ──
+function dkJfModalClose() { var m = document.getElementById('dkjf-modal'); if (m) m.remove(); }
+function dkJfModal(title, html, buttons, wide) {
+  dkJfModalClose();
+  var ov = document.createElement('div'); ov.id = 'dkjf-modal';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:7000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = '<div class="tnd-panel tnd-panel-pad" style="width:min(' + (wide ? 720 : 520) + 'px,95vw);max-height:90vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 70px rgba(0,0,0,.5);">'
+    + '<div style="font-weight:700;font-size:15px;">' + dkJfEsc(title) + '</div><div id="dkjf-mb" style="overflow:auto;min-height:40px;">' + html + '</div>'
+    + '<div id="dkjf-mbtn" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;"></div></div>';
+  document.body.appendChild(ov);
+  ov.onclick = function(e) { if (e.target === ov) dkJfModalClose(); };
+  var bx = ov.querySelector('#dkjf-mbtn');
+  (buttons || [{ l: T('Fermer') }]).forEach(function(b) {
+    var x = document.createElement('button'); x.className = b.primary ? 'web-open' : 'fs-btn'; x.textContent = b.l;
+    x.onclick = function() { if (b.fn) b.fn(x); else dkJfModalClose(); }; bx.appendChild(x);
+  });
+  return ov;
+}
+function dkJfModalBody(html) { var b = document.getElementById('dkjf-mb'); if (b) b.innerHTML = html; }
+// ── Tâches planifiées ──
+var DKJF_DAYS = [['Monday', 'lundi'], ['Tuesday', 'mardi'], ['Wednesday', 'mercredi'], ['Thursday', 'jeudi'], ['Friday', 'vendredi'], ['Saturday', 'samedi'], ['Sunday', 'dimanche']];
+function dkJfHM(ticks) { var s = Math.round(Number(ticks || 0) / 1e7), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m; }
+function dkJfTrigText(t) {
+  if (t.Type === 'DailyTrigger') return Tf('Tous les jours à {0}', dkJfHM(t.TimeOfDayTicks));
+  if (t.Type === 'WeeklyTrigger') { var d = DKJF_DAYS.filter(function(x) { return x[0] === t.DayOfWeek; })[0]; return Tf('Chaque {0} à {1}', d ? T(d[1]) : t.DayOfWeek, dkJfHM(t.TimeOfDayTicks)); }
+  if (t.Type === 'IntervalTrigger') { var mn = Math.round(Number(t.IntervalTicks || 0) / 6e8); return mn % 60 === 0 ? Tf('Toutes les {0} h', mn / 60) : Tf('Toutes les {0} min', mn); }
+  return T('Au démarrage du serveur');
+}
+function dkJfTaskStatus(t) {
+  if (t.State === 'Running') return '⏳ ' + T('En cours') + (t.CurrentProgressPercentage != null ? ' · ' + Math.round(t.CurrentProgressPercentage) + ' %' : '');
+  if (t.State === 'Cancelling') return T('Arrêt en cours…');
+  var r = t.LastExecutionResult; if (!r) return T('Jamais exécutée');
+  var st = { Completed: T('Terminée'), Failed: T('Échec'), Cancelled: T('Annulée'), Aborted: T('Interrompue') }[r.Status] || r.Status;
+  return st + ' · ' + dkJfFmtDate(r.EndTimeUtc);
+}
+function dkJfRenderTasks(body) {
+  var list = _dkJfA.tasks || [], cats = {}, run = false;
+  wmHead('dkjf', T('Tâches planifiées'), { sub: T('Analyses, nettoyages et autres travaux automatiques de Jellyfin') });
+  list.forEach(function(t) { (cats[t.Category || ''] = cats[t.Category || ''] || []).push(t); if (t.State !== 'Idle') run = true; });
+  var h = '';
+  Object.keys(cats).sort().forEach(function(c) {
+    h += '<div class="dkjf-h">' + dkJfEsc(c) + '</div><div class="web-group">' + cats[c].map(function(t) {
+      var open = _dkJfA.topen === t.Id;
+      return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + dkJfEsc(t.Name) + '</span><span class="web-row-desc">' + dkJfEsc(dkJfTaskStatus(t)) + ' · '
+        + dkJfEsc((t.Triggers || []).map(dkJfTrigText).join(' ; ') || T('Aucun horaire')) + '</span></span>'
+        + (t.State === 'Idle' ? '<button class="fs-btn" onclick="dkJfTaskRun(\'' + t.Id + '\')">' + T('Lancer') + '</button>' : '<button class="fs-btn" onclick="dkJfTaskStop(\'' + t.Id + '\')">' + T('Arrêter') + '</button>')
+        + '<button class="fs-btn" onclick="dkJfTaskOpen(\'' + t.Id + '\')">' + T('Horaires') + '</button></div>'
+        + (open ? dkJfTaskPanel(t) : '');
+    }).join('') + '</div>';
+  });
+  body.innerHTML = h || '<div class="dks-empty">' + T('Aucune tâche.') + '</div>';
+  clearTimeout(_dkJf.timer);
+  if (_dkJf.nav === 'tasks') _dkJf.timer = setTimeout(function() { if (_dkJf.nav === 'tasks' && !_dkJfA.topen) dkJfLoad(true); }, run ? 3000 : 15000);
+}
+function dkJfTaskPanel(t) {
+  var tr = t.Triggers || [];
+  return '<div style="padding:10px 16px 14px;border-bottom:1px solid var(--glass-border);font-size:13px;">'
+    + (tr.length ? tr.map(function(x, i) { return '<div style="display:flex;gap:8px;align-items:center;margin:4px 0;"><span style="flex:1;">' + dkJfEsc(dkJfTrigText(x)) + '</span><button class="fs-btn" style="color:var(--danger);" onclick="dkJfTrigDel(\'' + t.Id + '\',' + i + ')">' + T('Retirer') + '</button></div>'; }).join('')
+      : '<div class="dkjf-m">' + T('Aucun horaire : la tâche ne se lance que sur demande.') + '</div>')
+    + '<div class="dkjf-acts" style="margin-top:10px;align-items:center;">'
+    + '<select class="wm-input" id="dkjf-tt" onchange="dkJfTrigForm()"><option value="DailyTrigger">' + T('Tous les jours') + '</option><option value="WeeklyTrigger">' + T('Chaque semaine') + '</option><option value="IntervalTrigger">' + T('À intervalle régulier') + '</option><option value="StartupTrigger">' + T('Au démarrage') + '</option></select> '
+    + '<select class="wm-input" id="dkjf-td" style="display:none;">' + DKJF_DAYS.map(function(d) { return '<option value="' + d[0] + '">' + T(d[1]) + '</option>'; }).join('') + '</select> '
+    + '<input class="dkjf-in" id="dkjf-th" type="time" value="03:00" style="width:110px;margin:0;"> '
+    + '<input class="dkjf-in" id="dkjf-ti" type="number" min="1" value="12" style="width:90px;margin:0;display:none;" title="' + dkJfEsc(T('Heures')) + '"> <span id="dkjf-tiu" style="display:none;">h</span> '
+    + '<button class="web-open" onclick="dkJfTrigAdd(\'' + t.Id + '\')">' + T('Ajouter') + '</button> <button class="fs-btn" onclick="dkJfTaskOpen(null)">' + T('Fermer') + '</button></div></div>';
+}
+function dkJfTrigForm() {
+  var ty = document.getElementById('dkjf-tt').value;
+  document.getElementById('dkjf-td').style.display = ty === 'WeeklyTrigger' ? '' : 'none';
+  document.getElementById('dkjf-th').style.display = (ty === 'DailyTrigger' || ty === 'WeeklyTrigger') ? '' : 'none';
+  document.getElementById('dkjf-ti').style.display = ty === 'IntervalTrigger' ? '' : 'none';
+  document.getElementById('dkjf-tiu').style.display = ty === 'IntervalTrigger' ? '' : 'none';
+}
+function dkJfTaskOpen(id) { _dkJfA.topen = id; dkJfRenderTasks(wmBody('dkjf')); }
+async function dkJfTaskRun(id) { try { await dkJfAdm('task_run', { id: id }); toast(T('Tâche lancée.')); setTimeout(function() { dkJfLoad(true); }, 800); } catch (e) { dkJfErr(e); } }
+async function dkJfTaskStop(id) { try { await dkJfAdm('task_stop', { id: id }); toast(T('Arrêt demandé.')); setTimeout(function() { dkJfLoad(true); }, 800); } catch (e) { dkJfErr(e); } }
+async function dkJfTrigSave(id, list) {
+  try { await dkJfAdm('task_triggers', { id: id, body: list }); _dkJfA.tasks = await dkJfAdm('tasks'); toast(T('Horaires enregistrés.')); } catch (e) { dkJfErr(e); }
+  dkJfRenderTasks(wmBody('dkjf'));
+}
+function dkJfTrigKeep(id) { var t = (_dkJfA.tasks || []).filter(function(x) { return x.Id === id; })[0]; return ((t && t.Triggers) || []).map(function(x) { return { Type: x.Type, TimeOfDayTicks: x.TimeOfDayTicks, IntervalTicks: x.IntervalTicks, DayOfWeek: x.DayOfWeek, MaxRuntimeTicks: x.MaxRuntimeTicks }; }); }
+function dkJfTrigDel(id, i) { var l = dkJfTrigKeep(id); l.splice(i, 1); dkJfTrigSave(id, l); }
+function dkJfTrigAdd(id) {
+  var l = dkJfTrigKeep(id), ty = document.getElementById('dkjf-tt').value, t = (document.getElementById('dkjf-th').value || '03:00').split(':'), sec = (+t[0] * 3600) + (+t[1] * 60), n = { Type: ty };
+  if (ty === 'DailyTrigger' || ty === 'WeeklyTrigger') n.TimeOfDayTicks = sec * 1e7;
+  if (ty === 'WeeklyTrigger') n.DayOfWeek = document.getElementById('dkjf-td').value;
+  if (ty === 'IntervalTrigger') n.IntervalTicks = Math.max(1, +document.getElementById('dkjf-ti').value || 12) * 3600 * 1e7;
+  l.push(n); dkJfTrigSave(id, l);
+}
+// ── Plugins ──
+function dkJfRenderPlug(body) {
+  var pl = _dkJfA.plug || [], pk = _dkJfA.pkgs || [], rp = _dkJfA.repos || [], q = (_dkJfA.pq || '').toLowerCase();
+  wmHead('dkjf', T('Plugins'), { sub: T('Extensions de Jellyfin : sous-titres, métadonnées, guides, sauvegardes…'), actions: '<button class="fs-btn" onclick="dkJfRestart()">' + T('Redémarrer Jellyfin') + '</button>' });
+  var inst = {}; pl.forEach(function(p) { inst[String(p.Id).replace(/-/g, '').toLowerCase()] = p; });
+  var st = { Active: T('Actif'), Disabled: T('Désactivé'), Restart: T('Redémarrage requis'), Malfunctioned: T('Défaillant'), NotSupported: T('Non pris en charge'), Superseded: T('Remplacé'), Deleted: T('Supprimé') };
+  var h = '<div class="dkjf-h" style="margin-top:0;">' + T('Installés') + '</div>' + (pl.length ? '<div class="web-group">' + pl.map(function(p, i) {
+    var off = p.Status === 'Disabled';
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + dkJfEsc(p.Name) + '<span class="dkjf-badge">' + dkJfEsc(p.Version) + '</span></span><span class="web-row-desc">' + dkJfEsc(st[p.Status] || p.Status) + '</span></span>'
+      + '<button class="fs-btn" onclick="dkJfPlugDo(' + i + ',\'' + (off ? 'plugin_on' : 'plugin_off') + '\')">' + (off ? T('Activer') : T('Désactiver')) + '</button>'
+      + (p.CanUninstall !== false ? '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfPlugDo(' + i + ',\'plugin_del\')">' + T('Désinstaller') + '</button>' : '') + '</div>';
+  }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucun plugin installé.') + '</div>');
+  h += '<div class="dkjf-h">' + T('Catalogue') + '</div><div class="dkjf-acts"><input class="dkjf-in" id="dkjf-pq" placeholder="' + dkJfEsc(T('Rechercher un plugin…')) + '" value="' + dkJfEsc(_dkJfA.pq) + '" oninput="_dkJfA.pq=this.value;dkJfPlugFilter()" style="max-width:320px;margin:0;"></div><div id="dkjf-pkl"></div>';
+  h += '<div class="dkjf-h">' + T('Dépôts de plugins') + '</div><div class="web-group">' + rp.map(function(r, i) {
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + dkJfEsc(r.Name) + '</span><span class="web-row-desc">' + dkJfEsc(r.Url) + '</span></span>'
+      + '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfRepoDel(' + i + ')">' + T('Retirer') + '</button></div>';
+  }).join('') + '</div><div class="dkjf-acts" style="margin-top:8px;"><input class="dkjf-in" id="dkjf-ru" placeholder="https://…/manifest.json" style="max-width:360px;margin:0;"> <button class="fs-btn" onclick="dkJfRepoAdd()">' + T('Ajouter un dépôt') + '</button></div>';
+  body.innerHTML = h; dkJfPlugFilter();
+}
+function dkJfPlugFilter() {
+  var box = document.getElementById('dkjf-pkl'); if (!box) return;
+  var pk = _dkJfA.pkgs || [], q = (_dkJfA.pq || '').toLowerCase(), have = {};
+  (_dkJfA.plug || []).forEach(function(p) { have[String(p.Name).toLowerCase()] = 1; });
+  var l = pk.filter(function(p) { return !q || (String(p.name) + ' ' + String(p.description || '') + ' ' + String(p.category || '')).toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
+  box.innerHTML = l.length ? '<div class="web-group">' + l.map(function(p) {
+    var i = pk.indexOf(p), v = (p.versions || [])[0] || {};
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + dkJfEsc(p.name) + (v.version ? '<span class="dkjf-badge">' + dkJfEsc(v.version) + '</span>' : '') + (have[String(p.name).toLowerCase()] ? '<span class="dkjf-badge">✓ ' + T('installé') + '</span>' : '') + '</span>'
+      + '<span class="web-row-desc">' + dkJfEsc(p.description || p.overview || '') + '</span></span><button class="fs-btn" onclick="dkJfPkgInstall(' + i + ')">' + T('Installer') + '</button></div>';
+  }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucun plugin trouvé.') + '</div>';
+}
+async function dkJfPlugDo(i, op) {
+  var p = (_dkJfA.plug || [])[i]; if (!p) return;
+  if (op === 'plugin_del' && !(await showConfirm(Tf('Désinstaller « {0} » ? Jellyfin devra redémarrer.', p.Name), { danger: true, ok: T('Désinstaller') }))) return;
+  try { await dkJfAdm(op, { id: p.Id, version: p.Version }); _dkJfA.plug = await dkJfAdm('plugins'); toast(T('Fait. Redémarrez Jellyfin pour appliquer.'), 6000); } catch (e) { dkJfErr(e); }
+  dkJfRenderPlug(wmBody('dkjf'));
+}
+async function dkJfPkgInstall(i) {
+  var p = (_dkJfA.pkgs || [])[i]; if (!p) return; var v = (p.versions || [])[0] || {};
+  try { await dkJfAdm('pkg_install', { id: p.name, params: { assemblyGuid: p.guid, version: v.version, repositoryUrl: v.repositoryUrl } }); toast(T('Installation lancée. Redémarrez Jellyfin pour l’activer.'), 6000);
+    setTimeout(async function() { try { _dkJfA.plug = await dkJfAdm('plugins'); if (_dkJf.nav === 'plug') dkJfRenderPlug(wmBody('dkjf')); } catch (_) {} }, 4000); } catch (e) { dkJfErr(e); }
+}
+async function dkJfRepoAdd() {
+  var u = (document.getElementById('dkjf-ru').value || '').trim(); if (!u) return;
+  var l = (_dkJfA.repos || []).concat([{ Name: u.replace(/^https:\/\//, '').slice(0, 40), Url: u, Enabled: true }]);
+  try { await dkJfAdm('repos_set', { body: l }); _dkJfA.repos = await dkJfAdm('repos'); _dkJfA.pkgs = await dkJfAdm('packages'); } catch (e) { dkJfErr(e); }
+  dkJfRenderPlug(wmBody('dkjf'));
+}
+async function dkJfRepoDel(i) {
+  var l = (_dkJfA.repos || []).slice(); l.splice(i, 1);
+  try { await dkJfAdm('repos_set', { body: l }); _dkJfA.repos = await dkJfAdm('repos'); } catch (e) { dkJfErr(e); }
+  dkJfRenderPlug(wmBody('dkjf'));
+}
+async function dkJfRestart() {
+  if (!(await showConfirm(T('Redémarrer Jellyfin ? Les lectures en cours seront interrompues pendant quelques secondes.'), { ok: T('Redémarrer') }))) return;
+  try { await dkJfAdm('restart'); } catch (e) { dkJfErr(e); return; }
+  var body = wmBody('dkjf'); if (body) body.innerHTML = '<div class="fs-loading" style="height:200px;"><div class="spinner"></div> ' + T('Jellyfin redémarre…') + '</div>';
+  var gen = ++_dkJf.gen;
+  for (var k = 0; k < 40; k++) { await new Promise(function(ok) { setTimeout(ok, 3000); }); if (gen !== _dkJf.gen) return; try { await dkJfApi('state'); break; } catch (_) {} }
+  toast(T('Jellyfin est de retour.')); dkJfLoad();
+}
+// ── Transcodage ──
+var DKJF_ENC = [
+  { k: 'HardwareAccelerationType', l: T('Accélération matérielle'), t: 'sel', o: [['none', T('Aucune')], ['vaapi', 'VAAPI (Intel / AMD)'], ['qsv', 'Intel Quick Sync'], ['nvenc', 'NVIDIA NVENC'], ['amf', 'AMD AMF'], ['rkmpp', 'Rockchip'], ['v4l2m2m', 'V4L2']], h: T('Demande aussi que le conteneur Jellyfin ait accès à la carte graphique.') },
+  { k: 'VaapiDevice', l: T('Périphérique VAAPI'), t: 'text', h: '/dev/dri/renderD128' },
+  { k: 'EnableHardwareEncoding', l: T('Encodage matériel'), t: 'bool' },
+  { k: 'AllowHevcEncoding', l: T('Autoriser l’encodage HEVC'), t: 'bool' },
+  { k: 'AllowAv1Encoding', l: T('Autoriser l’encodage AV1'), t: 'bool' },
+  { k: 'EnableDecodingColorDepth10Hevc', l: T('Décodage matériel HEVC 10 bits'), t: 'bool' },
+  { k: 'EnableDecodingColorDepth10Vp9', l: T('Décodage matériel VP9 10 bits'), t: 'bool' },
+  { k: 'EnableTonemapping', l: T('Tonemapping HDR vers SDR'), t: 'bool' },
+  { k: 'EncoderPreset', l: T('Préréglage de l’encodeur'), t: 'sel', o: [['auto', T('Automatique')], ['veryslow', 'veryslow'], ['slower', 'slower'], ['slow', 'slow'], ['medium', 'medium'], ['fast', 'fast'], ['faster', 'faster'], ['veryfast', 'veryfast'], ['superfast', 'superfast'], ['ultrafast', 'ultrafast']] },
+  { k: 'H264Crf', l: T('Qualité H.264 (CRF)'), t: 'num', h: T('Plus bas = meilleure qualité. 23 par défaut.') },
+  { k: 'H265Crf', l: T('Qualité H.265 (CRF)'), t: 'num', h: T('28 par défaut.') },
+  { k: 'EncodingThreadCount', l: T('Fils de calcul (-1 = auto)'), t: 'num' },
+  { k: 'EnableThrottling', l: T('Ralentir le transcodage quand il est en avance'), t: 'bool' },
+  { k: 'EnableSegmentDeletion', l: T('Supprimer les segments déjà lus'), t: 'bool' },
+  { k: 'EnableSubtitleExtraction', l: T('Extraire les sous-titres incrustés'), t: 'bool' }
+];
+function dkJfRenderEnc(body) {
+  wmHead('dkjf', T('Transcodage'), { sub: T('Comment Jellyfin convertit les vidéos que l’appareil ne sait pas lire'), actions: '<button class="web-open" onclick="dkJfCfgSave(\'encoding\',\'enc\',DKJF_ENC)">' + T('Enregistrer') + '</button>' });
+  body.innerHTML = dkJfFormHtml('dkjf-fenc', DKJF_ENC, _dkJfA.enc);
+}
+// ── Serveur et réseau ──
+var DKJF_CONF = [
+  { k: 'ServerName', l: T('Nom du serveur'), t: 'text' },
+  { k: 'PreferredMetadataLanguage', l: T('Langue des métadonnées'), t: 'text', h: 'fr' },
+  { k: 'MetadataCountryCode', l: T('Pays des métadonnées'), t: 'text', h: 'FR' },
+  { k: 'QuickConnectAvailable', l: T('Quick Connect disponible'), t: 'bool' },
+  { k: 'LogFileRetentionDays', l: T('Jours de conservation des journaux'), t: 'num' },
+  { k: 'MinResumePct', l: T('Reprise : % minimum vu'), t: 'num' },
+  { k: 'MaxResumePct', l: T('Reprise : % au-delà duquel c’est « vu »'), t: 'num' },
+  { k: 'EnableGroupingMoviesIntoCollections', l: T('Regrouper automatiquement les films d’une saga'), t: 'bool' }
+];
+var DKJF_NET = [
+  { k: 'EnableRemoteAccess', l: T('Autoriser l’accès hors du réseau local'), t: 'bool' },
+  { k: 'EnableIPv4', l: 'IPv4', t: 'bool' }, { k: 'EnableIPv6', l: 'IPv6', t: 'bool' },
+  { k: 'EnableUPnP', l: T('Ouverture automatique de ports (UPnP)'), t: 'bool' },
+  { k: 'KnownProxies', l: T('Proxys de confiance'), t: 'list', h: T('Adresses des serveurs proxy (NPMplus…), séparées par des virgules.') },
+  { k: 'LocalNetworkSubnets', l: T('Réseaux considérés comme locaux'), t: 'list', h: '192.168.0.0/24' }
+];
+function dkJfRenderSrv(body) {
+  wmHead('dkjf', T('Serveur et réseau'), { sub: T('Réglages généraux de Jellyfin'), actions: '<button class="web-open" onclick="dkJfSrvSave()">' + T('Enregistrer') + '</button> <button class="fs-btn" onclick="dkJfRestart()">' + T('Redémarrer Jellyfin') + '</button>' });
+  body.innerHTML = '<div class="dkjf-h" style="margin-top:0;">' + T('Général') + '</div>' + dkJfFormHtml('dkjf-fconf', DKJF_CONF, _dkJfA.conf)
+    + '<div class="dkjf-h">' + T('Réseau') + '</div>' + dkJfFormHtml('dkjf-fnet', DKJF_NET, _dkJfA.net)
+    + '<div class="dkjf-m" style="margin-top:8px;">' + T('Certains réglages réseau demandent un redémarrage de Jellyfin.') + '</div>';
+}
+async function dkJfCfgSave(key, cache, spec) {
+  try { _dkJfA[cache] = await dkJfAdm(key + '_set', { body: dkJfFormRead('dkjf-f' + cache, spec) }); toast(T('Réglages enregistrés.')); } catch (e) { dkJfErr(e); }
+}
+async function dkJfSrvSave() {
+  try {
+    _dkJfA.conf = await dkJfAdm('conf_set', { body: dkJfFormRead('dkjf-fconf', DKJF_CONF) });
+    _dkJfA.net = await dkJfAdm('network_set', { body: dkJfFormRead('dkjf-fnet', DKJF_NET) });
+    toast(T('Réglages enregistrés.'));
+  } catch (e) { dkJfErr(e); }
+}
+// ── Accès : clés d'API et Quick Connect ──
+function dkJfRenderAcc(body) {
+  var ks = (_dkJfA.keys && _dkJfA.keys.Items) || [];
+  wmHead('dkjf', T('Accès'), { sub: T('Clés d’API pour vos outils, et connexion rapide d’un nouvel appareil') });
+  var h = '<div class="dkjf-h" style="margin-top:0;">' + T('Connexion rapide (Quick Connect)') + '</div><div class="dkjf-m" style="margin-bottom:8px;">'
+    + (_dkJfA.qc === false ? T('Quick Connect est désactivé : activez-le dans « Serveur et réseau ».') : T('Sur le nouvel appareil, choisissez « Quick Connect » : il affiche un code à saisir ici.')) + '</div>'
+    + '<div class="dkjf-acts"><input class="dkjf-in" id="dkjf-qc" placeholder="123456" inputmode="numeric" style="max-width:160px;margin:0;"> <button class="web-open" onclick="dkJfQcAuth()">' + T('Autoriser') + '</button></div>';
+  h += '<div class="dkjf-h">' + T('Clés d’API') + '</div>' + (ks.length ? '<div class="web-group">' + ks.map(function(k, i) {
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + dkJfEsc(k.AppName) + '</span><span class="web-row-desc">' + dkJfEsc(dkJfFmtDate(k.DateCreated)) + ' · <code>' + dkJfEsc(String(k.AccessToken).slice(0, 6)) + '…</code></span></span>'
+      + '<button class="fs-btn" onclick="dkJfKeyCopy(' + i + ')">' + T('Copier') + '</button><button class="fs-btn" style="color:var(--danger);" onclick="dkJfKeyDel(' + i + ')">' + T('Révoquer') + '</button></div>';
+  }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucune clé.') + '</div>')
+    + '<div class="dkjf-acts" style="margin-top:8px;"><input class="dkjf-in" id="dkjf-kn" placeholder="' + dkJfEsc(T('Nom de l’outil (ex. Home Assistant)')) + '" style="max-width:300px;margin:0;"> <button class="fs-btn" onclick="dkJfKeyAdd()">' + T('Créer une clé') + '</button></div>';
+  body.innerHTML = h;
+}
+async function dkJfQcAuth() {
+  var c = (document.getElementById('dkjf-qc').value || '').trim(); if (!c) return;
+  try { var r = await dkJfAdm('qc_auth', { id: c }); toast(r === false ? T('Code refusé ou expiré.') : T('Appareil autorisé.')); document.getElementById('dkjf-qc').value = ''; } catch (e) { dkJfErr(e); }
+}
+async function dkJfKeyAdd() {
+  var n = (document.getElementById('dkjf-kn').value || '').trim(); if (!n) return;
+  try { _dkJfA.keys = await dkJfAdm('key_add', { id: n }); } catch (e) { dkJfErr(e); }
+  dkJfRenderAcc(wmBody('dkjf'));
+}
+async function dkJfKeyDel(i) {
+  var k = ((_dkJfA.keys || {}).Items || [])[i]; if (!k) return;
+  if (!(await showConfirm(Tf('Révoquer la clé « {0} » ? L’outil qui l’utilise perdra l’accès.', k.AppName), { danger: true, ok: T('Révoquer') }))) return;
+  try { _dkJfA.keys = await dkJfAdm('key_del', { id: k.AccessToken }); } catch (e) { dkJfErr(e); }
+  dkJfRenderAcc(wmBody('dkjf'));
+}
+function dkJfKeyCopy(i) {
+  var k = ((_dkJfA.keys || {}).Items || [])[i]; if (!k) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(k.AccessToken).then(function() { toast(T('Clé copiée.')); }).catch(function() { dkJfModal(T('Clé d’API'), '<input class="dkjf-in" style="max-width:none;" readonly value="' + dkJfEsc(k.AccessToken) + '" onclick="this.select()">'); });
+  else dkJfModal(T('Clé d’API'), '<input class="dkjf-in" style="max-width:none;" readonly value="' + dkJfEsc(k.AccessToken) + '" onclick="this.select()">');
+}
+// ── Télévision en direct ──
+function dkJfTvTabs() {
+  var t = _dkJfA.tvTab;
+  return '<div class="dkjf-acts" style="margin-bottom:12px;">' + [['cfg', T('Tuners et guide')], ['chan', T('Chaînes')], ['prog', T('Programmes')], ['rec', T('Enregistrements')], ['tim', T('Programmations')]].map(function(x) {
+    return '<button class="' + (t === x[0] ? 'web-open' : 'fs-btn') + '" onclick="dkJfTvGo(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join(' ') + '</div>';
+}
+async function dkJfTvGo(tab) {
+  _dkJfA.tvTab = tab; var body = wmBody('dkjf'); wmLoading('dkjf');
+  try {
+    if (tab === 'cfg') _dkJfA.tvData = await dkJfAdm('lt_cfg');
+    else if (tab === 'chan') _dkJfA.tvData = await dkJfAdm('lt_channels', { params: { searchTerm: _dkJfA.tvQ } });
+    else if (tab === 'prog') _dkJfA.tvData = await dkJfAdm('lt_programs', { params: { searchTerm: _dkJfA.tvQ } });
+    else if (tab === 'rec') _dkJfA.tvData = await dkJfAdm('lt_recs');
+    else _dkJfA.tvData = await dkJfAdm('lt_timers');
+  } catch (e) { _dkJfA.tvData = null; dkJfErr(e); }
+  dkJfRenderTv(wmBody('dkjf'));
+}
+function dkJfTvRow(name, desc, btns) { return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + dkJfEsc(name) + '</span><span class="web-row-desc">' + dkJfEsc(desc) + '</span></span>' + (btns || '') + '</div>'; }
+function dkJfRenderTv(body) {
+  var t = _dkJfA.tvTab, d = _dkJfA.tvData, h = dkJfTvTabs();
+  wmHead('dkjf', T('Télévision en direct'), { sub: T('Tuners, guide des programmes et enregistrements') });
+  var search = (t === 'chan' || t === 'prog') ? '<div class="dkjf-acts" style="margin-bottom:10px;"><input class="dkjf-in" id="dkjf-tvq" placeholder="' + dkJfEsc(T('Rechercher…')) + '" value="' + dkJfEsc(_dkJfA.tvQ) + '" onkeydown="if(event.key===\'Enter\'){_dkJfA.tvQ=this.value;dkJfTvGo(\'' + t + '\')}" style="max-width:300px;margin:0;"></div>' : '';
+  h += search;
+  if (!d) { body.innerHTML = h + '<div class="dks-empty">' + T('Rien à afficher pour l’instant.') + '</div>'; return; }
+  if (t === 'cfg') {
+    var th = d.TunerHosts || [], lp = d.ListingProviders || [];
+    h += '<div class="dkjf-h" style="margin-top:0;">' + T('Tuners') + '</div>' + (th.length ? '<div class="web-group">' + th.map(function(x, i) {
+      return dkJfTvRow(x.FriendlyName || x.Url, (x.Type || '') + ' · ' + (x.Url || ''), '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfTvDel(\'host\',' + i + ')">' + T('Retirer') + '</button>'); }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucun tuner.') + '</div>')
+      + '<div class="dkjf-acts" style="margin-top:10px;"><select class="wm-input" id="dkjf-hty"><option value="hdhomerun">HDHomeRun</option><option value="m3u">' + T('Liste M3U (IPTV)') + '</option></select> '
+      + '<input class="dkjf-in" id="dkjf-hu" placeholder="' + dkJfEsc(T('Adresse (IP du tuner ou URL .m3u)')) + '" style="max-width:300px;margin:0;"> <button class="web-open" onclick="dkJfTvAddHost()">' + T('Ajouter') + '</button> <button class="fs-btn" onclick="dkJfTvDiscover()">' + T('Chercher les tuners du réseau') + '</button></div><div id="dkjf-disc"></div>';
+    h += '<div class="dkjf-h">' + T('Guide des programmes') + '</div>' + (lp.length ? '<div class="web-group">' + lp.map(function(x, i) {
+      return dkJfTvRow(x.Type === 'xmltv' ? 'XMLTV' : x.Type, x.Path || x.Username || '', '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfTvDel(\'prov\',' + i + ')">' + T('Retirer') + '</button>'); }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucun guide.') + '</div>')
+      + '<div class="dkjf-acts" style="margin-top:10px;"><input class="dkjf-in" id="dkjf-gu" placeholder="' + dkJfEsc(T('Adresse du guide XMLTV (.xml)')) + '" style="max-width:340px;margin:0;"> <button class="web-open" onclick="dkJfTvAddProv()">' + T('Ajouter') + '</button></div>';
+  } else if (t === 'chan') {
+    var ch = d.Items || [];
+    h += ch.length ? '<div class="web-group">' + ch.map(function(c) {
+      var p = c.CurrentProgram; return dkJfTvRow((c.Number ? c.Number + ' · ' : '') + c.Name, p ? p.Name + ' (' + dkJfFmtDate(p.StartDate).slice(-8, -3) + ' → ' + dkJfFmtDate(p.EndDate).slice(-8, -3) + ')' : ''); }).join('') + '</div>' : '<div class="dks-empty">' + T('Aucune chaîne. Ajoutez un tuner, puis lancez « Actualiser le guide » dans les tâches planifiées.') + '</div>';
+  } else if (t === 'prog') {
+    var pg = d.Items || [];
+    h += pg.length ? '<div class="web-group">' + pg.map(function(p) {
+      return dkJfTvRow(p.Name + (p.EpisodeTitle ? ' · ' + p.EpisodeTitle : ''), (p.ChannelName || '') + ' · ' + dkJfFmtDate(p.StartDate) + ' → ' + dkJfFmtDate(p.EndDate).slice(-8, -3),
+        '<button class="fs-btn" onclick="dkJfTvRec(\'' + p.Id + '\',false)">' + T('Enregistrer') + '</button>' + (p.IsSeries ? '<button class="fs-btn" onclick="dkJfTvRec(\'' + p.Id + '\',true)">' + T('Toute la série') + '</button>' : '')); }).join('') + '</div>' : '<div class="dks-empty">' + T('Aucun programme dans le guide.') + '</div>';
+  } else if (t === 'rec') {
+    var rc = d.Items || [];
+    h += rc.length ? '<div class="web-group">' + rc.map(function(r) {
+      return dkJfTvRow(r.Name, (r.ChannelName || '') + ' · ' + dkJfFmtDate(r.StartDate) + ' · ' + (r.Status || ''), '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfTvRecDel(\'' + r.Id + '\')">' + T('Supprimer') + '</button>'); }).join('') + '</div>' : '<div class="dks-empty">' + T('Aucun enregistrement.') + '</div>';
+  } else {
+    var tm = (d.timers && d.timers.Items) || [], sr = (d.series && d.series.Items) || [];
+    h += '<div class="dkjf-h" style="margin-top:0;">' + T('Enregistrements programmés') + '</div>' + (tm.length ? '<div class="web-group">' + tm.map(function(r) {
+      return dkJfTvRow(r.Name, (r.ChannelName || '') + ' · ' + dkJfFmtDate(r.StartDate), '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfTvTimDel(\'' + r.Id + '\',false)">' + T('Annuler') + '</button>'); }).join('') + '</div>' : '<div class="dkjf-m">' + T('Rien de programmé.') + '</div>');
+    h += '<div class="dkjf-h">' + T('Séries programmées') + '</div>' + (sr.length ? '<div class="web-group">' + sr.map(function(r) {
+      return dkJfTvRow(r.Name, r.ChannelName || T('Toutes les chaînes'), '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfTvTimDel(\'' + r.Id + '\',true)">' + T('Annuler') + '</button>'); }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucune série.') + '</div>');
+  }
+  body.innerHTML = h;
+}
+async function dkJfTvAddHost() {
+  var ty = document.getElementById('dkjf-hty').value, u = (document.getElementById('dkjf-hu').value || '').trim(); if (!u) return;
+  try { _dkJfA.tvData = await dkJfAdm('lt_host_add', { body: { Type: ty, Url: u, FriendlyName: ty === 'hdhomerun' ? 'HDHomeRun' : 'IPTV' } }); toast(T('Tuner ajouté.')); } catch (e) { dkJfErr(e); }
+  dkJfRenderTv(wmBody('dkjf'));
+}
+async function dkJfTvDiscover() {
+  var box = document.getElementById('dkjf-disc'); if (box) box.innerHTML = '<div class="spinner" style="margin:10px;"></div>';
+  try {
+    var l = await dkJfAdm('lt_discover') || [];
+    _dkJfA.disc = l;
+    if (box) box.innerHTML = l.length ? '<div class="web-group" style="margin-top:8px;">' + l.map(function(x, i) { return dkJfTvRow(x.FriendlyName || x.Name || x.Url, (x.Type || '') + ' · ' + (x.Url || ''), '<button class="fs-btn" onclick="dkJfTvAddDisc(' + i + ')">' + T('Ajouter') + '</button>'); }).join('') + '</div>' : '<div class="dkjf-m" style="margin-top:8px;">' + T('Aucun tuner trouvé sur le réseau.') + '</div>';
+  } catch (e) { if (box) box.innerHTML = ''; dkJfErr(e); }
+}
+async function dkJfTvAddDisc(i) {
+  var x = (_dkJfA.disc || [])[i]; if (!x) return;
+  try { _dkJfA.tvData = await dkJfAdm('lt_host_add', { body: { Type: x.Type || 'hdhomerun', Url: x.Url, FriendlyName: x.FriendlyName || x.Name || 'HDHomeRun' } }); toast(T('Tuner ajouté.')); } catch (e) { dkJfErr(e); }
+  dkJfRenderTv(wmBody('dkjf'));
+}
+async function dkJfTvAddProv() {
+  var u = (document.getElementById('dkjf-gu').value || '').trim(); if (!u) return;
+  try { _dkJfA.tvData = await dkJfAdm('lt_prov_add', { body: { Type: 'xmltv', Path: u } }); toast(T('Guide ajouté. Lancez « Actualiser le guide » dans les tâches planifiées.'), 6000); } catch (e) { dkJfErr(e); }
+  dkJfRenderTv(wmBody('dkjf'));
+}
+async function dkJfTvDel(kind, i) {
+  var d = _dkJfA.tvData || {}, x = (kind === 'host' ? d.TunerHosts : d.ListingProviders || [])[i]; if (!x) return;
+  if (!(await showConfirm(T('Retirer cet élément ?'), { danger: true, ok: T('Retirer') }))) return;
+  try { _dkJfA.tvData = await dkJfAdm(kind === 'host' ? 'lt_host_del' : 'lt_prov_del', { id: x.Id }); } catch (e) { dkJfErr(e); }
+  dkJfRenderTv(wmBody('dkjf'));
+}
+async function dkJfTvRec(id, series) { try { await dkJfAdm('lt_timer_new', { id: id, series: !!series }); toast(series ? T('Série programmée.') : T('Enregistrement programmé.')); } catch (e) { dkJfErr(e); } }
+async function dkJfTvRecDel(id) {
+  if (!(await showConfirm(T('Supprimer cet enregistrement ?'), { danger: true, ok: T('Supprimer') }))) return;
+  try { await dkJfAdm('lt_rec_del', { id: id }); dkJfTvGo('rec'); } catch (e) { dkJfErr(e); }
+}
+async function dkJfTvTimDel(id, series) { try { _dkJfA.tvData = await dkJfAdm(series ? 'lt_stimer_del' : 'lt_timer_del', { id: id }); } catch (e) { dkJfErr(e); } dkJfRenderTv(wmBody('dkjf')); }
+// ── Fiche d'un élément : métadonnées, affiche, sous-titres, collection, suppression ──
+async function dkJfItemEdit() {
+  var x = _dkJf.item; if (!x) return;
+  try {
+    var r = await dkJfAdm('item_get', { id: x.id }), it = r.item || {};
+    var rats = '<option value=""></option>' + (r.ratings || []).map(function(o) { return '<option value="' + dkJfEsc(o.Name) + '"' + (o.Name === it.OfficialRating ? ' selected' : '') + '>' + dkJfEsc(o.Name) + '</option>'; }).join('');
+    var row = function(l, id, v, ta) { return '<div style="margin:8px 0;"><div class="dkjf-m" style="margin:0 0 3px;">' + l + '</div>' + (ta ? '<textarea class="dkjf-in" id="' + id + '" rows="5" style="max-width:none;width:100%;margin:0;">' + dkJfEsc(v) + '</textarea>' : '<input class="dkjf-in" id="' + id + '" value="' + dkJfEsc(v) + '" style="max-width:none;width:100%;margin:0;">') + '</div>'; };
+    dkJfModal(T('Modifier les informations'),
+      row(T('Titre'), 'dkjf-e-n', it.Name) + row(T('Titre original'), 'dkjf-e-o', it.OriginalTitle) + row(T('Résumé'), 'dkjf-e-ov', it.Overview, true)
+      + row(T('Genres (séparés par des virgules)'), 'dkjf-e-g', (it.Genres || []).join(', ')) + row(T('Étiquettes (séparées par des virgules)'), 'dkjf-e-t', (it.Tags || []).join(', '))
+      + '<div style="display:flex;gap:10px;">' + row(T('Année'), 'dkjf-e-y', it.ProductionYear == null ? '' : it.ProductionYear) + row(T('Note (sur 10)'), 'dkjf-e-c', it.CommunityRating == null ? '' : it.CommunityRating) + '</div>'
+      + '<div class="dkjf-m" style="margin:8px 0 3px;">' + T('Classification') + '</div><select class="wm-input" id="dkjf-e-r">' + rats + '</select>'
+      + '<label style="display:block;margin-top:10px;font-size:13px;"><input type="checkbox" id="dkjf-e-l"' + (it.LockData ? ' checked' : '') + '> ' + T('Verrouiller : ne plus modifier ces informations automatiquement') + '</label>',
+      [{ l: T('Annuler') }, { l: T('Enregistrer'), primary: true, fn: async function() {
+        var g = function(i) { return document.getElementById(i).value; };
+        try { await dkJfAdm('item_save', { id: x.id, body: { Name: g('dkjf-e-n'), OriginalTitle: g('dkjf-e-o'), Overview: g('dkjf-e-ov'), Genres: g('dkjf-e-g'), Tags: g('dkjf-e-t'), ProductionYear: g('dkjf-e-y'), CommunityRating: g('dkjf-e-c'), OfficialRating: g('dkjf-e-r'), LockData: document.getElementById('dkjf-e-l').checked } });
+          dkJfModalClose(); toast(T('Informations enregistrées.')); dkJfDetail(x.id); } catch (e) { dkJfErr(e); } } }], true);
+  } catch (e) { dkJfErr(e); }
+}
+function dkJfSubOpen() {
+  var x = _dkJf.item; if (!x) return;
+  dkJfModal(T('Sous-titres'), '<div class="dkjf-acts" style="align-items:center;"><select class="wm-input" id="dkjf-sl"><option value="fra">Français</option><option value="eng">English</option><option value="spa">Español</option><option value="deu">Deutsch</option><option value="ita">Italiano</option><option value="por">Português</option></select> <button class="web-open" onclick="dkJfSubSearch()">' + T('Chercher') + '</button></div><div id="dkjf-sr"></div>', [{ l: T('Fermer') }], true);
+}
+async function dkJfSubSearch() {
+  var x = _dkJf.item, l = document.getElementById('dkjf-sl').value, box = document.getElementById('dkjf-sr'); if (!x || !box) return;
+  box.innerHTML = '<div class="spinner" style="margin:14px auto;"></div>';
+  try {
+    var r = await dkJfAdm('sub_search', { id: x.id, lang: l }) || []; _dkJfA.subs = r;
+    box.innerHTML = r.length ? '<div class="web-group" style="margin-top:10px;">' + r.slice(0, 30).map(function(s, i) {
+      return dkJfTvRow(s.Name, [s.ProviderName, s.Format, s.DownloadCount != null ? s.DownloadCount + ' ↓' : '', s.IsHashMatch ? T('correspondance exacte') : ''].filter(Boolean).join(' · '), '<button class="fs-btn" onclick="dkJfSubGet(' + i + ')">' + T('Télécharger') + '</button>'); }).join('') + '</div>'
+      : '<div class="dkjf-m" style="margin-top:10px;">' + T('Aucun sous-titre trouvé. Il faut un plugin de sous-titres (ex. OpenSubtitles) dans « Plugins » et un compte chez eux.') + '</div>';
+  } catch (e) { box.innerHTML = ''; dkJfErr(e); }
+}
+async function dkJfSubGet(i) { var x = _dkJf.item, s = (_dkJfA.subs || [])[i]; if (!x || !s) return; try { await dkJfAdm('sub_get', { id: x.id, sub: s.Id }); toast(T('Sous-titre téléchargé.')); } catch (e) { dkJfErr(e); } }
+async function dkJfImgOpen() {
+  var x = _dkJf.item; if (!x) return;
+  dkJfModal(T('Choisir une affiche'), '<div class="spinner" style="margin:20px auto;"></div>', [{ l: T('Fermer') }], true);
+  try {
+    var r = await dkJfAdm('img_search', { id: x.id }), l = (r && r.Images) || []; _dkJfA.imgs = l;
+    dkJfModalBody(l.length ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">' + l.map(function(m, i) {
+      return '<div style="text-align:center;font-size:11px;"><img src="' + dkJfEsc(m.ThumbnailUrl || m.Url) + '" style="width:100%;border-radius:8px;cursor:pointer;" onclick="dkJfImgSet(' + i + ')" referrerpolicy="no-referrer"><div class="dkjf-m">' + dkJfEsc(m.ProviderName || '') + (m.Width ? ' · ' + m.Width + '×' + m.Height : '') + '</div></div>'; }).join('') + '</div>' : '<div class="dkjf-m">' + T('Aucune affiche proposée.') + '</div>');
+  } catch (e) { dkJfModalBody('<div class="dkjf-m">' + dkJfEsc(e.message || e) + '</div>'); }
+}
+async function dkJfImgSet(i) { var x = _dkJf.item, m = (_dkJfA.imgs || [])[i]; if (!x || !m) return; try { await dkJfAdm('img_set', { id: x.id, url: m.Url }); dkJfModalClose(); toast(T('Affiche remplacée.')); dkJfDetail(x.id); } catch (e) { dkJfErr(e); } }
+async function dkJfCollNew() {
+  var x = _dkJf.item; if (!x) return;
+  var n = await showPrompt(T('Nom de la nouvelle collection'), x.name || ''); if (!n || !n.trim()) return;
+  try { await dkJfAdm('coll_new', { id: x.id, name: n.trim() }); toast(T('Collection créée.')); } catch (e) { dkJfErr(e); }
+}
+async function dkJfItemDel() {
+  var x = _dkJf.item; if (!x) return;
+  if (!(await showConfirm(Tf('Supprimer « {0} » de Jellyfin ET effacer ses fichiers du NAS ? Cette action est définitive.', x.name), { danger: true, ok: T('Supprimer définitivement') }))) return;
+  try { await dkJfAdm('item_delete', { id: x.id, confirm: true }); toast(T('Élément supprimé.')); dkJfViewClose(); dkJfLoad(true); } catch (e) { dkJfErr(e); }
+}
+// ── Options d'une bibliothèque ──
+var DKJF_LIBOPT = [
+  { k: 'EnableRealtimeMonitor', l: T('Surveiller les changements en temps réel'), t: 'bool' },
+  { k: 'AutomaticRefreshIntervalDays', l: T('Actualiser les métadonnées tous les N jours (0 = jamais)'), t: 'num' },
+  { k: 'PreferredMetadataLanguage', l: T('Langue des métadonnées'), t: 'text' },
+  { k: 'MetadataCountryCode', l: T('Pays'), t: 'text' },
+  { k: 'SaveLocalMetadata', l: T('Enregistrer les métadonnées dans les dossiers (NFO, images)'), t: 'bool' },
+  { k: 'EnableEmbeddedTitles', l: T('Préférer les titres incrustés dans les fichiers'), t: 'bool' },
+  { k: 'EnableChapterImageExtraction', l: T('Extraire les images des chapitres'), t: 'bool' },
+  { k: 'ExtractChapterImagesDuringLibraryScan', l: T('… pendant l’analyse de la bibliothèque'), t: 'bool' },
+  { k: 'EnableTrickplayImageExtraction', l: T('Générer les aperçus de la barre de lecture'), t: 'bool' },
+  { k: 'ExtractTrickplayImagesDuringLibraryScan', l: T('… pendant l’analyse de la bibliothèque'), t: 'bool' },
+  { k: 'SubtitleDownloadLanguages', l: T('Langues des sous-titres à télécharger'), t: 'list', h: 'fre, eng' },
+  { k: 'SaveSubtitlesWithMedia', l: T('Enregistrer les sous-titres à côté des fichiers'), t: 'bool' },
+  { k: 'RequirePerfectSubtitleMatch', l: T('Sous-titres : correspondance exacte seulement'), t: 'bool' }
+];
+async function dkJfLibOptions(i) {
+  var l = ((_dkJf.libs || {}).libraries || [])[i]; if (!l) return;
+  try {
+    var cur = await dkJfAdm('lib_opts_get', { id: l.id });
+    dkJfModal(Tf('Options de « {0} »', l.name), dkJfFormHtml('dkjf-flo', DKJF_LIBOPT, cur), [{ l: T('Annuler') }, { l: T('Enregistrer'), primary: true, fn: async function() {
+      try { await dkJfAdm('lib_opts_set', { id: l.id, body: dkJfFormRead('dkjf-flo', DKJF_LIBOPT) }); dkJfModalClose(); toast(T('Options enregistrées.')); } catch (e) { dkJfErr(e); } } }], true);
+  } catch (e) { dkJfErr(e); }
+}
+// ── Droits fins d'un compte ──
+var DKJF_POL = [
+  { k: 'EnableMediaPlayback', l: T('Peut lire les médias'), t: 'bool' },
+  { k: 'EnableVideoPlaybackTranscoding', l: T('Transcodage vidéo autorisé'), t: 'bool' },
+  { k: 'EnableAudioPlaybackTranscoding', l: T('Transcodage audio autorisé'), t: 'bool' },
+  { k: 'EnablePlaybackRemuxing', l: T('Conversion de conteneur autorisée'), t: 'bool' },
+  { k: 'EnableContentDownloading', l: T('Peut télécharger les fichiers'), t: 'bool' },
+  { k: 'EnableLiveTvAccess', l: T('Accès à la télévision en direct'), t: 'bool' },
+  { k: 'EnableLiveTvManagement', l: T('Peut gérer les enregistrements'), t: 'bool' },
+  { k: 'EnableRemoteAccess', l: T('Peut se connecter hors du réseau local'), t: 'bool' },
+  { k: 'RemoteClientBitrateLimit', l: T('Débit maximum hors réseau local (bit/s, 0 = illimité)'), t: 'num' },
+  { k: 'MaxActiveSessions', l: T('Sessions simultanées (0 = illimité)'), t: 'num' },
+  { k: 'LoginAttemptsBeforeLockout', l: T('Essais avant blocage (-1 = défaut, 0 = jamais)'), t: 'num' }
+];
+async function dkJfUserPolicy(i) {
+  var u = (_dkJf.users || [])[i]; if (!u) return;
+  try {
+    var cur = await dkJfAdm('user_policy_get', { id: u.id });
+    dkJfModal(Tf('Droits de « {0} »', u.name), dkJfFormHtml('dkjf-fpol', DKJF_POL, cur), [{ l: T('Annuler') }, { l: T('Enregistrer'), primary: true, fn: async function() {
+      try { await dkJfAdm('user_policy_set', { id: u.id, body: dkJfFormRead('dkjf-fpol', DKJF_POL) }); dkJfModalClose(); toast(T('Droits enregistrés.')); } catch (e) { dkJfErr(e); } } }], true);
+  } catch (e) { dkJfErr(e); }
+}
+// ── Sessions : message, pause ──
+async function dkJfSessMsg(id) {
+  var t = await showPrompt(T('Message à afficher sur l’écran de cet appareil'), ''); if (!t || !t.trim()) return;
+  try { await dkJfAdm('sess_msg', { id: id, body: { Header: 'Desktroo', Text: t.trim() } }); toast(T('Message envoyé.')); } catch (e) { dkJfErr(e); }
+}
+async function dkJfSessPlay(id, cmd) { try { await dkJfAdm('sess_play', { id: id, command: cmd }); setTimeout(function() { dkJfLoad(true); }, 600); } catch (e) { dkJfErr(e); } }
+
 function dkJfRenderSetup(body) {
   if (!body) return;
   var d = _dkJf.data || {};
@@ -22784,6 +23276,9 @@ function dkJfRenderDetail() {
   if (x.playable || x.type === 'MusicAlbum' || x.type === 'Playlist') acts += '<button class="fs-btn" onclick="dkJfPlAdd()">＋ ' + T('Ajouter à une liste') + '</button> ';
   if (x.type === 'Movie' || x.type === 'Series') acts += '<button class="fs-btn" onclick="dkJfIdent()">' + T('Corriger l’identification') + '</button> ';
   acts += '<button class="fs-btn" onclick="dkJfRefresh()">' + T('Actualiser') + '</button></div>';
+  acts += '<div style="margin-top:10px;"><button class="fs-btn" onclick="dkJfItemEdit()">' + T('Modifier les informations') + '</button> <button class="fs-btn" onclick="dkJfImgOpen()">' + T('Changer l’affiche') + '</button> '
+    + (x.playable ? '<button class="fs-btn" onclick="dkJfSubOpen()">' + T('Sous-titres') + '</button> ' : '')
+    + '<button class="fs-btn" onclick="dkJfCollNew()">' + T('Créer une collection') + '</button> <button class="fs-btn" style="color:var(--danger);" onclick="dkJfItemDel()">' + T('Supprimer') + '</button></div>';
   var h = '<div class="dkjf-vh"><button class="fs-btn" onclick="dkJfViewClose()">&lsaquo; ' + T('Retour') + '</button><span class="dkjf-vt">' + webEsc(x.name) + '</span>'
     + '<button class="fs-btn" onclick="dkJfMark(\'fav\')">' + (x.fav ? '★ ' + T('Favori') : '☆ ' + T('Favori')) + '</button>'
     + (x.playable ? '<button class="fs-btn" onclick="dkJfMark(\'played\')">' + (x.played ? '✓ ' + T('Vu') : T('Marquer comme vu')) + '</button>' : '')
@@ -23009,7 +23504,7 @@ function dkJfRenderLibs(body) {
   h += libs.length ? '<div class="web-group">' + libs.map(function(l, i) {
     return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(l.name) + '<span class="dkjf-badge">' + dkJfTypeName(l.type) + '</span></span>'
       + '<span class="web-row-desc">' + (l.count ? Tf('{0} éléments', l.count) + ' · ' : '') + webEsc((l.paths || []).join(', ')) + '</span></span>'
-      + '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfLibDel(' + i + ')">' + T('Retirer') + '</button></div>';
+      + '<button class="fs-btn" onclick="dkJfLibOptions(' + i + ')">' + T('Options') + '</button><button class="fs-btn" style="color:var(--danger);" onclick="dkJfLibDel(' + i + ')">' + T('Retirer') + '</button></div>';
   }).join('') + '</div>' : '<div class="dks-empty">' + T('Aucune bibliothèque pour l’instant.') + '</div>';
   body.innerHTML = h; dkJfPoll(r);
   if (libs.length) dkJfRepairCheck();
@@ -23119,7 +23614,7 @@ function dkJfRenderUsers(body) {
       + (u.admin ? '<span class="dkjf-badge">' + T('Administrateur') + '</span>' : '') + (u.disabled ? '<span class="dkjf-badge">' + T('Désactivé') + '</span>' : '') + '</span></span>'
       + (u.admin ? '' : '<select class="dkjf-in" style="width:auto;margin:0;padding:5px 8px;" onchange="dkJfUserRating(' + i + ',this.value)" title="' + webEsc(T('Limite d’âge')) + '">'
         + dkJfRatingOpts(u.rating, T('Aucune limite')) + '</select>'
-        + '<button class="fs-btn" onclick="dkJfUserAccess(' + i + ')">' + T('Accès') + '</button><button class="fs-btn" onclick="dkJfUserPw(' + i + ')">' + T('Mot de passe') + '</button>'
+        + '<button class="fs-btn" onclick="dkJfUserAccess(' + i + ')">' + T('Accès') + '</button><button class="fs-btn" onclick="dkJfUserPolicy(' + i + ')">' + T('Droits') + '</button><button class="fs-btn" onclick="dkJfUserPw(' + i + ')">' + T('Mot de passe') + '</button>'
         + '<button class="fs-btn" onclick="dkJfUserToggle(' + i + ')">' + (u.disabled ? T('Réactiver') : T('Désactiver')) + '</button>'
         + '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfUserDel(' + i + ')">' + T('Supprimer') + '</button>') + '</div>' + dkJfUserPanel(u, i);
   }).join('') + '</div>';
@@ -29044,7 +29539,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.19';
+var DK_PAGE_VERSION = '2.60.20';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
