@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.35 — October 22, 2026
+
+### Fixed
+- **Installing a Store app in its own window: Chrome does not offer "Install" when Desktroo is already installed** (only "Open in app"). The message now gives the workaround: ⋮ menu → "Create shortcut…" → "Open as window".
+
 ## 2.60.34 — October 22, 2026
 
 ### New

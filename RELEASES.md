@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.35 — 22 octobre 2026
+
+### Corrigé
+- **Installer une app du Magasin dans sa propre fenêtre Windows : Chrome n'offre pas « Installer » quand Desktroo est déjà installé** (il ne propose que « Ouvrir dans l'appli »). Le message indique la solution : menu ⋮ → « Créer un raccourci… » → « Ouvrir dans une fenêtre ». Le titre de l'onglet affiche « Caméras ».
+
 ## 2.60.34 — 22 octobre 2026
 
 ### Nouveau
