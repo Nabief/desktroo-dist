@@ -3,6 +3,19 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.39 — October 22, 2026
+
+### New
+- **New Store app: Music (Navidrome)**, test channel. Your music folders become a library: home (recent, most played, discover), artists, albums, playlists, favorites, search, with covers.
+- **Desktroo Music window**: built-in player (shuffle, repeat, queue, volume, keyboard media keys), without opening the original interface.
+- **Mobile apps**: Subsonic-compatible (Symfonium, DSub, Feishin…) on the local network; address and account shown in the window's settings.
+  Read-only access to chosen folders; admin account created automatically; not yet tested in real conditions.
+
+## 2.60.38 — October 22, 2026
+
+### Fixed
+- **Cameras: the new icon is also used for the installed app / Windows shortcut** (the old image stayed cached on the NAS; it is regenerated once when the desktop opens).
+
 ## 2.60.37 — October 22, 2026
 
 ### Fixed

@@ -22663,6 +22663,380 @@ async function dkCamDel(i) {
   try { var r = await dkCamApi('cam_del', { id: c.id }); _dkCam.cams = r.cams || []; toast(T('Caméra retirée.')); dkCamLoad(); } catch (e) { dkCamErr(e); }
 }
 
+// ══ Musique (Navidrome) : bibliothèque et lecteur dans une fenêtre Desktroo ══
+var _dkNd = { nav: 'home', gen: 0, urls: {}, queue: [], qi: -1, shuffle: false, repeat: 0, data: null, sel: null, q: '', sort: 'alphabeticalByName', scrobbled: '', warned: false };
+function dkNdEsc(x) { return webEsc(x == null ? '' : String(x)); }
+async function dkNdApi(action, extra) {
+  var rr;
+  try { rr = await fileops('POST', 'store/navidrome/api', Object.assign({ action: action }, extra || {})); }
+  catch (e) { if (e && e.status && e.status < 500) throw e; throw new Error(T('La musique ne répond pas pour le moment.')); }
+  if (!rr || rr.ok === false) throw new Error((rr && rr.error) || T('La musique ne répond pas pour le moment.'));
+  return rr;
+}
+function dkNdCss() {
+  if (document.getElementById('dknd-css')) return;
+  var st = document.createElement('style'); st.id = 'dknd-css';
+  st.textContent = '.dknd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 16px}'
+    + '.dknd-card{cursor:pointer;min-width:0}.dknd-card .cv{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#312e81,#831843);display:flex;align-items:center;justify-content:center;font-size:34px;color:rgba(255,255,255,.55)}'
+    + '.dknd-card .cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s}.dknd-card .cv img.ok{opacity:1}'
+    + '.dknd-card .pl{position:absolute;right:8px;bottom:8px;width:38px;height:38px;border-radius:50%;border:0;background:var(--accent,#3b82f6);color:#fff;font-size:15px;cursor:pointer;opacity:0;transform:translateY(6px);transition:all .15s;box-shadow:0 4px 14px rgba(0,0,0,.4)}'
+    + '.dknd-card:hover .pl{opacity:1;transform:none}'
+    + '.dknd-card b{display:block;margin-top:8px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dknd-card small{display:block;font-size:12px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    + '.dknd-h{margin:26px 0 12px;font-size:15px;font-weight:700}.dknd-h:first-child{margin-top:4px}'
+    + '.dknd-hero{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap;margin:0 0 18px}.dknd-hero h2{margin:0 0 4px;font-size:24px}'
+    + '.dknd-tr{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:8px;cursor:pointer}.dknd-tr:hover{background:rgba(255,255,255,.06)}.dknd-tr.on{background:rgba(59,130,246,.16)}'
+    + '.dknd-tr .n{width:26px;text-align:right;opacity:.55;font-size:12.5px;flex:none}.dknd-tr .t{flex:1;min-width:0}.dknd-tr .t b{display:block;font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    + '.dknd-tr .t small{display:block;opacity:.6;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dknd-tr .d{opacity:.6;font-size:12.5px;flex:none;width:44px;text-align:right}'
+    + '.dknd-ic{border:0;background:none;color:inherit;opacity:.55;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px}.dknd-ic:hover{opacity:1;background:rgba(255,255,255,.08)}.dknd-ic.on{opacity:1;color:#fbbf24}'
+    + '.dknd-bar{flex:none;display:flex;align-items:center;gap:16px;padding:10px 18px;border-top:1px solid var(--glass-border);background:rgba(0,0,0,.18);flex-wrap:wrap}'
+    + '.dknd-now{display:flex;align-items:center;gap:12px;width:250px;min-width:0}.dknd-now .cv{width:46px;height:46px;border-radius:8px;flex:none;position:relative;overflow:hidden;background:linear-gradient(135deg,#312e81,#831843)}'
+    + '.dknd-now .cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.dknd-now b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dknd-now small{display:block;font-size:12px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    + '.dknd-ctl{display:flex;align-items:center;gap:6px}.dknd-ctl button{border:0;background:none;color:inherit;font-size:18px;cursor:pointer;width:36px;height:36px;border-radius:50%;opacity:.85}.dknd-ctl button:hover{background:rgba(255,255,255,.1);opacity:1}'
+    + '.dknd-ctl button.main{background:var(--accent,#3b82f6);color:#fff;font-size:16px;width:42px;height:42px}.dknd-ctl button.on{color:var(--accent,#60a5fa);opacity:1}'
+    + '.dknd-seek{flex:1;min-width:200px;display:flex;align-items:center;gap:10px;font-size:12px;opacity:.85}.dknd-seek input[type=range]{flex:1;accent-color:var(--accent,#3b82f6)}'
+    + '.dknd-vol{display:flex;align-items:center;gap:6px;width:120px}.dknd-vol input{width:100%;accent-color:var(--accent,#3b82f6)}'
+    + '.dknd-ar{display:flex;align-items:center;gap:14px;padding:8px 12px;border-radius:8px;cursor:pointer}.dknd-ar:hover{background:rgba(255,255,255,.06)}'
+    + '.dknd-ar .cv{width:44px;height:44px;border-radius:50%;flex:none;background:linear-gradient(135deg,#312e81,#831843);position:relative;overflow:hidden}.dknd-ar .cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}.dknd-ar .cv img.ok{opacity:1}';
+  document.head.appendChild(st);
+}
+async function dkNdOpen() {
+  var win = document.getElementById('win-dknd');
+  if (win) { win.classList.add('visible'); bringToFront(win); return; }
+  dkStoreCss(); dkJfCss(); dkNdCss();
+  win = dkStoreMakeWin('dknd', T('Musique'), 1100, 720,
+    '<div class="web-shell"><nav class="web-side" id="dknd-side" aria-label="' + webEsc(T('Musique')) + '"></nav>'
+    + '<section class="web-main"><header class="web-head" id="dknd-head"></header><div class="web-body" id="dknd-body"></div>'
+    + '<div class="dknd-bar" id="dknd-bar"></div></section></div><audio id="dknd-audio" preload="auto"></audio>', dkNdClose);
+  var ic = win.querySelector('.window-title');
+  if (ic) ic.insertAdjacentHTML('beforebegin', '<span class="window-icon" style="display:inline-flex;width:18px;height:18px;border-radius:5px;overflow:hidden;">' + dkStoreIcon('navidrome', 18) + '</span>');
+  _dkNd.nav = 'home'; _dkNd.sel = null; _dkNd.data = null;
+  dkNdAudioInit(); dkNdBar();
+  dkNdLoad();
+}
+function dkNdClose() {
+  _dkNd.gen++;
+  var a = document.getElementById('dknd-audio'); if (a) { try { a.pause(); a.removeAttribute('src'); a.load(); } catch (_) {} }
+  _dkNd.queue = []; _dkNd.qi = -1;
+  if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = 'none'; } catch (_) {} }
+  Object.keys(_dkNd.urls).forEach(function(k) { try { URL.revokeObjectURL(_dkNd.urls[k]); } catch (_) {} });
+  _dkNd.urls = {};
+}
+function dkNdSide() {
+  var n = _dkNd.nav;
+  wmSide('dknd', wmNav({ active: n === 'home', call: 'dkNdGo(\'home\')', icon: 'grid', name: T('Accueil') })
+    + wmNav({ active: n === 'artists' || n === 'artist', call: 'dkNdGo(\'artists\')', icon: 'users', name: T('Artistes') })
+    + wmNav({ active: n === 'albums' || n === 'album', call: 'dkNdGo(\'albums\')', icon: 'music', name: T('Albums') })
+    + wmNav({ active: n === 'playlists' || n === 'playlist', call: 'dkNdGo(\'playlists\')', icon: 'list', name: T('Listes de lecture') })
+    + wmNav({ active: n === 'starred', call: 'dkNdGo(\'starred\')', icon: 'star', name: T('Favoris') })
+    + wmSep() + wmNav({ active: n === 'set', call: 'dkNdGo(\'set\')', icon: 'settings', name: T('Réglages') }));
+}
+function dkNdGo(nav, id) { _dkNd.nav = nav; _dkNd.sel = id || null; _dkNd.data = null; dkNdLoad(); }
+function dkNdSearchBox() {
+  return '<input class="wm-input" id="dknd-q" placeholder="' + webEsc(T('Rechercher un titre, un album, un artiste…')) + '" value="' + dkNdEsc(_dkNd.q) + '" oninput="dkNdSearchSoon(this.value)" style="width:260px;">';
+}
+var _dkNdT = null;
+function dkNdSearchSoon(v) {
+  _dkNd.q = v; clearTimeout(_dkNdT);
+  _dkNdT = setTimeout(function() { if (v.trim()) { _dkNd.nav = 'search'; _dkNd.data = null; dkNdLoad(true); } else if (_dkNd.nav === 'search') dkNdGo('home'); }, 350);
+}
+async function dkNdLoad(keepHead) {
+  var nav = _dkNd.nav, gen = ++_dkNd.gen, body = wmBody('dknd'), id = _dkNd.sel;
+  dkNdSide();
+  if (nav === 'set') { try { _dkNd.data = await dkNdApi('state'); } catch (_) { _dkNd.data = {}; } if (gen === _dkNd.gen) dkNdRenderSet(body); return; }
+  if (!keepHead) wmLoading('dknd');
+  try {
+    var r;
+    if (nav === 'home') { r = await dkNdApi('overview'); if (gen !== _dkNd.gen) return; if (r.denied) return dkNdDenied(); dkNdRenderHome(body, r); }
+    else if (nav === 'artists') { r = await dkNdApi('artists'); if (gen !== _dkNd.gen) return; if (r.denied) return dkNdDenied(); dkNdRenderArtists(body, r.artists); }
+    else if (nav === 'artist') { r = await dkNdApi('artist', { id: id }); if (gen !== _dkNd.gen) return; dkNdRenderArtist(body, r); }
+    else if (nav === 'albums') { r = await dkNdApi('albums', { type: _dkNd.sort }); if (gen !== _dkNd.gen) return; if (r.denied) return dkNdDenied(); _dkNd.albums = r.albums; _dkNd.more = r.more; dkNdRenderAlbums(body); }
+    else if (nav === 'album') { r = await dkNdApi('album', { id: id }); if (gen !== _dkNd.gen) return; _dkNd.cur = r; dkNdRenderAlbum(body, r); }
+    else if (nav === 'playlists') { r = await dkNdApi('playlists'); if (gen !== _dkNd.gen) return; if (r.denied) return dkNdDenied(); dkNdRenderLists(body, r.playlists); }
+    else if (nav === 'playlist') { r = await dkNdApi('playlist', { id: id }); if (gen !== _dkNd.gen) return; _dkNd.cur = r; dkNdRenderPlaylist(body, r); }
+    else if (nav === 'starred') { r = await dkNdApi('starred'); if (gen !== _dkNd.gen) return; if (r.denied) return dkNdDenied(); dkNdRenderStarred(body, r); }
+    else if (nav === 'search') { r = await dkNdApi('search', { q: _dkNd.q }); if (gen !== _dkNd.gen) return; dkNdRenderSearch(body, r); }
+  } catch (e) { if (gen === _dkNd.gen && body) body.innerHTML = '<div class="dks-empty">' + dkNdEsc(e.message || e) + '<br><br><button class="fs-btn" onclick="dkNdLoad()">' + T('Réessayer') + '</button></div>'; }
+}
+function dkNdDenied() { _dkNd.nav = 'set'; _dkNd.data = { denied: true }; dkNdSide(); dkNdRenderSet(wmBody('dknd')); }
+
+// ── pochettes : récupérées par le NAS, affichées au fil de l'eau ──
+function dkNdImgs(root) {
+  Array.prototype.forEach.call(root.querySelectorAll('img[data-cv]'), function(img) {
+    var id = img.getAttribute('data-cv'); img.removeAttribute('data-cv');
+    if (_dkNd.urls[id]) { img.src = _dkNd.urls[id]; img.classList.add('ok'); return; }
+    dkImgBlob('/fileops/store/navidrome/img?i=' + encodeURIComponent(id))
+      .then(function(b) { var u = URL.createObjectURL(b); _dkNd.urls[id] = u; img.src = u; img.classList.add('ok'); })
+      .catch(function() {});
+  });
+}
+function dkNdCv(id) { return id ? '<img alt="" data-cv="' + dkNdEsc(id) + '">' : ''; }
+function dkNdAlbumCard(a) {
+  return '<div class="dknd-card" onclick="dkNdGo(\'album\',\'' + a.id + '\')"><div class="cv">♪' + dkNdCv(a.cover) + '<button class="pl" title="' + dkNdEsc(T('Lire')) + '" onclick="event.stopPropagation();dkNdPlayAlbum(\'' + a.id + '\')">▶</button></div>'
+    + '<b title="' + dkNdEsc(a.name) + '">' + dkNdEsc(a.name) + '</b><small>' + dkNdEsc(a.artist) + (a.year ? ' · ' + a.year : '') + '</small></div>';
+}
+function dkNdAlbumGrid(list) { return '<div class="dknd-grid">' + list.map(dkNdAlbumCard).join('') + '</div>'; }
+function dkNdFmtT(s) { s = Math.max(0, Math.round(s || 0)); var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
+function dkNdFmtLong(s) { var m = Math.round((s || 0) / 60); return m >= 60 ? Math.floor(m / 60) + ' h ' + (m % 60 < 10 ? '0' : '') + (m % 60) + ' min' : m + ' min'; }
+// ── écrans ──
+function dkNdRenderHome(body, r) {
+  wmHead('dknd', T('Accueil'), { sub: r.scan && r.scan.on ? '⏳ ' + Tf('Analyse de la bibliothèque… {0} morceaux', r.scan.count) : '', actions: dkNdSearchBox() });
+  var any = [r.recent, r.newest, r.frequent, r.random].some(function(x) { return x && x.length; });
+  if (!any) {
+    body.innerHTML = '<div class="dks-empty" style="max-width:520px;margin:40px auto;">' + (r.scan && r.scan.on ? '⏳ ' + T('Navidrome analyse vos dossiers de musique, cela peut prendre quelques minutes.') : T('Votre bibliothèque est vide. Choisissez les dossiers de musique de votre NAS : Navidrome les analyse ensuite tout seul.'))
+      + '<br><br><button class="web-open" onclick="dkNdFolders()">' + T('Choisir les dossiers de musique') + '</button> <button class="fs-btn" onclick="dkNdScan(false)">' + T('Analyser maintenant') + '</button></div>';
+    if (r.scan && r.scan.on) setTimeout(function() { if (_dkNd.nav === 'home') dkNdLoad(true); }, 6000);
+    return;
+  }
+  var sec = function(t, l) { return l && l.length ? '<div class="dknd-h">' + T(t) + '</div>' + dkNdAlbumGrid(l) : ''; };
+  body.innerHTML = sec('Écoutés récemment', r.recent) + sec('Ajoutés récemment', r.newest) + sec('Les plus écoutés', r.frequent) + sec('À découvrir', r.random);
+  dkNdImgs(body);
+}
+function dkNdRenderArtists(body, list) {
+  wmHead('dknd', T('Artistes'), { sub: Tf('{0} artiste(s)', list.length), actions: dkNdSearchBox() });
+  if (!list.length) { body.innerHTML = '<div class="dks-empty">' + T('Aucun artiste pour l’instant.') + '</div>'; return; }
+  body.innerHTML = '<div class="web-group" style="padding:4px;">' + list.map(function(a) {
+    return '<div class="dknd-ar" onclick="dkNdGo(\'artist\',\'' + a.id + '\')"><div class="cv">' + dkNdCv(a.cover) + '</div><div style="flex:1;min-width:0;"><b style="font-weight:500;">' + dkNdEsc(a.name) + '</b></div><span class="dkjf-m" style="margin:0;">' + Tf('{0} album(s)', a.n) + '</span></div>'; }).join('') + '</div>';
+  dkNdImgs(body);
+}
+function dkNdRenderArtist(body, r) {
+  wmHead('dknd', r.name, { back: [T('Artistes'), 'dkNdGo(\'artists\')'], sub: Tf('{0} album(s)', (r.albums || []).length), actions: dkNdSearchBox() });
+  body.innerHTML = dkNdAlbumGrid(r.albums || []); dkNdImgs(body);
+}
+function dkNdRenderAlbums(body) {
+  var opts = [['alphabeticalByName', T('Par titre')], ['alphabeticalByArtist', T('Par artiste')], ['newest', T('Ajoutés récemment')], ['recent', T('Écoutés récemment')], ['frequent', T('Les plus écoutés')], ['random', T('Au hasard')]];
+  wmHead('dknd', T('Albums'), { actions: dkNdSearchBox() + ' <select class="wm-input" onchange="_dkNd.sort=this.value;dkNdLoad()">' + opts.map(function(o) { return '<option value="' + o[0] + '"' + (_dkNd.sort === o[0] ? ' selected' : '') + '>' + dkNdEsc(o[1]) + '</option>'; }).join('') + '</select>' });
+  if (!_dkNd.albums.length) { body.innerHTML = '<div class="dks-empty">' + T('Aucun album pour l’instant.') + '</div>'; return; }
+  body.innerHTML = dkNdAlbumGrid(_dkNd.albums) + (_dkNd.more ? '<div style="text-align:center;margin:20px 0;"><button class="fs-btn" id="dknd-more" onclick="dkNdMore()">' + T('Voir plus') + '</button></div>' : '');
+  dkNdImgs(body);
+}
+async function dkNdMore() {
+  var b = document.getElementById('dknd-more'); if (b) b.disabled = true;
+  try {
+    var r = await dkNdApi('albums', { type: _dkNd.sort, offset: _dkNd.albums.length });
+    _dkNd.albums = _dkNd.albums.concat(r.albums); _dkNd.more = r.more; dkNdRenderAlbums(wmBody('dknd'));
+  } catch (e) { toast('⚠️ ' + (e.message || e), 6000); if (b) b.disabled = false; }
+}
+function dkNdSongRows(songs, ctx) {
+  _dkNd.list = songs;
+  return '<div>' + songs.map(function(s, i) {
+    var on = _dkNd.queue[_dkNd.qi] && _dkNd.queue[_dkNd.qi].id === s.id;
+    return '<div class="dknd-tr' + (on ? ' on' : '') + '" onclick="dkNdPlayList(' + i + ')"><span class="n">' + (ctx === 'album' ? (s.track || i + 1) : i + 1) + '</span><span class="t"><b>' + dkNdEsc(s.title) + '</b><small>' + dkNdEsc(ctx === 'album' ? s.artist : s.artist + ' — ' + s.album) + '</small></span>'
+      + '<button class="dknd-ic' + (s.star ? ' on' : '') + '" title="' + dkNdEsc(T('Favori')) + '" onclick="event.stopPropagation();dkNdStar(' + i + ',this)">' + (s.star ? '★' : '☆') + '</button>'
+      + '<button class="dknd-ic" title="' + dkNdEsc(T('Ajouter à une liste')) + '" onclick="event.stopPropagation();dkNdAddTo(' + i + ')">＋</button>'
+      + (ctx === 'playlist' ? '<button class="dknd-ic" title="' + dkNdEsc(T('Retirer de la liste')) + '" onclick="event.stopPropagation();dkNdPlRemove(' + i + ')">✕</button>' : '')
+      + '<span class="d">' + dkNdFmtT(s.dur) + '</span></div>'; }).join('') + '</div>';
+}
+
+function dkNdRenderAlbum(body, r) {
+  var a = r.album, tot = (r.songs || []).reduce(function(n, s) { return n + s.dur; }, 0);
+  wmHead('dknd', a.name, { back: [T('Albums'), 'dkNdGo(\'albums\')'], actions: dkNdSearchBox() });
+  body.innerHTML = '<div class="dknd-hero"><div class="dknd-card" style="width:180px;cursor:default;"><div class="cv">♪' + dkNdCv(a.cover) + '</div></div><div style="flex:1;min-width:220px;"><h2>' + dkNdEsc(a.name) + '</h2>'
+    + '<div class="dkjf-m" style="margin:0 0 12px;">' + (a.artistId ? '<a href="#" onclick="dkNdGo(\'artist\',\'' + a.artistId + '\');return false;" style="color:inherit;text-decoration:underline;">' + dkNdEsc(a.artist) + '</a>' : dkNdEsc(a.artist)) + (a.year ? ' · ' + a.year : '') + ' · ' + Tf('{0} titre(s)', (r.songs || []).length) + ' · ' + dkNdFmtLong(tot) + '</div>'
+    + '<button class="web-open" onclick="dkNdPlayList(0)">▶ ' + T('Lire') + '</button> <button class="fs-btn" onclick="dkNdPlayList(0,true)">⤮ ' + T('Aléatoire') + '</button> <button class="fs-btn" onclick="dkNdEnqueue()">' + T('Ajouter à la file') + '</button></div></div>'
+    + dkNdSongRows(r.songs || [], 'album');
+  dkNdImgs(body);
+}
+function dkNdRenderLists(body, list) {
+  wmHead('dknd', T('Listes de lecture'), { sub: Tf('{0} liste(s)', list.length), actions: dkNdSearchBox() + ' <button class="web-open" onclick="dkNdNewList()">' + T('Nouvelle liste') + '</button>' });
+  if (!list.length) { body.innerHTML = '<div class="dks-empty">' + T('Aucune liste de lecture. Créez-en une, puis ajoutez des titres avec le bouton ＋.') + '</div>'; return; }
+  body.innerHTML = '<div class="web-group">' + list.map(function(p) {
+    return '<div class="web-row" style="cursor:pointer;" onclick="dkNdGo(\'playlist\',\'' + p.id + '\')"><span class="web-row-text"><span class="web-row-name">' + dkNdEsc(p.name) + '</span><span class="web-row-desc">' + Tf('{0} titre(s)', p.n) + ' · ' + dkNdFmtLong(p.dur) + '</span></span><span class="web-row-chev" aria-hidden="true">&rsaquo;</span></div>'; }).join('') + '</div>';
+}
+function dkNdRenderPlaylist(body, r) {
+  var has = (r.songs || []).length > 0;
+  wmHead('dknd', r.name, { back: [T('Listes de lecture'), 'dkNdGo(\'playlists\')'], sub: Tf('{0} titre(s)', (r.songs || []).length), actions: '<button class="fs-btn" style="color:var(--danger);" onclick="dkNdDelList()">' + T('Supprimer la liste') + '</button>' });
+  body.innerHTML = '<div style="margin:0 0 14px;"><button class="web-open" onclick="dkNdPlayList(0)"' + (has ? '' : ' disabled') + '>▶ ' + T('Lire') + '</button> <button class="fs-btn" onclick="dkNdPlayList(0,true)"' + (has ? '' : ' disabled') + '>⤮ ' + T('Aléatoire') + '</button></div>'
+    + (has ? dkNdSongRows(r.songs, 'playlist') : '<div class="dks-empty">' + T('Cette liste est vide.') + '</div>');
+}
+function dkNdRenderStarred(body, r) {
+  wmHead('dknd', T('Favoris'), { actions: dkNdSearchBox() });
+  if (!(r.albums || []).length && !(r.songs || []).length) { body.innerHTML = '<div class="dks-empty">' + T('Aucun favori. Touchez l’étoile ☆ d’un titre pour le retrouver ici.') + '</div>'; return; }
+  body.innerHTML = ((r.albums || []).length ? '<div class="dknd-h">' + T('Albums') + '</div>' + dkNdAlbumGrid(r.albums) : '')
+    + ((r.songs || []).length ? '<div class="dknd-h">' + T('Titres') + '</div><button class="web-open" style="margin:0 0 10px;" onclick="dkNdPlayList(0)">▶ ' + T('Tout lire') + '</button>' + dkNdSongRows(r.songs, 'plain') : '');
+  dkNdImgs(body);
+}
+function dkNdRenderSearch(body, r) {
+  wmHead('dknd', T('Recherche'), { sub: '« ' + dkNdEsc(_dkNd.q) + ' »', actions: dkNdSearchBox() });
+  var n = (r.artists || []).length + (r.albums || []).length + (r.songs || []).length;
+  if (!n) body.innerHTML = '<div class="dks-empty">' + T('Rien trouvé.') + '</div>';
+  else body.innerHTML = ((r.artists || []).length ? '<div class="dknd-h">' + T('Artistes') + '</div><div class="web-group" style="padding:4px;">' + r.artists.map(function(a) {
+      return '<div class="dknd-ar" onclick="dkNdGo(\'artist\',\'' + a.id + '\')"><div class="cv">' + dkNdCv(a.cover) + '</div><div style="flex:1;"><b style="font-weight:500;">' + dkNdEsc(a.name) + '</b></div></div>'; }).join('') + '</div>' : '')
+    + ((r.albums || []).length ? '<div class="dknd-h">' + T('Albums') + '</div>' + dkNdAlbumGrid(r.albums) : '')
+    + ((r.songs || []).length ? '<div class="dknd-h">' + T('Titres') + '</div>' + dkNdSongRows(r.songs, 'plain') : '');
+  dkNdImgs(body);
+  var q = document.getElementById('dknd-q'); if (q) { q.focus(); var l = q.value.length; try { q.setSelectionRange(l, l); } catch (_) {} }
+}
+// ── réglages ──
+function dkNdRenderSet(body) {
+  if (!body) return;
+  var d = _dkNd.data || {}, ip = (dkStoreApp('navidrome') || {}).nas_ip || location.hostname;
+  wmHead('dknd', T('Réglages'), { sub: T('Bibliothèque, compte et applications mobiles') });
+  body.innerHTML = '<div class="dkjf-set">'
+    + (d.denied ? '<div class="dkag-note" style="margin-bottom:14px;">' + T('Navidrome refuse le mot de passe enregistré : vous l’avez sans doute changé. Saisissez le compte administrateur et son mot de passe actuel.') + '</div>' : '')
+    + '<div class="dknd-h">' + T('Bibliothèque') + '</div>'
+    + '<p>' + T('Navidrome lit les dossiers de musique que vous choisissez, en lecture seule, et les réanalyse tout seul toutes les 12 heures.') + '</p>'
+    + '<div class="dkjf-acts"><button class="web-open" onclick="dkNdFolders()">' + T('Choisir les dossiers de musique') + '</button><button class="fs-btn" onclick="dkNdScan(false)">' + T('Analyser maintenant') + '</button><button class="fs-btn" onclick="dkNdScan(true)">' + T('Analyse complète') + '</button></div>'
+    + '<div class="dknd-h">' + T('Écouter sur téléphone ou ailleurs') + '</div>'
+    + '<p>' + Tf('Dans votre application de musique (Symfonium, DSub, Feishin…), choisissez un serveur « Subsonic » à l’adresse {0} avec le compte ci-dessous. Hors de chez vous, passez par le VPN.', '<b>http://' + dkNdEsc(ip) + ':4533</b>') + '</p>'
+    + '<div class="dknd-h">' + T('Compte utilisé par Desktroo') + '</div>'
+    + '<label class="dkjf-lab">' + T('Compte administrateur') + '</label><input class="dkjf-in" id="dknd-user" autocomplete="off" value="' + dkNdEsc(d.user && d.user !== 'admin' ? d.user : 'admin') + '">'
+    + '<label class="dkjf-lab">' + T('Mot de passe') + '</label><input class="dkjf-in" id="dknd-pw" type="password" autocomplete="off" placeholder="' + dkNdEsc(d.custom ? '' : T('Celui affiché sur la fiche de l’app')) + '">'
+    + '<div class="dkjf-acts"><button class="web-open" id="dknd-save" onclick="dkNdSave()">' + T('Enregistrer') + '</button>'
+    + (d.custom ? '<button class="fs-btn" style="color:var(--danger);" onclick="dkNdForget()">' + T('Revenir au mot de passe d’origine') + '</button>' : '') + '</div>'
+    + '<div class="dkag-note" style="margin-top:14px;">' + T('Le mot de passe reste sur le NAS et n’est jamais renvoyé au navigateur. Ne changez-le dans Navidrome que si vous le renseignez ici.') + '</div></div>';
+}
+async function dkNdSave() {
+  var u = document.getElementById('dknd-user'), p = document.getElementById('dknd-pw'), b = document.getElementById('dknd-save');
+  if (!p || !p.value) { toast(T('Saisissez le mot de passe.'), 4000); return; }
+  if (b) b.disabled = true;
+  try { await dkNdApi('save_password', { user: u ? u.value : 'admin', password: p.value }); toast(T('Connecté à Navidrome.')); dkNdGo('home'); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 8000); if (b) b.disabled = false; }
+}
+async function dkNdForget() {
+  if (!(await showConfirm(T('Revenir au compte et au mot de passe d’origine de l’installation ? Si vous les avez changés dans Navidrome, la fenêtre ne pourra plus s’y connecter.'), { danger: true, ok: T('Revenir') }))) return;
+  try { await dkNdApi('clear_password'); dkNdGo('set'); } catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+}
+async function dkNdScan(full) {
+  try { await dkNdApi('scan', { full: !!full }); toast(T('Analyse lancée. Les nouveaux titres apparaissent au fil de l’analyse.'), 6000); if (_dkNd.nav === 'home') setTimeout(function() { dkNdLoad(true); }, 2500); }
+  catch (e) { toast('⚠️ ' + (e.message || e), 7000); }
+}
+function dkNdFolders() { dkStoreOpen(); _dkStore.sel = 'navidrome'; if (_dkStore.view) dkStoreRender(); else setTimeout(function() { _dkStore.sel = 'navidrome'; if (_dkStore.view) dkStoreRender(); }, 800); }
+
+// ── lecteur ──
+function dkNdAu() { return document.getElementById('dknd-audio'); }
+function dkNdAudioInit() {
+  var a = dkNdAu(); if (!a) return;
+  a.volume = _dkNd.vol != null ? _dkNd.vol : 0.9;
+  a.addEventListener('timeupdate', dkNdTick);
+  a.addEventListener('play', dkNdBarState); a.addEventListener('pause', dkNdBarState);
+  a.addEventListener('ended', function() { if (_dkNd.repeat === 2) { a.currentTime = 0; a.play().catch(function() {}); } else dkNdNext(true); });
+  a.addEventListener('error', function() { if (a.getAttribute('src')) { toast('⚠️ ' + T('Ce titre ne peut pas être lu.'), 5000); setTimeout(function() { dkNdNext(true); }, 800); } });
+  if ('mediaSession' in navigator) {
+    var ms = navigator.mediaSession;
+    try {
+      ms.setActionHandler('play', function() { a.play(); }); ms.setActionHandler('pause', function() { a.pause(); });
+      ms.setActionHandler('previoustrack', dkNdPrev); ms.setActionHandler('nexttrack', function() { dkNdNext(false); });
+      ms.setActionHandler('seekto', function(e) { if (e && e.seekTime != null) a.currentTime = e.seekTime; });
+    } catch (_) {}
+  }
+}
+function dkNdBar() {
+  var bar = document.getElementById('dknd-bar'); if (!bar) return;
+  var s = _dkNd.queue[_dkNd.qi], a = dkNdAu(), playing = a && !a.paused && a.getAttribute('src');
+  bar.innerHTML = '<div class="dknd-now"><div class="cv">' + (s && s.cover ? '<img alt="" data-cv="' + dkNdEsc(s.cover) + '">' : '') + '</div><div style="min-width:0;"><b>' + (s ? dkNdEsc(s.title) : dkNdEsc(T('Rien en cours'))) + '</b><small>' + (s ? dkNdEsc(s.artist) : '') + '</small></div></div>'
+    + '<div class="dknd-ctl"><button id="dknd-b-sh" class="' + (_dkNd.shuffle ? 'on' : '') + '" title="' + dkNdEsc(T('Lecture aléatoire')) + '" onclick="dkNdShuffle()">⤮</button>'
+    + '<button title="' + dkNdEsc(T('Précédent')) + '" onclick="dkNdPrev()">⏮</button><button class="main" id="dknd-b-pp" title="' + dkNdEsc(T('Lecture / pause')) + '" onclick="dkNdToggle()">' + (playing ? '⏸' : '▶') + '</button>'
+    + '<button title="' + dkNdEsc(T('Suivant')) + '" onclick="dkNdNext(false)">⏭</button>'
+    + '<button id="dknd-b-rp" class="' + (_dkNd.repeat ? 'on' : '') + '" title="' + dkNdEsc(T('Répéter')) + '" onclick="dkNdRepeat()">' + (_dkNd.repeat === 2 ? '🔂' : '🔁') + '</button></div>'
+    + '<div class="dknd-seek"><span id="dknd-t0">0:00</span><input type="range" id="dknd-seek" min="0" max="1000" value="0" oninput="dkNdSeek(this.value)"><span id="dknd-t1">' + (s ? dkNdFmtT(s.dur) : '0:00') + '</span></div>'
+    + '<div class="dknd-vol"><span>🔊</span><input type="range" min="0" max="100" value="' + Math.round((a ? a.volume : 0.9) * 100) + '" oninput="dkNdVol(this.value)"></div>'
+    + '<button class="dknd-ic" title="' + dkNdEsc(T('File d’attente')) + '" onclick="dkNdQueue()" style="opacity:.9;">☰ ' + (_dkNd.queue.length || '') + '</button>';
+  dkNdImgs(bar);
+}
+function dkNdBarState() { var b = document.getElementById('dknd-b-pp'), a = dkNdAu(); if (b && a) b.textContent = !a.paused ? '⏸' : '▶'; if ('mediaSession' in navigator && a) { try { navigator.mediaSession.playbackState = a.paused ? 'paused' : 'playing'; } catch (_) {} } }
+var _dkNdSeeking = false;
+function dkNdTick() {
+  var a = dkNdAu(), s = _dkNd.queue[_dkNd.qi]; if (!a || !s) return;
+  var dur = a.duration && isFinite(a.duration) ? a.duration : s.dur, t0 = document.getElementById('dknd-t0'), sk = document.getElementById('dknd-seek'), t1 = document.getElementById('dknd-t1');
+  if (t0) t0.textContent = dkNdFmtT(a.currentTime); if (t1) t1.textContent = dkNdFmtT(dur);
+  if (sk && !_dkNdSeeking && dur) sk.value = Math.round(a.currentTime / dur * 1000);
+  if (_dkNd.scrobbled !== s.id && a.currentTime > Math.min(30, dur / 2)) { _dkNd.scrobbled = s.id; dkNdApi('scrobble', { id: s.id }).catch(function() {}); }
+}
+function dkNdSeek(v) { var a = dkNdAu(), s = _dkNd.queue[_dkNd.qi]; if (!a || !s) return; _dkNdSeeking = true; var dur = a.duration && isFinite(a.duration) ? a.duration : s.dur; a.currentTime = dur * v / 1000; clearTimeout(dkNdSeek._t); dkNdSeek._t = setTimeout(function() { _dkNdSeeking = false; }, 400); }
+function dkNdVol(v) { var a = dkNdAu(); if (a) { a.volume = v / 100; _dkNd.vol = a.volume; } }
+function dkNdToggle() { var a = dkNdAu(); if (!a) return; if (!a.getAttribute('src')) { if (_dkNd.queue.length) dkNdPlayAt(Math.max(0, _dkNd.qi)); return; } if (a.paused) a.play().catch(function() {}); else a.pause(); }
+function dkNdShuffle() { _dkNd.shuffle = !_dkNd.shuffle; var b = document.getElementById('dknd-b-sh'); if (b) b.classList.toggle('on', _dkNd.shuffle); }
+function dkNdRepeat() { _dkNd.repeat = (_dkNd.repeat + 1) % 3; var b = document.getElementById('dknd-b-rp'); if (b) { b.classList.toggle('on', !!_dkNd.repeat); b.textContent = _dkNd.repeat === 2 ? '🔂' : '🔁'; } }
+function dkNdPrev() { var a = dkNdAu(); if (a && a.currentTime > 4) { a.currentTime = 0; return; } if (_dkNd.qi > 0) dkNdPlayAt(_dkNd.qi - 1); else if (a) a.currentTime = 0; }
+function dkNdNext(auto) {
+  var n = _dkNd.queue.length; if (!n) return;
+  if (_dkNd.shuffle && n > 1) { var j; do { j = Math.floor(Math.random() * n); } while (j === _dkNd.qi); return dkNdPlayAt(j); }
+  if (_dkNd.qi + 1 < n) return dkNdPlayAt(_dkNd.qi + 1);
+  if (_dkNd.repeat === 1 || !auto) return dkNdPlayAt(0);
+  var a = dkNdAu(); if (a) a.pause();
+}
+async function dkNdPlayAt(i) {
+  var s = _dkNd.queue[i], a = dkNdAu(); if (!s || !a) return;
+  _dkNd.qi = i; _dkNd.scrobbled = '';
+  dkNdBar(); dkNdMark();
+  try {
+    var r = await dkNdApi('play', { id: s.id });
+    if (_dkNd.queue[_dkNd.qi] !== s) return;
+    a.src = r.url; await a.play().catch(function() {});
+  } catch (e) { toast('⚠️ ' + (e.message || e), 6000); return; }
+  dkNdBarState();
+  if ('mediaSession' in navigator) {
+    try {
+      var art = s.cover && _dkNd.urls[s.cover] ? [{ src: _dkNd.urls[s.cover], sizes: '300x300', type: 'image/jpeg' }] : [];
+      navigator.mediaSession.metadata = new MediaMetadata({ title: s.title, artist: s.artist, album: s.album, artwork: art });
+    } catch (_) {}
+  }
+}
+function dkNdMark() {
+  var cur = _dkNd.queue[_dkNd.qi], list = _dkNd.list || [];
+  Array.prototype.forEach.call(document.querySelectorAll('#dknd-body .dknd-tr'), function(row, i) { row.classList.toggle('on', !!(cur && list[i] && list[i].id === cur.id)); });
+}
+function dkNdPlayList(i, shuffle) {
+  var l = _dkNd.list || []; if (!l.length) return;
+  _dkNd.queue = l.slice();
+  if (shuffle) { _dkNd.shuffle = true; i = Math.floor(Math.random() * l.length); }
+  dkNdPlayAt(i || 0);
+}
+async function dkNdPlayAlbum(id) {
+  try { var r = await dkNdApi('album', { id: id }); if (!(r.songs || []).length) return; _dkNd.queue = r.songs.slice(); dkNdPlayAt(0); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+function dkNdEnqueue() {
+  var r = _dkNd.cur; if (!r || !(r.songs || []).length) return;
+  var was = !_dkNd.queue.length; _dkNd.queue = _dkNd.queue.concat(r.songs);
+  toast(Tf('{0} titre(s) ajouté(s) à la file', r.songs.length), 3500);
+  if (was) dkNdPlayAt(0); else dkNdBar();
+}
+async function dkNdStar(i, btn) {
+  var s = (_dkNd.list || [])[i]; if (!s) return;
+  try { await dkNdApi(s.star ? 'unstar' : 'star', { id: s.id }); s.star = !s.star; if (btn) { btn.textContent = s.star ? '★' : '☆'; btn.classList.toggle('on', s.star); } }
+  catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+function dkNdQueue() {
+  var q = _dkNd.queue;
+  dkJfModal(T('File d’attente'), q.length ? '<div>' + q.map(function(s, i) {
+    return '<div class="dknd-tr' + (i === _dkNd.qi ? ' on' : '') + '" onclick="dkJfModalClose();dkNdPlayAt(' + i + ')"><span class="n">' + (i + 1) + '</span><span class="t"><b>' + dkNdEsc(s.title) + '</b><small>' + dkNdEsc(s.artist) + '</small></span><span class="d">' + dkNdFmtT(s.dur) + '</span></div>'; }).join('') + '</div>'
+    : '<div class="dkjf-m" style="padding:20px 4px;">' + T('La file est vide.') + '</div>', [{ l: T('Vider'), fn: function() { _dkNd.queue = []; _dkNd.qi = -1; var a = dkNdAu(); if (a) { a.pause(); a.removeAttribute('src'); } dkJfModalClose(); dkNdBar(); } }, { l: T('Fermer') }], true);
+}
+// ── listes de lecture ──
+async function dkNdAddTo(i) {
+  var s = (_dkNd.list || [])[i]; if (!s) return;
+  dkJfModal(T('Ajouter à une liste'), '<div class="fs-loading" style="height:100px;"><div class="spinner"></div></div>', [{ l: T('Annuler') }], false);
+  try {
+    var r = await dkNdApi('playlists'), box = '<div class="dkjf-m" style="margin:0 0 8px;">' + dkNdEsc(s.title) + '</div>';
+    box += (r.playlists || []).length ? '<div class="web-group">' + r.playlists.map(function(p) { return '<div class="web-row" style="cursor:pointer;" onclick="dkNdAddDo(\'' + p.id + '\',' + i + ')"><span class="web-row-text"><span class="web-row-name">' + dkNdEsc(p.name) + '</span><span class="web-row-desc">' + Tf('{0} titre(s)', p.n) + '</span></span></div>'; }).join('') + '</div>' : '';
+    box += '<div style="display:flex;gap:8px;margin-top:12px;"><input class="dkjf-in" id="dknd-nl" placeholder="' + dkNdEsc(T('Nouvelle liste…')) + '" style="margin:0;flex:1;"><button class="web-open" onclick="dkNdAddNew(' + i + ')">' + T('Créer') + '</button></div>';
+    dkJfModalBody(box);
+  } catch (e) { dkJfModalBody('<div class="dkjf-m">' + dkNdEsc(e.message || e) + '</div>'); }
+}
+async function dkNdAddDo(pid, i) {
+  var s = (_dkNd.list || [])[i]; if (!s) return;
+  try { await dkNdApi('playlist_add', { id: pid, songs: [s.id] }); dkJfModalClose(); toast(T('Ajouté à la liste.'), 3000); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+async function dkNdAddNew(i) {
+  var s = (_dkNd.list || [])[i], n = document.getElementById('dknd-nl'); if (!s || !n || !n.value.trim()) return;
+  try { await dkNdApi('playlist_new', { name: n.value.trim(), songs: [s.id] }); dkJfModalClose(); toast(T('Liste créée.'), 3000); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+function dkNdNewList() {
+  dkJfModal(T('Nouvelle liste'), '<input class="dkjf-in" id="dknd-nl" placeholder="' + dkNdEsc(T('Nom de la liste')) + '" style="width:100%;margin:0;" onkeydown="if(event.key===\'Enter\')dkNdNewListDo()">', [{ l: T('Annuler') }, { l: T('Créer'), primary: true, fn: dkNdNewListDo }], false);
+  setTimeout(function() { var n = document.getElementById('dknd-nl'); if (n) n.focus(); }, 50);
+}
+async function dkNdNewListDo() {
+  var n = document.getElementById('dknd-nl'); if (!n || !n.value.trim()) return;
+  try { var r = await dkNdApi('playlist_new', { name: n.value.trim(), songs: [] }); dkJfModalClose(); dkNdGo('playlist', r.id); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+async function dkNdPlRemove(i) {
+  try { await dkNdApi('playlist_remove', { id: _dkNd.sel, index: i }); dkNdLoad(true); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+async function dkNdDelList() {
+  if (!(await showConfirm(T('Supprimer cette liste de lecture ? Vos fichiers de musique ne sont pas touchés.'), { danger: true, ok: T('Supprimer') }))) return;
+  try { await dkNdApi('playlist_del', { id: _dkNd.sel }); dkNdGo('playlists'); } catch (e) { toast('⚠️ ' + (e.message || e), 6000); }
+}
+
 async function dkJfOpen() {
   var win = document.getElementById('win-dkjf');
   if (win) { win.classList.add('visible'); bringToFront(win); return; }
@@ -24030,6 +24404,7 @@ function dkStoreOpenInstalled(id) {
   if (id === 'photoprism') return dkPpOpen();
   if (id === 'jellyfin') return dkJfOpen();
   if (id === 'cameras') return dkCamOpen();
+  if (id === 'navidrome') return dkNdOpen();
   var a = dkStoreApp(id) || {};
   if (a.open_url) {   // app dont l'interface ne peut pas passer par le bureau : adresse directe sur le réseau local
     window.open(String(a.open_url).replace('{ip}', dkNasHost(a)), '_blank', 'noopener');
@@ -24452,7 +24827,7 @@ function dkStoreRegisterApps(list) {
     var entry = ALL_APPS.filter(function(x) { return x.id === key; })[0];
     if (entry) { entry.label = label; return; }
     ALL_APPS.push({ id: key, label: label, store: true,
-      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'pihole' ? function() { dkPhOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : id === 'uptime-kuma' ? function() { dkUkOpen(); } : id === 'photoprism' ? function() { dkPpOpen(); } : id === 'jellyfin' ? function() { dkJfOpen(); } : id === 'cameras' ? function() { dkCamOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
+      action: npm ? function() { dkNpmOpen(); } : pass ? function() { dkPassOpen(); } : id === 'adguard' ? function() { dkAgOpen(); } : id === 'pihole' ? function() { dkPhOpen(); } : id === 'wireguard' ? function() { dkWgOpen(); } : id === 'uptime-kuma' ? function() { dkUkOpen(); } : id === 'photoprism' ? function() { dkPpOpen(); } : id === 'jellyfin' ? function() { dkJfOpen(); } : id === 'cameras' ? function() { dkCamOpen(); } : id === 'navidrome' ? function() { dkNdOpen(); } : function() { dkStoreOpenApp(id, label, { width: w.width, height: w.height }); },
       imgStyle: 'background:transparent;box-shadow:none;padding:0;border-color:transparent;',
       svg: dkStoreIcon(id, 52) });
   });
@@ -29923,7 +30298,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.37';
+var DK_PAGE_VERSION = '2.60.39';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -43251,7 +43626,7 @@ dkGlassApply();
 function dkKioskNorm(id) { return String(id || '').replace(/^dkapp-/, ''); }
 function dkKioskOpenFn(id) {
   id = dkKioskNorm(id);
-  return { jellyfin: dkJfOpen, cameras: dkCamOpen, photoprism: dkPpOpen, adguard: dkAgOpen, pihole: dkPhOpen, wireguard: dkWgOpen, 'uptime-kuma': dkUkOpen, npmplus: dkNpmOpen }[id]
+  return { jellyfin: dkJfOpen, navidrome: dkNdOpen, cameras: dkCamOpen, photoprism: dkPpOpen, adguard: dkAgOpen, pihole: dkPhOpen, wireguard: dkWgOpen, 'uptime-kuma': dkUkOpen, npmplus: dkNpmOpen }[id]
     || (function() { var a = drawerApp(id); return a && !a.store ? a.action : null; })()
     || function() { dkStoreOpenInstalled(id); };
 }
@@ -43291,7 +43666,15 @@ async function dkKioskIconSync() {
       if (!i || seen[i] || have.indexOf(i) >= 0 || miss.indexOf(i) >= 0) return false;
       seen[i] = 1; return true;
     });
+    // Icônes redessinées : on régénère une fois l'image de l'app installable (sinon l'ancienne reste sur le NAS).
+    var FORCE = { cameras: 'v2' }, fd = {};
+    try { fd = JSON.parse(localStorage.getItem('dk_kiosk_force') || '{}') || {}; } catch (_) {}
+    Object.keys(FORCE).forEach(function(i) {
+      if (fd[i] !== FORCE[i] && have.indexOf(i) >= 0 && todo.indexOf(i) < 0 && ALL_APPS.some(function(x) { return dkKioskNorm(x.id) === i; })) todo.push(i);
+    });
     for (var k = 0; k < todo.length && k < 80; k++) { try { await dkKioskIconUpload(todo[k]); } catch (_) { miss.push(todo[k]); } }
+    Object.keys(FORCE).forEach(function(i) { if (todo.indexOf(i) >= 0 && miss.indexOf(i) < 0) fd[i] = FORCE[i]; });
+    try { localStorage.setItem('dk_kiosk_force', JSON.stringify(fd)); } catch (_) {}
     try { localStorage.setItem('dk_kiosk_noicon', JSON.stringify({ v: DK_PAGE_VERSION, ids: miss })); } catch (_) {}
   } catch (_) {}
   _dkKioskSyncing = false;

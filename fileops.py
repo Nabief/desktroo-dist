@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.37'
+APP_VERSION = '2.60.39'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -10634,6 +10634,15 @@ def _store_get(handler, path, qs):
     if path == '/store/cameras/media':
         store_cameras_media(handler, qs)
         return True
+    if path == '/store/navidrome/img':
+        code, ctype, data = store_navidrome_img(qs.get('i', ''), qs.get('s', ''))
+        handler.send_response(code)
+        handler.send_header('Content-Type', ctype)
+        handler.send_header('Cache-Control', 'private, max-age=86400' if code == 200 else 'no-store')
+        handler.send_header('Content-Length', str(len(data)))
+        handler.end_headers()
+        handler.wfile.write(data)
+        return True
     if path == '/store/jellyfin/img':
         code, ctype, data = store_jellyfin_img(qs.get('i', ''), qs.get('s', ''))
         handler.send_response(code)
@@ -10715,6 +10724,7 @@ _STORE_POST = {
     '/store/uptime-kuma/api': lambda b: store_uptimekuma_api(b),
     '/store/photoprism/api': lambda b: store_photoprism_api(b),
     '/store/jellyfin/api': lambda b: store_jellyfin_api(b),
+    '/store/navidrome/api': lambda b: store_navidrome_api(b),
     '/store/cameras/api': lambda b: store_cameras_api(b),
     '/store/pass/invite': lambda b: store_pass_invite(b),
     '/store/pass/user': lambda b: store_pass_user(b),
@@ -10781,6 +10791,9 @@ def _store_public_get(handler, path):
         handler.send_header('Cache-Control', 'no-store')
         handler.send_header('Content-Length', '0')
         handler.end_headers()
+        return True
+    if path.startswith('/store/navidrome/stream/'):
+        _nd_stream_serve(handler, path[len('/store/navidrome/stream/'):].split('/')[0])
         return True
     if path.startswith('/store/jellyfin/stream/'):
         _jf_stream_serve(handler, path[len('/store/jellyfin/stream/'):].split('/')[0])
@@ -11440,6 +11453,11 @@ def _store_install_job(app, users, update=False):
         if not (_store_pass_wait(pass_s) if pass_s else _store_npm_wait(npm_s) if npm_s else _store_web_wait_running() if is_module else _store_health(app)):
             _store_job_set(app_id, state='done', step='Installée, mais elle ne répond pas encore', error='')
             return
+        if app_id == STORE_ND_ID:
+            try:
+                _nd_setup()
+            except Exception as e:
+                log.warning('Navidrome : configuration de départ non faite (reprise à l’ouverture de la fenêtre) : %s', e)
         if app_id == STORE_JF_ID:
             try:
                 _jf_setup()   # compte administrateur prêt : l'assistant de Jellyfin n'a pas à être suivi
@@ -15100,6 +15118,347 @@ def store_cameras_media(handler, qs):
         pass
     finally:
         cn.close()
+
+
+
+# ══ Navidrome : musique en streaming (API Subsonic), fenêtre « Musique » ══
+STORE_ND_ID = 'navidrome'
+_ND_BASE = 'http://dt-navidrome:8080'
+_ND_LOCK = _threading.Lock()
+_ND_ID = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
+
+
+def _nd_fields():
+    return _store_fields_get(STORE_ND_ID)
+
+
+def _nd_user():
+    return str(_nd_fields().get('user') or '') or 'admin'
+
+
+def _nd_password():
+    return str(_nd_fields().get('password') or '') or _store_derive(STORE_ND_ID, 'navidrome')
+
+
+def _nd_auth(user=None, pw=None):
+    import hashlib as _hl
+    salt = os.urandom(6).hex()
+    pw = _nd_password() if pw is None else pw
+    return {'u': user or _nd_user(), 't': _hl.md5((pw + salt).encode('utf-8')).hexdigest(), 's': salt, 'v': '1.16.1', 'c': 'desktroo', 'f': 'json'}
+
+
+def _nd_qs(endpoint, params=None, user=None, pw=None):
+    import urllib.parse
+    q = _nd_auth(user, pw)
+    for k, v in (params or {}).items():
+        if not isinstance(v, (list, tuple)):
+            q[k] = v
+    parts = [urllib.parse.urlencode(q)]
+    for k, v in (params or {}).items():
+        if isinstance(v, (list, tuple)):
+            parts += [urllib.parse.urlencode({k: x}) for x in v]
+    return '/rest/' + endpoint + '?' + '&'.join(parts)
+
+
+def _nd_call(endpoint, params=None, user=None, pw=None, timeout=30):
+    """Réponse Subsonic (dict) ; ValueError('auth') si le compte est refusé, RuntimeError si Navidrome ne répond pas."""
+    st, _ct, raw = _pp_http('GET', _nd_qs(endpoint, params, user, pw), timeout=timeout, base=_ND_BASE, limit=16 * 1024 * 1024)
+    if st != 200:
+        raise RuntimeError('HTTP %d' % st)
+    try:
+        d = (json.loads(raw.decode('utf-8', 'replace')) or {}).get('subsonic-response') or {}
+    except ValueError:
+        raise RuntimeError('réponse illisible')
+    if d.get('status') != 'ok':
+        e = d.get('error') or {}
+        if e.get('code') in (40, 41, 44):
+            raise ValueError('auth')
+        raise RuntimeError(str(e.get('message') or 'erreur')[:160])
+    return d
+
+
+def _nd_setup():
+    """Premier démarrage : crée le compte « admin » si Navidrome n'a encore aucun compte. Sans effet sinon."""
+    with _ND_LOCK:
+        try:
+            _nd_call('ping', timeout=8)
+            return False
+        except ValueError:
+            pass
+        st, _ct, _raw = _pp_http('POST', '/auth/createAdmin', {'username': 'admin', 'password': _store_derive(STORE_ND_ID, 'navidrome')}, base=_ND_BASE, timeout=15)
+        if st in (200, 201):
+            log.info('Magasin : Navidrome configuré (compte administrateur créé)')
+            return True
+        return False
+
+
+def _nd_cover(d):
+    c = str(d.get('coverArt') or '')
+    return c if _ND_ID.match(c) else ''
+
+
+def _nd_song(x):
+    return {'id': str(x.get('id') or ''), 'title': str(x.get('title') or '')[:200], 'artist': str(x.get('artist') or '')[:120], 'album': str(x.get('album') or '')[:160],
+            'albumId': str(x.get('albumId') or ''), 'artistId': str(x.get('artistId') or ''), 'dur': int(x.get('duration') or 0), 'track': int(x.get('track') or 0),
+            'disc': int(x.get('discNumber') or 0), 'year': int(x.get('year') or 0), 'cover': _nd_cover(x), 'fmt': str(x.get('suffix') or '')[:8], 'br': int(x.get('bitRate') or 0),
+            'star': bool(x.get('starred'))}
+
+
+def _nd_album(x):
+    return {'id': str(x.get('id') or ''), 'name': str(x.get('name') or x.get('title') or '')[:160], 'artist': str(x.get('artist') or '')[:120], 'artistId': str(x.get('artistId') or ''),
+            'year': int(x.get('year') or 0), 'cover': _nd_cover(x), 'n': int(x.get('songCount') or 0), 'dur': int(x.get('duration') or 0), 'star': bool(x.get('starred'))}
+
+
+def _nd_lst(v):
+    return v if isinstance(v, list) else ([v] if isinstance(v, dict) else [])
+
+
+def _nd_ticket(sid, ttl=8 * 3600):
+    raw = json.dumps({'i': sid, 'e': int(_px_time.time()) + int(ttl)}).encode('utf-8')
+    sig = _px_hmac.new(_PX_MEDIA_KEY, b'nd' + raw, _px_hash.sha256).digest()[:16]
+    return _px_b64.urlsafe_b64encode(sig + raw).decode('ascii').rstrip('=')
+
+
+def _nd_ticket_parse(t):
+    try:
+        blob = _px_b64.urlsafe_b64decode(str(t) + '=' * (-len(str(t)) % 4))
+        sig, raw = blob[:16], blob[16:]
+        if not _px_hmac.compare_digest(sig, _px_hmac.new(_PX_MEDIA_KEY, b'nd' + raw, _px_hash.sha256).digest()[:16]):
+            return None
+        d = json.loads(raw.decode('utf-8'))
+        sid = str(d['i'])
+        if int(d['e']) < _px_time.time() or not _ND_ID.match(sid):
+            return None
+        return sid
+    except Exception:
+        return None
+
+
+def store_navidrome_img(cid, size=''):
+    cid = str(cid or '')
+    if STORE_ND_ID not in store_installed_get() or not _ND_ID.match(cid):
+        return 404, 'text/plain', b''
+    try:
+        st, ct, raw = _pp_http('GET', _nd_qs('getCoverArt', {'id': cid, 'size': 600 if size == 'big' else 300}), base=_ND_BASE, limit=6 * 1024 * 1024,
+                               headers={'Accept': 'image/*'})
+    except RuntimeError:
+        return 502, 'text/plain', b''
+    if st != 200 or not str(ct).lower().startswith('image/'):
+        return 404, 'text/plain', b''
+    return 200, str(ct).split(';')[0], raw
+
+
+def _nd_stream_serve(handler, ticket):
+    """Relaie le fichier audio (Range compris, pour avancer dans un morceau) vers le navigateur."""
+    import http.client
+    sid = _nd_ticket_parse(ticket)
+    if not sid or STORE_ND_ID not in store_installed_get():
+        handler.send_response(404); handler.send_header('Content-Length', '0'); handler.end_headers(); return
+    conn = None
+    try:
+        host, port = _ND_BASE.split('//', 1)[1].split(':')
+        hd = {}
+        if handler.headers.get('Range'):
+            hd['Range'] = handler.headers.get('Range')
+        conn = http.client.HTTPConnection(host, int(port), timeout=60)
+        conn.request('GET', _nd_qs('stream', {'id': sid, 'format': 'raw'}), headers=hd)
+        r = conn.getresponse()
+        if r.status not in (200, 206):
+            handler.send_response(404); handler.send_header('Content-Length', '0'); handler.end_headers(); return
+        handler.send_response(r.status)
+        for k in ('Content-Type', 'Content-Length', 'Content-Range', 'Accept-Ranges'):
+            if r.getheader(k):
+                handler.send_header(k, r.getheader(k))
+        if not r.getheader('Content-Length'):
+            handler.send_header('Connection', 'close')
+            handler.close_connection = True
+        handler.send_header('Cache-Control', 'private, no-store')
+        handler.send_header('X-Content-Type-Options', 'nosniff')
+        handler.end_headers()
+        while True:
+            chunk = r.read(256 * 1024)
+            if not chunk:
+                break
+            handler.wfile.write(chunk)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+    except Exception as e:
+        log.warning('lecture Navidrome : %s', e)
+        try:
+            handler.send_response(502); handler.send_header('Content-Length', '0'); handler.end_headers()
+        except Exception:
+            pass
+    finally:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+
+
+def store_navidrome_api(body):
+    """{ action: state | save_password | clear_password | overview | artists | artist | albums | album | search | starred | star | unstar |
+    playlists | playlist | playlist_new | playlist_add | playlist_remove | playlist_del | scan | play } → { ok, ... }."""
+    if STORE_ND_ID not in store_installed_get():
+        return 409, {'ok': False, 'error': 'Navidrome n’est pas installé.'}
+    b = body if isinstance(body, dict) else {}
+    action = str(b.get('action') or '')
+    fields = _nd_fields()
+
+    def ident(k):
+        v = str(b.get(k) or '')
+        return v if _ND_ID.match(v) else ''
+
+    def idlist(k):
+        return [x for x in (b.get(k) or []) if isinstance(x, str) and _ND_ID.match(x)][:500]
+    try:
+        if action == 'state':
+            _nd_setup()
+            try:
+                _nd_call('ping', timeout=10)
+                return 200, {'ok': True, 'denied': False, 'custom': bool(fields.get('password')), 'user': _nd_user()}
+            except ValueError:
+                return 200, {'ok': True, 'denied': True, 'custom': bool(fields.get('password')), 'user': _nd_user()}
+        if action == 'clear_password':
+            fields.pop('password', None)
+            fields.pop('user', None)
+            _store_fields_set(STORE_ND_ID, fields or None)
+            return 200, {'ok': True}
+        if action == 'save_password':
+            pw = str(b.get('password') or '')
+            user = str(b.get('user') or '').strip() or 'admin'
+            if not re.match(r'^[^\x00-\x1f]{1,40}$', user):
+                return 400, {'ok': False, 'error': 'Nom de compte invalide.'}
+            if not (8 <= len(pw) <= 72):
+                return 400, {'ok': False, 'error': 'Le mot de passe doit faire de 8 à 72 caractères.'}
+            try:
+                _nd_call('ping', user=user, pw=pw, timeout=10)
+            except ValueError:
+                return 400, {'ok': False, 'error': 'Navidrome refuse ce compte ou ce mot de passe.'}
+            fields['password'] = pw
+            if user != 'admin':
+                fields['user'] = user
+            else:
+                fields.pop('user', None)
+            _store_fields_set(STORE_ND_ID, fields)
+            return 200, {'ok': True}
+        _nd_setup()
+        if action == 'overview':
+            out = {'ok': True}
+            for key in ('recent', 'newest', 'frequent', 'random'):
+                try:
+                    out[key] = [_nd_album(x) for x in _nd_lst((_nd_call('getAlbumList2', {'type': key, 'size': 18}).get('albumList2') or {}).get('album'))]
+                except RuntimeError:
+                    out[key] = []
+            try:
+                sc = _nd_call('getScanStatus').get('scanStatus') or {}
+                out['scan'] = {'on': bool(sc.get('scanning')), 'count': int(sc.get('count') or 0), 'folders': int(sc.get('folderCount') or 0)}
+            except RuntimeError:
+                out['scan'] = {'on': False, 'count': 0, 'folders': 0}
+            return 200, out
+        if action == 'artists':
+            rows = []
+            for g in _nd_lst((_nd_call('getArtists').get('artists') or {}).get('index')):
+                for a in _nd_lst(g.get('artist')):
+                    rows.append({'id': str(a.get('id') or ''), 'name': str(a.get('name') or '')[:120], 'n': int(a.get('albumCount') or 0), 'cover': _nd_cover(a)})
+            return 200, {'ok': True, 'artists': rows}
+        if action == 'artist':
+            i = ident('id')
+            if not i:
+                return 400, {'ok': False, 'error': 'Artiste inconnu.'}
+            a = _nd_call('getArtist', {'id': i}).get('artist') or {}
+            return 200, {'ok': True, 'name': str(a.get('name') or ''), 'albums': [_nd_album(x) for x in _nd_lst(a.get('album'))]}
+        if action == 'albums':
+            typ = str(b.get('type') or 'alphabeticalByName')
+            if typ not in ('alphabeticalByName', 'alphabeticalByArtist', 'newest', 'recent', 'frequent', 'random', 'starred'):
+                typ = 'alphabeticalByName'
+            try:
+                off = max(0, min(100000, int(b.get('offset') or 0)))
+            except (TypeError, ValueError):
+                off = 0
+            rows = [_nd_album(x) for x in _nd_lst((_nd_call('getAlbumList2', {'type': typ, 'size': 60, 'offset': off}).get('albumList2') or {}).get('album'))]
+            return 200, {'ok': True, 'albums': rows, 'more': len(rows) >= 60}
+        if action == 'album':
+            i = ident('id')
+            if not i:
+                return 400, {'ok': False, 'error': 'Album inconnu.'}
+            a = _nd_call('getAlbum', {'id': i}).get('album') or {}
+            return 200, {'ok': True, 'album': _nd_album(a), 'songs': [_nd_song(x) for x in _nd_lst(a.get('song'))]}
+        if action == 'search':
+            q = str(b.get('q') or '').strip()[:80]
+            if not q:
+                return 200, {'ok': True, 'artists': [], 'albums': [], 'songs': []}
+            r = _nd_call('search3', {'query': q, 'artistCount': 8, 'albumCount': 16, 'songCount': 30}).get('searchResult3') or {}
+            return 200, {'ok': True,
+                         'artists': [{'id': str(x.get('id') or ''), 'name': str(x.get('name') or '')[:120], 'n': int(x.get('albumCount') or 0), 'cover': _nd_cover(x)} for x in _nd_lst(r.get('artist'))],
+                         'albums': [_nd_album(x) for x in _nd_lst(r.get('album'))], 'songs': [_nd_song(x) for x in _nd_lst(r.get('song'))]}
+        if action == 'starred':
+            r = _nd_call('getStarred2').get('starred2') or {}
+            return 200, {'ok': True, 'albums': [_nd_album(x) for x in _nd_lst(r.get('album'))], 'songs': [_nd_song(x) for x in _nd_lst(r.get('song'))]}
+        if action in ('star', 'unstar'):
+            i = ident('id')
+            if not i:
+                return 400, {'ok': False, 'error': 'Élément inconnu.'}
+            _nd_call(action, {'id': i})
+            return 200, {'ok': True}
+        if action == 'playlists':
+            rows = [{'id': str(x.get('id') or ''), 'name': str(x.get('name') or '')[:120], 'n': int(x.get('songCount') or 0), 'dur': int(x.get('duration') or 0), 'cover': _nd_cover(x)}
+                    for x in _nd_lst((_nd_call('getPlaylists').get('playlists') or {}).get('playlist'))]
+            return 200, {'ok': True, 'playlists': rows}
+        if action == 'playlist':
+            i = ident('id')
+            if not i:
+                return 400, {'ok': False, 'error': 'Liste inconnue.'}
+            p = _nd_call('getPlaylist', {'id': i}).get('playlist') or {}
+            return 200, {'ok': True, 'name': str(p.get('name') or ''), 'songs': [_nd_song(x) for x in _nd_lst(p.get('entry'))]}
+        if action == 'playlist_new':
+            name = str(b.get('name') or '').strip()[:80]
+            if not name:
+                return 400, {'ok': False, 'error': 'Donnez un nom à la liste.'}
+            r = _nd_call('createPlaylist', {'name': name, 'songId': idlist('songs')})
+            return 200, {'ok': True, 'id': str((r.get('playlist') or {}).get('id') or '')}
+        if action == 'playlist_add':
+            i, sids = ident('id'), idlist('songs')
+            if not i or not sids:
+                return 400, {'ok': False, 'error': 'Rien à ajouter.'}
+            _nd_call('updatePlaylist', {'playlistId': i, 'songIdToAdd': sids})
+            return 200, {'ok': True}
+        if action == 'playlist_remove':
+            i = ident('id')
+            try:
+                idx = int(b.get('index'))
+            except (TypeError, ValueError):
+                idx = -1
+            if not i or idx < 0:
+                return 400, {'ok': False, 'error': 'Morceau inconnu.'}
+            _nd_call('updatePlaylist', {'playlistId': i, 'songIndexToRemove': idx})
+            return 200, {'ok': True}
+        if action == 'playlist_del':
+            i = ident('id')
+            if not i:
+                return 400, {'ok': False, 'error': 'Liste inconnue.'}
+            _nd_call('deletePlaylist', {'id': i})
+            return 200, {'ok': True}
+        if action == 'scrobble':
+            i = ident('id')
+            if i:
+                _nd_call('scrobble', {'id': i, 'submission': 'true'})
+            return 200, {'ok': True}
+        if action == 'scan':
+            _nd_call('startScan', {'fullScan': 'true' if b.get('full') else 'false'})
+            return 200, {'ok': True}
+        if action == 'play':
+            i = ident('id')
+            if not i:
+                return 400, {'ok': False, 'error': 'Morceau inconnu.'}
+            return 200, {'ok': True, 'url': '/store/navidrome/stream/' + _nd_ticket(i)}
+        return 400, {'ok': False, 'error': 'Action inconnue.'}
+    except ValueError as e:
+        if str(e) == 'auth':
+            return 200, {'ok': True, 'denied': True}
+        return 400, {'ok': False, 'error': str(e)[:160]}
+    except RuntimeError as e:
+        return 502, {'ok': False, 'error': 'Navidrome ne répond pas pour le moment (%s).' % str(e)[:80]}
 
 
 def store_jellyfin_api(body):

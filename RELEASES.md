@@ -3,6 +3,19 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.39 — 22 octobre 2026
+
+### Nouveau
+- **Nouvelle app du Magasin : Musique (Navidrome)**, en canal test. Vos dossiers de musique deviennent une bibliothèque : accueil (récents, plus écoutés, à découvrir), artistes, albums, listes de lecture, favoris, recherche, avec pochettes.
+- **Fenêtre Musique de Desktroo** : lecteur intégré (lecture aléatoire, répétition, file d'attente, volume, touches multimédia du clavier), sans ouvrir l'interface d'origine.
+- **Applications mobiles** : compatible Subsonic (Symfonium, DSub, Feishin…) sur le réseau local ; adresse et compte indiqués dans les réglages de la fenêtre.
+  Lecture seule des dossiers choisis ; compte administrateur créé automatiquement ; non testé en conditions réelles.
+
+## 2.60.38 — 22 octobre 2026
+
+### Corrigé
+- **Caméras : la nouvelle icône est aussi utilisée pour l'application installée / le raccourci Windows** (l'ancienne image restait mémorisée sur le NAS ; elle est régénérée une fois à l'ouverture du bureau).
+
 ## 2.60.37 — 22 octobre 2026
 
 ### Corrigé
