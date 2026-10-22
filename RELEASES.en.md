@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.40 — October 22, 2026
+
+### Fixed
+- **Music: playing a track works** (the audio stream address was incomplete). A playback error no longer triggers a flood of messages.
+
 ## 2.60.39 — October 22, 2026
 
 ### New

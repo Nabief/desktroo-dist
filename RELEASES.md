@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.40 — 22 octobre 2026
+
+### Corrigé
+- **Musique : la lecture d'un titre fonctionne** (l'adresse du flux audio était incomplète). Une erreur de lecture n'enchaîne plus une avalanche de messages.
+
 ## 2.60.39 — 22 octobre 2026
 
 ### Nouveau

@@ -22910,7 +22910,13 @@ function dkNdAudioInit() {
   a.addEventListener('timeupdate', dkNdTick);
   a.addEventListener('play', dkNdBarState); a.addEventListener('pause', dkNdBarState);
   a.addEventListener('ended', function() { if (_dkNd.repeat === 2) { a.currentTime = 0; a.play().catch(function() {}); } else dkNdNext(true); });
-  a.addEventListener('error', function() { if (a.getAttribute('src')) { toast('⚠️ ' + T('Ce titre ne peut pas être lu.'), 5000); setTimeout(function() { dkNdNext(true); }, 800); } });
+  a.addEventListener('playing', function() { _dkNd.errN = 0; });
+  a.addEventListener('error', function() {
+    if (!a.getAttribute('src')) return;
+    _dkNd.errN = (_dkNd.errN || 0) + 1;
+    if (_dkNd.errN === 1) toast('⚠️ ' + T('Ce titre ne peut pas être lu.'), 5000);
+    if (_dkNd.errN < 3 && _dkNd.queue.length > 1 && _dkNd.qi + 1 < _dkNd.queue.length) setTimeout(function() { dkNdNext(true); }, 800);
+  });
   if ('mediaSession' in navigator) {
     var ms = navigator.mediaSession;
     try {
@@ -22962,7 +22968,7 @@ async function dkNdPlayAt(i) {
   try {
     var r = await dkNdApi('play', { id: s.id });
     if (_dkNd.queue[_dkNd.qi] !== s) return;
-    a.src = r.url; await a.play().catch(function() {});
+    a.src = '/fileops' + r.url; await a.play().catch(function() {});
   } catch (e) { toast('⚠️ ' + (e.message || e), 6000); return; }
   dkNdBarState();
   if ('mediaSession' in navigator) {
@@ -30298,7 +30304,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.39';
+var DK_PAGE_VERSION = '2.60.40';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
