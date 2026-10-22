@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.22'
+APP_VERSION = '2.60.23'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14603,7 +14603,7 @@ _CAM_HOST, _CAM_PORT = 'dt-cameras', 5000
 _CAM_BASE = 'http://%s:%d' % (_CAM_HOST, _CAM_PORT)
 _CAM_NAME = re.compile(r'^[a-z0-9][a-z0-9_]{0,29}$')
 _CAM_EVT = re.compile(r'^[0-9]{6,12}\.[0-9]{1,8}-[a-z0-9]{3,12}$')
-_CAM_URL = re.compile(r'^(rtsp|rtsps|rtmp|http|https)://[^\s"\'\\]{4,400}$')
+_CAM_URL = re.compile(r'^(rtsp|rtsps|rtmp|http|https|tapo)://[^\s"\'\\]{4,400}$')
 _CAM_LOCK = _threading.Lock()
 
 
@@ -14635,8 +14635,11 @@ def _cam_config(cams):
         if c.get('sub'):
             o.append('    %s_sub:' % c['id'])
             o.append('      - %s' % _cam_yaml_str(c['sub']))
-    o.append('cameras:' if cams else 'cameras: {}')
+    live = [c for c in cams if not c.get('battery')]
+    o.append('cameras:' if live else 'cameras: {}')
     for c in cams:
+        if c.get('battery'):   # caméra sur batterie : pas de lecture permanente (elle ne dormirait plus) ; image à la demande via go2rtc
+            continue
         rec, days = c.get('record', 'motion'), max(1, min(365, int(c.get('days') or 7)))
         o += ['  %s:' % c['id'], '    enabled: %s' % ('true' if c.get('on', True) else 'false'), '    ffmpeg:', '      inputs:']
         main = '%s' % c['id']
@@ -14696,7 +14699,7 @@ def _cam_mask(u):
 
 def _cam_public(c):
     return {'id': c['id'], 'name': c.get('name') or c['id'], 'url': _cam_mask(c['url']), 'sub': _cam_mask(c.get('sub') or ''), 'record': c.get('record', 'motion'),
-            'detect': bool(c.get('detect')), 'days': int(c.get('days') or 7), 'on': c.get('on', True) is not False}
+            'detect': bool(c.get('detect')), 'days': int(c.get('days') or 7), 'on': c.get('on', True) is not False, 'battery': bool(c.get('battery'))}
 
 
 def store_cameras_api(body):
@@ -14737,8 +14740,9 @@ def store_cameras_api(body):
                     if not cur:
                         return 404, {'ok': False, 'error': 'Caméra inconnue.'}
                     cur = cur[0]
-                    if '***@' in url:   # adresse masquée renvoyée telle quelle : on garde le mot de passe enregistré
-                        url = cur['url']
+                    mm = re.match(r'^[a-z0-9]+://([^/@]*)@', cur['url'])
+                    if '***@' in url and mm:   # adresse masquée renvoyée telle quelle : on garde l'identifiant et le mot de passe enregistrés
+                        url = url.replace('***@', mm.group(1) + '@', 1)
                     if '***@' in sub:
                         sub = cur.get('sub') or ''
                 else:
@@ -14749,7 +14753,8 @@ def store_cameras_api(body):
                         n += 1
                     cur = None
                 new = {'id': cid, 'name': name, 'url': url, 'sub': sub, 'record': rec, 'detect': bool(b.get('detect')),
-                       'days': max(1, min(365, int(b.get('days') or 7))), 'on': b.get('on', True) is not False}
+                       'days': max(1, min(365, int(b.get('days') or 7))), 'on': b.get('on', True) is not False,
+                       'battery': bool(b.get('battery')) and url.startswith('tapo://')}
                 nl = [new if c['id'] == cid else c for c in cams] + ([] if cur else [new])
                 _cam_push(nl)
                 _cam_save_list(nl)
@@ -14768,6 +14773,8 @@ def store_cameras_api(body):
                 url = c[0]['url'] if c else ''
             if not _CAM_URL.match(url):
                 return 400, {'ok': False, 'error': 'Adresse invalide.'}
+            if url.startswith('tapo://'):
+                return 200, {'ok': True, 'works': None, 'detail': 'Les caméras Tapo se testent après l’enregistrement, avec « Voir ».'}
             import urllib.parse as _up
             r = _cam_json('/api/ffprobe?paths=' + _up.quote(url, safe=''), timeout=25)
             r = r[0] if isinstance(r, list) and r else r
@@ -14821,8 +14828,12 @@ def store_cameras_media(handler, qs):
         handler.send_error(404)
         return
     k, c, i = qs.get('k', ''), qs.get('c', ''), qs.get('i', '')
+    port = _CAM_PORT
     if k == 'live' and _CAM_NAME.match(c):
-        path = '/api/%s/latest.jpg?h=%d' % (c, 720 if qs.get('s') == 'big' else 360)
+        if [x for x in _cam_list() if x['id'] == c and x.get('battery')]:   # sans Frigate : go2rtc réveille la caméra le temps d'une image
+            path, port = '/api/frame.jpeg?src=%s' % c, 1984
+        else:
+            path = '/api/%s/latest.jpg?h=%d' % (c, 720 if qs.get('s') == 'big' else 360)
     elif k in ('thumb', 'snap', 'clip') and _CAM_EVT.match(i):
         path = '/api/events/%s/%s' % (i, {'thumb': 'thumbnail.jpg', 'snap': 'snapshot.jpg', 'clip': 'clip.mp4'}[k])
     else:
@@ -14832,7 +14843,7 @@ def store_cameras_media(handler, qs):
     if handler.headers.get('Range') and re.match(r'^bytes=\d*-\d*$', handler.headers.get('Range')):
         hd['Range'] = handler.headers.get('Range')
     try:
-        cn = http.client.HTTPConnection(_CAM_HOST, _CAM_PORT, timeout=30)
+        cn = http.client.HTTPConnection(_CAM_HOST, port, timeout=45)
         cn.request('GET', path, headers=hd)
         r = cn.getresponse()
     except Exception:

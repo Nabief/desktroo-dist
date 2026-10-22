@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.23 — 22 October 2026
+
+### New
+- **Cameras: battery and solar Tapo cameras are supported** (in testing). They connect with their IP address and the Tapo account password, without RTSP. To spare the battery, the picture is only requested when you click the camera.
+
 ## 2.60.22 — 22 October 2026
 
 ### New

@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.23 — 22 octobre 2026
+
+### Nouveau
+- **Caméras : les Tapo sur batterie ou solaires sont prises en charge** (en test). Elles se branchent avec leur adresse IP et le mot de passe du compte Tapo, sans RTSP. Pour ménager la batterie, l'image n'est demandée que lorsque vous cliquez sur la caméra.
+
 ## 2.60.22 — 22 octobre 2026
 
 ### Nouveau
