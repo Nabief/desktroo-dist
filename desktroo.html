@@ -22332,6 +22332,11 @@ function dkCamCss() {
     + '.dkcam-seg{display:flex;gap:8px;flex-wrap:wrap}.dkcam-seg button{flex:1;min-width:140px;text-align:left;padding:10px 14px;border-radius:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);color:inherit;font:inherit;font-size:13px;line-height:1.35;cursor:pointer;transition:background .15s,border-color .15s}'
     + '.dkcam-seg button:hover{background:rgba(255,255,255,.09)}.dkcam-seg button.on{border-color:var(--accent,#3b82f6);background:rgba(59,130,246,.16);box-shadow:0 0 0 1px var(--accent,#3b82f6) inset}'
     + '.dkcam-seg button small{display:block;margin:3px 0 0;font-size:11.5px;opacity:.65}'
+    + '.dkcam-ptz{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:14px 16px;border:1px solid var(--glass-border);border-radius:12px}'
+    + '.dkcam-pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:6px}'
+    + '.dkcam-pad button,.dkcam-zb button{border-radius:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);color:inherit;font-size:18px;cursor:pointer;touch-action:none;user-select:none}'
+    + '.dkcam-pad button:active,.dkcam-zb button:active{background:rgba(59,130,246,.35)}'
+    + '.dkcam-zb{display:flex;flex-direction:column;gap:6px}.dkcam-zb button{width:44px;height:44px}'
     + '.dkcam-zoom{position:relative;background:#000;border-radius:10px;overflow:hidden;touch-action:none}.dkcam-zoom img{width:100%;display:block;transform-origin:0 0;user-select:none;-webkit-user-drag:none}'
     + '.dkcam-zbar{position:absolute;right:8px;bottom:8px;display:flex;gap:6px}.dkcam-zbar button{width:32px;height:32px;border-radius:8px;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:18px;cursor:pointer}';
   document.head.appendChild(st);
@@ -22431,9 +22436,34 @@ async function dkCamTick(gen, cid, kind, imgId, size, every) {
 function dkCamBig(cid) {
   var c = (_dkCam.cams || []).filter(function(x) { return x.id === cid; })[0]; if (!c) return;
   _dkCam.big = cid;
-  dkJfModal(c.name, '<div class="dkcam-zoom" id="dkcam-zoom"><img id="dkcam-big" alt="" draggable="false" style="min-height:120px;"><div class="dkcam-zbar"><button onclick="dkCamZoom(1.5)" title="' + webEsc(T('Zoom +')) + '">+</button><button onclick="dkCamZoom(1/1.5)" title="' + webEsc(T('Zoom −')) + '">−</button><button onclick="dkCamZoom(0)" title="' + webEsc(T('Réinitialiser')) + '" style="font-size:14px;">1:1</button></div></div><div id="dkcam-err" class="dkjf-m" style="margin-top:8px;color:var(--danger);word-break:break-word;"></div><div class="dkjf-m" style="margin-top:4px;">' + T('Molette ou boutons pour zoomer, glissez pour déplacer l’image.') + (c.battery ? ' ' + T('Une caméra sur batterie peut mettre 10 à 20 secondes à se réveiller.') : '') + '</div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; if (_dkCam.stream) _dkCam.stream.abort(); dkJfModalClose(); } }], true);
+  dkJfModal(c.name, '<div class="dkcam-zoom" id="dkcam-zoom"><img id="dkcam-big" alt="" draggable="false" style="min-height:120px;"><div class="dkcam-zbar"><button onclick="dkCamZoom(1.5)" title="' + webEsc(T('Zoom +')) + '">+</button><button onclick="dkCamZoom(1/1.5)" title="' + webEsc(T('Zoom −')) + '">−</button><button onclick="dkCamZoom(0)" title="' + webEsc(T('Réinitialiser')) + '" style="font-size:14px;">1:1</button></div></div>' + (c.ptz ? dkCamPtzHtml() : '') + '<div id="dkcam-err" class="dkjf-m" style="margin-top:8px;color:var(--danger);word-break:break-word;"></div><div class="dkjf-m" style="margin-top:4px;">' + T('Molette ou boutons pour zoomer, glissez pour déplacer l’image.') + (c.battery ? ' ' + T('Une caméra sur batterie peut mettre 10 à 20 secondes à se réveiller.') : '') + '</div>', [{ l: T('Fermer'), fn: function() { _dkCam.big = null; if (_dkCam.stream) _dkCam.stream.abort(); dkJfModalClose(); } }], true);
   dkCamZoomInit();
+  if (c.ptz) dkCamPtzInit(cid);
   dkCamStream(cid, 'dkcam-big', c.battery ? 2500 : 1000);
+}
+function dkCamPtzHtml() {
+  var b = function(cmd, t, ttl) { return '<button type="button" data-ptz="' + cmd + '" title="' + webEsc(ttl || '') + '">' + t + '</button>'; };
+  return '<div class="dkcam-ptz"><div class="dkcam-pad"><span></span>' + b('MOVE_UP', '▲', T('Haut')) + '<span></span>' + b('MOVE_LEFT', '◀', T('Gauche')) + '<button type="button" data-ptz="STOP" title="' + webEsc(T('Arrêter')) + '" style="font-size:13px;">■</button>' + b('MOVE_RIGHT', '▶', T('Droite')) + '<span></span>' + b('MOVE_DOWN', '▼', T('Bas')) + '<span></span></div>'
+    + '<div class="dkcam-zb">' + b('ZOOM_IN', '+', T('Zoom optique +')) + b('ZOOM_OUT', '−', T('Zoom optique −')) + '</div>'
+    + '<div style="flex:1;min-width:160px;"><div class="dkjf-m" style="margin:0 0 6px;">' + T('Positions mémorisées') + '</div><div id="dkcam-presets" class="dkcam-objs"><span class="dkjf-m">' + T('Chargement…') + '</span></div></div></div>';
+}
+var _dkPtzOk = true;
+function dkCamPtzSend(cid, cmd) {
+  return dkCamApi('ptz', { id: cid, cmd: cmd }).catch(function(e) { var er = document.getElementById('dkcam-err'); if (er) er.textContent = (e && e.message) || String(e); });
+}
+function dkCamPtzInit(cid) {
+  Array.prototype.forEach.call(document.querySelectorAll('.dkcam-ptz [data-ptz]'), function(bt) {
+    var cmd = bt.getAttribute('data-ptz'), hold = /^(MOVE|ZOOM)_/.test(cmd);
+    bt.addEventListener('pointerdown', function(e) { e.preventDefault(); if (hold) bt.setPointerCapture(e.pointerId); dkCamPtzSend(cid, cmd); });
+    if (hold) { var stop = function() { dkCamPtzSend(cid, 'STOP'); }; bt.addEventListener('pointerup', stop); bt.addEventListener('pointercancel', stop); }
+  });
+  dkCamApi('ptz_info', { id: cid }).then(function(r) {
+    var box = document.getElementById('dkcam-presets'); if (!box) return;
+    if (!r.ok) { box.innerHTML = '<span class="dkjf-m" style="color:var(--danger);">' + webEsc(r.error || '') + '</span>'; return; }
+    var pr = (r.info && r.info.presets) || [];
+    box.innerHTML = pr.length ? pr.map(function(p) { return '<button type="button" class="fs-btn" data-pre="' + webEsc(p) + '">' + webEsc(p) + '</button>'; }).join('') : '<span class="dkjf-m">' + T('Aucune position mémorisée dans la caméra.') + '</span>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-pre]'), function(x) { x.onclick = function() { dkCamPtzSend(cid, 'preset_' + x.getAttribute('data-pre')); }; });
+  }).catch(function(e) { var box = document.getElementById('dkcam-presets'); if (box) box.innerHTML = '<span class="dkjf-m" style="color:var(--danger);">' + webEsc((e && e.message) || String(e)) + '</span>'; });
 }
 var _dkZ = { k: 1, x: 0, y: 0 };
 function dkCamZoomApply() {
@@ -22513,13 +22543,13 @@ function dkCamRenderCams(body) {
   wmHead('dkcam', T('Mes caméras'), { sub: _dkCam.st && _dkCam.st.version ? 'Frigate ' + _dkCam.st.version : '', actions: '<button class="fs-btn" onclick="dkCamScan()">' + T('Chercher les caméras du réseau') + '</button> <button class="web-open" onclick="dkCamForm()">' + T('Ajouter une caméra') + '</button>' });
   body.innerHTML = '<div class="web-group">' + cams.map(function(c, i) {
     var s = stt[c.id], st = !c.on ? T('Désactivée') : c.battery ? T('Sur batterie : image à la demande') : (s && s.fps > 0 ? Tf('{0} images/s', Math.round(s.fps)) : T('Pas de signal'));
-    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(c.name) + (c.detect ? '<span class="dkjf-badge">' + T('Détection') + '</span>' : '') + (c.sms ? '<span class="dkjf-badge">SMS</span>' : '') + '</span>'
+    return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(c.name) + (c.detect ? '<span class="dkjf-badge">' + T('Détection') + '</span>' : '') + (c.sms ? '<span class="dkjf-badge">SMS</span>' : '') + (c.ptz ? '<span class="dkjf-badge">PTZ</span>' : '') + '</span>'
       + '<span class="web-row-desc">' + webEsc(st) + (c.battery ? '' : ' · ' + webEsc(T(DKCAM_REC[c.record] || '')) + (c.record !== 'off' ? ' · ' + Tf('{0} j', c.days) : '')) + ' · ' + webEsc(c.url) + '</span></span>'
       + '<button class="fs-btn" onclick="dkCamForm(' + i + ')">' + T('Modifier') + '</button><button class="fs-btn" style="color:var(--danger);" onclick="dkCamDel(' + i + ')">' + T('Retirer') + '</button></div>';
   }).join('') + '</div><div class="dkjf-m" style="margin-top:12px;">' + T('Les images et enregistrements restent sur votre NAS.') + '</div>';
 }
 function dkCamForm(i, pre) {
-  var c = i == null ? Object.assign({ name: '', url: '', sub: '', record: 'motion', detect: true, days: 7, on: true, battery: false, objects: ['person', 'car', 'dog', 'cat'], sens: 'normal', sms: false }, pre || {}) : (_dkCam.cams || [])[i]; if (!c) return;
+  var c = i == null ? Object.assign({ name: '', url: '', sub: '', record: 'motion', detect: true, days: 7, on: true, battery: false, objects: ['person', 'car', 'dog', 'cat'], sens: 'normal', sms: false, ptz: false, onvif_port: 80 }, pre || {}) : (_dkCam.cams || [])[i]; if (!c) return;
   var tapo = /^tapo:\/\//.test(c.url), ip = tapo ? c.url.replace(/^tapo:\/\/[^@]*@/, '').replace(/[\/?].*$/, '') : '';
   var objs = c.objects || ['person', 'car', 'dog', 'cat'];
   var f = function(l, id, v, ph, h, type) { return '<div class="dkcam-fld"><label for="' + id + '">' + l + '</label><input class="dkjf-in" id="' + id + '" type="' + (type || 'text') + '" value="' + webEsc(v) + '" placeholder="' + webEsc(ph || '') + '" autocomplete="off" style="max-width:none;width:100%;margin:0;">' + (h ? '<small>' + h + '</small>' : '') + '</div>'; };
@@ -22541,6 +22571,10 @@ function dkCamForm(i, pre) {
       + '<div id="dkcam-det-more"><div class="dkcam-fld"><label>' + T('Que faut-il repérer ?') + '</label><div class="dkcam-objs">' + objL.map(function(o) { return '<label><input type="checkbox" data-o="' + o + '"' + (objs.indexOf(o) >= 0 ? ' checked' : '') + '>' + webEsc(dkCamLab(o)) + '</label>'; }).join('') + '</div></div>'
       + '<div class="dkcam-fld"><label>' + T('Sensibilité') + '</label>' + seg('dkcam-f-sens', sensO, c.sens || 'normal') + '<small>' + T('Si vous recevez trop d’alertes (ombres, insectes, branches), baissez la sensibilité. Si des passages sont manqués, augmentez-la.') + '</small></div>'
       + '<label class="dkcam-chk" style="margin-top:4px;"><input type="checkbox" id="dkcam-f-sms"' + (c.sms ? ' checked' : '') + '><span>' + T('M’envoyer un SMS quand une personne est détectée') + '<br><small style="margin:2px 0 0;">' + T('Utilise la passerelle SMS réglée dans Desktroo ; au plus un SMS toutes les 5 minutes par caméra.') + '</small></span></label></div>') + '</div>'
+    + sec(T('Caméra motorisée (PTZ)'), '<label class="dkcam-chk"><input type="checkbox" id="dkcam-f-ptz"' + (c.ptz ? ' checked' : '') + ' onchange="dkCamKind()"><span>' + T('Cette caméra est motorisée (orientable et/ou zoom optique)') + '</span></label>'
+      + '<div id="dkcam-ptz-more"><div class="dkcam-row">' + f(T('Port ONVIF'), 'dkcam-f-op', String(c.onvif_port || 80), '80', T('Souvent 80, 8000 ou 2020 selon la marque.'), 'number')
+      + f(T('Identifiant ONVIF (facultatif)'), 'dkcam-f-ou', c.onvif_user || '', T('Celui de l’adresse RTSP par défaut')) + f(T('Mot de passe ONVIF (facultatif)'), 'dkcam-f-opw', '', c.onvif_pw ? T('(inchangé)') : T('Celui de l’adresse RTSP par défaut'), '', 'password') + '</div>'
+      + '<small style="display:block;opacity:.6;font-size:11.5px;line-height:1.45;">' + T('Le contrôle passe par le protocole ONVIF : activez-le dans les réglages de la caméra. Les flèches apparaissent dans la vue agrandie de la caméra.') + '</small></div>')
     + '<div id="dkcam-k-tapo" style="display:none;">'
     + sec(T('Connexion Tapo'), f(T('Adresse IP de la caméra'), 'dkcam-f-ip', ip, '192.168.1.60', T('Visible dans l’application Tapo (réglages de la caméra, « Infos sur l’appareil »). Réservez-lui une adresse fixe dans votre box.'))
       + f(T('Mot de passe du compte Tapo'), 'dkcam-f-pw', '', tapo && c.id ? T('(inchangé)') : '', T('Le mot de passe de votre compte Tapo (celui de l’application), pas un mot de passe RTSP. Dans l’app Tapo : Moi → Compatibilité tiers → activée.'), 'password')
@@ -22565,6 +22599,8 @@ function dkCamKind() {
   document.getElementById('dkcam-k-tapo').style.display = t ? '' : 'none';
   var dm = document.getElementById('dkcam-det-more'), dc = document.getElementById('dkcam-f-det');
   if (dm && dc) dm.style.display = dc.checked ? '' : 'none';
+  var pm = document.getElementById('dkcam-ptz-more'), pc = document.getElementById('dkcam-f-ptz');
+  if (pm && pc) pm.style.display = pc.checked ? '' : 'none';
 }
 function dkCamFormUrl() {
   var g = function(x) { return document.getElementById(x); };
@@ -22602,7 +22638,8 @@ async function dkCamSave(id, btn) {
   var d = { id: id || undefined, name: g('dkcam-f-n').value.trim(), url: dkCamFormUrl(), sub: tapo ? '' : g('dkcam-f-s').value.trim(), record: tapo ? 'off' : g('dkcam-f-r').value,
             days: +g('dkcam-f-d').value || 7, detect: tapo ? false : g('dkcam-f-det').checked, on: g('dkcam-f-on').checked, battery: tapo,
             objects: Array.prototype.map.call(document.querySelectorAll('#dkjf-modal [data-o]:checked'), function(x) { return x.getAttribute('data-o'); }),
-            sens: tapo ? 'normal' : g('dkcam-f-sens').value, sms: tapo ? false : g('dkcam-f-sms').checked };
+            sens: tapo ? 'normal' : g('dkcam-f-sens').value, sms: tapo ? false : g('dkcam-f-sms').checked,
+            ptz: tapo ? false : g('dkcam-f-ptz').checked, onvif_port: +g('dkcam-f-op').value || 80, onvif_user: g('dkcam-f-ou').value.trim(), onvif_pass: g('dkcam-f-opw').value };
   if (btn) { btn.disabled = true; btn.textContent = T('Enregistrement… (le moteur redémarre)'); }
   try { var r = await dkCamApi('cam_save', d); _dkCam.cams = r.cams || []; dkJfModalClose(); toast(T('Caméra enregistrée. Le moteur redémarre, patientez environ une minute.'), 7000); _dkCam.st = null; dkCamLoad(); }
   catch (e) { dkCamErr(e); if (btn) { btn.disabled = false; btn.textContent = T('Enregistrer'); } }
@@ -29873,7 +29910,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.31';
+var DK_PAGE_VERSION = '2.60.32';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

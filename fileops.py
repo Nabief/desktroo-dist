@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.31'
+APP_VERSION = '2.60.32'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14643,6 +14643,56 @@ def _cam_sources(url):
     return [url] + ['tapo://admin:%s%s' % (h(pw.encode('utf-8')).hexdigest().upper(), tail) for h in (hashlib.md5, hashlib.sha256)]
 
 
+def _cam_onvif(c):
+    """(hôte, port, identifiant, mot de passe) ONVIF d'une caméra motorisée, ou None. Par défaut : hôte et identifiants de l'adresse RTSP."""
+    if not c.get('ptz') or c.get('battery'):
+        return None
+    m = re.match(r'^[a-z0-9]+://(?:([^:/@]*)(?::([^/@]*))?@)?([^:/?#]+)', str(c.get('url') or ''))
+    if not m:
+        return None
+    from urllib.parse import unquote
+    user = c.get('onvif_user') or unquote(m.group(1) or '')
+    pw = c.get('onvif_pass') or unquote(m.group(2) or '')
+    try:
+        port = int(c.get('onvif_port') or 80)
+    except (TypeError, ValueError):
+        port = 80
+    return m.group(3), max(1, min(65535, port)), user, pw
+
+
+_CAM_PTZ_CMD = re.compile(r'^(MOVE_LEFT|MOVE_RIGHT|MOVE_UP|MOVE_DOWN|ZOOM_IN|ZOOM_OUT|STOP|preset_[A-Za-z0-9 _.\-]{1,60})$')
+
+
+def _cam_ws_send(topic, payload):
+    """Envoie un message au moteur par son WebSocket interne (sans bibliothèque : poignée de main + une trame texte)."""
+    import socket, os as _os, base64 as _b64
+    s = socket.create_connection((_CAM_HOST, _CAM_PORT), 6)
+    try:
+        s.settimeout(6)
+        key = _b64.b64encode(_os.urandom(16)).decode()
+        s.sendall(('GET /ws HTTP/1.1\r\nHost: %s:%d\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n' % (_CAM_HOST, _CAM_PORT, key)).encode())
+        buf = b''
+        while b'\r\n\r\n' not in buf and len(buf) < 8192:
+            ch = s.recv(1024)
+            if not ch:
+                break
+            buf += ch
+        if b' 101 ' not in buf.split(b'\r\n')[0] + b' ':
+            raise RuntimeError('le moteur a refusé la connexion')
+        data = json.dumps({'topic': topic, 'payload': payload}).encode('utf-8')
+        mask = _os.urandom(4)
+        n = len(data)
+        head = bytes([0x81]) + (bytes([0x80 | n]) if n < 126 else bytes([0x80 | 126]) + n.to_bytes(2, 'big'))
+        s.sendall(head + mask + bytes(x ^ mask[i % 4] for i, x in enumerate(data)))
+        _login_time.sleep(0.15)
+        try:
+            s.sendall(bytes([0x88, 0x80]) + _os.urandom(4))
+        except OSError:
+            pass
+    finally:
+        s.close()
+
+
 def _cam_config(cams):
     """Configuration Frigate complète d'après la liste des caméras de Desktroo."""
     o = ['mqtt:', '  enabled: false', 'detect:', '  enabled: false', 'snapshots:', '  enabled: true', '  bounding_box: true', 'go2rtc:']
@@ -14669,6 +14719,9 @@ def _cam_config(cams):
             o += ['            - record', '        - path: rtsp://127.0.0.1:8554/%s_sub' % c['id'], '          input_args: preset-rtsp-restream', '          roles:', '            - detect']
         else:
             o += ['            - record', '            - detect']
+        ov = _cam_onvif(c)
+        if ov:
+            o += ['    onvif:', '      host: %s' % _cam_yaml_str(ov[0]), '      port: %d' % ov[1], '      user: %s' % _cam_yaml_str(ov[2]), '      password: %s' % _cam_yaml_str(ov[3])]
         o += ['    detect:', '      enabled: %s' % ('true' if c.get('detect') else 'false')]
         o += ['    record:', '      enabled: %s' % ('true' if rec != 'off' else 'false')]
         if rec != 'off':
@@ -14726,7 +14779,8 @@ def _cam_mask(u):
 def _cam_public(c):
     return {'id': c['id'], 'name': c.get('name') or c['id'], 'url': _cam_mask(c['url']), 'sub': _cam_mask(c.get('sub') or ''), 'record': c.get('record', 'motion'),
             'detect': bool(c.get('detect')), 'days': int(c.get('days') or 7), 'on': c.get('on', True) is not False, 'battery': bool(c.get('battery')),
-            'objects': [x for x in (c.get('objects') or _CAM_OBJ_DEFAULT) if x in _CAM_OBJ_ALLOWED], 'sens': c.get('sens') if c.get('sens') in _CAM_SENS else 'normal', 'sms': bool(c.get('sms'))}
+            'objects': [x for x in (c.get('objects') or _CAM_OBJ_DEFAULT) if x in _CAM_OBJ_ALLOWED], 'sens': c.get('sens') if c.get('sens') in _CAM_SENS else 'normal', 'sms': bool(c.get('sms')),
+            'ptz': bool(c.get('ptz')), 'onvif_port': int(c.get('onvif_port') or 80), 'onvif_user': c.get('onvif_user') or '', 'onvif_pw': bool(c.get('onvif_pass'))}
 
 
 _CAM_SCAN_PY = r"""
@@ -14866,6 +14920,21 @@ def store_cameras_api(body):
             return 200, out
         if action == 'cam_scan':
             return 200, {'ok': True, 'found': _cam_scan()}
+        if action in ('ptz', 'ptz_info'):
+            cid = str(b.get('id') or '')
+            cam = [c for c in _cam_list() if c['id'] == cid and c.get('ptz') and not c.get('battery')]
+            if not cam:
+                return 404, {'ok': False, 'error': 'Cette caméra n’est pas réglée comme motorisée.'}
+            if action == 'ptz_info':
+                try:
+                    return 200, {'ok': True, 'info': _cam_json('/api/%s/ptz/info' % cid, timeout=15)}
+                except RuntimeError as e:
+                    return 200, {'ok': False, 'error': 'Le moteur n’a pas pu interroger la caméra en ONVIF (%s). Vérifiez le port ONVIF, l’identifiant et le mot de passe.' % e}
+            cmd = str(b.get('cmd') or '')
+            if not _CAM_PTZ_CMD.match(cmd):
+                return 400, {'ok': False, 'error': 'Commande inconnue.'}
+            _cam_ws_send('%s/ptz' % cid, cmd)
+            return 200, {'ok': True}
         if action == 'cam_save':
             name = str(b.get('name') or '').strip()[:40]
             url = str(b.get('url') or '').strip()
@@ -14901,7 +14970,10 @@ def store_cameras_api(body):
                        'days': max(1, min(365, int(b.get('days') or 7))), 'on': b.get('on', True) is not False,
                        'battery': bool(b.get('battery')) and url.startswith('tapo://'),
                        'objects': [x for x in (b.get('objects') if isinstance(b.get('objects'), list) else _CAM_OBJ_DEFAULT) if x in _CAM_OBJ_ALLOWED] or list(_CAM_OBJ_DEFAULT),
-                       'sens': b.get('sens') if b.get('sens') in _CAM_SENS else 'normal', 'sms': bool(b.get('sms')) and not url.startswith('tapo://')}
+                       'sens': b.get('sens') if b.get('sens') in _CAM_SENS else 'normal', 'sms': bool(b.get('sms')) and not url.startswith('tapo://'),
+                       'ptz': bool(b.get('ptz')) and not url.startswith('tapo://'), 'onvif_port': max(1, min(65535, int(b.get('onvif_port') or 80))),
+                       'onvif_user': str(b.get('onvif_user') or '').strip()[:60],
+                       'onvif_pass': str(b.get('onvif_pass') or '')[:100] or ((cur or {}).get('onvif_pass') or '')}
                 nl = [new if c['id'] == cid else c for c in cams] + ([] if cur else [new])
                 _cam_push(nl)
                 _cam_save_list(nl)

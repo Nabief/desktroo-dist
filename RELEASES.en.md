@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.32 — October 22, 2026
+
+### New
+- **Cameras: motorized (PTZ) camera support**. "This camera is motorized" option in the form (ONVIF port, optional credentials defaulting to the RTSP ones). In the enlarged view: direction pad (hold to move, release to stop), optical zoom and the camera's saved positions.
+  Controlled over ONVIF by the Frigate engine. Not yet tested on a real motorized camera; not for battery Tapo cameras.
+
 ## 2.60.31 — October 22, 2026
 
 ### Improved

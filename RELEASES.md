@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.32 — 22 octobre 2026
+
+### Nouveau
+- **Caméras : prise en charge des caméras motorisées (PTZ)**. Case « Cette caméra est motorisée » dans le formulaire (port ONVIF, identifiants facultatifs : ceux de l'adresse RTSP sont repris par défaut). Dans la vue agrandie : flèches (maintenir pour bouger, relâcher pour arrêter), zoom optique et positions mémorisées de la caméra.
+  Contrôle via ONVIF par le moteur Frigate (WebSocket interne). Non testé sur une caméra motorisée réelle ; ne concerne pas les Tapo sur batterie.
+
 ## 2.60.31 — 22 octobre 2026
 
 ### Amélioré
