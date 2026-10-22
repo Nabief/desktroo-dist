@@ -3,6 +3,15 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.30 — October 22, 2026
+
+### New
+- **Cameras: roomier add-camera window**, split into sections (identity, connection, recording, detection).
+- **Cameras: per-camera detection settings** — choose which objects to track and a low / normal / high sensitivity.
+- **Cameras: zoom in the enlarged view** (wheel, buttons, pinch, double-click, drag to pan).
+- **Cameras: SMS when a person is detected** (RTSP cameras, per-camera option, at most one SMS every 5 minutes per camera), through Desktroo's SMS gateway.
+  PTZ is not supported yet.
+
 ## 2.60.29 — 22 October 2026
 
 ### Fixed

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.29'
+APP_VERSION = '2.60.30'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14605,6 +14605,10 @@ _CAM_NAME = re.compile(r'^[a-z0-9][a-z0-9_]{0,29}$')
 _CAM_EVT = re.compile(r'^[0-9]{6,12}\.[0-9]{1,8}-[a-z0-9]{3,12}$')
 _CAM_URL = re.compile(r'^(rtsp|rtsps|rtmp|http|https|tapo)://[^\s"\'\\]{4,400}$')
 _CAM_LOCK = _threading.Lock()
+_CAM_OBJ_ALLOWED = ('person', 'car', 'dog', 'cat', 'truck', 'bicycle', 'motorcycle', 'bird', 'package')
+_CAM_OBJ_DEFAULT = ('person', 'car', 'dog', 'cat')
+# sensibilité → (seuil de mouvement, surface minimale, score minimal, score de confirmation) ; seuil bas = plus sensible
+_CAM_SENS = {'low': (45, 30, 0.6, 0.8), 'normal': (30, 10, 0.5, 0.7), 'high': (20, 8, 0.4, 0.6)}
 
 
 def _cam_list():
@@ -14669,7 +14673,12 @@ def _cam_config(cams):
         o += ['    record:', '      enabled: %s' % ('true' if rec != 'off' else 'false')]
         if rec != 'off':
             o += ['      continuous:', '        days: %d' % (days if rec == 'continuous' else 0), '      motion:', '        days: %d' % days]
-        o += ['    objects:', '      track:', '        - person', '        - car', '        - dog', '        - cat']
+        objs = [x for x in (c.get('objects') or _CAM_OBJ_DEFAULT) if x in _CAM_OBJ_ALLOWED] or list(_CAM_OBJ_DEFAULT)
+        sv = _CAM_SENS.get(c.get('sens'), _CAM_SENS['normal'])
+        o += ['    motion:', '      threshold: %d' % sv[0], '      contour_area: %d' % sv[1],
+              '    objects:', '      track:'] + ['        - %s' % x for x in objs] + ['      filters:']
+        for x in objs:
+            o += ['        %s:' % x, '          min_score: %s' % sv[2], '          threshold: %s' % sv[3]]
     return '\n'.join(o) + '\n'
 
 
@@ -14716,7 +14725,8 @@ def _cam_mask(u):
 
 def _cam_public(c):
     return {'id': c['id'], 'name': c.get('name') or c['id'], 'url': _cam_mask(c['url']), 'sub': _cam_mask(c.get('sub') or ''), 'record': c.get('record', 'motion'),
-            'detect': bool(c.get('detect')), 'days': int(c.get('days') or 7), 'on': c.get('on', True) is not False, 'battery': bool(c.get('battery'))}
+            'detect': bool(c.get('detect')), 'days': int(c.get('days') or 7), 'on': c.get('on', True) is not False, 'battery': bool(c.get('battery')),
+            'objects': [x for x in (c.get('objects') or _CAM_OBJ_DEFAULT) if x in _CAM_OBJ_ALLOWED], 'sens': c.get('sens') if c.get('sens') in _CAM_SENS else 'normal', 'sms': bool(c.get('sms'))}
 
 
 _CAM_SCAN_PY = r"""
@@ -14775,6 +14785,50 @@ def _cam_scan():
                     'known': ('@%s' % d['ip']) in known or ('//%s' % d['ip']) in known})
     res.sort(key=lambda x: tuple(int(n) for n in x['ip'].split('.')))
     return res
+
+
+_CAM_SEEN = []
+
+
+def _cam_alert_tick(state):
+    cams = [c for c in _cam_list() if c.get('sms') and c.get('on', True) is not False and not c.get('battery')]
+    if not cams or STORE_CAM_ID not in store_installed_get():
+        state['ts'] = _login_time.time()
+        return
+    hook = store_sms_hook()
+    if not hook.get('ok'):
+        return
+    import urllib.request as _ur
+    q = 'limit=30&include_thumbnails=0&labels=person&cameras=%s&after=%.1f' % (','.join(c['id'] for c in cams), state['ts'] - 5)
+    ev = _cam_json('/api/events?' + q)
+    names = {c['id']: c.get('name') or c['id'] for c in cams}
+    now = _login_time.time()
+    for e in sorted([e for e in (ev if isinstance(ev, list) else []) if isinstance(e, dict)], key=lambda e: e.get('start_time') or 0):
+        eid = str(e.get('id') or '')
+        if not _CAM_EVT.match(eid) or eid in _CAM_SEEN:
+            continue
+        _CAM_SEEN.append(eid)
+        del _CAM_SEEN[:-300]
+        cam = str(e.get('camera') or '')
+        if now - state['sent'].get(cam, 0) < 300:   # une alerte par caméra et par 5 minutes
+            continue
+        state['sent'][cam] = now
+        hm = _login_time.strftime('%H:%M', _login_time.localtime(float(e.get('start_time') or now)))
+        msg = 'Caméra %s : personne détectée à %s' % (names.get(cam, cam), hm)
+        req = _ur.Request(hook['url'], data=json.dumps({'text': msg}).encode('utf-8'), headers={'Content-Type': 'application/json'}, method='POST')
+        _ur.urlopen(req, timeout=20).read()
+    state['ts'] = now
+
+
+def _cam_alert_loop():
+    _login_time.sleep(120)
+    state = {'ts': _login_time.time(), 'sent': {}}
+    while True:
+        try:
+            _cam_alert_tick(state)
+        except Exception:
+            pass
+        _login_time.sleep(20)
 
 
 def store_cameras_api(body):
@@ -14845,7 +14899,9 @@ def store_cameras_api(body):
                     cur = None
                 new = {'id': cid, 'name': name, 'url': url, 'sub': sub, 'record': rec, 'detect': bool(b.get('detect')),
                        'days': max(1, min(365, int(b.get('days') or 7))), 'on': b.get('on', True) is not False,
-                       'battery': bool(b.get('battery')) and url.startswith('tapo://')}
+                       'battery': bool(b.get('battery')) and url.startswith('tapo://'),
+                       'objects': [x for x in (b.get('objects') if isinstance(b.get('objects'), list) else _CAM_OBJ_DEFAULT) if x in _CAM_OBJ_ALLOWED] or list(_CAM_OBJ_DEFAULT),
+                       'sens': b.get('sens') if b.get('sens') in _CAM_SENS else 'normal', 'sms': bool(b.get('sms')) and not url.startswith('tapo://')}
                 nl = [new if c['id'] == cid else c for c in cams] + ([] if cur else [new])
                 _cam_push(nl)
                 _cam_save_list(nl)
@@ -20324,6 +20380,7 @@ def _dkbk_loop():
 
 _threading.Thread(target=_dkbk_loop, name='dkbackup', daemon=True).start()
 _threading.Thread(target=_upd_sms_loop, name='update-sms', daemon=True).start()   # MDM-UPD-SMS-V1
+_threading.Thread(target=_cam_alert_loop, name='camera-alerts', daemon=True).start()   # SMS quand une caméra voit une personne
 
 # MDM-STORE-V1 : réseau des apps et bloc nginx /a/
 _threading.Thread(target=_store_boot, name='store-boot', daemon=True).start()

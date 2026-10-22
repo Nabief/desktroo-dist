@@ -3,6 +3,15 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.30 — 22 octobre 2026
+
+### Nouveau
+- **Caméras : fenêtre d'ajout refaite, plus aérée**, organisée en sections (identité, connexion, enregistrement, détection).
+- **Caméras : réglages de détection par caméra** — choix des objets à repérer (personne, voiture, chien, chat, camion, vélo, moto, oiseau, colis) et sensibilité basse / normale / haute.
+- **Caméras : zoom dans la vue agrandie** (molette, boutons, pincement, double-clic, glisser pour déplacer).
+- **Caméras : SMS quand une personne est détectée** (caméras RTSP, option par caméra, au plus un SMS toutes les 5 minutes par caméra), via la passerelle SMS de Desktroo.
+  Les Tapo sur batterie n'ont ni détection ni PTZ côté Desktroo ; le PTZ n'est pas encore pris en charge.
+
 ## 2.60.29 — 22 octobre 2026
 
 ### Corrigé
