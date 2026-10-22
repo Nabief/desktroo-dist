@@ -3,6 +3,16 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.37 — October 22, 2026
+
+### Fixed
+- **Cameras: form field alignment** (PTZ and recording sections): even columns, equal-height fields.
+
+## 2.60.36 — October 22, 2026
+
+### Improved
+- **Standalone app windows: the message explains Chrome's rule** — install the wanted apps first, then Desktroo itself; to add one later, uninstall Desktroo (chrome://apps), install the app, then reinstall Desktroo. The "Open as window" shortcut still works without uninstalling.
+
 ## 2.60.35 — October 22, 2026
 
 ### Fixed

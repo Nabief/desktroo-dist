@@ -22326,7 +22326,7 @@ function dkCamCss() {
     + '.dkcam-fld{margin:0 0 14px}.dkcam-fld:last-child{margin-bottom:0}'
     + '.dkcam-fld>label{display:block;font-size:12.5px;margin:0 0 6px;opacity:.8}'
     + '.dkcam-fld small{display:block;margin-top:6px;font-size:11.5px;line-height:1.45;opacity:.6}'
-    + '.dkcam-row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}.dkcam-row>.dkcam-fld{flex:1;min-width:200px}'
+    + '.dkcam-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0 16px;align-items:start}.dkcam-row>.dkcam-fld{min-width:0;max-width:none!important}'
     + '.dkcam-chk{display:flex;gap:10px;align-items:flex-start;font-size:13px;margin:0 0 12px;line-height:1.4;cursor:pointer}.dkcam-chk input{margin-top:2px}'
     + '.dkcam-objs{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0 0 4px}.dkcam-objs label{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}'
     + '.dkcam-seg{display:flex;gap:8px;flex-wrap:wrap}.dkcam-seg button{flex:1;min-width:140px;text-align:left;padding:10px 14px;border-radius:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,.04);color:inherit;font:inherit;font-size:13px;line-height:1.35;cursor:pointer;transition:background .15s,border-color .15s}'
@@ -22585,9 +22585,9 @@ function dkCamForm(i, pre) {
       + '<div class="dkcam-fld"><label>' + T('Sensibilité') + '</label>' + seg('dkcam-f-sens', sensO, c.sens || 'normal') + '<small>' + T('Si vous recevez trop d’alertes (ombres, insectes, branches), baissez la sensibilité. Si des passages sont manqués, augmentez-la.') + '</small></div>'
       + '<label class="dkcam-chk" style="margin-top:4px;"><input type="checkbox" id="dkcam-f-sms"' + (c.sms ? ' checked' : '') + '><span>' + T('M’envoyer un SMS quand une personne est détectée') + '<br><small style="margin:2px 0 0;">' + T('Utilise la passerelle SMS réglée dans Desktroo ; au plus un SMS toutes les 5 minutes par caméra.') + '</small></span></label></div>') + '</div>'
     + sec(T('Caméra motorisée (PTZ)'), '<label class="dkcam-chk"><input type="checkbox" id="dkcam-f-ptz"' + (c.ptz ? ' checked' : '') + ' onchange="dkCamKind()"><span>' + T('Cette caméra est motorisée (orientable et/ou zoom optique)') + '</span></label>'
-      + '<div id="dkcam-ptz-more"><div class="dkcam-row">' + f(T('Port ONVIF'), 'dkcam-f-op', String(c.onvif_port || 80), '80', T('Souvent 80, 8000 ou 2020 selon la marque.'), 'number')
+      + '<div id="dkcam-ptz-more"><div class="dkcam-row">' + f(T('Port ONVIF'), 'dkcam-f-op', String(c.onvif_port || 80), '80', '', 'number')
       + f(T('Identifiant ONVIF (facultatif)'), 'dkcam-f-ou', c.onvif_user || '', T('Celui de l’adresse RTSP par défaut')) + f(T('Mot de passe ONVIF (facultatif)'), 'dkcam-f-opw', '', c.onvif_pw ? T('(inchangé)') : T('Celui de l’adresse RTSP par défaut'), '', 'password') + '</div>'
-      + '<small style="display:block;opacity:.6;font-size:11.5px;line-height:1.45;">' + T('Le contrôle passe par le protocole ONVIF : activez-le dans les réglages de la caméra. Les flèches apparaissent dans la vue agrandie de la caméra.') + '</small></div>')
+      + '<small style="display:block;opacity:.6;font-size:11.5px;line-height:1.45;">' + T('Le contrôle passe par le protocole ONVIF : activez-le dans les réglages de la caméra (port souvent 80, 8000 ou 2020 selon la marque). Les flèches apparaissent dans la vue agrandie de la caméra.') + '</small></div>')
     + '<div id="dkcam-k-tapo" style="display:none;">'
     + sec(T('Connexion Tapo'), f(T('Adresse IP de la caméra'), 'dkcam-f-ip', ip, '192.168.1.60', T('Visible dans l’application Tapo (réglages de la caméra, « Infos sur l’appareil »). Réservez-lui une adresse fixe dans votre box.'))
       + f(T('Mot de passe du compte Tapo'), 'dkcam-f-pw', '', tapo && c.id ? T('(inchangé)') : '', T('Le mot de passe de votre compte Tapo (celui de l’application), pas un mot de passe RTSP. Dans l’app Tapo : Moi → Compatibilité tiers → activée.'), 'password')
@@ -29923,7 +29923,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.35';
+var DK_PAGE_VERSION = '2.60.37';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -43314,7 +43314,7 @@ function dkKioskBarRefresh() {
   var wanted = /[?&]install=1/.test(location.search);
   var sysA = drawerApp(id), name = sysA && !sysA.store ? sysA.label : (dkStoreName((dkStoreApp(id) || {}).name) || ({ cameras: 'Caméras' })[id] || id);
   if (_dkInstall) dkKioskBar('<span>' + webEsc(Tf('Installer « Desktroo {0} » comme application sur cet ordinateur ?', name)) + '</span><button onclick="dkInstallApp()">' + T('Installer') + '</button><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
-  else if (wanted) dkKioskBar('<span>' + webEsc(Tf('Pour l’avoir dans sa propre fenêtre : menu du navigateur (⋮) → « Diffuser, enregistrer et partager » → « Créer un raccourci… », puis cochez « Ouvrir dans une fenêtre ». (Si le menu propose « Installer Desktroo {0} », utilisez-le. Le bouton « Ouvrir dans l’appli » de la barre d’adresse ouvre Desktroo en entier.)', name)) + '</span><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
+  else if (wanted) dkKioskBar('<span>' + webEsc(Tf('Chrome n’installe pas une app séparée tant que Desktroo lui-même est installé. Désinstallez Desktroo (chrome://apps), installez « Desktroo {0} » (menu ⋮ → Diffuser, enregistrer et partager), puis réinstallez Desktroo. Sans désinstaller : menu ⋮ → « Créer un raccourci… » → « Ouvrir dans une fenêtre ».', name)) + '</span><button class="x" onclick="dkKioskBar(\'\')" aria-label="' + webEsc(T('Fermer')) + '">✕</button>');
 }
 function dkKioskStart() {
   var id = window.DK_KIOSK; if (!id) return;

@@ -3,6 +3,16 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.37 — 22 octobre 2026
+
+### Corrigé
+- **Caméras : alignement des champs du formulaire** (section PTZ, enregistrement) : colonnes régulières, champs de même hauteur.
+
+## 2.60.36 — 22 octobre 2026
+
+### Amélioré
+- **Fenêtres autonomes des apps : le message explique la règle de Chrome** — installez d'abord les apps voulues, puis Desktroo lui-même ; pour en ajouter une plus tard, désinstallez Desktroo (chrome://apps), installez l'app, puis réinstallez Desktroo. Le raccourci « Ouvrir dans une fenêtre » reste possible sans désinstaller.
+
 ## 2.60.35 — 22 octobre 2026
 
 ### Corrigé
