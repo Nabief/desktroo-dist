@@ -3,6 +3,23 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.43 — October 23, 2026
+
+### Fixed
+- **Downloading a file from the NAS to the PC** gave a corrupted 0-byte file. Downloads now go straight through Desktroo, whatever the file size.
+- **Right-click in Files**: the entry is now called "Extract here (zip, rar, 7z)" so it is easy to find.
+
+## 2.60.42 — October 22, 2026
+
+### Fixed
+- **Shares: clear message when a folder is already shared or a name is taken** (instead of TrueNAS's raw error). If the folder is already shared, Desktroo opens that share directly.
+
+## 2.60.41 — October 22, 2026
+
+### New
+- **Files: "Extract here" for RAR and 7z archives** (in addition to zip, tar, gz…). Large archives extract in the background.
+  Uses 7z, bsdtar, unrar or unar inside the container; a clear message appears if none is installed.
+
 ## 2.60.40 — October 22, 2026
 
 ### Fixed

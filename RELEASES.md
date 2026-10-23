@@ -3,6 +3,23 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.43 — 23 octobre 2026
+
+### Corrigé
+- **Téléchargement d'un fichier du NAS vers le PC** : il donnait un fichier corrompu de 0 octet. Le téléchargement passe maintenant directement par Desktroo, quelle que soit la taille du fichier.
+- **Clic droit dans Fichiers** : l'entrée s'appelle désormais « Décompresser ici (zip, rar, 7z) » pour être facile à trouver.
+
+## 2.60.42 — 22 octobre 2026
+
+### Corrigé
+- **Partages : message clair quand un dossier est déjà partagé ou qu'un nom est déjà pris** (au lieu de l'erreur en anglais de TrueNAS). Si le dossier est déjà partagé, Desktroo ouvre directement ce partage.
+
+## 2.60.41 — 22 octobre 2026
+
+### Nouveau
+- **Fichiers : « Extraire ici » pour les archives RAR et 7z** (en plus de zip, tar, gz…). Les grosses archives s'extraient en arrière-plan.
+  Utilise 7z, bsdtar, unrar ou unar dans le conteneur ; un message clair s'affiche si aucun n'est installé.
+
 ## 2.60.40 — 22 octobre 2026
 
 ### Corrigé

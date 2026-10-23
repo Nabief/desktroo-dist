@@ -6195,6 +6195,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouvelle fenêtre": "New window",
 "Ouvrir": "Open",
 "Ouvrir dans un onglet": "Open in a tab",
+"Décompresser ici (zip, rar, 7z)": "Extract here (zip, rar, 7z)",
 "Extraire ici": "Extract here",
 "Compresser (zip)": "Compress (zip)",
 "Somme de contrôle": "Checksum",
@@ -12284,6 +12285,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Nouvelle fenêtre": "Nueva ventana",
 "Ouvrir": "Abrir",
 "Ouvrir dans un onglet": "Abrir en una pestaña",
+"Décompresser ici (zip, rar, 7z)": "Descomprimir aquí (zip, rar, 7z)",
 "Extraire ici": "Extraer aquí",
 "Compresser (zip)": "Comprimir (zip)",
 "Somme de contrôle": "Suma de comprobación",
@@ -18632,7 +18634,7 @@ function buildFsWindowHtml(wid, top, left) {
         <div class="ctx-item fsctx-sel" id="${wid}-fsctx-tab" onclick="setActiveFsWin('${wid}');fsNewTab(fsSelected&&fsSelected.type==='DIRECTORY'?fsSelected.path:currentFsPath)">Ouvrir dans un onglet</div>
         <div class="ctx-item fsctx-sel" id="${wid}-fsctx-dl"   onclick="setActiveFsWin('${wid}');fsDownloadSelected()">Télécharger</div>
         <div class="ctx-item fsctx-sel" id="${wid}-fsctx-edit" onclick="setActiveFsWin('${wid}');fsEditSelected()">Éditer</div>
-        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-extract" onclick="setActiveFsWin('${wid}');fsExtractSelected()">Extraire ici</div>
+        <div class="ctx-item fsctx-sel" id="${wid}-fsctx-extract" onclick="setActiveFsWin('${wid}');fsExtractSelected()">Décompresser ici (zip, rar, 7z)</div>
         <div class="ctx-item fsctx-sel" id="${wid}-fsctx-compress" onclick="setActiveFsWin('${wid}');fsCompressSelected()">Compresser (zip)</div>
         <div class="ctx-item fsctx-sel" id="${wid}-fsctx-perm" onclick="setActiveFsWin('${wid}');fsPermSelected()">Permissions</div>
         <div class="ctx-item fsctx-sel" id="${wid}-fsctx-cksum" onclick="setActiveFsWin('${wid}');fsChecksumSelected()">Somme de contrôle</div>
@@ -19612,7 +19614,7 @@ function fsShowCtx(e, item) {
   var _fo=fsEl('fsctx-open'); if(_fo) _fo.style.display = isDir ? '' : 'none';
   var _fd=fsEl('fsctx-dl');   if(_fd) _fd.style.display = isDir ? 'none' : '';
   var _fe=fsEl('fsctx-edit'); if(_fe) _fe.style.display = isDir ? 'none' : '';
-  var _fx=fsEl('fsctx-extract'); if(_fx) _fx.style.display = (!isDir && /\.(zip|tar|tgz|tbz2?|txz|gz|bz2|xz|lzma|tar\.gz|tar\.bz2|tar\.xz)$/i.test(item.name||'')) ? '' : 'none';
+  var _fx=fsEl('fsctx-extract'); if(_fx) _fx.style.display = (!isDir && /\.(zip|tar|tgz|tbz2?|txz|gz|bz2|xz|lzma|rar|7z|tar\.gz|tar\.bz2|tar\.xz)$/i.test(item.name||'')) ? '' : 'none';
   var _fck=fsEl('fsctx-cksum'); if(_fck) _fck.style.display = isDir ? 'none' : '';
   var _fn=fsEl('fsctx-netshare'); if(_fn) _fn.style.display = isDir ? '' : 'none';
   var _fsv=fsEl('fsctx-serve'); if(_fsv) _fsv.style.display = isDir ? '' : 'none';
@@ -25016,25 +25018,12 @@ async function licActivate(){
 
 async function fsDownloadSelected() {
   if (!fsSelected || fsSelected.type === 'DIRECTORY') return;
-  toast(T('⬇️ Téléchargement en cours…'));
   try {
-    // TrueNAS SCALE : 2 étapes via /core/download
-    // Étape 1 : obtenir un job + URL temporaire
-    const result = await socketCall('/core/download', 'POST', {
-      method: 'filesystem.get',
-      args: [fsSelected.path],
-      filename: fsSelected.name
-    });
-    // TrueNAS retourne [job_id, "/_download/<id>?auth_token=..."]
-    const dlPath = Array.isArray(result) ? result[1] : null;
-    console.log('Download URL:', dlPath, result);
-    if (!dlPath) throw new Error(T('Pas d\'URL : ') + JSON.stringify(result));
-
-    // Ouvrir l'URL directement — elle contient un token intégré, pas besoin de fetch
+    const r = await fileops('GET', '/dlticket?path=' + encodeURIComponent(fsSelected.path));
+    if (!r || !r.url) throw new Error((r && r.error) || T('Lien de téléchargement indisponible'));
     const a = document.createElement('a');
-    a.href = `${NAS_URL}${dlPath}`;
+    a.href = '/fileops' + r.url;
     a.download = fsSelected.name;
-    a.target = '_blank';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -25093,7 +25082,7 @@ async function fsCompressGo() {
 function fsExtractSelected() {
   if (!fsSelected || fsSelected.type === 'DIRECTORY') { toast(T('Sélectionnez une archive')); return; }
   const src = fsSelected.path, nm = fsSelected.name;
-  const stem = nm.replace(/\.(zip|tar\.gz|tgz|tar\.bz2|tar\.xz|tar|gz|bz2|xz|lzma)$/i, '');
+  const stem = nm.replace(/\.(zip|tar\.gz|tgz|tar\.bz2|tar\.xz|tar|gz|bz2|xz|lzma|rar|7z)$/i, '');
   document.getElementById('create-app-title').textContent = T('Extraire : ') + nm;
   document.getElementById('modal-create-app').style.display = 'flex';
   let f = '<div style="display:flex;flex-direction:column;gap:12px;">';
@@ -25113,7 +25102,8 @@ async function fsExtractGo(encSrc) {
   const dest = here ? currentFsPath : (document.getElementById('fsx-dest').value || '').trim();
   const btn = document.getElementById('fsx-btn'); btn.disabled = true; btn.textContent = '⏳ …';
   try {
-    await fileops('POST', 'extract', dest ? { path: src, dest: dest } : { path: src });
+    var xr = await fileops('POST', 'extract', dest ? { path: src, dest: dest } : { path: src });
+    if (xr && xr.running) { toast(T('⏳ Extraction en cours en arrière-plan : le dossier se remplit, actualisez dans un instant.'), 9000); closeCreateApp(); fsRefresh(); setTimeout(fsRefresh, 15000); setTimeout(fsRefresh, 60000); return; }
     toast(T('✅ Extrait'));
     closeCreateApp(); fsRefresh();
   } catch(e) { toast('❌ ' + e.message); btn.disabled = false; btn.textContent = T('📦 Extraire'); }
@@ -30304,7 +30294,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.40';
+var DK_PAGE_VERSION = '2.60.43';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -37371,6 +37361,12 @@ async function shSave() {
   if (kind === 'smb') { p.name = wmVal('sh-name') || p.path.split('/').pop(); if (/[\\\/\[\]:|<>+=;,*?"]/.test(p.name)) { toast(T('Ce nom contient un caractère interdit')); return; }
     if (!s && wmVal('sh-purpose') === 'tm') p.purpose = (_sh.smb.length ? shSmbNew(_sh.smb[0]) : !!(_sh.presets && _sh.presets.TIMEMACHINE_SHARE)) ? 'TIMEMACHINE_SHARE' : 'ENHANCED_TIMEMACHINE'; }
   else p.networks = wmVal('sh-nets').split(/[\s,;]+/).filter(Boolean);
+  if (!s && kind === 'smb') {   // dossier ou nom déjà pris : on le dit clairement, sans attendre la réponse du NAS
+    var same = shList('smb').filter(function(x) { return String(x.path || '').replace(/\/+$/, '') === p.path; })[0];
+    if (same) { toast(Tf('Ce dossier est déjà partagé sous le nom « {0} ».', same.name), 7000); shGo('one', 'smb', same.id); return; }
+    var dup = shList('smb').filter(function(x) { return String(x.name || '').toLowerCase() === p.name.toLowerCase(); })[0];
+    if (dup) { toast(Tf('Un partage nommé « {0} » existe déjà (pour {1}). Choisissez un autre nom.', dup.name, dup.path), 8000); return; }
+  }
   if (btn) btn.disabled = true;
   try {
     var r = s ? await wsCall('sharing.' + kind + '.update', [s.id, p], 120000) : await wsCall('sharing.' + kind + '.create', [p], 120000);
@@ -37378,7 +37374,10 @@ async function shSave() {
     _sh.nav = 'one'; _sh.sel = s ? s.id : ((r && r.id) != null ? r.id : null);
     if (_sh.sel == null) _sh.nav = 'all';
     await loadSharing();
-  } catch (e) { wmToastErr(e); if (btn) btn.disabled = false; }
+  } catch (e) {
+    if (/must be unique|case-insensitive/i.test(String((e && e.message) || e))) toast(T('Ce nom de partage est déjà utilisé (majuscules et minuscules comptent pour pareil). Choisissez un autre nom.'), 8000); else wmToastErr(e);
+    if (btn) btn.disabled = false;
+  }
 }
 async function shDelete(kind, id) {
   var s = shGet(kind, id);

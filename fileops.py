@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.40'
+APP_VERSION = '2.60.43'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -8381,17 +8381,20 @@ def _dl_sniff_archive(path):
     return any(head.startswith(s) for s in sigs)
 
 
-def _dl_extract_external(src, d):
+def _dl_extract_external(src, d, dest=None):
     """Extrait rar/7z via un binaire externe. Essaie tous les outils disponibles
     (7z/7za/bsdtar/unrar/unar) jusqu'à réussite. Ces outils assainissent les
     chemins (anti path-traversal). Retourne le dossier de destination."""
     import shutil as _sh, subprocess as _sp
     low = src.lower()
     stem = os.path.splitext(os.path.basename(src))[0]
-    dest = os.path.join(d, stem or 'extrait')
-    k = 1
-    while os.path.exists(dest):
-        dest = os.path.join(d, (stem or 'extrait') + '.' + str(k)); k += 1
+    if dest:
+        dest = os.path.realpath(dest)
+    else:
+        dest = os.path.join(d, stem or 'extrait')
+        k = 1
+        while os.path.exists(dest):
+            dest = os.path.join(d, (stem or 'extrait') + '.' + str(k)); k += 1
     os.makedirs(dest, exist_ok=True)
 
     def run(cmd):
@@ -16702,6 +16705,53 @@ def office_open(handler, body):
                  'api': '/a/%s/web-apps/apps/api/documents/api.js' % app}
 
 
+def _dl_ticket(path, ttl=6 * 3600):
+    raw = json.dumps([os.path.abspath(str(path)), int(_px_time.time()) + int(ttl)], ensure_ascii=False).encode('utf-8')
+    sig = _px_hmac.new(_PX_MEDIA_KEY, b'dl' + raw, _px_hash.sha256).digest()[:16]
+    return _px_b64.urlsafe_b64encode(sig + raw).decode('ascii').rstrip('=')
+
+
+def _dl_ticket_path(tok):
+    try:
+        blob = _px_b64.urlsafe_b64decode(str(tok) + '=' * (-len(str(tok)) % 4))
+        sig, raw = blob[:16], blob[16:]
+        if not _px_hmac.compare_digest(sig, _px_hmac.new(_PX_MEDIA_KEY, b'dl' + raw, _px_hash.sha256).digest()[:16]):
+            return None
+        p, exp = json.loads(raw.decode('utf-8'))
+        return str(p) if int(exp) >= _px_time.time() else None
+    except Exception:
+        return None
+
+
+def _dl_serve(handler, tok):
+    """Téléchargement direct d'un fichier du NAS vers le navigateur (lien signé, sans jeton dans l'adresse)."""
+    from urllib.parse import quote as _q
+    path = _dl_ticket_path(tok)
+    if not path or not os.path.isfile(path):
+        handler.send_response(404)
+        handler.send_header('Content-Length', '0')
+        handler.end_headers()
+        return
+    size = os.path.getsize(path)
+    name = os.path.basename(path)
+    handler.send_response(200)
+    handler.send_header('Content-Type', 'application/octet-stream')
+    handler.send_header('Content-Length', str(size))
+    handler.send_header('Content-Disposition', "attachment; filename=\"%s\"; filename*=UTF-8''%s"
+                        % (name.encode('ascii', 'replace').decode('ascii').replace('"', '_'), _q(name)))
+    handler.send_header('Cache-Control', 'no-store')
+    handler.end_headers()
+    try:
+        with open(path, 'rb') as fh:
+            while True:
+                chunk = fh.read(1024 * 1024)
+                if not chunk:
+                    break
+                handler.wfile.write(chunk)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+
+
 def office_file_serve(handler, tok):
     t = _office_ticket_read(tok)
     path = t and _office_path_ok(t[0])
@@ -17385,11 +17435,20 @@ class FileOpsHandler(BaseHTTPRequestHandler):
         if _pp.path.startswith('/office/file/'):
             return office_file_serve(self, _pp.path[len('/office/file/'):].split('/')[0])
 
+        if _pp.path.startswith('/dl/'):
+            return _dl_serve(self, _pp.path[4:].split('/')[0])
+
         if not self._auth():
             return
         p    = urlparse(self.path)
         path = p.path.rstrip('/')
         qs   = dict(parse_qsl(p.query))
+
+        if path == '/dlticket':
+            t = qs.get('path', '')
+            if not os.path.isfile(t):
+                return self._json(404, {'error': 'Fichier introuvable'})
+            return self._json(200, {'ok': True, 'url': '/dl/' + _dl_ticket(t) + '/' + os.path.basename(t)})
 
         if path == '/office/status':   # MDM-OFFICE-V1
             try:
@@ -19103,6 +19162,34 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     return dest_real
 
                 import shutil as _shutil
+                if src.lower().endswith(('.rar', '.7z')) and not _zf.is_zipfile(src):
+                    # RAR / 7z : outil externe (7z, bsdtar, unrar, unar) ; en arrière-plan si l'archive est grosse
+                    if not any(_shutil.which(t) for t in ('7z', '7za', '7zr', 'bsdtar', 'unrar', 'unar')):
+                        raise ValueError('Aucun outil RAR/7z dans le conteneur Desktroo (7z, bsdtar, unrar ou unar) : redémarrez le conteneur fileops pour l’installer, ou extrayez avec un autre outil.')
+                    if dest_given:
+                        out_dir = dest_given
+                    else:
+                        out_dir = os.path.join(os.path.dirname(src), os.path.splitext(os.path.basename(src))[0] or 'extrait')
+                        _k = 1
+                        while os.path.exists(out_dir):
+                            out_dir = os.path.join(os.path.dirname(src), (os.path.splitext(os.path.basename(src))[0] or 'extrait') + '.' + str(_k)); _k += 1
+                    _res = {}
+
+                    def _bg_extract():
+                        try:
+                            _dl_extract_external(src, os.path.dirname(src), out_dir)
+                            _res['ok'] = True
+                        except Exception as _e:
+                            _res['err'] = str(_e)
+                            log.warning('Extraction de %s : %s', src, _e)
+                    _t = _threading.Thread(target=_bg_extract, name='extract-rar', daemon=True)
+                    _t.start()
+                    _t.join(40)
+                    if _res.get('err'):
+                        raise ValueError(_res['err'])
+                    _px_log('file.extract', _px_by(self), path=out_dir)
+                    self._json(200, {'ok': True, 'dest': out_dir, 'running': _t.is_alive()})
+                    return
                 if _zf.is_zipfile(src):
                     with _zf.ZipFile(src) as z:
                         dest_real = _do_extract(z.namelist(), z.extractall)
