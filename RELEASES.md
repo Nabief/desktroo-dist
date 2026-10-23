@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 2.60.45 — 23 octobre 2026
+
+### Nouveau
+- **Jellyfin : fiche album et liste de lecture refaite.** Grande pochette carrée, boutons « Lire » et « Aléatoire », liste des titres avec leur durée (et l’artiste de chaque titre dans une liste de lecture). Les boutons d’administration sont rangés dans « Gérer cet élément ».
+- **Jellyfin : accueil personnalisable.** Le bouton « Personnaliser l’accueil » permet de réorganiser les rangées (glisser-déposer ou flèches), de masquer celles qui ne servent pas et de tout réinitialiser. L’ordre est mémorisé pour chaque utilisateur, sur cet ordinateur.
+
 ## 2.60.43 — 23 octobre 2026
 
 ### Corrigé

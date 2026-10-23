@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.44'
+APP_VERSION = '2.60.45'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14156,7 +14156,8 @@ def _jf_detail(iid):
            'series': str(x.get('SeriesName') or '')[:120], 'season': _pp_int(x.get('ParentIndexNumber')), 'ep': _pp_int(x.get('IndexNumber')),
            'pos': _jf_sec(ud.get('PlaybackPositionTicks')), 'played': bool(ud.get('Played')), 'fav': bool(ud.get('IsFavorite')),
            'img': bool((x.get('ImageTags') or {}).get('Primary')), 'playable': typ in ('Movie', 'Episode', 'Video', 'MusicVideo', 'Audio'),
-           'seriesId': _jf_hexid(x.get('SeriesId')), 'albumId': _jf_hexid(x.get('AlbumId')), 'children': [], 'next': ''}
+           'seriesId': _jf_hexid(x.get('SeriesId')), 'albumId': _jf_hexid(x.get('AlbumId')), 'children': [], 'next': '',
+           'artist': str(x.get('AlbumArtist') or '')[:120]}
     if typ == 'Series':
         eps = (_jf_call('GET', '/Shows/%s/Episodes' % iid, {'userId': uid, 'Fields': 'Overview', 'Limit': 400}) or {}).get('Items') or []
         seasons = {}
@@ -14177,7 +14178,9 @@ def _jf_detail(iid):
     elif typ in ('MusicAlbum', 'Playlist'):
         tr = (_jf_call('GET', '/Items', {'ParentId': iid, 'IncludeItemTypes': 'Audio', 'SortBy': 'ParentIndexNumber,IndexNumber', 'Limit': 200}) or {}).get('Items') or []
         out['children'] = [{'season': 0, 'eps': [{'id': _jf_hexid(e.get('Id')), 'name': str(e.get('Name') or '')[:120], 'n': _pp_int(e.get('IndexNumber')),
-                                                  'played': False, 'pos': 0, 'minutes': int(_jf_sec(e.get('RunTimeTicks')) / 60), 'overview': ''}
+                                                  'played': False, 'pos': 0, 'minutes': int(_jf_sec(e.get('RunTimeTicks')) / 60), 'overview': '',
+                                                  'sec': int(_jf_sec(e.get('RunTimeTicks'))),
+                                                  'artist': str((e.get('Artists') or [e.get('AlbumArtist') or ''])[0] if isinstance(e.get('Artists'), list) else (e.get('AlbumArtist') or ''))[:120]}
                                                  for e in tr if isinstance(e, dict) and _JF_ID.match(_jf_hexid(e.get('Id')))]}]
     if typ in ('MusicAlbum', 'Playlist') and out['children'] and out['children'][0]['eps']:
         out['next'] = out['children'][0]['eps'][0]['id']

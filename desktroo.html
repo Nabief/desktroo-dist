@@ -10111,6 +10111,16 @@ select option{ background:#101b2e; color:#e9eef7; }
   "Sous-titres": "Subtitles",
   "incrusté": "burned in",
   "Audio et sous-titres": "Audio and subtitles",
+"Personnaliser l’accueil": "Customize home",
+"Glisser pour déplacer": "Drag to move",
+"Monter": "Move up",
+"Descendre": "Move down",
+"Chiffres de la bibliothèque": "Library figures",
+"Liste de lecture": "Playlist",
+"Aléatoire": "Shuffle",
+"{0} titres": "{0} tracks",
+"Gérer cet élément": "Manage this item",
+"Changer la pochette": "Change cover",
 "Derniers albums ajoutés": "Latest albums added",
 "Lecture / pause": "Play / pause",
   "Tous les dossiers des bibliothèques sont accessibles.": "All library folders are reachable.",
@@ -22277,6 +22287,8 @@ function dkJfCss() {
     + '.dkjf-di{flex:1;min-width:240px}.dkjf-di h3{margin:0 0 6px;font-size:21px}.dkjf-m{font-size:12.5px;color:var(--text-dim);margin:3px 0}'
     + '.dkjf-pg{height:3px;background:rgba(255,255,255,.25);margin-top:-3px;position:relative;border-radius:0 0 8px 8px;overflow:hidden}.dkjf-pg i{display:block;height:100%;background:rgb(var(--accent-rgb))}'
     + '.dkjf-form{max-width:620px}.dkjf-set{max-width:560px;font-size:13px;line-height:1.6}'
+    + '.dkjf-ed{display:flex;align-items:center;gap:6px;padding:6px 10px;margin:16px 0 4px;border-radius:10px;background:rgba(var(--accent-rgb),.1);border:1px dashed rgba(var(--accent-rgb),.45);font-size:12.5px}.dkjf-ed .gr{cursor:grab;font-size:17px;opacity:.7;padding:0 4px}.dkjf-ed .fs-btn{padding:3px 9px;font-size:12px}.dkjf-ed .fs-btn:disabled{opacity:.3;cursor:default}.dkjf-blk{border-radius:12px;transition:outline .1s}.dkjf-blk.hid>:not(.dkjf-ed){opacity:.3}.dkjf-blk.over{outline:2px solid rgb(var(--accent-rgb));outline-offset:2px}'
+    + '.dkjf-alb .hero{position:relative;overflow:hidden;padding:28px 28px 22px}.dkjf-alb .hero .bg{position:absolute;inset:-40px;width:calc(100% + 80px);height:calc(100% + 80px);object-fit:cover;filter:blur(55px) saturate(1.5) brightness(.5);opacity:0;transition:opacity .6s}.dkjf-alb .hero .bg.ok{opacity:.9}.dkjf-alb .hin{position:relative;display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap}.dkjf-alb .cv{width:210px;aspect-ratio:1;border-radius:14px;overflow:hidden;flex:none;box-shadow:0 18px 44px rgba(0,0,0,.5);background:linear-gradient(135deg,#312e81,#831843)}.dkjf-alb .cv img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}.dkjf-alb .cv img.ok{opacity:1}.dkjf-alb .inf{flex:1;min-width:240px}.dkjf-alb .inf small{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}.dkjf-alb .inf h2{margin:4px 0 6px;font-size:30px;line-height:1.15;font-weight:800}.dkjf-alb .ar{font-size:16px;font-weight:600;color:rgb(var(--accent-rgb))}.dkjf-alb .mt{font-size:13px;opacity:.7;margin-top:4px}.dkjf-alb .ac{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.dkjf-alb .ac button{display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer;font:inherit;font-size:13.5px;font-weight:600;border-radius:999px;padding:10px 20px;color:inherit;transition:filter .15s,background .15s,transform .1s}.dkjf-alb .ac button:active{transform:scale(.97)}.dkjf-alb .ac .main{background:rgb(var(--accent-rgb));color:#fff;box-shadow:0 8px 22px rgba(var(--accent-rgb),.4)}.dkjf-alb .ac .main:hover{filter:brightness(1.1)}.dkjf-alb .ac .sec{background:rgba(255,255,255,.12)}.dkjf-alb .ac .sec:hover{background:rgba(255,255,255,.2)}.dkjf-alb svg{width:18px;height:18px;fill:currentColor;flex:none}.dkjf-alb .trk{padding:8px 18px 4px}.dkjf-alb .trk .r{display:flex;align-items:center;gap:14px;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:13.5px}.dkjf-alb .trk .r:hover{background:rgba(255,255,255,.07)}.dkjf-alb .n{width:26px;text-align:center;flex:none;font-size:12.5px;opacity:.6;position:relative;height:18px;line-height:18px;font-variant-numeric:tabular-nums}.dkjf-alb .n s{display:none;position:absolute;inset:0;align-items:center;justify-content:center}.dkjf-alb .n s svg{width:16px;height:16px}.dkjf-alb .r:hover .n i{display:none}.dkjf-alb .r:hover .n s{display:flex}.dkjf-alb .r:hover .n{opacity:1;color:rgb(var(--accent-rgb))}.dkjf-alb .n i{font-style:normal}.dkjf-alb .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}.dkjf-alb .t small{display:block;font-size:11.5px;opacity:.6;font-weight:400}.dkjf-alb .d{font-size:12px;opacity:.6;font-variant-numeric:tabular-nums;flex:none}.dkjf-alb .ov{padding:6px 30px 0;line-height:1.55;font-size:13.5px;opacity:.85}.dkjf-alb .adm{margin:18px 30px 26px;font-size:12.5px}.dkjf-alb .adm summary{cursor:pointer;opacity:.6;padding:4px 0}.dkjf-alb .adm summary:hover{opacity:1}.dkjf-alb .adm div{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}'
     + '.dkjf-view .dkjf-pb{position:relative}.dkjf-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}'
     + '.dkjf-au{position:relative;width:100%;height:100%;overflow:hidden}.dkjf-au .bg{position:absolute;inset:-40px;width:calc(100% + 80px);height:calc(100% + 80px);object-fit:cover;filter:blur(60px) saturate(1.4) brightness(.45);opacity:0;transition:opacity .6s}.dkjf-au .bg.ok{opacity:1}'
     + '.dkjf-au .in{position:relative;display:flex;gap:36px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;height:100%;box-sizing:border-box;padding:24px 28px;overflow:auto}'
@@ -24048,8 +24060,46 @@ async function dkJfDetail(id) {
     ov.innerHTML = '<div class="dkjf-vh"><button class="fs-btn" onclick="dkJfViewClose()">&lsaquo; ' + T('Retour') + '</button></div><div class="dkjf-vb"><div class="dks-empty">⚠️ ' + webEsc(String((e && e.message) || e)) + '</div></div>';
   }
 }
+function dkJfAlbumPlay(shuffle) {
+  var x = _dkJf.item; if (!x) return;
+  var eps = []; (x.children || []).forEach(function(s) { s.eps.forEach(function(e) { eps.push(e); }); });
+  if (!eps.length) return;
+  _dkJf.shuf = !!shuffle;
+  dkJfPlay(eps[shuffle ? Math.floor(Math.random() * eps.length) : 0].id, { queue: true });
+}
+function dkJfRenderAlbum(x, ov) {
+  var eps = []; (x.children || []).forEach(function(s) { s.eps.forEach(function(e) { eps.push(e); }); });
+  var pl = x.type === 'Playlist', tot = eps.reduce(function(a, e) { return a + (e.sec || 0); }, 0);
+  var art = x.artist || (x.people || []).filter(function(p) { return /AlbumArtist|Artist/.test(p.role); }).map(function(p) { return p.name; })[0] || '';
+  var mins = tot ? Math.max(1, Math.round(tot / 60)) : x.minutes;
+  var meta = [x.year || '', eps.length ? Tf('{0} titres', eps.length) : '', mins ? mins + ' min' : '', (x.genres || []).slice(0, 3).join(', ')].filter(Boolean).join(' · ');
+  var svg = function(d) { return '<svg viewBox="0 0 24 24"><path d="' + d + '"/></svg>'; };
+  var h = '<div class="dkjf-vh"><button class="fs-btn" onclick="dkJfViewClose()">&lsaquo; ' + T('Retour') + '</button><span class="dkjf-vt">' + webEsc(x.name) + '</span>'
+    + '<button class="fs-btn" onclick="dkJfMark(\'fav\')">' + (x.fav ? '★ ' + T('Favori') : '☆ ' + T('Favori')) + '</button>'
+    + '<button class="fs-btn" onclick="dkJfFullItem()">' + T('Ouvrir dans Jellyfin') + '</button></div>'
+    + '<div class="dkjf-vb dkjf-alb" style="padding:0;">'
+    + '<div class="hero">' + (x.img ? '<img class="bg" alt="" data-i="' + x.id + '">' : '') + '<div class="hin">'
+    + '<div class="cv">' + (x.img ? '<img alt="" data-i="' + x.id + '">' : '') + '</div>'
+    + '<div class="inf"><small>' + (pl ? T('Liste de lecture') : T('Album')) + '</small><h2>' + webEsc(x.name) + '</h2>'
+    + (art ? '<div class="ar">' + webEsc(art) + '</div>' : '') + '<div class="mt">' + webEsc(meta) + '</div>'
+    + '<div class="ac">' + (eps.length ? '<button class="main" onclick="dkJfAlbumPlay(false)">' + svg('M8 5v14l11-7z') + T('Lire') + '</button>'
+      + '<button class="sec" onclick="dkJfAlbumPlay(true)">' + svg('M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z') + T('Aléatoire') + '</button>' : '')
+    + '<button class="sec" onclick="dkJfPlAdd()">' + svg('M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z') + T('Ajouter à une liste') + '</button></div></div></div></div>'
+    + '<div class="trk">' + (eps.length ? eps.map(function(e, i) {
+        return '<div class="r" onclick="dkJfPlay(\'' + e.id + '\',{queue:true})"><span class="n"><i>' + (e.n || i + 1) + '</i><s>' + svg('M8 5v14l11-7z') + '</s></span>'
+          + '<span class="t">' + webEsc(e.name) + (e.artist && (pl || e.artist !== art) ? '<small>' + webEsc(e.artist) + '</small>' : '') + '</span>'
+          + '<span class="d">' + (e.sec ? dkJfT(e.sec) : (e.minutes ? e.minutes + ' min' : '')) + '</span></div>'; }).join('')
+      : '<div class="dks-empty">' + T('Aucun titre pour l’instant.') + '</div>') + '</div>'
+    + (x.overview ? '<p class="ov">' + webEsc(x.overview) + '</p>' : '')
+    + '<details class="adm"><summary>' + T('Gérer cet élément') + '</summary><div>'
+    + '<button class="fs-btn" onclick="dkJfRefresh()">' + T('Actualiser') + '</button> <button class="fs-btn" onclick="dkJfItemEdit()">' + T('Modifier les informations') + '</button> '
+    + '<button class="fs-btn" onclick="dkJfImgOpen()">' + T('Changer la pochette') + '</button> <button class="fs-btn" onclick="dkJfCollNew()">' + T('Créer une collection') + '</button> '
+    + '<button class="fs-btn" style="color:var(--danger);" onclick="dkJfItemDel()">' + T('Supprimer') + '</button></div></details></div>';
+  ov.innerHTML = h; dkJfImgs(ov);
+}
 function dkJfRenderDetail() {
   var x = _dkJf.item, ov = document.getElementById('dkjf-detail'); if (!x || !ov) return;
+  if (x.type === 'MusicAlbum' || x.type === 'Playlist') return dkJfRenderAlbum(x, ov);
   var meta = [x.year || '', x.rating, x.minutes ? x.minutes + ' min' : '', x.score ? '★ ' + x.score : ''].filter(Boolean).join(' · ');
   var sub = x.series ? x.series + (x.season ? ' · S' + x.season : '') + (x.ep ? 'E' + x.ep : '') : '';
   var acts = '';
@@ -24305,35 +24355,88 @@ function dkJfScanNote(scan) {
   return scan && scan.running ? '<div class="dkag-note" style="margin:0 0 14px;display:flex;gap:10px;align-items:center;"><span class="spinner" style="width:14px;height:14px;flex:none;"></span><span>'
     + Tf('Analyse de la médiathèque en cours : {0} %. Les titres apparaissent au fur et à mesure.', scan.pct || 0) + '</span></div>' : '';
 }
+function dkJfHomeKey() { return 'dk_jf_home_' + String(typeof currentUser !== 'undefined' ? currentUser : ''); }
+function dkJfHomePref() {
+  var p = null; try { p = JSON.parse(localStorage.getItem(dkJfHomeKey()) || 'null'); } catch (_) {}
+  p = p && typeof p === 'object' ? p : {};
+  return { order: Array.isArray(p.order) ? p.order : [], hidden: Array.isArray(p.hidden) ? p.hidden : [] };
+}
+function dkJfHomeSave(p) { try { localStorage.setItem(dkJfHomeKey(), JSON.stringify(p)); } catch (_) {} }
+function dkJfHomeRedraw() {
+  var body = wmBody('dkjf'); if (!body || !_dkJf.homeData) return;
+  var sc = body.scrollTop; dkJfRenderHome(body, _dkJf.homeData); body.scrollTop = sc;
+}
+function dkJfHomeEdit(on) { _dkJf.homeEdit = !!on; dkJfHomeRedraw(); }
+function dkJfHomeCur() {
+  var pf = dkJfHomePref(), ks = (_dkJf.homeKeys || []).slice();
+  ks.sort(function(a, b) { var f = function(k) { var i = pf.order.indexOf(k); return i < 0 ? 1e6 + (_dkJf.homeKeys || []).indexOf(k) : i; }; return f(a) - f(b); });
+  return ks;
+}
+function dkJfHomeMove(k, d) {
+  var ks = dkJfHomeCur(), i = ks.indexOf(k), j = i + d; if (i < 0 || j < 0 || j >= ks.length) return;
+  ks.splice(i, 1); ks.splice(j, 0, k);
+  var pf = dkJfHomePref(); pf.order = ks; dkJfHomeSave(pf); dkJfHomeRedraw();
+}
+function dkJfHomeHide(k) {
+  var pf = dkJfHomePref(), i = pf.hidden.indexOf(k);
+  if (i >= 0) pf.hidden.splice(i, 1); else pf.hidden.push(k);
+  pf.order = dkJfHomeCur(); dkJfHomeSave(pf); dkJfHomeRedraw();
+}
+function dkJfHomeReset() { try { localStorage.removeItem(dkJfHomeKey()); } catch (_) {} dkJfHomeRedraw(); }
+function dkJfHomeDrag(e) { var b = e.target.closest ? e.target.closest('.dkjf-blk') : null; if (!b) return; _dkJf.homeDrag = b.getAttribute('data-k'); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', _dkJf.homeDrag); } catch (_) {} }
+function dkJfHomeOver(e) { if (!_dkJf.homeDrag) return; e.preventDefault(); var b = e.currentTarget; if (b) b.classList.add('over'); }
+function dkJfHomeDrop(e) {
+  e.preventDefault(); var b = e.currentTarget, to = b && b.getAttribute('data-k'), from = _dkJf.homeDrag; _dkJf.homeDrag = null;
+  if (b) b.classList.remove('over');
+  if (!from || !to || from === to) return;
+  var ks = dkJfHomeCur(), i = ks.indexOf(from), j = ks.indexOf(to); if (i < 0 || j < 0) return;
+  ks.splice(i, 1); ks.splice(j, 0, from);
+  var pf = dkJfHomePref(); pf.order = ks; dkJfHomeSave(pf); dkJfHomeRedraw();
+}
 function dkJfRenderHome(body, r) {
   var c = r.counts || {}, libs = r.libraries || [];
   wmHead('dkjf', 'Jellyfin', { sub: r.server && r.server.version ? 'Jellyfin ' + webEsc(r.server.version) : '',
     actions: (dkKioskCanInstall('jellyfin') ? '<button class="fs-btn" onclick="dkKioskInstallOpen(\'jellyfin\')" title="' + webEsc(T('Ouvre Jellyfin seul dans sa fenêtre, avec son icône sur le bureau de l’ordinateur.')) + '">' + T('Installer sur l’ordinateur') + '</button> ' : '')
-      + '<button class="web-open" onclick="dkJfFull()">' + T('Ouvrir Jellyfin') + '</button>' });
+      + (libs.length ? (_dkJf.homeEdit ? '<button class="fs-btn" onclick="dkJfHomeReset()">' + T('Réinitialiser') + '</button><button class="web-open" onclick="dkJfHomeEdit(false)">' + T('Terminé') + '</button>'
+        : '<button class="fs-btn" onclick="dkJfHomeEdit(true)">' + T('Personnaliser l’accueil') + '</button>') : '')
+      + (_dkJf.homeEdit ? '' : '<button class="web-open" onclick="dkJfFull()">' + T('Ouvrir Jellyfin') + '</button>') });
+  _dkJf.homeData = r;
   var h = dkJfScanNote(r.scan);
   if (!libs.length) {
     h += '<div class="dks-empty">' + T('Aucune bibliothèque pour l’instant.') + '<br>' + T('Ajoutez un dossier de films, de séries ou de musiques : Jellyfin le classe et récupère les affiches.')
       + '<div style="margin-top:12px;"><button class="web-open" onclick="dkJfGo(\'libadd\')">' + T('Ajouter une bibliothèque') + '</button></div></div>';
   } else {
     var st = [[c.movies, T('Films')], [c.series, T('Séries')], [c.episodes, T('Épisodes')], [c.albums, T('Albums')], [c.songs, T('Titres')]].filter(function(x) { return x[0] > 0; });
-    if (st.length) h += '<div class="dkjf-stats">' + st.map(function(x) { return '<div class="dkjf-st"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div>';
-    if ((r.playing || []).length) {
-      h += '<div class="dkjf-h">' + T('En ce moment') + '</div><div class="web-group">' + r.playing.map(function(p) {
+    var rails = r.rails || [], blocks = [], mi = (_dkJf.libList || []).map(function(x) { return x.type; }).indexOf('music');
+    if (st.length) blocks.push({ key: 'stats', label: T('Chiffres de la bibliothèque'), html: '<div class="dkjf-stats">' + st.map(function(x) { return '<div class="dkjf-st"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') + '</div>' });
+    if ((r.playing || []).length) blocks.push({ key: 'playing', label: T('En ce moment'), html: '<div class="dkjf-h">' + T('En ce moment') + '</div><div class="web-group">' + r.playing.map(function(p) {
         var nm = (p.item.series ? p.item.series + ' · ' : '') + p.item.name;
         return '<div class="web-row"><span class="web-row-text"><span class="web-row-name">' + webEsc(nm) + '</span><span class="web-row-desc">'
           + webEsc(p.user) + ' · ' + webEsc(p.device || p.client) + (p.paused ? ' · ' + T('en pause') : '') + '</span></span></div>';
-      }).join('') + '</div>';
-    }
-    var rails = r.rails || [];
-    if ((r.resume || []).length) h += dkJfRail(T('Reprendre la lecture'), r.resume.map(function(x) { x.play = true; return x; }), 100, null);
-    if ((r.nextup || []).length) h += dkJfRail(T('Prochains épisodes'), r.nextup, 101, null);
-    if ((r.albums_new || []).length) h += dkJfRail(T('Derniers albums ajoutés'), r.albums_new, 102, (_dkJf.libList || []).map(function(x) { return x.type; }).indexOf('music') >= 0 ? (_dkJf.libList || []).map(function(x) { return x.type; }).indexOf('music') : null);
+      }).join('') + '</div>' });
+    if ((r.resume || []).length) blocks.push({ key: 'resume', label: T('Reprendre la lecture'), html: dkJfRail(T('Reprendre la lecture'), r.resume.map(function(x) { x.play = true; return x; }), 100, null) });
+    if ((r.nextup || []).length) blocks.push({ key: 'nextup', label: T('Prochains épisodes'), html: dkJfRail(T('Prochains épisodes'), r.nextup, 101, null) });
+    if ((r.albums_new || []).length) blocks.push({ key: 'albums', label: T('Derniers albums ajoutés'), html: dkJfRail(T('Derniers albums ajoutés'), r.albums_new, 102, mi >= 0 ? mi : null) });
     if (rails.length) {
       rails.forEach(function(rl, k) {
-        var li = (_dkJf.libList || []).map(function(x) { return x.id; }).indexOf(rl.id);
-        h += dkJfRail(T('Derniers ajouts') + ' · ' + rl.name, rl.items, k, li >= 0 ? li : null);
+        var li = (_dkJf.libList || []).map(function(x) { return x.id; }).indexOf(rl.id), t = T('Derniers ajouts') + ' · ' + rl.name;
+        blocks.push({ key: 'lib:' + rl.id, label: t, html: dkJfRail(t, rl.items, k, li >= 0 ? li : null) });
       });
-    } else if ((r.latest || []).length) h += dkJfRail(T('Derniers ajouts'), r.latest, 0, null);
+    } else if ((r.latest || []).length) blocks.push({ key: 'latest', label: T('Derniers ajouts'), html: dkJfRail(T('Derniers ajouts'), r.latest, 0, null) });
+    _dkJf.homeKeys = blocks.map(function(x) { return x.key; });
+    var pf = dkJfHomePref(), ed = !!_dkJf.homeEdit, pos = function(k) { var i = pf.order.indexOf(k); return i < 0 ? 1e6 + _dkJf.homeKeys.indexOf(k) : i; };
+    blocks.sort(function(x, y) { return pos(x.key) - pos(y.key); });
+    blocks.forEach(function(bk, i) {
+      var hid = pf.hidden.indexOf(bk.key) >= 0;
+      if (hid && !ed) return;
+      if (!ed) { h += bk.html; return; }
+      var kq = webEsc(bk.key).replace(/'/g, '');
+      h += '<div class="dkjf-blk' + (hid ? ' hid' : '') + '" draggable="true" data-k="' + kq + '" ondragstart="dkJfHomeDrag(event)" ondragover="dkJfHomeOver(event)" ondragleave="this.classList.remove(\'over\')" ondrop="dkJfHomeDrop(event)">'
+        + '<div class="dkjf-ed"><span class="gr" title="' + webEsc(T('Glisser pour déplacer')) + '">⠿</span><b>' + webEsc(bk.label) + '</b><span style="flex:1"></span>'
+        + '<button class="fs-btn" ' + (i === 0 ? 'disabled ' : '') + 'title="' + webEsc(T('Monter')) + '" onclick="dkJfHomeMove(\'' + kq + '\',-1)">▲</button>'
+        + '<button class="fs-btn" ' + (i === blocks.length - 1 ? 'disabled ' : '') + 'title="' + webEsc(T('Descendre')) + '" onclick="dkJfHomeMove(\'' + kq + '\',1)">▼</button>'
+        + '<button class="fs-btn" onclick="dkJfHomeHide(\'' + kq + '\')">' + (hid ? T('Afficher') : T('Masquer')) + '</button></div>' + bk.html + '</div>';
+    });
   }
   body.innerHTML = h; dkJfImgs(body); dkJfPoll(r);
 }
@@ -30370,7 +30473,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.44';
+var DK_PAGE_VERSION = '2.60.45';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 2.60.45 — October 23, 2026
+
+### New
+- **Jellyfin: redesigned album and playlist page.** Large square cover, "Play" and "Shuffle" buttons, track list with durations (and each track's artist in a playlist). Admin buttons are tucked into "Manage this item".
+- **Jellyfin: customizable home.** The "Customize home" button lets you reorder the rows (drag and drop or arrows), hide the ones you don't use and reset everything. The order is remembered for each user, on this computer.
+
 ## 2.60.43 — October 23, 2026
 
 ### Fixed
