@@ -22275,7 +22275,23 @@ function dkJfCss() {
     + '.dkjf-di{flex:1;min-width:240px}.dkjf-di h3{margin:0 0 6px;font-size:21px}.dkjf-m{font-size:12.5px;color:var(--text-dim);margin:3px 0}'
     + '.dkjf-pg{height:3px;background:rgba(255,255,255,.25);margin-top:-3px;position:relative;border-radius:0 0 8px 8px;overflow:hidden}.dkjf-pg i{display:block;height:100%;background:rgb(var(--accent-rgb))}'
     + '.dkjf-form{max-width:620px}.dkjf-set{max-width:560px;font-size:13px;line-height:1.6}'
-    + '.dkjf-view .dkjf-pb{position:relative}.dkjf-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}';
+    + '.dkjf-view .dkjf-pb{position:relative}.dkjf-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}'
+    + '.dkjf-au{position:relative;width:100%;height:100%;overflow:hidden}.dkjf-au .bg{position:absolute;inset:-40px;width:calc(100% + 80px);height:calc(100% + 80px);object-fit:cover;filter:blur(60px) saturate(1.4) brightness(.45);opacity:0;transition:opacity .6s}.dkjf-au .bg.ok{opacity:1}'
+    + '.dkjf-au .in{position:relative;display:flex;gap:36px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;height:100%;box-sizing:border-box;padding:24px 28px;overflow:auto}'
+    + '.dkjf-au .card{width:min(340px,100%);display:flex;flex-direction:column;align-items:center;gap:14px;flex:none}'
+    + '.dkjf-au .cv{width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.55);background:linear-gradient(135deg,#312e81,#831843)}.dkjf-au .cv img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}.dkjf-au .cv img.ok{opacity:1}'
+    + '.dkjf-au .ti{width:100%;text-align:center}.dkjf-au .ti b{display:block;font-size:18px;line-height:1.25}.dkjf-au .ti small{display:block;margin-top:3px;font-size:13px;opacity:.65}'
+    + '.dkjf-au .sk{width:100%}.dkjf-au .sk input[type=range],.dkjf-au .vo input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:none;cursor:pointer;margin:0;--p:0%}'
+    + '.dkjf-au input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(to right,rgb(var(--accent-rgb)) var(--p),rgba(255,255,255,.22) var(--p))}.dkjf-au input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.22)}.dkjf-au input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:rgb(var(--accent-rgb))}'
+    + '.dkjf-au input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;margin-top:-4px;box-shadow:0 1px 4px rgba(0,0,0,.5)}.dkjf-au input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff}'
+    + '.dkjf-au .tm{display:flex;justify-content:space-between;font-size:11.5px;opacity:.65;margin-top:2px;font-variant-numeric:tabular-nums}'
+    + '.dkjf-au .ct{display:flex;align-items:center;justify-content:center;gap:10px}.dkjf-au .ct button{border:0;background:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;opacity:.85;transition:background .15s,opacity .15s,transform .1s}.dkjf-au .ct button:hover{background:rgba(255,255,255,.12);opacity:1}.dkjf-au .ct button:active{transform:scale(.94)}'
+    + '.dkjf-au .ct button.sm{width:36px;height:36px;opacity:.5}.dkjf-au .ct button.sm.on{color:rgb(var(--accent-rgb));opacity:1}.dkjf-au .ct button.main{width:62px;height:62px;background:rgb(var(--accent-rgb));color:#fff;opacity:1;font-size:22px;box-shadow:0 8px 24px rgba(var(--accent-rgb),.45)}.dkjf-au .ct button.main:hover{filter:brightness(1.1)}'
+    + '.dkjf-au svg{width:22px;height:22px;fill:currentColor}.dkjf-au .ct button.sm svg{width:19px;height:19px}.dkjf-au .rp1{position:absolute;font-size:8px;font-weight:700;margin-top:1px}'
+    + '.dkjf-au .vo{display:flex;align-items:center;gap:8px;width:70%;opacity:.8}.dkjf-au .vo svg{width:17px;height:17px;flex:none}'
+    + '.dkjf-au .ls{flex:1;min-width:260px;max-width:520px;max-height:100%;overflow:auto;border-radius:16px;background:rgba(0,0,0,.28);backdrop-filter:blur(8px);padding:6px}'
+    + '.dkjf-au .ls div{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13.5px}.dkjf-au .ls div:hover{background:rgba(255,255,255,.08)}.dkjf-au .ls div.cur{background:rgba(var(--accent-rgb),.22);font-weight:600}'
+    + '.dkjf-au .ls i{font-style:normal;width:22px;text-align:right;font-size:12px;opacity:.55;flex:none;font-variant-numeric:tabular-nums}.dkjf-au .ls div.cur i{color:rgb(var(--accent-rgb));opacity:1}.dkjf-au .ls span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';
   document.head.appendChild(st);
 }
 function dkJfClose() {
@@ -24129,9 +24145,9 @@ async function dkJfPlay(id, o) {
   ov.innerHTML = '<div class="dkjf-vh"><button class="fs-btn" onclick="dkJfPlayClose()">&lsaquo; ' + T('Retour') + '</button><span class="dkjf-vt">' + webEsc(title) + '</span>'
     + (trans ? '<span class="dkjf-badge" title="' + webEsc(T('Le format de ce fichier est converti à la volée.')) + '">' + T('Conversion') + '</span>' : '')
     + (((r.tracks_a || []).length > 1 || (r.tracks_s || []).length) ? '<button class="fs-btn" onclick="dkJfTracks()">&#128483; ' + T('Audio et sous-titres') + '</button>' : '')
-    + ((r.next_id || (_dkJf.queue || []).length) ? '<button class="fs-btn" onclick="dkJfNext()" title="N">' + T('Suivant') + ' &rsaquo;&rsaquo;</button>' : '')
-    + '<button class="fs-btn" id="dkjf-sp" onclick="dkJfSpeed()" title="&lt; &gt;">' + (_dkJf.rate || 1) + '×</button>'
-    + '<button class="fs-btn" onclick="dkJfFs()">&#9974; ' + T('Plein écran') + '</button></div>'
+    + (!r.audio && (r.next_id || (_dkJf.queue || []).length) ? '<button class="fs-btn" onclick="dkJfNext()" title="N">' + T('Suivant') + ' &rsaquo;&rsaquo;</button>' : '')
+    + (r.audio ? '' : '<button class="fs-btn" id="dkjf-sp" onclick="dkJfSpeed()" title="&lt; &gt;">' + (_dkJf.rate || 1) + '×</button>'
+    + '<button class="fs-btn" onclick="dkJfFs()">&#9974; ' + T('Plein écran') + '</button>') + '</div>'
     + '<div class="dkjf-pb" id="dkjf-stage"></div>'
     + '<button class="web-open" id="dkjf-skipb" style="position:absolute;right:18px;bottom:84px;display:none;z-index:3;" onclick="dkJfSkipSeg()"></button>'
     + (trans ? '<div class="dkjf-pc"><button class="fs-btn" id="dkjf-pp" onclick="dkJfPP()">&#10074;&#10074;</button><button class="fs-btn" onclick="dkJfSkip(-10)">&minus;10 s</button>'
@@ -24146,7 +24162,7 @@ async function dkJfPlay(id, o) {
   v.addEventListener('pause', function() { var b = document.getElementById('dkjf-pp'); if (b) b.innerHTML = '&#9654;'; if (p.started && !v.ended) dkJfReport('progress'); });
   v.addEventListener('timeupdate', function() {
     var sk = document.getElementById('dkjf-seek'), tm = document.getElementById('dkjf-tm');
-    if (sk && !sk.matches(':active')) sk.value = dkJfPlayPos();
+    if (sk && !sk.matches(':active')) { sk.value = dkJfPlayPos(); dkJfAuProg(); }
     if (tm) tm.textContent = dkJfT(dkJfPlayPos()) + ' / ' + dkJfT(p.duration);
     dkJfSegTick();
   });
@@ -24166,21 +24182,26 @@ async function dkJfPlay(id, o) {
   dkJfApplySub();
   var stg = document.getElementById('dkjf-stage'); stg.innerHTML = '';
   if (r.audio) {
-    var wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;height:100%;overflow:auto;padding:8px 0;';
-    var q = _dkJf.qall, many = !!(q && q.length > 1), bs = 'font-size:20px;min-width:44px;';
-    wrap.innerHTML = '<img alt="" data-i="' + (r.album_id || id) + '" onerror="this.style.display=\'none\'" style="width:min(260px,50%);aspect-ratio:1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06);flex:none;">'
-      + '<div style="font-weight:600;text-align:center;padding:0 12px;">' + webEsc(title) + '</div>'
-      + '<div style="display:flex;align-items:center;gap:6px;width:min(560px,92%);"><span id="dkjf-tm" style="font-size:12px;min-width:44px;">' + dkJfT(r.pos) + '</span>'
-      + '<input type="range" id="dkjf-seek" min="0" max="' + Math.max(1, r.duration) + '" value="' + r.pos + '" style="flex:1;" oninput="dkJfSeekLab()" onchange="dkJfSeekGo()"></div>'
-      + '<div style="display:flex;align-items:center;gap:8px;">'
-      + (many ? '<button class="fs-btn" id="dkjf-au-sh" style="' + bs + 'opacity:' + (_dkJf.shuf ? 1 : .45) + ';" title="' + webEsc(T('Lecture aléatoire')) + '" onclick="dkJfAuShuf()">⤮</button>'
-        + '<button class="fs-btn" style="' + bs + '" title="' + webEsc(T('Précédent')) + '" onclick="dkJfAuPrev()">⏮</button>' : '')
-      + '<button class="fs-btn" id="dkjf-pp" style="' + bs + '" title="' + webEsc(T('Lecture / pause')) + '" onclick="dkJfPP()">&#10074;&#10074;</button>'
-      + (many ? '<button class="fs-btn" style="' + bs + '" title="' + webEsc(T('Suivant')) + '" onclick="dkJfAuNext(false)">⏭</button>' : '')
-      + '<button class="fs-btn" id="dkjf-au-rp" style="' + bs + 'opacity:' + (_dkJf.rep ? 1 : .45) + ';" title="' + webEsc(T('Répéter')) + '" onclick="dkJfAuRep()">' + (_dkJf.rep === 2 ? '🔂' : '🔁') + '</button>'
-      + '<span style="margin-left:10px;">🔊</span><input type="range" min="0" max="100" value="' + Math.round((_dkJf.vol == null ? 0.9 : _dkJf.vol) * 100) + '" style="width:90px;" oninput="dkJfAuVol(this.value)"></div>'
-      + (many ? '<div class="web-group" style="width:min(560px,92%);max-height:34vh;overflow:auto;flex:none;">' + q.map(function(t, i) {
-          return '<div class="web-row" style="cursor:pointer;' + (i === _dkJf.qi ? 'background:rgba(255,255,255,.1);' : '') + '" onclick="dkJfAuGo(' + i + ')"><span class="web-row-text"><span class="web-row-name">' + (i === _dkJf.qi ? '▶ ' : '') + webEsc(t.name) + '</span></span></div>'; }).join('') + '</div>' : '');
+    var wrap = document.createElement('div'); wrap.className = 'dkjf-au';
+    var q = _dkJf.qall, many = !!(q && q.length > 1), vol0 = _dkJf.vol == null ? 0.9 : _dkJf.vol;
+    var svg = function(d) { return '<svg viewBox="0 0 24 24"><path d="' + d + '"/></svg>'; };
+    var cov = r.album_id || id;
+    wrap.innerHTML = '<img class="bg" alt="" data-i="' + cov + '"><div class="in"><div class="card">'
+      + '<div class="cv"><img alt="" data-i="' + cov + '" onerror="this.style.display=\'none\'"></div>'
+      + '<div class="ti"><b>' + webEsc(r.name || title) + '</b><small>' + webEsc(r.series || '') + '</small></div>'
+      + '<div class="sk"><input type="range" id="dkjf-seek" min="0" max="' + Math.max(1, r.duration) + '" value="' + r.pos + '" oninput="dkJfSeekLab();dkJfAuProg()" onchange="dkJfSeekGo()"><div class="tm"><span id="dkjf-tm">' + dkJfT(r.pos) + ' / ' + dkJfT(r.duration) + '</span></div></div>'
+      + '<div class="ct">'
+      + (many ? '<button class="sm' + (_dkJf.shuf ? ' on' : '') + '" id="dkjf-au-sh" title="' + webEsc(T('Lecture aléatoire')) + '" onclick="dkJfAuShuf()">' + svg('M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z') + '</button>'
+        + '<button title="' + webEsc(T('Précédent')) + '" onclick="dkJfAuPrev()">' + svg('M6 6h2v12H6zm3.5 6l8.5 6V6z') + '</button>' : '')
+      + '<button class="main" id="dkjf-pp" title="' + webEsc(T('Lecture / pause')) + '" onclick="dkJfPP()">&#10074;&#10074;</button>'
+      + (many ? '<button title="' + webEsc(T('Suivant')) + '" onclick="dkJfAuNext(false)">' + svg('M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z') + '</button>' : '')
+      + '<button class="sm' + (_dkJf.rep ? ' on' : '') + '" id="dkjf-au-rp" title="' + webEsc(T('Répéter')) + '" onclick="dkJfAuRep()">' + dkJfAuRepIc() + '</button></div>'
+      + '<div class="vo">' + svg('M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z') + '<input type="range" min="0" max="100" value="' + Math.round(vol0 * 100) + '" style="--p:' + Math.round(vol0 * 100) + '%" oninput="dkJfAuVol(this.value);this.style.setProperty(\'--p\',this.value+\'%\')"></div>'
+      + '</div>'
+      + (many ? '<div class="ls" id="dkjf-au-ls">' + q.map(function(t, i) {
+          return '<div class="' + (i === _dkJf.qi ? 'cur' : '') + '" onclick="dkJfAuGo(' + i + ')"><i>' + (i === _dkJf.qi ? '▶' : (i + 1)) + '</i><span>' + webEsc(String(t.name).replace(/^\d+\.\s*/, '')) + '</span></div>'; }).join('') + '</div>' : '')
+      + '</div>';
+    dkJfAuProg(wrap);
     v.style.cssText = 'display:none;'; v.controls = false; v.volume = _dkJf.vol == null ? 0.9 : _dkJf.vol;
     wrap.appendChild(v); stg.appendChild(wrap); dkJfImgs(wrap);
     try {
@@ -24255,8 +24276,10 @@ function dkJfAuPrev() {
   if (p.v.currentTime > 3) { p.v.currentTime = 0; return; }
   dkJfAuGo(Math.max(0, _dkJf.qi - 1));
 }
-function dkJfAuShuf() { _dkJf.shuf = !_dkJf.shuf; var b = document.getElementById('dkjf-au-sh'); if (b) b.style.opacity = _dkJf.shuf ? 1 : .45; }
-function dkJfAuRep() { _dkJf.rep = ((_dkJf.rep || 0) + 1) % 3; var b = document.getElementById('dkjf-au-rp'); if (b) { b.style.opacity = _dkJf.rep ? 1 : .45; b.textContent = _dkJf.rep === 2 ? '🔂' : '🔁'; } }
+function dkJfAuShuf() { _dkJf.shuf = !_dkJf.shuf; var b = document.getElementById('dkjf-au-sh'); if (b) b.classList.toggle('on', !!_dkJf.shuf); }
+function dkJfAuRepIc() { return '<svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>' + (_dkJf.rep === 2 ? '<span class="rp1">1</span>' : ''); }
+function dkJfAuRep() { _dkJf.rep = ((_dkJf.rep || 0) + 1) % 3; var b = document.getElementById('dkjf-au-rp'); if (b) { b.classList.toggle('on', !!_dkJf.rep); b.innerHTML = dkJfAuRepIc(); } }
+function dkJfAuProg(root) { var sk = document.getElementById('dkjf-seek'); if (!sk && root && root.querySelector) sk = root.querySelector('#dkjf-seek'); if (!sk) return; var mx = parseFloat(sk.max) || 1; sk.style.setProperty('--p', Math.min(100, Math.max(0, sk.value / mx * 100)) + '%'); }
 function dkJfAuVol(x) { _dkJf.vol = Math.max(0, Math.min(1, x / 100)); var p = _dkJf.pl; if (p && p.v) p.v.volume = _dkJf.vol; }
 function dkJfPP() { var p = _dkJf.pl; if (!p) return; if (p.v.paused) { var pr = p.v.play(); if (pr && pr.catch) pr.catch(function() {}); } else p.v.pause(); }
 function dkJfFs() { var s = document.getElementById('dkjf-stage'); if (s && s.requestFullscreen) s.requestFullscreen().catch(function() {}); }
