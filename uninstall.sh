@@ -443,7 +443,5 @@ say "Desktroo est désinstallé." "Desktroo is uninstalled."
 [ -n "$VM_DIR" ] && [ -d "$VM_DIR" ] && say "Les disques des machines virtuelles restent dans $VM_DIR." "Virtual machine disks remain in $VM_DIR."
 say "Si des snapshots contiennent les fichiers supprimés, l'espace ne revient qu'à leur expiration." \
     "If snapshots hold the deleted files, the space only comes back when they expire."
-say "L'abonnement n'est pas arrêté par la désinstallation : https://desktroo.fr pour le gérer." \
-    "Uninstalling does not cancel the subscription: manage it at https://desktroo.fr."
 echo "DONE"
 exit 0

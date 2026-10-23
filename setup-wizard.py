@@ -1223,7 +1223,7 @@ HTML = """<!DOCTYPE html>
       <div class="lic-h">Ce que la licence permet</div>
       <ul class="lic-list ok">
         <li>Installer Desktroo sur tes propres NAS.</li>
-        <li>L'utiliser pour tes besoins, pendant l'essai puis avec un abonnement.</li>
+        <li>L'utiliser gratuitement pour tes besoins.</li>
         <li>En garder des copies de sauvegarde.</li>
       </ul>
       <div class="lic-h">Ce qui demande un accord écrit</div>
@@ -1231,7 +1231,7 @@ HTML = """<!DOCTYPE html>
         <li>Copier, publier ou redistribuer Desktroo, modifié ou non.</li>
         <li>Le modifier ou en tirer un autre logiciel, y compris avec une IA.</li>
         <li>Retirer ou changer les mentions de droits.</li>
-        <li>Contourner la licence ou la période d'essai.</li>
+        <li>Contourner la licence.</li>
         <li>Réutiliser le nom Desktroo ou son logo.</li>
       </ul>
       <div class="hint" style="margin-top:12px;"><a href="https://github.com/Nabief/desktroo-dist/blob/main/LICENSE.md" target="_blank" rel="noopener">Lire la licence complète</a></div>
@@ -1884,13 +1884,13 @@ I18N_EN = r"""{
 "Avant d'installer Desktroo, lis et accepte sa licence. Desktroo est un logiciel propriétaire : son code est lisible parce qu'il s'installe sur ton NAS, pas parce qu'il est libre.": "Before installing Desktroo, read and accept its licence. Desktroo is proprietary software: its code is readable because it is installed on your NAS, not because it is free software.",
 "Ce que la licence permet": "What the licence allows",
 "Installer Desktroo sur tes propres NAS.": "Install Desktroo on your own NAS devices.",
-"L'utiliser pour tes besoins, pendant l'essai puis avec un abonnement.": "Use it for your own needs, during the trial and then with a subscription.",
+"L'utiliser gratuitement pour tes besoins.": "Use it for your own needs, free of charge.",
 "En garder des copies de sauvegarde.": "Keep backup copies of it.",
 "Ce qui demande un accord écrit": "What requires written consent",
 "Copier, publier ou redistribuer Desktroo, modifié ou non.": "Copying, publishing or redistributing Desktroo, modified or not.",
 "Le modifier ou en tirer un autre logiciel, y compris avec une IA.": "Modifying it or deriving other software from it, including with an AI.",
 "Retirer ou changer les mentions de droits.": "Removing or changing the copyright notices.",
-"Contourner la licence ou la période d'essai.": "Bypassing the licence or the trial period.",
+"Contourner la licence.": "Bypassing the licence.",
 "Réutiliser le nom Desktroo ou son logo.": "Reusing the Desktroo name or its logo.",
 "Lire la licence complète": "Read the full licence",
 "J'ai lu et j'accepte la licence d'utilisation de Desktroo.": "I have read and accept the Desktroo licence agreement.",
@@ -2052,13 +2052,13 @@ I18N_ES = r"""{
 "Avant d'installer Desktroo, lis et accepte sa licence. Desktroo est un logiciel propriétaire : son code est lisible parce qu'il s'installe sur ton NAS, pas parce qu'il est libre.": "Antes de instalar Desktroo, lee y acepta su licencia. Desktroo es un software propietario: su código se puede leer porque se instala en tu NAS, no porque sea libre.",
 "Ce que la licence permet": "Lo que permite la licencia",
 "Installer Desktroo sur tes propres NAS.": "Instalar Desktroo en tus propios NAS.",
-"L'utiliser pour tes besoins, pendant l'essai puis avec un abonnement.": "Usarlo para tus necesidades, durante la prueba y luego con una suscripción.",
+"L'utiliser gratuitement pour tes besoins.": "Usarlo gratuitamente para tus necesidades.",
 "En garder des copies de sauvegarde.": "Guardar copias de seguridad de él.",
 "Ce qui demande un accord écrit": "Lo que requiere un acuerdo por escrito",
 "Copier, publier ou redistribuer Desktroo, modifié ou non.": "Copiar, publicar o redistribuir Desktroo, modificado o no.",
 "Le modifier ou en tirer un autre logiciel, y compris avec une IA.": "Modificarlo o crear otro software a partir de él, incluso con una IA.",
 "Retirer ou changer les mentions de droits.": "Quitar o cambiar los avisos de derechos.",
-"Contourner la licence ou la période d'essai.": "Eludir la licencia o el periodo de prueba.",
+"Contourner la licence.": "Eludir la licencia.",
 "Réutiliser le nom Desktroo ou son logo.": "Reutilizar el nombre Desktroo o su logotipo.",
 "Lire la licence complète": "Leer la licencia completa",
 "J'ai lu et j'accepte la licence d'utilisation de Desktroo.": "He leído y acepto la licencia de uso de Desktroo.",
