@@ -22264,7 +22264,8 @@ function dkJfCss() {
   if (document.getElementById('dkjf-css')) return;
   var st = document.createElement('style');
   st.id = 'dkjf-css';
-  st.textContent = '.dkjf-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0 0 16px}'
+  st.textContent = '#win-dkjf .web-shell{position:relative;overflow:hidden;border-radius:0 0 var(--radius) var(--radius)}'
+    + '.dkjf-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0 0 16px}'
     + '.dkjf-st{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.045);border:1px solid var(--glass-border)}'
     + '.dkjf-st b{display:block;font-size:22px;font-weight:700}.dkjf-st span{font-size:12px;color:var(--text-dim)}'
     + '.dkjf-h{font-size:13px;font-weight:600;margin:18px 0 8px;color:var(--text-dim);text-transform:none}'
@@ -24088,7 +24089,7 @@ function dkJfRenderAlbum(x, ov) {
       + '<button class="sec" onclick="dkJfAlbumPlay(true)">' + svg('M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z') + T('Aléatoire') + '</button>' : '')
     + '<button class="sec" onclick="dkJfPlAdd()">' + svg('M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z') + T('Ajouter à une liste') + '</button></div></div></div></div>'
     + '<div class="trk" style="--rows:' + Math.max(1, Math.ceil(eps.length / 2)) + '">' + (eps.length ? eps.map(function(e, i) {
-        return '<div class="r" onclick="dkJfPlay(\'' + e.id + '\',{queue:true})"><span class="n"><i>' + (e.n || i + 1) + '</i><s>' + svg('M8 5v14l11-7z') + '</s></span>'
+        return '<div class="r" onclick="dkJfPlay(\'' + e.id + '\',{queue:true})"><span class="n"><i>' + (i + 1) + '</i><s>' + svg('M8 5v14l11-7z') + '</s></span>'
           + '<span class="t">' + webEsc(e.name) + (e.artist && (pl || e.artist !== art) ? '<small>' + webEsc(e.artist) + '</small>' : '') + '</span>'
           + '<span class="d">' + (e.sec ? dkJfT(e.sec) : (e.minutes ? e.minutes + ' min' : '')) + '</span></div>'; }).join('')
       : '<div class="dks-empty">' + T('Aucun titre pour l’instant.') + '</div>') + '</div>'
@@ -30476,7 +30477,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.47';
+var DK_PAGE_VERSION = '2.60.48';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
