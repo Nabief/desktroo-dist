@@ -3,6 +3,13 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.0.1 — October 23, 2026
+
+### Fixed
+- **The setup wizard refused the licence agreement** ("The acceptance could not be saved"), which blocked every installation through that route since October 18. The page was sending a hard-coded licence version number that had been left behind; it is now taken straight from the source.
+- **Terms of use now at version 1.2**: they describe the move to free — no trial, no subscription, no read-only mode, and the clause about installations per subscription is gone. The agreement is asked for once more, the first time you open the desktop after updating.
+- **Installer and uninstaller wording**: the last mentions of a trial and a subscription are gone.
+
 ## 3.0.0 — October 23, 2026
 
 ### Desktroo is now free

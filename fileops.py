@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.0.0'
+APP_VERSION = '3.0.1'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -9185,7 +9185,7 @@ _LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/lice
 # data/licence-acceptee.json ; le bureau le demande à la première connexion s'il manque (installation
 # antérieure, fichiers copiés à la main) ou si le texte a changé de version.
 # TERMS_VERSION suit le numéro de version écrit en tête de LICENSE.md : les deux changent ensemble.
-TERMS_VERSION = '1.1'
+TERMS_VERSION = '1.2'
 TERMS_FILE = os.path.join(ACCESS_DATA_DIR, 'licence-acceptee.json')
 
 

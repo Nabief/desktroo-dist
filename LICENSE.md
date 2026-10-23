@@ -1,6 +1,6 @@
 # Licence d'utilisation de Desktroo
 
-Version 1.1 du 18 octobre 2026
+Version 1.2 du 23 octobre 2026
 
 **© 2026 Mdm-services.fr. Tous droits réservés.**
 
@@ -88,7 +88,7 @@ Pour demander une autorisation, signaler une copie ou poser une question sur cet
 
 # Desktroo licence agreement
 
-Version 1.1, 18 October 2026
+Version 1.2, 23 October 2026
 
 **© 2026 Mdm-services.fr. All rights reserved.**
 

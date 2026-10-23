@@ -3,6 +3,13 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.0.1 — 23 octobre 2026
+
+### Corrigé
+- **L'assistant d'installation refusait l'accord à la licence** (« L'accord n'a pas pu être enregistré »), ce qui bloquait toute installation par cette voie depuis le 18 octobre. La page envoyait un numéro de version de licence écrit en dur, resté sur l'ancien ; il est maintenant repris directement de la source.
+- **Licence d'utilisation en version 1.2** : elle décrit le passage au gratuit — plus d'essai, plus d'abonnement, plus de lecture seule, et l'article sur le nombre d'installations par abonnement a disparu. L'accord est redemandé une fois, à la première ouverture après la mise à jour.
+- **Textes de l'installeur et de la désinstallation** : les dernières mentions d'essai et d'abonnement ont été retirées.
+
 ## 3.0.0 — 23 octobre 2026
 
 ### Desktroo devient gratuit
