@@ -10111,6 +10111,7 @@ select option{ background:#101b2e; color:#e9eef7; }
   "Sous-titres": "Subtitles",
   "incrusté": "burned in",
   "Audio et sous-titres": "Audio and subtitles",
+"Lecture / pause": "Play / pause",
   "Tous les dossiers des bibliothèques sont accessibles.": "All library folders are reachable.",
   "Vérifier les chemins": "Check paths",
   "{0} dossier(s) de bibliothèque introuvable(s)": "{0} library folder(s) not found",
@@ -16167,6 +16168,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Sous-titres": "Subtítulos",
 "incrusté": "incrustado",
 "Audio et sous-titres": "Audio y subtítulos",
+"Lecture / pause": "Reproducir / pausa",
 "Tous les dossiers des bibliothèques sont accessibles.": "Todas las carpetas de las bibliotecas están accesibles.",
 "Vérifier les chemins": "Comprobar las rutas",
 "{0} dossier(s) de bibliothèque introuvable(s)": "{0} carpeta(s) de biblioteca no encontrada(s)",
@@ -23314,6 +23316,7 @@ function dkJfSpeed(d) {
 }
 function dkJfNext() {
   var p = _dkJf.pl; if (!p) return;
+  if (p.audio && _dkJf.qall) return dkJfAuNext(false);
   var nx = (_dkJf.queue || []).shift() || p.next;
   if (nx) dkJfPlay(nx, { keepQueue: true });
 }
@@ -24100,10 +24103,11 @@ function dkJfPlayClose() {
 async function dkJfPlay(id, o) {
   o = o || {};
   if (o.queue && _dkJf.item) {
-    var ids = [];
-    (_dkJf.item.children || []).forEach(function(s) { s.eps.forEach(function(e) { ids.push(e.id); }); });
+    var ids = [], all = [];
+    (_dkJf.item.children || []).forEach(function(s) { s.eps.forEach(function(e) { ids.push(e.id); all.push({ id: e.id, name: (e.n ? e.n + '. ' : '') + e.name }); }); });
     var k = ids.indexOf(id); _dkJf.queue = k >= 0 ? ids.slice(k + 1) : [];
-  } else if (!o.keepQueue && !o.queue) _dkJf.queue = [];
+    _dkJf.qall = k >= 0 ? all : null; _dkJf.qi = k;
+  } else if (!o.keepQueue && !o.queue) { _dkJf.queue = []; _dkJf.qall = null; }
   dkJfPlayStop();
   var ov = dkJfOverlay('dkjf-player'); if (!ov) return;
   var gen = (_dkJf.playGen = (_dkJf.playGen || 0) + 1);
@@ -24135,7 +24139,7 @@ async function dkJfPlay(id, o) {
       + '<span id="dkjf-tm" style="font-size:12px;min-width:92px;text-align:right;">' + dkJfT(r.pos) + ' / ' + dkJfT(r.duration) + '</span></div>' : '');
   var v = document.createElement('video');
   v.playsInline = true; v.autoplay = true; v.controls = !trans; v.style.cssText = 'max-width:100%;max-height:100%;width:100%;height:100%;background:#000;object-fit:contain;';
-  var p = _dkJf.pl = { id: id, mode: r.mode, offset: r.offset, duration: r.duration, v: v, started: false, ended: false, retried: !!o.transcode, timer: null,
+  var p = _dkJf.pl = { audio: !!r.audio, id: id, mode: r.mode, offset: r.offset, duration: r.duration, v: v, started: false, ended: false, retried: !!o.transcode, timer: null,
     tracks_a: r.tracks_a || [], tracks_s: r.tracks_s || [], aidx: r.aidx, sidx: r.sidx, segs: r.segments || [], next: r.next_id || '', seg: null };
   v.addEventListener('loadedmetadata', function() { if (!trans && r.pos > 5 && (!r.duration || r.pos < r.duration - 30)) v.currentTime = r.pos; });
   v.addEventListener('playing', function() { if (!p.started) { p.started = true; dkJfReport('start'); p.timer = setInterval(function() { dkJfReport('progress'); }, 10000); } var b = document.getElementById('dkjf-pp'); if (b) b.innerHTML = '&#10074;&#10074;'; });
@@ -24147,7 +24151,9 @@ async function dkJfPlay(id, o) {
     dkJfSegTick();
   });
   v.addEventListener('ended', function() {
-    p.ended = true; var nx = (_dkJf.queue || []).shift() || p.next;
+    p.ended = true;
+    if (p.audio && _dkJf.qall) { dkJfAuNext(true); return; }
+    var nx = (_dkJf.queue || []).shift() || p.next;
     if (nx) { dkJfPlayStop(); dkJfPlay(nx, { keepQueue: true }); } else dkJfPlayClose();
   });
   v.addEventListener('error', function() {
@@ -24160,10 +24166,32 @@ async function dkJfPlay(id, o) {
   dkJfApplySub();
   var stg = document.getElementById('dkjf-stage'); stg.innerHTML = '';
   if (r.audio) {
-    var wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;';
-    wrap.innerHTML = '<img alt="" data-i="' + (r.album_id || id) + '" onerror="this.style.display=\'none\'" style="width:min(300px,60%);aspect-ratio:1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06);">';
-    v.style.cssText = 'width:min(560px,92%);height:54px;'; v.controls = true;
+    var wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;height:100%;overflow:auto;padding:8px 0;';
+    var q = _dkJf.qall, many = !!(q && q.length > 1), bs = 'font-size:20px;min-width:44px;';
+    wrap.innerHTML = '<img alt="" data-i="' + (r.album_id || id) + '" onerror="this.style.display=\'none\'" style="width:min(260px,50%);aspect-ratio:1;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06);flex:none;">'
+      + '<div style="font-weight:600;text-align:center;padding:0 12px;">' + webEsc(title) + '</div>'
+      + '<div style="display:flex;align-items:center;gap:6px;width:min(560px,92%);"><span id="dkjf-tm" style="font-size:12px;min-width:44px;">' + dkJfT(r.pos) + '</span>'
+      + '<input type="range" id="dkjf-seek" min="0" max="' + Math.max(1, r.duration) + '" value="' + r.pos + '" style="flex:1;" oninput="dkJfSeekLab()" onchange="dkJfSeekGo()"></div>'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      + (many ? '<button class="fs-btn" id="dkjf-au-sh" style="' + bs + 'opacity:' + (_dkJf.shuf ? 1 : .45) + ';" title="' + webEsc(T('Lecture aléatoire')) + '" onclick="dkJfAuShuf()">⤮</button>'
+        + '<button class="fs-btn" style="' + bs + '" title="' + webEsc(T('Précédent')) + '" onclick="dkJfAuPrev()">⏮</button>' : '')
+      + '<button class="fs-btn" id="dkjf-pp" style="' + bs + '" title="' + webEsc(T('Lecture / pause')) + '" onclick="dkJfPP()">&#10074;&#10074;</button>'
+      + (many ? '<button class="fs-btn" style="' + bs + '" title="' + webEsc(T('Suivant')) + '" onclick="dkJfAuNext(false)">⏭</button>' : '')
+      + '<button class="fs-btn" id="dkjf-au-rp" style="' + bs + 'opacity:' + (_dkJf.rep ? 1 : .45) + ';" title="' + webEsc(T('Répéter')) + '" onclick="dkJfAuRep()">' + (_dkJf.rep === 2 ? '🔂' : '🔁') + '</button>'
+      + '<span style="margin-left:10px;">🔊</span><input type="range" min="0" max="100" value="' + Math.round((_dkJf.vol == null ? 0.9 : _dkJf.vol) * 100) + '" style="width:90px;" oninput="dkJfAuVol(this.value)"></div>'
+      + (many ? '<div class="web-group" style="width:min(560px,92%);max-height:34vh;overflow:auto;flex:none;">' + q.map(function(t, i) {
+          return '<div class="web-row" style="cursor:pointer;' + (i === _dkJf.qi ? 'background:rgba(255,255,255,.1);' : '') + '" onclick="dkJfAuGo(' + i + ')"><span class="web-row-text"><span class="web-row-name">' + (i === _dkJf.qi ? '▶ ' : '') + webEsc(t.name) + '</span></span></div>'; }).join('') + '</div>' : '');
+    v.style.cssText = 'display:none;'; v.controls = false; v.volume = _dkJf.vol == null ? 0.9 : _dkJf.vol;
     wrap.appendChild(v); stg.appendChild(wrap); dkJfImgs(wrap);
+    try {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({ title: r.name || '', artist: r.series || '' });
+        navigator.mediaSession.setActionHandler('play', function() { dkJfPP(); });
+        navigator.mediaSession.setActionHandler('pause', function() { dkJfPP(); });
+        navigator.mediaSession.setActionHandler('previoustrack', many ? function() { dkJfAuPrev(); } : null);
+        navigator.mediaSession.setActionHandler('nexttrack', many ? function() { dkJfAuNext(false); } : null);
+      }
+    } catch (_) {}
   } else stg.appendChild(v);
   var pr = v.play(); if (pr && pr.catch) pr.catch(function() {});
 }
@@ -24209,6 +24237,27 @@ function dkJfPickSub(i) {
   if ((t && !t.text) || (cur && !cur.text)) { dkJfPlay(p.id, { audio: p.aidx, sub: i, start: dkJfPlayPos(), keepQueue: true }); return; }
   p.sidx = i; dkJfApplySub();
 }
+function dkJfAuGo(i) {
+  var q = _dkJf.qall; if (!q || !q[i]) return;
+  _dkJf.qi = i; _dkJf.queue = q.slice(i + 1).map(function(t) { return t.id; });
+  dkJfPlay(q[i].id, { keepQueue: true });
+}
+function dkJfAuNext(auto) {
+  var q = _dkJf.qall, p = _dkJf.pl; if (!q || !p) return;
+  if (auto && _dkJf.rep === 2) { p.v.currentTime = 0; var pr = p.v.play(); if (pr && pr.catch) pr.catch(function() {}); return; }
+  var n = q.length, i = _dkJf.qi + 1;
+  if (_dkJf.shuf && n > 1) { do { i = Math.floor(Math.random() * n); } while (i === _dkJf.qi); }
+  if (i >= n) { if (_dkJf.rep || !auto) i = 0; else { dkJfPlayClose(); return; } }
+  dkJfAuGo(i);
+}
+function dkJfAuPrev() {
+  var p = _dkJf.pl; if (!p || !_dkJf.qall) return;
+  if (p.v.currentTime > 3) { p.v.currentTime = 0; return; }
+  dkJfAuGo(Math.max(0, _dkJf.qi - 1));
+}
+function dkJfAuShuf() { _dkJf.shuf = !_dkJf.shuf; var b = document.getElementById('dkjf-au-sh'); if (b) b.style.opacity = _dkJf.shuf ? 1 : .45; }
+function dkJfAuRep() { _dkJf.rep = ((_dkJf.rep || 0) + 1) % 3; var b = document.getElementById('dkjf-au-rp'); if (b) { b.style.opacity = _dkJf.rep ? 1 : .45; b.textContent = _dkJf.rep === 2 ? '🔂' : '🔁'; } }
+function dkJfAuVol(x) { _dkJf.vol = Math.max(0, Math.min(1, x / 100)); var p = _dkJf.pl; if (p && p.v) p.v.volume = _dkJf.vol; }
 function dkJfPP() { var p = _dkJf.pl; if (!p) return; if (p.v.paused) { var pr = p.v.play(); if (pr && pr.catch) pr.catch(function() {}); } else p.v.pause(); }
 function dkJfFs() { var s = document.getElementById('dkjf-stage'); if (s && s.requestFullscreen) s.requestFullscreen().catch(function() {}); }
 function dkJfSeekLab() { var sk = document.getElementById('dkjf-seek'), p = _dkJf.pl, tm = document.getElementById('dkjf-tm'); if (sk && p && tm) tm.textContent = dkJfT(sk.value) + ' / ' + dkJfT(p.duration); }
@@ -30294,7 +30343,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '2.60.43';
+var DK_PAGE_VERSION = '2.60.44';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
