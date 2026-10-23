@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '2.60.48'
+APP_VERSION = '3.0.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -8767,15 +8767,24 @@ import time as _lic_time
 TRIAL_DAYS    = int(os.environ.get('TRIAL_DAYS', '30'))
 GRACE_DAYS    = int(os.environ.get('GRACE_DAYS', '3'))   # tolérance après expiration d'un abonnement payant
 LICENSE_PRICE = os.environ.get('LICENSE_PRICE', '3.99')
+# Desktroo est gratuit depuis le 23/10/2026. Le mecanisme de licence reste en place
+# (enregistrement des installations, cle gratuite) mais il ne bloque plus rien.
+# Repasser a False pour reactiver essai + lecture seule.
+LICENSE_FREE = os.environ.get('LICENSE_FREE', '1') not in ('0', 'false', 'False')
 LICENSE_FILE  = os.path.join(ACCESS_DATA_DIR, 'license.json')
 TRIAL_FILE    = os.path.join(ACCESS_DATA_DIR, 'trial.json')
 ACTIVATION_KEY_FILE = os.path.join(ACCESS_DATA_DIR, 'activation-key')
 LIC_REFRESH_FILE    = os.path.join(ACCESS_DATA_DIR, 'license-refresh.json')
 
-# Serveur de licences (émission/refresh en ligne) + liens Stripe.
-# SUBSCRIBE_URL (Payment Link) et MANAGE_URL (portail client) = liens LIVE.
+# Serveur de licences (emission/refresh en ligne) + lien de contribution.
+# Depuis la 3.0.0 Desktroo est gratuit : SUBSCRIBE_URL n'est plus un lien d'abonnement,
+# c'est la destination du bouton « Soutenir Desktroo » de la fenetre Licence. Il pointe sur la
+# section « Soutenez Desktroo ! » du site, qui porte le lien de paiement a montant libre : changer
+# de prestataire ne demande alors aucune mise a jour de l'application.
+# MANAGE_URL (ancien portail client Stripe) n'est plus atteignable : licManage() ne s'affiche que
+# pour une licence payante, et il n'en existe plus. Garde pour un eventuel retour en arriere.
 LICENSE_SERVER = os.environ.get('LICENSE_SERVER', 'https://desktroo.fr/wp-json/desktroo/v1').rstrip('/')
-SUBSCRIBE_URL  = os.environ.get('SUBSCRIBE_URL', 'https://buy.stripe.com/8x2fZgevw0LHcK33AH3840i')
+SUBSCRIBE_URL  = os.environ.get('SUBSCRIBE_URL', 'https://desktroo.fr/#tarifs')
 MANAGE_URL     = os.environ.get('MANAGE_URL', 'https://billing.stripe.com/p/login/bJe4gy5Z0eCxbFZdbh38400')
 LIC_REFRESH_INTERVAL = int(os.environ.get('LIC_REFRESH_INTERVAL', '43200'))  # 12 h entre deux refresh auto
 
@@ -9011,6 +9020,12 @@ def license_trial_sync(force=False):
 def license_status():
     now = int(_lic_time.time())
     install = _lic_install_id()
+    if LICENSE_FREE:
+        rec = _lic_read_json(LICENSE_FILE)
+        p = _lic_verify(rec['token']) if (rec and rec.get('token')) else None
+        return {'state': 'active', 'plan': 'free', 'exp': now + 3650 * 86400,
+                'days_left': 3650, 'customer': (p.get('customer', '') if p else ''),
+                'readonly': False, 'install_id': install, 'price': LICENSE_PRICE}
     rec = _lic_read_json(LICENSE_FILE)
     if rec and rec.get('token'):
         p = _lic_verify(rec['token'])
@@ -9150,6 +9165,8 @@ def license_maybe_refresh():
 
 
 def _lic_is_readonly():
+    if LICENSE_FREE:
+        return False
     try:
         return bool(license_status().get('readonly'))
     except Exception:
@@ -17530,11 +17547,11 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                     license_maybe_refresh()   # refresh en ligne en tâche de fond (throttlé)
                 except Exception:
                     pass
-                try:
-                    if not (_lic_read_json(LICENSE_FILE) or {}).get('token'):
-                        license_trial_sync()   # essai enregistré sur desktroo.fr (throttlé)
-                except Exception:
-                    pass
+                # Depuis la 3.0.0, Desktroo ne contacte plus desktroo.fr de lui-meme.
+                # Le comptage des installations repose uniquement sur les cles de licence
+                # demandees volontairement : license_maybe_refresh() ci-dessus ne part que
+                # si une cle a ete activee. license_trial_sync() reste disponible mais
+                # n'est plus appele automatiquement.
                 st = license_status()
                 st['subscribe_url'] = SUBSCRIBE_URL
                 st['manage_url'] = MANAGE_URL

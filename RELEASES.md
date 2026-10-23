@@ -3,6 +3,26 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.0.0 — 23 octobre 2026
+
+### Desktroo devient gratuit
+
+Vous pouvez utiliser Desktroo librement, sans aucun enregistrement. L'essai de 30 jours, l'abonnement et le mode lecture seule disparaissent : plus rien n'est bloqué, plus rien n'expire.
+
+Il me serait toutefois utile de connaître le nombre d'installations réelles, pour étudier l'intérêt de continuer à développer et à perfectionner l'application. Pour ça, une clé de licence est délivrée gratuitement sur simple demande. Elle ne débloque rien — elle sert seulement à compter.
+
+Une contribution libre est proposée pour soutenir les développements futurs. Car même si l'application est développée en grande partie avec recours à l'IA, le temps passé dessus reste considérable : plusieurs centaines d'heures. L'IA aide beaucoup et permet d'avancer beaucoup plus vite, mais elle ne fait pas tout, loin de là.
+
+### Changé
+- **Plus d'essai, plus d'abonnement, plus de lecture seule.** Les installations déjà en place sont passées en gratuit sans rien faire : aucune n'a basculé en lecture seule au moment du changement.
+  Le mécanisme de licence reste en place (enregistrement des installations, clé gratuite) mais il ne bloque plus aucune fonction. `LICENSE_FREE=0` le réactiverait.
+- **Fenêtre Licence** : « Licence gratuite », sans tarif ni échéance, et un bouton « Soutenir Desktroo » à la place du portail d'abonnement.
+- **Désinstallation** : plus de rappel d'abonnement à résilier, puisqu'il n'y en a plus.
+- **Magasin** : les apps Mdm-services.fr ne sont plus « comprises dans l'abonnement », elles sont simplement incluses.
+- **Clé de licence gratuite sur simple demande** : un formulaire sur desktroo.fr, une adresse e-mail, et la clé arrive. Rien d'obligatoire.
+- **Conditions générales de vente remplacées par des conditions d'utilisation** : il n'y a plus de vente, mais une note de responsabilité. Desktroo n'intervient pas de lui-même sur vos datasets : c'est une surcouche à TrueNAS, partagée gratuitement.
+- **Desktroo ne contacte plus desktroo.fr de lui-même.** Le comptage des installations ne repose que sur les clés demandées volontairement.
+
 ## 2.60.45 — 23 octobre 2026
 
 ### Nouveau

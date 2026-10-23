@@ -3,6 +3,26 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.0.0 — October 23, 2026
+
+### Desktroo is now free
+
+You can use Desktroo freely, with no registration at all. The 30-day trial, the subscription and the read-only mode are gone: nothing is locked any more, nothing expires.
+
+It would still help me to know how many real installations there are, to work out whether it is worth carrying on developing and refining the application. For that, a licence key is issued free of charge on request. It unlocks nothing — it only counts.
+
+A voluntary contribution is offered to support future development. Because even though the application is largely built with the help of AI, the time spent on it remains considerable: several hundred hours. AI helps a great deal and makes things move much faster, but it does not do everything — far from it.
+
+### Changed
+- **No more trial, no more subscription, no more read-only mode.** Installations already in place switched to free on their own: none of them fell into read-only mode at the moment of the change.
+  The licence mechanism stays in place (installation registration, free key) but it no longer blocks any feature. `LICENSE_FREE=0` would bring it back.
+- **Licence window**: "Free licence", with no price and no expiry date, and a "Support Desktroo" button instead of the subscription portal.
+- **Uninstall**: no more reminder about cancelling a subscription, since there is none.
+- **Store**: the Mdm-services.fr apps are no longer "included in the subscription", they are simply included.
+- **Free licence key on request**: a form on desktroo.fr, an email address, and the key arrives. Nothing is mandatory.
+- **Terms of sale replaced by terms of use**: there is no sale any more, but a liability notice. Desktroo does not act on your datasets by itself: it is a layer on top of TrueNAS, shared free of charge.
+- **Desktroo no longer contacts desktroo.fr on its own.** Installation counting relies only on keys requested voluntarily.
+
 ## 2.60.45 — October 23, 2026
 
 ### New
