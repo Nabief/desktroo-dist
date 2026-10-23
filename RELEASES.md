@@ -7,7 +7,6 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 
 ### Corrigé
 - **Téléchargement d'un fichier du NAS vers le PC** : il donnait un fichier corrompu de 0 octet. Le téléchargement passe maintenant directement par Desktroo, quelle que soit la taille du fichier.
-- **Clic droit dans Fichiers** : l'entrée s'appelle désormais « Décompresser ici (zip, rar, 7z) » pour être facile à trouver.
 
 ## 2.60.42 — 22 octobre 2026
 
@@ -33,16 +32,6 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 - **Applications mobiles** : compatible Subsonic (Symfonium, DSub, Feishin…) sur le réseau local ; adresse et compte indiqués dans les réglages de la fenêtre.
   Lecture seule des dossiers choisis ; compte administrateur créé automatiquement ; non testé en conditions réelles.
 
-## 2.60.38 — 22 octobre 2026
-
-### Corrigé
-- **Caméras : la nouvelle icône est aussi utilisée pour l'application installée / le raccourci Windows** (l'ancienne image restait mémorisée sur le NAS ; elle est régénérée une fois à l'ouverture du bureau).
-
-## 2.60.37 — 22 octobre 2026
-
-### Corrigé
-- **Caméras : alignement des champs du formulaire** (section PTZ, enregistrement) : colonnes régulières, champs de même hauteur.
-
 ## 2.60.36 — 22 octobre 2026
 
 ### Amélioré
@@ -53,77 +42,10 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 ### Corrigé
 - **Installer une app du Magasin dans sa propre fenêtre Windows : Chrome n'offre pas « Installer » quand Desktroo est déjà installé** (il ne propose que « Ouvrir dans l'appli »). Le message indique la solution : menu ⋮ → « Créer un raccourci… » → « Ouvrir dans une fenêtre ». Le titre de l'onglet affiche « Caméras ».
 
-## 2.60.34 — 22 octobre 2026
-
-### Nouveau
-- **Caméras : plein écran.** Bouton « Plein écran » dans « En direct » (toute la fenêtre des caméras, fenêtres d'image comprises) et bouton ⛶ dans la vue agrandie (image, zoom et commandes PTZ en plein écran). Échap pour quitter.
-
 ## 2.60.33 — 22 octobre 2026
 
 ### Amélioré
 - **Installer une app du Magasin comme application Windows : le message explique maintenant le bon chemin** quand le navigateur n'affiche que « Ouvrir dans l'appli » (qui ouvre Desktroo en entier) : menu ⋮ → « Diffuser, enregistrer et partager » → « Installer Desktroo … ». Le nom de l'app s'affiche aussi correctement (« Caméras »).
-
-## 2.60.32 — 22 octobre 2026
-
-### Nouveau
-- **Caméras : prise en charge des caméras motorisées (PTZ)**. Case « Cette caméra est motorisée » dans le formulaire (port ONVIF, identifiants facultatifs : ceux de l'adresse RTSP sont repris par défaut). Dans la vue agrandie : flèches (maintenir pour bouger, relâcher pour arrêter), zoom optique et positions mémorisées de la caméra.
-  Contrôle via ONVIF par le moteur Frigate (WebSocket interne). Non testé sur une caméra motorisée réelle ; ne concerne pas les Tapo sur batterie.
-
-## 2.60.31 — 22 octobre 2026
-
-### Amélioré
-- **Caméras : les listes déroulantes du formulaire sont remplacées par de vrais boutons de choix** (type de caméra, enregistrement, sensibilité), plus lisibles.
-
-## 2.60.30 — 22 octobre 2026
-
-### Nouveau
-- **Caméras : fenêtre d'ajout refaite, plus aérée**, organisée en sections (identité, connexion, enregistrement, détection).
-- **Caméras : réglages de détection par caméra** — choix des objets à repérer (personne, voiture, chien, chat, camion, vélo, moto, oiseau, colis) et sensibilité basse / normale / haute.
-- **Caméras : zoom dans la vue agrandie** (molette, boutons, pincement, double-clic, glisser pour déplacer).
-- **Caméras : SMS quand une personne est détectée** (caméras RTSP, option par caméra, au plus un SMS toutes les 5 minutes par caméra), via la passerelle SMS de Desktroo.
-  Les Tapo sur batterie n'ont ni détection ni PTZ côté Desktroo ; le PTZ n'est pas encore pris en charge.
-
-## 2.60.29 — 22 octobre 2026
-
-### Corrigé
-- **Caméras : le flux vidéo de la vue agrandie fonctionne sans multiplier les connexions à la caméra** (une seule connexion continue au lieu d'une image redemandée toutes les deux secondes, que les Tapo finissaient par refuser). La configuration des caméras se met à jour toute seule après une mise à jour de Desktroo.
-
-## 2.60.28 — 22 octobre 2026
-
-### Nouveau
-- **Caméras : vraie vidéo dans la vue agrandie.** Un clic sur une caméra affiche maintenant son flux vidéo en continu, au lieu d'une image fixe rafraîchie. Si le flux ne démarre pas, la fenêtre retombe sur les images fixes et en donne la raison.
-
-## 2.60.27 — 22 octobre 2026
-
-### Corrigé
-- **Caméras : les Tapo dont le mot de passe était refusé (« 401 Unauthorized »)** sont maintenant essayées avec les trois formes d'identification acceptées selon les micrologiciels (mot de passe, empreinte MD5, empreinte SHA-256).
-
-## 2.60.26 — 22 octobre 2026
-
-### Amélioré
-- **Caméras : message d'erreur plus précis quand l'image n'arrive pas.**
-
-## 2.60.25 — 22 octobre 2026
-
-### Amélioré
-- **Caméras : quand l'image n'arrive pas, la fenêtre affiche la raison donnée par le moteur** (mot de passe refusé, caméra injoignable…), au lieu de rester vide.
-
-## 2.60.24 — 22 octobre 2026
-
-### Nouveau
-- **Caméras : recherche des caméras sur le réseau.** Le bouton « Chercher les caméras du réseau » repère les caméras RTSP et les Tapo, et préremplit le formulaire d'ajout.
-  > Balayage du réseau local du NAS (ports 554, 8554, 8800, 2020), lancé depuis le NAS.
-
-## 2.60.23 — 22 octobre 2026
-
-### Nouveau
-- **Caméras : les Tapo sur batterie ou solaires sont prises en charge** (en test). Elles se branchent avec leur adresse IP et le mot de passe du compte Tapo, sans RTSP. Pour ménager la batterie, l'image n'est demandée que lorsque vous cliquez sur la caméra.
-
-## 2.60.22 — 22 octobre 2026
-
-### Nouveau
-- **Caméras : une nouvelle app dans Desktroo Apps.** Vos caméras IP en direct, enregistrement continu ou sur détection de mouvement, reconnaissance des personnes, véhicules et animaux. Tout reste sur le NAS, sans compte ni cloud. Sa fenêtre Desktroo permet d'ajouter une caméra par son adresse RTSP (avec test), de voir toutes les caméras en direct, de parcourir les événements détectés et de regarder les enregistrements.
-  > Moteur Frigate 0.18.2 (image figée par empreinte) ; l'installeur du Magasin sait maintenant réserver de la mémoire partagée à une app (`resources.shm_mb`).
 
 ## 2.60.20 — 22 octobre 2026
 
@@ -697,3 +619,4 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 ---
 
 _Les versions antérieures à la 2.44.0 n'ont pas de notes publiées._
+

@@ -7,7 +7,6 @@ the grey line underneath gives the technical detail, when there is one.
 
 ### Fixed
 - **Downloading a file from the NAS to the PC** gave a corrupted 0-byte file. Downloads now go straight through Desktroo, whatever the file size.
-- **Right-click in Files**: the entry is now called "Extract here (zip, rar, 7z)" so it is easy to find.
 
 ## 2.60.42 — October 22, 2026
 
@@ -33,16 +32,6 @@ the grey line underneath gives the technical detail, when there is one.
 - **Mobile apps**: Subsonic-compatible (Symfonium, DSub, Feishin…) on the local network; address and account shown in the window's settings.
   Read-only access to chosen folders; admin account created automatically; not yet tested in real conditions.
 
-## 2.60.38 — October 22, 2026
-
-### Fixed
-- **Cameras: the new icon is also used for the installed app / Windows shortcut** (the old image stayed cached on the NAS; it is regenerated once when the desktop opens).
-
-## 2.60.37 — October 22, 2026
-
-### Fixed
-- **Cameras: form field alignment** (PTZ and recording sections): even columns, equal-height fields.
-
 ## 2.60.36 — October 22, 2026
 
 ### Improved
@@ -53,75 +42,10 @@ the grey line underneath gives the technical detail, when there is one.
 ### Fixed
 - **Installing a Store app in its own window: Chrome does not offer "Install" when Desktroo is already installed** (only "Open in app"). The message now gives the workaround: ⋮ menu → "Create shortcut…" → "Open as window".
 
-## 2.60.34 — October 22, 2026
-
-### New
-- **Cameras: full screen.** A "Full screen" button in "Live" (the whole cameras window, popups included) and a ⛶ button in the enlarged view (image, zoom and PTZ controls). Esc to exit.
-
 ## 2.60.33 — October 22, 2026
 
 ### Improved
 - **Installing a Store app as a desktop app: the message now explains the right path** when the browser only shows "Open in app" (which opens the whole Desktroo): ⋮ menu → "Cast, save and share" → "Install Desktroo …". The app name also shows correctly.
-
-## 2.60.32 — October 22, 2026
-
-### New
-- **Cameras: motorized (PTZ) camera support**. "This camera is motorized" option in the form (ONVIF port, optional credentials defaulting to the RTSP ones). In the enlarged view: direction pad (hold to move, release to stop), optical zoom and the camera's saved positions.
-  Controlled over ONVIF by the Frigate engine. Not yet tested on a real motorized camera; not for battery Tapo cameras.
-
-## 2.60.31 — October 22, 2026
-
-### Improved
-- **Cameras: the form's dropdowns are now proper choice buttons** (camera type, recording, sensitivity).
-
-## 2.60.30 — October 22, 2026
-
-### New
-- **Cameras: roomier add-camera window**, split into sections (identity, connection, recording, detection).
-- **Cameras: per-camera detection settings** — choose which objects to track and a low / normal / high sensitivity.
-- **Cameras: zoom in the enlarged view** (wheel, buttons, pinch, double-click, drag to pan).
-- **Cameras: SMS when a person is detected** (RTSP cameras, per-camera option, at most one SMS every 5 minutes per camera), through Desktroo's SMS gateway.
-  PTZ is not supported yet.
-
-## 2.60.29 — 22 October 2026
-
-### Fixed
-- **Cameras: the enlarged view's video stream works without opening many connections to the camera** (one continuous connection instead of a picture requested every two seconds, which Tapo cameras ended up refusing). The camera configuration refreshes itself after a Desktroo update.
-
-## 2.60.28 — 22 October 2026
-
-### New
-- **Cameras: real video in the enlarged view.** Clicking a camera now shows its continuous video stream instead of a refreshed still picture. If the stream cannot start, the window falls back to still pictures and says why.
-
-## 2.60.27 — 22 October 2026
-
-### Fixed
-- **Cameras: Tapo cameras whose password was refused ("401 Unauthorized")** are now tried with the three authentication forms accepted by different firmwares (password, MD5 hash, SHA-256 hash).
-
-## 2.60.26 — 22 October 2026
-
-### Improved
-- **Cameras: more precise error message when no picture arrives.**
-
-## 2.60.25 — 22 October 2026
-
-### Improved
-- **Cameras: when no picture arrives, the window shows the reason given by the engine** (password refused, camera unreachable…) instead of staying blank.
-
-## 2.60.24 — 22 October 2026
-
-### New
-- **Cameras: network search.** The "Search the network for cameras" button finds RTSP cameras and Tapo cameras and pre-fills the add form.
-
-## 2.60.23 — 22 October 2026
-
-### New
-- **Cameras: battery and solar Tapo cameras are supported** (in testing). They connect with their IP address and the Tapo account password, without RTSP. To spare the battery, the picture is only requested when you click the camera.
-
-## 2.60.22 — 22 October 2026
-
-### New
-- **Cameras: a new app in Desktroo Apps.** Your IP cameras live, continuous or motion-triggered recording, recognition of people, vehicles and animals. Everything stays on the NAS, with no account or cloud. Its Desktroo window lets you add a camera by its RTSP address (with a test), watch all cameras live, browse detected events and play recordings.
 
 ## 2.60.20 — 22 October 2026
 
@@ -694,3 +618,4 @@ the grey line underneath gives the technical detail, when there is one.
 ---
 
 _Versions before 2.44.0 have no published notes._
+
