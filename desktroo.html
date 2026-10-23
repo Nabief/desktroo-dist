@@ -10111,6 +10111,7 @@ select option{ background:#101b2e; color:#e9eef7; }
   "Sous-titres": "Subtitles",
   "incrusté": "burned in",
   "Audio et sous-titres": "Audio and subtitles",
+"Derniers albums ajoutés": "Latest albums added",
 "Lecture / pause": "Play / pause",
   "Tous les dossiers des bibliothèques sont accessibles.": "All library folders are reachable.",
   "Vérifier les chemins": "Check paths",
@@ -16168,6 +16169,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Sous-titres": "Subtítulos",
 "incrusté": "incrustado",
 "Audio et sous-titres": "Audio y subtítulos",
+"Derniers albums ajoutés": "Últimos álbumes añadidos",
 "Lecture / pause": "Reproducir / pausa",
 "Tous les dossiers des bibliothèques sont accessibles.": "Todas las carpetas de las bibliotecas están accesibles.",
 "Vérifier les chemins": "Comprobar las rutas",
@@ -22256,7 +22258,7 @@ function dkJfCss() {
     + '.dkjf-st{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.045);border:1px solid var(--glass-border)}'
     + '.dkjf-st b{display:block;font-size:22px;font-weight:700}.dkjf-st span{font-size:12px;color:var(--text-dim)}'
     + '.dkjf-h{font-size:13px;font-weight:600;margin:18px 0 8px;color:var(--text-dim);text-transform:none}'
-    + '.dkjf-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}.dkjf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:14px}.dkjf-grid .dkjf-po{width:auto}.dkjf-grid .dkjf-po .im{width:100%;height:auto;aspect-ratio:2/3}.dkjf-ar{min-width:32px;font-size:18px;line-height:1;padding:4px 10px}.dkjf-po{cursor:pointer}.dkjf-po:hover .im{outline:2px solid rgba(var(--accent-rgb),0.6)}'
+    + '.dkjf-strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}.dkjf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:14px}.dkjf-grid .dkjf-po{width:auto}.dkjf-grid .dkjf-po .im{width:100%;height:auto;aspect-ratio:2/3}.dkjf-ar{min-width:32px;font-size:18px;line-height:1;padding:4px 10px}.dkjf-po{cursor:pointer}.dkjf-po.sq{width:150px}.dkjf-po.sq .im{width:150px;height:150px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.28);background:linear-gradient(135deg,#312e81,#831843)}.dkjf-grid .dkjf-po.sq{width:auto}.dkjf-grid .dkjf-po.sq .im{width:100%;height:auto;aspect-ratio:1/1}.dkjf-grid.sq{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.dkjf-po.sq .im img{object-fit:cover}.dkjf-po:hover .im{outline:2px solid rgba(var(--accent-rgb),0.6)}'
     + '.dkjf-po{flex:none;width:112px}.dkjf-po .im{width:112px;height:168px;border-radius:8px;background:rgba(255,255,255,0.06);overflow:hidden}'
     + '.dkjf-po img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .2s}.dkjf-po img.ok{opacity:1}'
     + '.dkjf-po b{display:block;margin-top:5px;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
@@ -23960,7 +23962,8 @@ function dkJfImgs(root) {
   });
 }
 function dkJfPoster(x) {
-  return '<div class="dkjf-po" role="button" tabindex="0" onclick="' + (x.play ? 'dkJfPlay' : 'dkJfDetail') + '(\'' + x.id + '\')" title="' + webEsc(x.name) + '"><div class="im">'
+  var sq = /^(MusicAlbum|Audio|MusicArtist|MusicGenre|Playlist)$/.test(x.type || '') ? ' sq' : '';
+  return '<div class="dkjf-po' + sq + '" role="button" tabindex="0" onclick="' + (x.play ? 'dkJfPlay' : 'dkJfDetail') + '(\'' + x.id + '\')" title="' + webEsc(x.name) + '"><div class="im">'
     + (x.img ? '<img alt="" data-i="' + x.id + '">' : '') + '</div>' + (x.pct ? '<div class="dkjf-pg"><i style="width:' + x.pct + '%"></i></div>' : '') + '<b>' + webEsc(x.name) + '</b><span>'
     + webEsc(x.series || '') + (x.series && x.year ? ' · ' : '') + (x.year || '') + '</span></div>';
 }
@@ -23984,7 +23987,7 @@ function dkJfRenderLib(body) {
       + ((L.genres || []).length ? dkJfSelOpt('dkjf-gen', L.genre, [['', T('Tous les genres')]].concat(L.genres.map(function(g) { return [g, g]; }))) : '')
       + '<input class="dkjf-in" style="margin:0;max-width:200px;" id="dkjf-q" placeholder="' + webEsc(T('Rechercher dans cette bibliothèque…')) + '" value="' + webEsc(L.q) + '" onkeydown="if(event.key===\'Enter\')dkJfLibSearch()">' });
   body.innerHTML = L.items.length
-    ? '<div class="dkjf-grid">' + L.items.map(dkJfPoster).join('') + '</div>'
+    ? '<div class="dkjf-grid' + (L.type === 'music' ? ' sq' : '') + '">' + L.items.map(dkJfPoster).join('') + '</div>'
       + (L.items.length < L.total ? '<div style="text-align:center;margin:16px 0;"><button class="fs-btn" onclick="dkJfLibMore()">' + T('Afficher plus') + '</button></div>' : '')
     : '<div class="dks-empty">' + T('Aucun titre pour l’instant.') + '</div>';
   dkJfImgs(body);
@@ -24324,6 +24327,7 @@ function dkJfRenderHome(body, r) {
     var rails = r.rails || [];
     if ((r.resume || []).length) h += dkJfRail(T('Reprendre la lecture'), r.resume.map(function(x) { x.play = true; return x; }), 100, null);
     if ((r.nextup || []).length) h += dkJfRail(T('Prochains épisodes'), r.nextup, 101, null);
+    if ((r.albums_new || []).length) h += dkJfRail(T('Derniers albums ajoutés'), r.albums_new, 102, (_dkJf.libList || []).map(function(x) { return x.type; }).indexOf('music') >= 0 ? (_dkJf.libList || []).map(function(x) { return x.type; }).indexOf('music') : null);
     if (rails.length) {
       rails.forEach(function(rl, k) {
         var li = (_dkJf.libList || []).map(function(x) { return x.id; }).indexOf(rl.id);

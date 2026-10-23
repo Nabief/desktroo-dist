@@ -13859,7 +13859,7 @@ def _jf_item(x):
         return None
     tags = x.get('ImageTags') if isinstance(x.get('ImageTags'), dict) else {}
     return {'id': iid, 'name': str(x.get('Name') or '')[:120], 'type': str(x.get('Type') or '')[:20],
-            'series': str(x.get('SeriesName') or '')[:120], 'year': _pp_int(x.get('ProductionYear')),
+            'series': str(x.get('SeriesName') or x.get('AlbumArtist') or '')[:120], 'year': _pp_int(x.get('ProductionYear')),
             'img': bool(tags.get('Primary'))}
 
 
@@ -15545,12 +15545,20 @@ def store_jellyfin_api(body):
             rails = []
             if not scan.get('running') and _JF_ID.match(uid):   # une rangée de nouveautés par bibliothèque (pas pendant une analyse)
                 for l in libs[:5]:
-                    if not _JF_ID.match(l.get('id') or ''):
+                    if not _JF_ID.match(l.get('id') or '') or l.get('type') == 'music':
                         continue
                     rows = soft(lambda l=l: _jf_call('GET', '/Users/%s/Items/Latest' % uid, {'ParentId': l['id'], 'Limit': 16, 'Fields': 'PrimaryImageAspectRatio'}) or [], [])
                     its = [it for it in (_jf_item(x) for x in rows if isinstance(x, dict)) if it and it['img']]
                     if its:
                         rails.append({'id': l['id'], 'name': l['name'], 'type': l['type'], 'items': its[:16]})
+            albums_new = []
+            if _JF_ID.match(uid):   # derniers albums ajoutés (toutes bibliothèques musicales), même pendant une analyse
+                for x in soft(lambda: (_jf_call('GET', '/Items', {'userId': uid, 'Recursive': 'true', 'IncludeItemTypes': 'MusicAlbum',
+                                                                  'SortBy': 'DateCreated', 'SortOrder': 'Descending', 'Limit': 24,
+                                                                  'Fields': 'PrimaryImageAspectRatio'}) or {}).get('Items') or [], []):
+                    it = _jf_item(x) if isinstance(x, dict) else None
+                    if it:
+                        albums_new.append(it)
             resume, nextup = [], []
             if not scan.get('running') and _JF_ID.match(uid):
                 for x in soft(lambda: (_jf_call('GET', '/Users/%s/Items/Resume' % uid, {'Limit': 12, 'MediaTypes': 'Video', 'Fields': 'PrimaryImageAspectRatio'}) or {}).get('Items') or [], []):
@@ -15566,7 +15574,7 @@ def store_jellyfin_api(body):
                         nextup.append(it)
             return 200, {'ok': True, 'server': {'name': str(info.get('ServerName') or '')[:60], 'version': str(info.get('Version') or '')[:20]},
                          'counts': _real,
-                         'libraries': libs, 'scan': scan, 'playing': playing, 'latest': latest[:20], 'rails': rails,
+                         'libraries': libs, 'scan': scan, 'playing': playing, 'latest': latest[:20], 'rails': rails, 'albums_new': albums_new[:24],
                          'resume': resume[:12], 'nextup': nextup[:10]}
         if action in ('detail', 'play', 'report', 'mark'):
             iid = _jf_hexid(b.get('id'))
