@@ -1,6 +1,6 @@
 # Licence d'utilisation de Desktroo
 
-Version 1.2 du 23 octobre 2026
+Version 1.3 du 24 octobre 2026
 
 **© 2026 Mdm-services.fr. Tous droits réservés.**
 
@@ -64,7 +64,7 @@ TrueNAS est une marque d'iXsystems, Inc. Desktroo est un produit indépendant : 
 
 La licence prend effet dès l'installation.
 
-Le Logiciel est fourni gratuitement et sans limite de durée. La clé de licence, délivrée gratuitement sur simple demande, ne débloque aucune fonction : elle sert uniquement à l'Éditeur à connaître le nombre d'installations en service.
+Le Logiciel est fourni gratuitement et sans limite de durée, et il est utilisable sans clé d'activation. La clé d'activation, délivrée gratuitement sur simple demande, donne accès : aux mises à jour publiées par l'Éditeur ; au programme de test (versions bêta du Logiciel et applications en test) ; à l'installation des applications du magasin Desktroo Apps et à leurs mises à jour ; à l'envoi de signalements et de demandes de fonctionnalités depuis le Logiciel. Sans clé, les applications déjà installées restent utilisables dans leur version, et les correctifs de sécurité, du Logiciel comme de ces applications, restent accessibles. La clé permet aussi à l'Éditeur de connaître le nombre d'installations en service.
 
 La licence prend fin de plein droit si vous ne respectez pas l'article 3. Vous devez alors cesser d'utiliser le Logiciel et en supprimer toutes les copies.
 
@@ -88,7 +88,7 @@ Pour demander une autorisation, signaler une copie ou poser une question sur cet
 
 # Desktroo licence agreement
 
-Version 1.2, 23 October 2026
+Version 1.3, 24 October 2026
 
 **© 2026 Mdm-services.fr. All rights reserved.**
 
@@ -152,7 +152,7 @@ TrueNAS is a trademark of iXsystems, Inc. Desktroo is an independent product: it
 
 The licence takes effect on installation.
 
-The Software is provided free of charge and with no time limit. The licence key, issued free of charge on request, unlocks nothing: it only lets the Publisher know how many installations are running.
+The Software is provided free of charge and with no time limit, and it can be used without an activation key. The activation key, issued free of charge on request, gives access to: the updates published by the Publisher; the test programme (beta versions of the Software and apps in testing); installing apps from the Desktroo Apps store and their updates; sending bug reports and feature requests from the Software. Without a key, apps already installed remain usable in their current version, and security fixes, for the Software and for these apps, remain available. The key also lets the Publisher know how many installations are running.
 
 The licence ends automatically if you do not comply with section 3. You must then stop using the Software and delete all copies of it.
 

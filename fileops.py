@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.0.1'
+APP_VERSION = '3.1.0'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -736,7 +736,8 @@ def _truenas_ip():
 def _dist_channel():
     """'beta' sur un NAS de test (fichier data/store/beta, le même que pour les apps en test), sinon 'stable'."""
     try:
-        return 'beta' if os.path.exists(STORE_BETA_FILE) else 'stable'
+        # Les versions bêta, comme les autres mises à jour, demandent une clé gratuite (3.1.0).
+        return 'beta' if (os.path.exists(STORE_BETA_FILE) and _lic_registered()) else 'stable'
     except OSError:
         return 'stable'
 
@@ -751,6 +752,9 @@ def dist_channel_set(body):
     ch = str((body or {}).get('channel') or '')
     if ch not in ('beta', 'stable'):
         return 400, {'ok': False, 'error': 'Canal inconnu.'}
+    if ch == 'beta' and not _lic_registered():
+        return 403, {'ok': False, 'need_key': True,
+                     'error': 'Le programme bêta est réservé aux installations qui ont une clé gratuite : activez-la dans « Licence », puis réessayez.'}
     os.makedirs(os.path.dirname(STORE_BETA_FILE), exist_ok=True)
     if ch == 'beta':
         with open(STORE_BETA_FILE, 'w') as fh:
@@ -917,7 +921,22 @@ def _version_status():
             upd = _norm(latest) > _norm(APP_VERSION)
         except Exception:
             upd = (latest != APP_VERSION)
+    # Mises à jour : avec une clé gratuite, ou sans clé pour un correctif de sécurité (security.txt du dist, stable).
+    reg = _lic_registered()
+    allowed, sec = True, ''
+    if upd and not reg:
+        try:
+            sec = re.sub(r'[^0-9A-Za-z.]', '', _fetch_text(_dist_raw('stable') + '/security.txt')[:40])
+        except Exception:
+            sec = ''
+        try:
+            allowed = bool(sec) and _norm(sec) > _norm(APP_VERSION)
+        except Exception:
+            allowed = False
+        if not allowed:
+            sec = ''
     return {'version': APP_VERSION, 'latest': latest, 'update_available': bool(upd), 'channel': _dist_channel(), 'boot': _BOOT_ID,
+            'registered': reg, 'update_allowed': bool(allowed), 'security': sec,
             'beta_offer': _dist_channel() != 'beta' and not os.path.exists(_beta_offer_file()),
             'truenas_host': ('' if SSH_VIA_GATEWAY else SSH_HOST), 'truenas_ip': _truenas_ip()}
 
@@ -8785,6 +8804,7 @@ LIC_REFRESH_FILE    = os.path.join(ACCESS_DATA_DIR, 'license-refresh.json')
 # pour une licence payante, et il n'en existe plus. Garde pour un eventuel retour en arriere.
 LICENSE_SERVER = os.environ.get('LICENSE_SERVER', 'https://desktroo.fr/wp-json/desktroo/v1').rstrip('/')
 SUBSCRIBE_URL  = os.environ.get('SUBSCRIBE_URL', 'https://desktroo.fr/#tarifs')
+FREE_KEY_URL   = os.environ.get('FREE_KEY_URL', 'https://desktroo.fr/cle-gratuite/')   # page de la clé gratuite
 MANAGE_URL     = os.environ.get('MANAGE_URL', 'https://billing.stripe.com/p/login/bJe4gy5Z0eCxbFZdbh38400')
 LIC_REFRESH_INTERVAL = int(os.environ.get('LIC_REFRESH_INTERVAL', '43200'))  # 12 h entre deux refresh auto
 
@@ -9017,6 +9037,39 @@ def license_trial_sync(force=False):
     return bool(p)
 
 
+def _lic_registered():
+    """Clé gratuite activée sur ce NAS : jeton signé (pas d'essai), lié à cette installation, encore valable.
+    Lu sur le disque, sans aucun appel réseau. Donne accès aux mises à jour et à la bêta (3.1.0)."""
+    try:
+        rec = _lic_read_json(LICENSE_FILE)
+        p = _lic_verify(rec['token']) if (rec and rec.get('token')) else None
+    except Exception:
+        p = None
+    if not p or p.get('kind') == 'trial':
+        return False
+    if p.get('install_id') and p.get('install_id') != _lic_install_id():
+        return False
+    try:
+        return int(p.get('exp', 0)) > int(_lic_time.time())
+    except Exception:
+        return False
+
+
+def _update_gate():
+    """La mise à jour de Desktroo peut-elle partir ? Avec une clé, toujours ; sans clé, pour un correctif de sécurité,
+    ou pour réinstaller la version en place. Rend {ok} ou {ok: False, need_key, error}."""
+    if _lic_registered():
+        return {'ok': True}
+    v = _version_status()
+    if not v.get('latest'):
+        return {'ok': False, 'error': 'Impossible de vérifier la dernière version de Desktroo pour le moment. Réessayez plus tard.'}
+    if not v.get('update_available') or v.get('update_allowed'):
+        return {'ok': True}
+    return {'ok': False, 'need_key': True, 'latest': v.get('latest'),
+            'error': 'Les mises à jour de Desktroo demandent une clé gratuite. Demandez-la sur desktroo.fr, puis activez-la dans « Licence ». '
+                     'Desktroo continue de fonctionner entièrement sans.'}
+
+
 def license_status():
     now = int(_lic_time.time())
     install = _lic_install_id()
@@ -9025,6 +9078,7 @@ def license_status():
         p = _lic_verify(rec['token']) if (rec and rec.get('token')) else None
         return {'state': 'active', 'plan': 'free', 'exp': now + 3650 * 86400,
                 'days_left': 3650, 'customer': (p.get('customer', '') if p else ''),
+                'registered': _lic_registered(), 'free_key_url': FREE_KEY_URL,
                 'readonly': False, 'install_id': install, 'price': LICENSE_PRICE}
     rec = _lic_read_json(LICENSE_FILE)
     if rec and rec.get('token'):
@@ -9185,7 +9239,7 @@ _LIC_READONLY_ALLOW_POST = {'/license/activate', '/license/activate-key', '/lice
 # data/licence-acceptee.json ; le bureau le demande à la première connexion s'il manque (installation
 # antérieure, fichiers copiés à la main) ou si le texte a changé de version.
 # TERMS_VERSION suit le numéro de version écrit en tête de LICENSE.md : les deux changent ensemble.
-TERMS_VERSION = '1.2'
+TERMS_VERSION = '1.3'
 TERMS_FILE = os.path.join(ACCESS_DATA_DIR, 'licence-acceptee.json')
 
 
@@ -10068,7 +10122,7 @@ STORE_ACCESS_FILE   = os.path.join(STORE_DIR, 'access.json')
 STORE_REFRESH    = 43200                    # 12 h entre deux lectures du catalogue
 STORE_COOKIE     = 'dt_app'
 STORE_COOKIE_TTL = 12 * 3600
-# Clé publique du catalogue (RSA-2048), distincte de la clé de licence. Posée par tools/store/store-keygen.py.
+# Clé publique du catalogue (RSA-2048), distincte de la clé d'activation. Posée par tools/store/store-keygen.py.
 STORE_PUBKEY_N_HEX = 'F512261EA90C6D026B2F558CB305C4364F46B03222F6BAD240549D0EC8ADA61E6286FCF45456657CBBC912F5B90108584A130D990179CD29EF697492DC70B504A2C225FD565BF58C65F6D9620A64416891670D4E7688DC4D1429E2513E0249A953782E8DC583E03874EE712086EAC82242DC3062557949CEF8F09415E11C128DA1B4E0B62933B39891E5D4AAC4576C9B6BCD77DA0967561FAE914E52A956326FD5107B46AAC22F58762051EBCE308662D9DE6B99097567CD65B1397B84F3123EBB90A0BE8DD4AB64D126350B9CFAC358D63CCA120503163667909CE73A8CD5ECB950F4F8C2D9D27540D68564252070500F5A3443000F2A42617F534CCF4057DD'
 _STORE_ID_RE = re.compile(r'^[a-z0-9][a-z0-9-]{0,40}$')
 _STORE_SECRET = _st_hmac.new(TOKEN.encode('utf-8'), b'desktroo-store-v1', _st_hashlib.sha256).digest()
@@ -10351,16 +10405,33 @@ def store_auth_check(handler):
 
 
 def store_gate(action='install'):
-    """LE contrôle de licence du Magasin, à un seul endroit. Installer et mettre à jour demandent un essai,
-    un abonnement ou le délai de grâce ; voir, ouvrir, relancer et désinstaller restent toujours permis."""
+    """LE contrôle du Magasin, à un seul endroit. MDM-STORE-KEY-V1 (3.1.0) : installer une app, relier ou reprendre une app
+    existante et mettre à jour une app demandent la clé gratuite (un correctif de sécurité passe sans clé : voir
+    _store_update_allowed) ; voir, ouvrir, relancer, régler et désinstaller restent toujours permis."""
+    free_ok = action in ('view', 'open', 'start', 'uninstall')
+    if LICENSE_FREE:
+        reg = _lic_registered()
+        return {'ok': bool(reg or free_ok), 'action': action, 'state': 'active', 'registered': reg,
+                'need_key': not (reg or free_ok), 'free_key_url': FREE_KEY_URL}
     try:
         st = license_status()
     except Exception:
         st = {'state': 'expired'}
     state = st.get('state')
-    ok = state in ('trial', 'active', 'grace') or action in ('view', 'open', 'start', 'uninstall')
+    ok = state in ('trial', 'active', 'grace') or free_ok
     return {'ok': bool(ok), 'action': action, 'state': state, 'days_left': st.get('days_left'),
             'subscribe_url': SUBSCRIBE_URL}
+
+
+def _store_update_allowed(app, inst, reg=None):
+    """Mise à jour d'une app permise ? Avec la clé gratuite, oui ; sans clé, seulement si le catalogue marque comme
+    correctif de sécurité (« security » : version) une version plus récente que celle installée."""
+    if not LICENSE_FREE:
+        return store_gate('update')['ok']
+    if (reg if reg is not None else _lic_registered()):
+        return True
+    sec = (app or {}).get('security')
+    return bool(sec) and _store_vtuple(sec) > _store_vtuple((inst or {}).get('version'))
 
 
 def _store_rsa_ok(data, sig_b64):
@@ -10943,7 +11014,7 @@ def _store_public_get(handler, path):
 # ── MDM-STORE-V1 · phase 1 : installer, désinstaller, droits d'accès ────────────────────────────────────
 STORE_INSTALLED_FILE = os.path.join(STORE_DIR, 'installed.json')
 STORE_ICON_DIR = os.path.join(STORE_DIR, 'icons')
-STORE_BETA_FILE = os.path.join(STORE_DIR, 'beta')     # présent : les apps du canal « test » apparaissent (NAS de test)
+STORE_BETA_FILE = os.path.join(STORE_DIR, 'beta')     # présent : NAS inscrit au programme bêta (Desktroo et apps en test)
 _STORE_ICON_TYPES = {'.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp'}
 _store_jobs = {}            # id d'app → {'action', 'state': running|done|error, 'step', 'error', 'at'}
 _STORE_JOBS_LOCK = _threading.Lock()
@@ -10968,9 +11039,15 @@ def _store_midclt(method, *args, job=False, timeout=120):
         return last
 
 
+def _store_beta_on():
+    """Inscrit au programme bêta : le fichier bêta et une clé gratuite (l'inscription n'est possible qu'avec la clé)."""
+    return os.path.exists(STORE_BETA_FILE) and _lic_registered()
+
+
 def store_visible_apps(cat):
-    beta = os.path.exists(STORE_BETA_FILE)
-    return [a for a in (cat or {}).get('apps', []) if beta or (a.get('channel') or 'stable') == 'stable']
+    # 3.1.0 : toutes les apps du catalogue apparaissent, celles du canal test aussi (badge « Test »). Les installer demande
+    # d'être inscrit au programme bêta : voir store_install.
+    return [a for a in (cat or {}).get('apps', []) if isinstance(a, dict)]
 
 
 def store_app_entry(app_id):
@@ -11507,11 +11584,18 @@ def store_install(body, update=False):
     if not _STORE_ID_RE.match(app_id):
         return 400, {'ok': False, 'error': 'Identifiant d’app invalide.'}
     gate = store_gate('update' if update else 'install')
-    if not gate['ok']:
-        return 402, {'ok': False, 'error': 'Abonnement requis pour installer ou mettre à jour une app.', 'gate': gate}
     app = store_app_entry(app_id)
+    if not gate['ok'] and not (update and app and _store_update_allowed(app, store_installed_get().get(app_id))):
+        return 402, {'ok': False, 'code': 'need_key', 'gate': gate, 'error': (
+            'Mettre à jour une app demande une clé gratuite : demandez-la sur desktroo.fr, puis activez-la dans « À propos » › « Licence ». '
+            'Les correctifs de sécurité arrivent sans clé.' if update else
+            'Installer une app demande une clé gratuite : demandez-la sur desktroo.fr, puis activez-la dans « À propos » › « Licence ». '
+            'Vos apps déjà installées restent utilisables.')}
     if not app:
         return 404, {'ok': False, 'error': 'App absente du catalogue.'}
+    if not update and (app.get('channel') or 'stable') != 'stable' and not _store_beta_on():
+        return 403, {'ok': False, 'code': 'need_beta', 'error': 'Cette app est en test : l’installer demande d’être inscrit au programme bêta '
+                     '(« À propos » › « Programme bêta »), réservé aux installations qui ont une clé gratuite.'}
     if _store_vtuple(app.get('min_desktroo')) > _store_vtuple(APP_VERSION):
         return 409, {'ok': False, 'error': 'Cette app demande Desktroo %s ou plus récent : mettez Desktroo à jour.' % app.get('min_desktroo')}
     nas_cfg = None
@@ -11662,11 +11746,14 @@ def store_view():
     cat, err = store_catalog()
     installed = {r['id']: r for r in store_installed_list()}
     apps = []
+    reg = _lic_registered()
     for a in store_visible_apps(cat):
         a = dict(a)
         inst = installed.get(a['id'])
         a['installed'] = inst
         a['update_available'] = bool(inst and not inst.get('legacy') and not inst.get('linked') and _store_vtuple(a.get('version')) > _store_vtuple(inst.get('version')))
+        a['update_allowed'] = bool(a['update_available']) and _store_update_allowed(a, inst, reg)
+        a['security_update'] = bool(a['update_available'] and a.get('security') and _store_vtuple(a.get('security')) > _store_vtuple(inst.get('version')))
         a['compatible'] = _store_vtuple(a.get('min_desktroo')) <= _store_vtuple(APP_VERSION)
         j = store_job_get(a['id'])
         if inst and j.get('state') == 'done' and j.get('step') == 'Installée, mais elle ne répond pas encore' \
@@ -11704,7 +11791,7 @@ def store_view():
             apps.append({'id': app_id, 'name': inst.get('name') or app_id, 'version': inst.get('version'),
                          'kind': inst.get('kind') or 'app', 'installed': inst, 'orphan': True, 'update_available': False, 'compatible': True,
                          'job': store_job_get(app_id) or None})
-    return {'ok': cat is not None, 'error': err, 'apps': apps, 'gate': store_gate('install'),
+    return {'ok': cat is not None, 'error': err, 'apps': apps, 'gate': store_gate('install'), 'beta': _store_beta_on(),
             'published': (cat or {}).get('published'), 'version': APP_VERSION}
 
 
@@ -12318,7 +12405,7 @@ def store_npm_check_install():
 def store_npm_adopt(body=None):
     gate = store_gate('install')
     if not gate['ok']:
-        return 402, {'ok': False, 'error': 'Abonnement requis pour installer ou reprendre une app.', 'gate': gate}
+        return 402, {'ok': False, 'code': 'need_key', 'error': 'Clé gratuite requise pour installer ou reprendre une app.', 'gate': gate}
     if STORE_NPM_ID in store_installed_get():
         return 409, {'ok': False, 'error': 'NPMplus est déjà géré par Desktroo Apps.'}
     if _store_running(STORE_NPM_ID):
@@ -12737,7 +12824,7 @@ def store_npm_link_remote(body):
     """Relie un NPMplus installé sur une AUTRE machine (box, VM, Raspberry…) : Desktroo ne touche qu'à son API."""
     gate = store_gate('install')
     if not gate['ok']:
-        return 402, {'ok': False, 'error': 'Abonnement requis pour relier NPMplus.', 'gate': gate}
+        return 402, {'ok': False, 'code': 'need_key', 'error': 'Clé gratuite requise pour relier NPMplus.', 'gate': gate}
     if STORE_NPM_ID in store_installed_get():
         return 409, {'ok': False, 'error': 'NPMplus est déjà géré par Desktroo Apps.'}
     try:
@@ -12779,7 +12866,7 @@ def store_npm_link(body=None):
         return store_npm_link_remote(body)
     gate = store_gate('install')
     if not gate['ok']:
-        return 402, {'ok': False, 'error': 'Abonnement requis pour relier NPMplus.', 'gate': gate}
+        return 402, {'ok': False, 'code': 'need_key', 'error': 'Clé gratuite requise pour relier NPMplus.', 'gate': gate}
     if STORE_NPM_ID in store_installed_get():
         return 409, {'ok': False, 'error': 'NPMplus est déjà géré par Desktroo Apps.'}
     f = store_npm_foreign()
@@ -12884,7 +12971,7 @@ def _ag_http(method, path, body=None, timeout=15, base=None, user='', password='
 def store_adguard_link(body):
     gate = store_gate('install')
     if not gate['ok']:
-        return 402, {'ok': False, 'error': 'Abonnement requis pour relier AdGuard Home.', 'gate': gate}
+        return 402, {'ok': False, 'code': 'need_key', 'error': 'Clé gratuite requise pour relier AdGuard Home.', 'gate': gate}
     if STORE_AG_ID in store_installed_get():
         return 409, {'ok': False, 'error': 'AdGuard Home est déjà installé sur ce NAS.'}
     try:
@@ -13072,7 +13159,7 @@ def store_pihole_api(body):
 def store_pihole_link(body):
     gate = store_gate('install')
     if not gate['ok']:
-        return 402, {'ok': False, 'error': 'Abonnement requis pour relier Pi-hole.', 'gate': gate}
+        return 402, {'ok': False, 'code': 'need_key', 'error': 'Clé gratuite requise pour relier Pi-hole.', 'gate': gate}
     if STORE_PH_ID in store_installed_get():
         return 409, {'ok': False, 'error': 'Pi-hole est déjà installé sur ce NAS.'}
     try:
@@ -17548,7 +17635,7 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 except Exception:
                     pass
                 # Depuis la 3.0.0, Desktroo ne contacte plus desktroo.fr de lui-meme.
-                # Le comptage des installations repose uniquement sur les cles de licence
+                # Le comptage des installations repose uniquement sur les clés d'activation
                 # demandees volontairement : license_maybe_refresh() ci-dessus ne part que
                 # si une cle a ete activee. license_trial_sync() reste disponible mais
                 # n'est plus appele automatiquement.
@@ -18288,6 +18375,10 @@ class FileOpsHandler(BaseHTTPRequestHandler):
                 self._json(500, {'error': str(e)})
             return
         if path == '/report':
+            if LICENSE_FREE and not _lic_registered():   # 3.1.0 : signalements et idées avec la clé gratuite
+                self._json(403, {'ok': False, 'code': 'need_key', 'error': 'Les signalements de bugs et les demandes de fonctionnalités '
+                                 'demandent une clé gratuite : demandez-la sur desktroo.fr, puis activez-la dans « À propos » › « Licence ».'})
+                return
             try:
                 self._json(200, _report_send(self._body()))
             except ValueError as e:
@@ -18831,6 +18922,10 @@ class FileOpsHandler(BaseHTTPRequestHandler):
 
         # MDM-SELF-UPDATE-V1 : mise à jour depuis GitHub + redémarrage du sidecar
         if path == '/update':
+            gate = _update_gate()
+            if not gate.get('ok'):
+                self._json(403, gate)
+                return
             try:
                 updated = _do_update()
                 _schedule_self_restart()
@@ -20842,13 +20937,13 @@ def _upd_sms_pending():
     out = {}
     try:
         v = _version_status()
-        if v.get('update_available') and v.get('latest'):
+        if v.get('update_available') and v.get('latest') and v.get('update_allowed', True):
             out['desktroo:' + v['latest']] = 'Desktroo ' + v['latest']
     except Exception as e:
         log.debug('SMS mises à jour (Desktroo) : %s', e)
     try:
         for a in (store_view().get('apps') or []):
-            if a.get('update_available'):
+            if a.get('update_available') and a.get('update_allowed', True):
                 nm = a.get('name')
                 nm = (nm.get('fr') or nm.get('en') or a.get('id')) if isinstance(nm, dict) else (nm or a.get('id'))
                 out['store:%s:%s' % (a.get('id'), a.get('version'))] = '%s %s' % (nm, a.get('version') or '')

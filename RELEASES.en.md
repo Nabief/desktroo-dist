@@ -3,6 +3,19 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.0 — 24 October 2026
+
+### Changed
+- **Updates now come with the free key.** Desktroo stays free and works fully without a key, but without one it stays on its version: it announces new versions and explains how to get the free key (desktroo.fr, then “About” › “Licence”). With the key, updates install as before. The beta programme is also for key holders. **Security fixes remain open to everyone**, with or without a key.
+  > Whether a key is present is read from the signed token kept on the NAS (`_lic_registered`): no call to desktroo.fr without a key. `/version` returns `registered`, `update_allowed` and `security`; `/update` refuses (403, `need_key`) a newer version without a key, unless the dist's `security.txt` (written by `publish-dist.ps1 -Securite`) names it. Without a key, the beta channel follows the stable branch.
+- **Desktroo Apps and “Report a problem” also come with the free key.** Without a key, apps already installed remain usable in their current version; installing an app, linking or taking over an existing app (NPMplus, AdGuard Home, Pi-hole), updating an app need the key. Apps in testing remain visible to everyone; installing one requires joining the beta programme, itself for key holders. Security fixes for apps remain open to everyone. Reporting a bug or suggesting an idea from Desktroo also needs the key.
+  > `store_gate()` relies on `_lic_registered()`. An app update goes through without a key if the catalog marks it as a fix (`security`: version, checked by `sign-catalog.py`) newer than the installed version. Installing a test-channel app: 403 `need_beta` outside the beta programme. `/report` answers 403 `need_key` without a key.
+- **Licence agreement version 1.3**: section 7 says what the free key gives (updates of Desktroo and of apps, installing apps, the beta and reports; security fixes remain available without a key). Acceptance is asked again once.
+
+### Fixed
+- **English and Spanish translations completed.** Cameras, Music, the Jellyfin settings (tasks, plugins, transcoding, live TV, permissions), the Pi-hole window and the customizable home screen were shown in French whatever the chosen language: they are now translated.
+  > 311 texts added to the English dictionary, 394 to the Spanish dictionary (including the 44 English entries that had no Spanish and words that are identical in English), 4 in Spanish in the setup wizard. TrueNAS alert names and activity log sentences stay in English outside French, as intended.
+
 ## 3.0.1 — October 23, 2026
 
 ### Fixed
@@ -16,7 +29,7 @@ the grey line underneath gives the technical detail, when there is one.
 
 You can use Desktroo freely, with no registration at all. The 30-day trial, the subscription and the read-only mode are gone: nothing is locked any more, nothing expires.
 
-It would still help me to know how many real installations there are, to work out whether it is worth carrying on developing and refining the application. For that, a licence key is issued free of charge on request. It unlocks nothing — it only counts.
+It would still help me to know how many real installations there are, to work out whether it is worth carrying on developing and refining the application. For that, an activation key is issued free of charge on request. It unlocks nothing — it only counts.
 
 A voluntary contribution is offered to support future development. Because even though the application is largely built with the help of AI, the time spent on it remains considerable: several hundred hours. AI helps a great deal and makes things move much faster, but it does not do everything — far from it.
 
@@ -26,7 +39,7 @@ A voluntary contribution is offered to support future development. Because even 
 - **Licence window**: "Free licence", with no price and no expiry date, and a "Support Desktroo" button instead of the subscription portal.
 - **Uninstall**: no more reminder about cancelling a subscription, since there is none.
 - **Store**: the Mdm-services.fr apps are no longer "included in the subscription", they are simply included.
-- **Free licence key on request**: a form on desktroo.fr, an email address, and the key arrives. Nothing is mandatory.
+- **Free activation key on request**: a form on desktroo.fr, an email address, and the key arrives. Nothing is mandatory.
 - **Terms of sale replaced by terms of use**: there is no sale any more, but a liability notice. Desktroo does not act on your datasets by itself: it is a layer on top of TrueNAS, shared free of charge.
 - **Desktroo no longer contacts desktroo.fr on its own.** Installation counting relies only on keys requested voluntarily.
 

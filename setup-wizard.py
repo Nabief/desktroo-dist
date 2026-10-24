@@ -33,7 +33,7 @@ INSTALL_RUNNING = False
 INSTALL_DONE = False
 # Accord à la licence d'utilisation (LICENSE.md). TERMS_VERSION suit le numéro écrit en tête de LICENSE.md,
 # comme dans fileops.py. Tant que l'accord n'a pas été donné sur le premier écran, /install refuse de partir.
-TERMS_VERSION = '1.2'
+TERMS_VERSION = '1.3'
 LICENCE_ACCEPTED = None
 
 # ── Auto-détection IP ─────────────────────────────────────────
@@ -1970,6 +1970,10 @@ I18N_EN = r"""{
 
 # Espagnol de l'assistant : mêmes clés que I18N_EN (repris du dictionnaire du bureau quand le texte y est).
 I18N_ES = r"""{
+"Configuration": "Configuración",
+"Installation": "Instalación",
+"Port": "Puerto",
+"Hostname / FQDN": "Nombre de host / FQDN",
 "Test en cours…": "Probando…",
 "inconnu": "desconocido",
 "Chargement...": "Cargando...",

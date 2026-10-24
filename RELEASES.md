@@ -3,6 +3,19 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.0 — 24 octobre 2026
+
+### Changé
+- **Les mises à jour passent par la clé gratuite.** Desktroo reste gratuit et fonctionne entièrement sans clé, mais sans clé il reste sur sa version : il annonce les nouvelles versions et explique comment obtenir la clé gratuite (desktroo.fr, puis « À propos » › « Licence »). Avec la clé, les mises à jour s'installent comme avant. Le programme bêta est lui aussi réservé aux clés. **Les correctifs de sécurité restent ouverts à tous**, avec ou sans clé.
+  > La présence d'une clé se lit dans le jeton signé gardé sur le NAS (`_lic_registered`) : aucun appel à desktroo.fr sans clé. `/version` renvoie `registered`, `update_allowed` et `security` ; `/update` refuse (403, `need_key`) une version plus récente sans clé, sauf si `security.txt` du dist (écrit par `publish-dist.ps1 -Securite`) la désigne. Le canal bêta suit la branche stable sans clé.
+- **Desktroo Apps et « Signaler un problème » passent aussi par la clé gratuite.** Sans clé, les apps déjà installées restent utilisables dans leur version ; installer une app, relier ou reprendre une app existante (NPMplus, AdGuard Home, Pi-hole), mettre à jour une app demandent la clé. Les apps en test restent visibles par tous ; les installer demande d'être inscrit au programme bêta, lui-même réservé aux clés. Les correctifs de sécurité des apps restent ouverts à tous. Signaler un bug ou proposer une idée depuis Desktroo demande aussi la clé.
+  > `store_gate()` s'appuie sur `_lic_registered()`. Une mise à jour d'app passe sans clé si le catalogue la marque comme correctif (`security` : version, vérifié par `sign-catalog.py`) plus récent que la version installée. Installer une app du canal test : 403 `need_beta` hors programme bêta. `/report` répond 403 `need_key` sans clé.
+- **Licence d'utilisation en version 1.3** : l'article 7 dit ce que donne la clé gratuite (les mises à jour de Desktroo et des apps, l'installation d'apps, la bêta et les signalements ; les correctifs de sécurité restent accessibles sans clé). L'accord est redemandé une fois.
+
+### Corrigé
+- **Traductions anglaise et espagnole complétées.** Caméras, Musique, les réglages de Jellyfin (tâches, plugins, transcodage, télévision en direct, droits), la fenêtre Pi-hole et l'accueil personnalisable s'affichaient en français quelle que soit la langue choisie : ils sont maintenant traduits.
+  > 311 textes ajoutés au dictionnaire anglais, 394 au dictionnaire espagnol (dont les 44 entrées anglaises qui n'avaient pas d'espagnol et les mots identiques en anglais), 4 en espagnol dans l'assistant d'installation. Les noms d'alertes TrueNAS et les phrases du journal d'activité restent en anglais hors français, comme prévu.
+
 ## 3.0.1 — 23 octobre 2026
 
 ### Corrigé
@@ -16,7 +29,7 @@ la ligne grise en dessous donne le détail technique, quand il y en a un.
 
 Vous pouvez utiliser Desktroo librement, sans aucun enregistrement. L'essai de 30 jours, l'abonnement et le mode lecture seule disparaissent : plus rien n'est bloqué, plus rien n'expire.
 
-Il me serait toutefois utile de connaître le nombre d'installations réelles, pour étudier l'intérêt de continuer à développer et à perfectionner l'application. Pour ça, une clé de licence est délivrée gratuitement sur simple demande. Elle ne débloque rien — elle sert seulement à compter.
+Il me serait toutefois utile de connaître le nombre d'installations réelles, pour étudier l'intérêt de continuer à développer et à perfectionner l'application. Pour ça, une clé d'activation est délivrée gratuitement sur simple demande. Elle ne débloque rien — elle sert seulement à compter.
 
 Une contribution libre est proposée pour soutenir les développements futurs. Car même si l'application est développée en grande partie avec recours à l'IA, le temps passé dessus reste considérable : plusieurs centaines d'heures. L'IA aide beaucoup et permet d'avancer beaucoup plus vite, mais elle ne fait pas tout, loin de là.
 
@@ -26,7 +39,7 @@ Une contribution libre est proposée pour soutenir les développements futurs. C
 - **Fenêtre Licence** : « Licence gratuite », sans tarif ni échéance, et un bouton « Soutenir Desktroo » à la place du portail d'abonnement.
 - **Désinstallation** : plus de rappel d'abonnement à résilier, puisqu'il n'y en a plus.
 - **Magasin** : les apps Mdm-services.fr ne sont plus « comprises dans l'abonnement », elles sont simplement incluses.
-- **Clé de licence gratuite sur simple demande** : un formulaire sur desktroo.fr, une adresse e-mail, et la clé arrive. Rien d'obligatoire.
+- **Clé d'activation gratuite sur simple demande** : un formulaire sur desktroo.fr, une adresse e-mail, et la clé arrive. Rien d'obligatoire.
 - **Conditions générales de vente remplacées par des conditions d'utilisation** : il n'y a plus de vente, mais une note de responsabilité. Desktroo n'intervient pas de lui-même sur vos datasets : c'est une surcouche à TrueNAS, partagée gratuitement.
 - **Desktroo ne contacte plus desktroo.fr de lui-même.** Le comptage des installations ne repose que sur les clés demandées volontairement.
 
