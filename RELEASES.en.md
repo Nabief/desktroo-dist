@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.1 — 24 October 2026
+
+### Improved
+- **One installation, one activation key.** “Get a free key” opens the desktroo.fr page and tells it which installation you are on: if this NAS already has a key, that key is emailed to you again, even to another address, instead of a new one.
+  > The installation id travels in the address fragment (`#install=…`): it is not sent when the page opens, only with the form. On the website side, desktroo-licenses plugin 1.5.0 (`/free-key` accepts `install_id`; `/activate` keeps the key already bound to the installation).
+
 ## 3.1.0 — 24 October 2026
 
 ### Changed

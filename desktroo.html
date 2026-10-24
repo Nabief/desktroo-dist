@@ -31130,7 +31130,13 @@ function uninFinal() {
   setTimeout(probe, wait);
 }
 // ── 3.1.0 : les mises à jour passent par la clé gratuite (les correctifs de sécurité restent ouverts à tous) ──
-function dkFreeKeyUrl() { return DK_LANG === 'fr' ? 'https://desktroo.fr/cle-gratuite/' : 'https://desktroo.fr/en/free-key/'; }
+// 3.1.1 : l'identifiant de l'installation suit dans le fragment (#install=…) : si ce NAS a déjà une clé, le site la renvoie
+// au lieu d'en créer une autre. Le fragment n'est pas envoyé au serveur avec l'adresse, seulement avec le formulaire.
+function dkFreeKeyUrl() {
+  var u = DK_LANG === 'fr' ? 'https://desktroo.fr/cle-gratuite/' : 'https://desktroo.fr/en/free-key/';
+  var id = (typeof _licInfo !== 'undefined' && _licInfo && _licInfo.install_id) ? String(_licInfo.install_id) : '';
+  return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? u + '#install=' + id : u;
+}
 function dkFreeKeyOpen() { try { window.open(dkFreeKeyUrl(), '_blank', 'noopener'); } catch (_) { location.href = dkFreeKeyUrl(); } }
 function dkUpdateNeedsKey(v) { return !!(v && v.update_available && v.update_allowed === false); }
 async function dkUpdateKeyAsk(v) {
@@ -31307,7 +31313,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '3.1.0';
+var DK_PAGE_VERSION = '3.1.1';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();

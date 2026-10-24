@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.1 — 24 octobre 2026
+
+### Amélioré
+- **Une installation, une clé d'activation.** « Obtenir une clé gratuite » ouvre la page de desktroo.fr en lui indiquant votre installation : si ce NAS a déjà une clé, c'est elle qui vous est renvoyée par e-mail, même à une autre adresse, au lieu d'une nouvelle.
+  > L'identifiant d'installation suit dans le fragment de l'adresse (`#install=…`) : il n'est pas transmis en ouvrant la page, seulement avec le formulaire. Côté site, plugin desktroo-licenses 1.5.0 (`/free-key` accepte `install_id` ; `/activate` garde la clé déjà liée à l'installation).
+
 ## 3.1.0 — 24 octobre 2026
 
 ### Changé
