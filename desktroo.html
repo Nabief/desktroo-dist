@@ -32774,19 +32774,23 @@ function deskGrid() {
 function deskLayout() {
   var el = document.getElementById('desktop-icons');
   if (!el) return;
-  var g = deskGrid(), kept = deskPosGet(), saved = kept || {}, used = {}, cells = {}, later = [], fresh = false;
+  var g = deskGrid(), kept = deskPosGet(), saved = kept || {}, used = {}, iused = {}, cells = {}, later = [], fresh = false;
   var key = function(c, r) { return c + ':' + r; };
   var blocked = deskBlocked();   // sous un widget posé librement : case prise, sans que la place gardée de l'icône change
   Object.keys(blocked).forEach(function(k) { used[k] = true; });
   var icons = Array.prototype.slice.call(el.querySelectorAll('.desk-icon'));
   icons.forEach(function(d) {
     var p = saved[d.dataset.id];
-    if (p && p.c >= 0 && p.r >= 0 && p.c < g.cols && p.r < g.rows && !used[key(p.c, p.r)]) { used[key(p.c, p.r)] = true; cells[d.dataset.id] = { c: p.c, r: p.r }; }
+    if (p && p.c >= 0 && p.r >= 0 && p.c < g.cols && p.r < g.rows && !used[key(p.c, p.r)]) { used[key(p.c, p.r)] = true; iused[key(p.c, p.r)] = true; cells[d.dataset.id] = { c: p.c, r: p.r }; }
     else later.push(d);
   });
   later.forEach(function(d) {
     for (var c = 0; c < 400; c++) for (var r = 0; r < g.rows; r++) if (!used[key(c, r)]) {
-      used[key(c, r)] = true; cells[d.dataset.id] = { c: c, r: r };
+      // plus aucune case libre à l'écran (widgets mesurés en cours de mise à jour…) : jamais hors de l'écran, quitte à passer sous un widget
+      if (c >= g.cols) {
+        for (var c2 = 0; c2 < g.cols; c2++) for (var r2 = 0; r2 < g.rows; r2++) if (!iused[key(c2, r2)]) { iused[key(c2, r2)] = true; cells[d.dataset.id] = { c: c2, r: r2 }; return; }
+      }
+      used[key(c, r)] = true; iused[key(c, r)] = true; cells[d.dataset.id] = { c: c, r: r };
       // une icône ajoutée après coup garde la place qu'elle vient de recevoir (pas celle qu'un widget lui a prêtée)
       if (kept && !kept[d.dataset.id]) { kept[d.dataset.id] = { c: c, r: r }; fresh = true; }
       return;
