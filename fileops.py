@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.1.2'
+APP_VERSION = '3.1.3'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -14686,7 +14686,20 @@ def _jf_adm(b):
             return ok(_jf_call('GET', '/Items/%s/RemoteImages' % iid, {'type': 'Primary', 'limit': '12', 'includeAllLanguages': 'false'}))
         if op == 'img_set':
             u = str(b.get('url') or '')
-            if not re.match(r'^https://[^\s]{4,500}$', u):
+            # Les fournisseurs d'images (Cover Art Archive, TheAudioDB…) donnent souvent une adresse en http://.
+            # C'est Jellyfin qui la télécharge : jamais vers une machine du réseau local.
+            if not re.match(r'^https?://[^\s]{4,500}$', u):
+                raise ValueError('Adresse d’image invalide.')
+            import ipaddress as _ipa
+            from urllib.parse import urlsplit as _us
+            _host = (_us(u).hostname or '').lower()
+            _priv = (not _host or '.' not in _host or _host.endswith(('.local', '.lan', '.internal', '.localhost')))
+            try:
+                _ip = _ipa.ip_address(_host)
+                _priv = _priv or _ip.is_private or _ip.is_loopback or _ip.is_link_local or _ip.is_reserved
+            except ValueError:
+                pass
+            if _priv:
                 raise ValueError('Adresse d’image invalide.')
             _jf_call('POST', '/Items/%s/RemoteImages/Download' % iid, {'type': 'Primary', 'imageUrl': u})
             return ok()
@@ -19242,6 +19255,29 @@ class FileOpsHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json(500, {'error': str(e)})
             return
+
+        # Création de dossier par Desktroo lui-même : repli quand TrueNAS refuse (EPERM sur un dataset à ACL NFSv4 « restricted »,
+        # où son mkdir tente un chmod interdit). Le dossier hérite des droits du parent : pas de chmod, propriétaire du parent.
+        if path == '/mkdir':
+            try:
+                body = self._body()
+                mp = os.path.abspath(str(body.get('path', '')))
+                parent = os.path.dirname(mp)
+                if not mp.startswith('/mnt/') or '/../' in mp + '/' or os.path.basename(mp) in ('', '.', '..'):
+                    return self._json(400, {'error': 'Chemin refusé'})
+                if os.path.lexists(mp):
+                    return self._json(400, {'error': 'Ce dossier existe déjà.'})
+                if not os.path.isdir(parent):
+                    return self._json(400, {'error': 'Le dossier parent est introuvable.'})
+                os.mkdir(mp)
+                try:
+                    st = os.stat(parent)
+                    os.chown(mp, st.st_uid, st.st_gid)
+                except OSError:
+                    pass
+                return self._json(200, {'ok': True, 'path': mp})
+            except Exception as e:
+                return self._json(500, {'error': str(e)})
 
         # MDM-ARCHIVE-V1 : extraction zip / tar / tgz (protégée contre le zip-slip)
         if path == '/extract':

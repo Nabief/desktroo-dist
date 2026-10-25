@@ -27801,12 +27801,22 @@ async function fsRenamePrompt() {
   }
 }
 // ---- Nouveau dossier ----
+// Création d'un dossier : par TrueNAS ; s'il refuse (« Operation not permitted » sur un dataset à ACL restreinte), par Desktroo.
+async function dkMkdir(path) {
+  try { return await socketCall('/filesystem/mkdir', 'POST', { path: path }); }
+  catch (e) {
+    if (!/Errno 1\]|Operation not permitted|EPERM/i.test(String((e && e.message) || e))) throw e;
+    var r = await fileops('POST', 'mkdir', { path: path });
+    if (r && r.error) throw new Error(r.error);
+    return r;
+  }
+}
 async function fsMkdirPrompt() {
   const name = await showPrompt(T('Nom du nouveau dossier :'));
   if (!name) return;
   const path = currentFsPath.replace(/\/$/, '') + '/' + name;
   try {
-    await socketCall('/filesystem/mkdir', 'POST', { path });
+    await dkMkdir(path);
     fileops('POST', 'activity/note', { kind: 'file.mkdir', path: path }).catch(function() {});
     toast(T('📁 Dossier créé : ') + name);
     fsRefresh();
@@ -31356,7 +31366,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '3.1.2';
+var DK_PAGE_VERSION = '3.1.3';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -46870,7 +46880,7 @@ async function _fpMkdir() {
   if (name === '.' || name === '..' || /[\/\\]/.test(name) || name.length > 255) { toast(T('❌ Nom de dossier invalide.')); return; }
   var path = parent + '/' + name;
   try {
-    await socketCall('/filesystem/mkdir', 'POST', { path: path });
+    await dkMkdir(path);
     fileops('POST', 'activity/note', { kind: 'file.mkdir', path: path }).catch(function() {});
     toast(T('📁 Dossier créé : ') + name);
     _fpLoad(path);

@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.3 — 25 octobre 2026
+
+### Corrigé
+- **Fichiers : « Nouveau dossier » fonctionne de nouveau dans les dossiers à droits restreints** (ACL NFSv4 « restricted », fréquent sur les partages multimédias), où TrueNAS répondait « Operation not permitted ». Quand il refuse, Desktroo crée le dossier lui-même, avec les droits hérités du dossier parent.
+- **Jellyfin : « Changer l’affiche » accepte de nouveau les images proposées** (Cover Art Archive, TheAudioDB…), qui étaient refusées avec « Adresse d’image invalide ».
+
 ## 3.1.1 — 24 octobre 2026
 
 ### Amélioré

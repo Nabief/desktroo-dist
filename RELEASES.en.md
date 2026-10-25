@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.3 — October 25, 2026
+
+### Fixed
+- **Files: "New folder" works again in folders with restricted permissions** (NFSv4 "restricted" ACL, common on media shares), where TrueNAS answered "Operation not permitted". When it refuses, Desktroo creates the folder itself, inheriting the parent folder's permissions.
+- **Jellyfin: "Change poster" accepts the suggested images again** (Cover Art Archive, TheAudioDB…), which were rejected with "Invalid image address".
+
 ## 3.1.1 — 24 October 2026
 
 ### Improved
