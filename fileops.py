@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.1.3'
+APP_VERSION = '3.1.4'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -16485,7 +16485,8 @@ def _store_nas_apply_all(svc, env, app_id):
     # root dans le conteneur, mais sans aucun privilège sauf la lecture : CAP_DAC_READ_SEARCH lit tout fichier,
     # et chaque dossier est monté en lecture seule (chacun explicitement, les sous-dossiers compris).
     svc['user'] = '0:0'
-    svc['cap_add'] = ['DAC_READ_SEARCH']
+    # + les capacités que l'app demande (Antivirus : SETUID/SETGID, sans quoi freshclam échoue sur « initgroups() failed »)
+    svc['cap_add'] = sorted(set(svc.get('cap_add') or []) | {'DAC_READ_SEARCH'})
     for p in ds:
         svc['volumes'].append('%s:/nas%s:ro' % (p, p[len('/mnt'):]))
     seen, mounts = set(), []

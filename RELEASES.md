@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.4 — 26 octobre 2026
+
+### Corrigé
+- **Antivirus : la mise à jour des signatures refonctionne.** Elle échouait avec « initgroups() failed » depuis le passage à « tout le NAS ». L’app reçoit désormais les deux autorisations dont l’outil de mise à jour a besoin ; elle reste en lecture seule sur vos dossiers. Mettez l’app à jour depuis Desktroo Apps.
+
 ## 3.1.3 — 25 octobre 2026
 
 ### Corrigé

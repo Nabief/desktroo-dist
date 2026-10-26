@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.4 — October 26, 2026
+
+### Fixed
+- **Antivirus: signature updates work again.** They failed with "initgroups() failed" since the switch to "whole NAS". The app now gets the two permissions the update tool needs; it stays read-only on your folders. Update the app from Desktroo Apps.
+
 ## 3.1.3 — October 25, 2026
 
 ### Fixed
