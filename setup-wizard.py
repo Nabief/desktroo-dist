@@ -506,7 +506,7 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
       DB_PORT: "3306"
       DB_ROOT_PASSWORD: "{db_pass}"
     volumes:
-      - /mnt:/mnt
+      - /mnt:/mnt:rslave
       - {install_dir}/fileops.py:/app/fileops.py:ro
     command: sh -c "apk add --no-cache qemu-img ca-certificates && {{ apk add --no-cache p7zip libarchive-tools 2>/dev/null || true; apk add --no-cache unrar 2>/dev/null || true; }} && pip install websockets paramiko pymysql --break-system-packages -q && python /app/fileops.py"
     expose:

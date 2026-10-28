@@ -3,6 +3,16 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.5 — 28 octobre 2026
+
+### Corrigé
+- **Jellyfin : la fiche d'une saison montre ses épisodes.** Ouverte depuis l'accueil, elle n'avait ni liste d'épisodes ni bouton de lecture, et affichait « E2 » au lieu de la saison. Elle liste maintenant les épisodes, propose « Lire la suite », et un bouton « Voir la série » ouvre la série avec toutes ses saisons (aussi depuis un épisode).
+- **Téléchargements : une décompression interrompue ne reste plus affichée.** Coupée par un redémarrage, elle restait « décompression » dans la file pour toujours ; elle passe maintenant dans « Terminés », avec une note pour décompresser l'archive depuis Fichiers. Une archive protégée par mot de passe ou incomplète ne bloque plus la décompression : elle s'arrête en erreur.
+  > Au chargement, l'état `extracting` devient `done`. Les outils (7z, unrar, bsdtar, unar) tournent sans entrée (`stdin` fermé, `unrar -p-`), avec un délai maximal de 6 h.
+- **Panneau des tâches lisible en thème clair.** Son fond restait bleu nuit : le titre et le nom des tâches en cours, sombres en thème clair, ne se lisaient presque plus. Il suit maintenant le thème.
+- **Un dataset tout juste créé s'utilise tout de suite dans Fichiers.** Jusqu'ici, Desktroo ne voyait un dataset créé après son dernier démarrage qu'au redémarrage suivant : on ne pouvait rien y déposer (« 1 échoué ») et son contenu paraissait vide.
+  > Docker montait /mnt en « rprivate » dans le conteneur fileops : les montages ZFS créés ensuite n'y apparaissaient pas. Le volume devient « /mnt:/mnt:rslave ». Nouvelles installations : assistant, install.sh et Custom App. Installations existantes : migration unique au démarrage (compose ou Custom App modifié, conteneur recréé par le NAS, quelques secondes de coupure), après un essai qui vérifie que le NAS accepte « rslave » ; état dans data/mnt-rslave.json.
+
 ## 3.1.4 — 26 octobre 2026
 
 ### Corrigé

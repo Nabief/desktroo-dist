@@ -2484,6 +2484,15 @@ html:not(.dk-phone):not(.dk-kiosk) .window:has(.web-shell) { min-width:min(640px
     border:1px solid rgba(0,0,0,0.12);
   }
   [data-theme="light"] .user-drop-item { color:#1a2440; }
+  /* Panneau des tâches : fond fixé en bleu nuit dans le HTML, ramené au clair avec le thème. */
+  [data-theme="light"] #jobs-popover {
+    background:rgba(240,246,255,0.99) !important; border-color:rgba(0,0,0,0.12) !important;
+    box-shadow:0 18px 48px rgba(15,30,60,0.22) !important; color:#1a2440;
+  }
+  [data-theme="light"] #jobs-popover .jobs-tab { border-color:rgba(0,0,0,0.12) !important; background:rgba(0,0,0,0.03) !important; }
+  [data-theme="light"] #jobs-popover .jobs-tab.sel { border-color:rgba(0,0,0,0.28) !important; background:rgba(0,0,0,0.08) !important; }
+  [data-theme="light"] #jobs-popover .jobs-row { border-bottom-color:rgba(0,0,0,0.08) !important; }
+  [data-theme="light"] #jobs-popover .jobs-track { background:rgba(0,0,0,0.10) !important; }
   [data-theme="light"] .fs-btn {
     background:rgba(0,0,0,0.06); border-color:rgba(0,0,0,0.12); color:#1a2440;
   }
@@ -4235,6 +4244,7 @@ select option{ background:#101b2e; color:#e9eef7; }
      Voir le bloc « dk-i18n » juste après, et tools/i18n pour l'outil de contrôle. -->
 <script type="application/json" id="dk-i18n-en">
 {
+"Voir la série": "See the series",
 "Cliquer pour copier": "Click to copy",
 "Cette app est en test : l’installer demande d’être inscrit au programme bêta (« À propos » › « Programme bêta »), réservé aux installations qui ont une clé gratuite.": "This app is in testing: installing it requires joining the beta programme (“About” › “Beta programme”), which is for installations with a free key.",
 "Installer une app et mettre à jour vos apps demandent une clé gratuite. Vos apps déjà installées restent utilisables, et leurs correctifs de sécurité arrivent sans clé.": "Installing an app and updating your apps need a free key. Apps already installed remain usable, and their security fixes arrive without a key.",
@@ -10683,6 +10693,7 @@ select option{ background:#101b2e; color:#e9eef7; }
      au dictionnaire anglais doit l'être ici aussi (« node tools/i18n/i18n.js check » compte ce qui manque). -->
 <script type="application/json" id="dk-i18n-es">
 {
+"Voir la série": "Ver la serie",
 "Cliquer pour copier": "Haz clic para copiar",
 "Cette app est en test : l’installer demande d’être inscrit au programme bêta (« À propos » › « Programme bêta »), réservé aux installations qui ont une clé gratuite.": "Esta app está en pruebas: instalarla requiere unirse al programa beta («Acerca de» › «Programa beta»), reservado a las instalaciones con una clave gratuita.",
 "Installer une app et mettre à jour vos apps demandent une clé gratuite. Vos apps déjà installées restent utilisables, et leurs correctifs de sécurité arrivent sans clé.": "Instalar una app y actualizar tus apps requiere una clave gratuita. Las apps ya instaladas siguen funcionando y sus correcciones de seguridad llegan sin clave.",
@@ -24765,9 +24776,17 @@ function dkJfImgs(root) {
   Array.prototype.forEach.call(root.querySelectorAll('img[data-i]'), function(img) {
     var id = img.getAttribute('data-i'); img.removeAttribute('data-i');
     if (_dkJf.urls[id]) { img.src = _dkJf.urls[id]; img.classList.add('ok'); return; }
-    dkImgBlob('/fileops/store/jellyfin/img?i=' + encodeURIComponent(id) + '&s=tile')
-      .then(function(b) { var u = URL.createObjectURL(b); _dkJf.urls[id] = u; img.src = u; img.classList.add('ok'); })
-      .catch(function(e) { if (!_dkJf.warned) { _dkJf.warned = true; toast('⚠️ ' + T('Affiches indisponibles') + ' — ' + String((e && e.message) || e), 12000); } });
+    var tries = 0, go = function() {
+      dkImgBlob('/fileops/store/jellyfin/img?i=' + encodeURIComponent(id) + '&s=tile')
+        .then(function(b) { var u = URL.createObjectURL(b); _dkJf.urls[id] = u; img.src = u; img.classList.add('ok'); })
+        .catch(function(e) {
+          // Coup d'œil passager (le serveur reprend son souffle : 502/503) : on réessaie sans rien dire.
+          if (tries++ < 2 && /50[234]|fetch|network/i.test(String((e && e.message) || e))) { setTimeout(go, 1500 * tries); return; }
+          // Pendant la lecture d'un titre, une pochette manquante n'est pas assez grave pour interrompre l'écoute.
+          if (!_dkJf.warned && !_dkJf.pl) { _dkJf.warned = true; toast('⚠️ ' + T('Affiches indisponibles') + ' — ' + String((e && e.message) || e), 12000); }
+        });
+    };
+    go();
   });
 }
 function dkJfPoster(x) {
@@ -24912,6 +24931,7 @@ function dkJfRenderDetail() {
   acts += '<div style="margin-top:10px;">';
   if (x.playable || x.type === 'MusicAlbum' || x.type === 'Playlist') acts += '<button class="fs-btn" onclick="dkJfPlAdd()">＋ ' + T('Ajouter à une liste') + '</button> ';
   if (x.type === 'Movie' || x.type === 'Series') acts += '<button class="fs-btn" onclick="dkJfIdent()">' + T('Corriger l’identification') + '</button> ';
+  if ((x.type === 'Season' || x.type === 'Episode') && /^[a-f0-9]{32}$/.test(x.seriesId || '')) acts += '<button class="fs-btn" onclick="dkJfDetail(\'' + x.seriesId + '\')">' + T('Voir la série') + '</button> ';
   acts += '<button class="fs-btn" onclick="dkJfRefresh()">' + T('Actualiser') + '</button></div>';
   acts += '<div style="margin-top:10px;"><button class="fs-btn" onclick="dkJfItemEdit()">' + T('Modifier les informations') + '</button> <button class="fs-btn" onclick="dkJfImgOpen()">' + T('Changer l’affiche') + '</button> '
     + (x.playable ? '<button class="fs-btn" onclick="dkJfSubOpen()">' + T('Sous-titres') + '</button> ' : '')
@@ -24928,7 +24948,7 @@ function dkJfRenderDetail() {
     + (x.people.length ? '<div class="dkjf-m" style="margin-top:10px;">' + x.people.map(function(p) { return webEsc(p.name) + (p.role ? ' <span style="opacity:.6">(' + webEsc(p.role) + ')</span>' : ''); }).join(' · ') + '</div>' : '')
     + '</div></div>';
   (x.children || []).forEach(function(s) {
-    h += '<div class="dkjf-h">' + (x.type === 'Series' ? (s.season ? Tf('Saison {0}', s.season) : T('Épisodes')) : T('Titres')) + '</div><div class="web-group">'
+    h += '<div class="dkjf-h">' + (x.type === 'Series' || x.type === 'Season' ? (s.season ? Tf('Saison {0}', s.season) : T('Épisodes')) : T('Titres')) + '</div><div class="web-group">'
       + s.eps.map(function(e) {
         return '<div class="web-row" style="cursor:pointer;" onclick="dkJfPlay(\'' + e.id + '\',{queue:true})"><span class="web-row-text"><span class="web-row-name">'
           + (e.n ? e.n + '. ' : '') + webEsc(e.name) + (e.played ? ' <span class="dkjf-badge">✓</span>' : (e.pos > 60 ? ' <span class="dkjf-badge">' + dkJfT(e.pos) + '</span>' : '')) + '</span>'
@@ -31366,7 +31386,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '3.1.4';
+var DK_PAGE_VERSION = '3.1.5';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -31993,7 +32013,7 @@ function jobsRow(j, tab) {
     : tab === 'run' ? (pct != null ? pct + ' %' : '')
     : jobsAgo(j);
   var tone = tab === 'bad' ? 'var(--danger)' : 'var(--text-dim)';
-  var h = '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
+  var h = '<div class="jobs-row" style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;">'
     + '<span style="font-weight:600;color:var(--text);flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + jobsEsc(jobsFriendly(j.method)) + '</span>'
     + '<span style="color:' + tone + ';flex:0 0 auto;">' + jobsEsc(right) + '</span>'
@@ -32009,7 +32029,7 @@ function jobsRow(j, tab) {
     h += '<div style="font-size:11px;color:var(--text-dim);margin:3px 0 0;">' + T('Réussie') + '</div>';
   } else if (tab === 'run') {
     h += (desc ? '' : '<div style="height:4px;"></div>')
-      + '<div style="height:6px;margin-top:5px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">'
+      + '<div class="jobs-track" style="height:6px;margin-top:5px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">'
       + '<div style="height:100%;width:' + (pct != null ? pct : 100) + '%;background:linear-gradient(90deg,var(--accent),var(--info));' + (pct == null ? 'opacity:0.35;' : '') + '"></div>'
       + '</div>';
   }
@@ -32029,7 +32049,7 @@ function jobsRenderPopover() {
   var h = '<div style="display:flex;gap:4px;margin:0 0 9px;">';
   JOBS_TABS.forEach(function(x) {
     var n = b[x.k].length, sel = x.k === tab, mark = x.k === 'bad' && unseen;
-    h += '<button onclick="jobsSetTab(\'' + x.k + '\')" title="' + jobsEsc(x.lab) + '" aria-label="' + jobsEsc(x.lab) + '"'
+    h += '<button class="jobs-tab' + (sel ? ' sel' : '') + '" onclick="jobsSetTab(\'' + x.k + '\')" title="' + jobsEsc(x.lab) + '" aria-label="' + jobsEsc(x.lab) + '"'
       + ' style="flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:4px;padding:5px 2px;'
       + 'border:1px solid ' + (sel ? 'rgba(255,255,255,0.30)' : 'rgba(255,255,255,0.10)') + ';border-radius:7px;'
       + 'background:' + (sel ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.04)') + ';'

@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.1.4'
+APP_VERSION = '3.1.5'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -8125,6 +8125,12 @@ def _dl_load():
                     if isinstance(it, dict):
                         if it.get('status') in ('downloading', 'queued'):
                             it['status'] = 'paused'  # à reprendre manuellement
+                        elif it.get('status') == 'extracting':
+                            # DL-EXTRACT-FIX (3.1.5) : la décompression ne survit pas à un redémarrage. L'élément passe
+                            # dans « Terminés » au lieu de rester affiché « décompression » pour toujours.
+                            it['status'] = 'done'
+                            if not it.get('error'):
+                                it['error'] = "extraction interrompue (redémarrage de Desktroo) : décompressez l'archive depuis Fichiers"
                         it['speed'] = 0
                         _dl_items[k] = it
     except Exception as e:
@@ -8417,7 +8423,12 @@ def _dl_extract_external(src, d, dest=None):
     os.makedirs(dest, exist_ok=True)
 
     def run(cmd):
-        p = _sp.run(cmd, stdout=_sp.PIPE, stderr=_sp.STDOUT)
+        # Pas d'entrée : sans réponse possible, un outil qui demanderait un mot de passe ou le volume suivant
+        # s'arrête en erreur au lieu d'attendre sans fin sur le terminal du conteneur.
+        try:
+            p = _sp.run(cmd, stdout=_sp.PIPE, stderr=_sp.STDOUT, stdin=_sp.DEVNULL, timeout=6 * 3600)
+        except _sp.TimeoutExpired:
+            return -1, 'délai de 6 h dépassé'
         return p.returncode, (p.stdout or b'').decode('utf-8', 'replace')
 
     cands = []
@@ -8430,7 +8441,7 @@ def _dl_extract_external(src, d, dest=None):
     if _sh.which('bsdtar'):
         cands.append(['bsdtar', '-x', '-f', src, '-C', dest])
     if low.endswith('.rar') and _sh.which('unrar'):
-        cands.append(['unrar', 'x', '-y', '-o+', src, dest + os.sep])
+        cands.append(['unrar', 'x', '-y', '-o+', '-p-', src, dest + os.sep])
     if _sh.which('unar'):
         cands.append(['unar', '-f', '-D', '-o', dest, src])
 
@@ -14262,8 +14273,13 @@ def _jf_detail(iid):
            'img': bool((x.get('ImageTags') or {}).get('Primary')), 'playable': typ in ('Movie', 'Episode', 'Video', 'MusicVideo', 'Audio'),
            'seriesId': _jf_hexid(x.get('SeriesId')), 'albumId': _jf_hexid(x.get('AlbumId')), 'children': [], 'next': '',
            'artist': str(x.get('AlbumArtist') or '')[:120]}
-    if typ == 'Series':
-        eps = (_jf_call('GET', '/Shows/%s/Episodes' % iid, {'userId': uid, 'Fields': 'Overview', 'Limit': 400}) or {}).get('Items') or []
+    if typ in ('Series', 'Season'):
+        # Une saison (ouverte depuis l'accueil) liste ses propres épisodes ; une série, tous les siens.
+        show, prm = iid, {'userId': uid, 'Fields': 'Overview', 'Limit': 400}
+        if typ == 'Season':
+            out['season'], out['ep'] = _pp_int(x.get('IndexNumber')), 0
+            show, prm['seasonId'] = out['seriesId'], iid
+        eps = ((_jf_call('GET', '/Shows/%s/Episodes' % show, prm) or {}).get('Items') or []) if _JF_ID.match(show or '') else []
         seasons = {}
         for e in eps:
             if not isinstance(e, dict):
@@ -21056,7 +21072,159 @@ def _dkbk_loop():
         _lic_time.sleep(900)
 
 
+# ── MDM-MNT-RSLAVE-V1 (3.1.5) : les datasets créés après le démarrage de ce conteneur y sont visibles ──
+# Docker monte /mnt en « rprivate » par défaut : un dataset ZFS créé ensuite sur le NAS n'apparaît pas ici avant un
+# redémarrage (envoi impossible, dossier vide). Avec « /mnt:/mnt:rslave », les nouveaux montages suivent.
+# Les installations d'avant la 3.1.5 sont migrées une fois : le compose (assistant, install.sh) ou la Custom App
+# TrueNAS reçoit « rslave » pour le service fileops, puis le conteneur est recréé par le NAS lui-même (commande
+# détachée), quelques secondes de coupure. Le NAS est d'abord testé : s'il refuse « rslave », rien n'est touché.
+MNT_RSLAVE_STATE = os.path.join(ACCESS_DATA_DIR, 'mnt-rslave.json')
+_MNT_RSLAVE_LOG = '/tmp/desktroo-rslave.log'
+
+
+def _mnt_propagation():
+    """« slave », « shared » ou « private » : la propagation du montage /mnt de ce conteneur ('' si inconnue)."""
+    try:
+        with open('/proc/self/mountinfo') as fh:
+            for line in fh:
+                parts = line.split()
+                if len(parts) > 6 and parts[4] == '/mnt':
+                    opt = parts[6:parts.index('-')] if '-' in parts else parts[6:]
+                    if any(o.startswith('master:') for o in opt):
+                        return 'slave'
+                    if any(o.startswith('shared:') for o in opt):
+                        return 'shared'
+                    return 'private'
+    except Exception:
+        pass
+    return ''
+
+
+def _mnt_rslave_compose_text(text):
+    """docker-compose.yml : « - /mnt:/mnt » → « - /mnt:/mnt:rslave », dans le bloc du service fileops seulement."""
+    m = re.search(r'(?m)^  fileops:\s*$', text)
+    if not m:
+        return text, False
+    end = re.search(r'(?m)^  \S', text[m.end():])
+    a, b = m.end(), (m.end() + end.start()) if end else len(text)
+    block, n = re.subn(r'(?m)^(\s*-\s*)(["\x27]?)/mnt:/mnt\2\s*$', r'\1\2/mnt:/mnt:rslave\2', text[a:b])
+    return text[:a] + block + text[b:], n > 0
+
+
+def _mnt_rslave_compose_dict(cfg):
+    """Compose d'une Custom App (dictionnaire) : même changement pour le service fileops. Rend True si modifié."""
+    svcs = (cfg or {}).get('services') if isinstance(cfg, dict) else None
+    if not isinstance(svcs, dict):
+        return False
+    name = 'fileops' if 'fileops' in svcs else next((k for k, v in svcs.items() if isinstance(v, dict) and v.get('container_name') == 'desktroo-fileops'), None)
+    svc = svcs.get(name) if name else None
+    if not isinstance(svc, dict) or not isinstance(svc.get('volumes'), list):
+        return False
+    changed = False
+    for i, v in enumerate(svc['volumes']):
+        if isinstance(v, str) and v.strip() == '/mnt:/mnt':
+            svc['volumes'][i] = '/mnt:/mnt:rslave'
+            changed = True
+        elif isinstance(v, dict) and v.get('source') == '/mnt' and v.get('target') == '/mnt' and v.get('type', 'bind') == 'bind':
+            v.setdefault('bind', {})['propagation'] = 'rslave'
+            changed = True
+    return changed
+
+
+def _mnt_rslave_migrate():
+    now = int(_sh_time.time())
+    st = _lic_read_json(MNT_RSLAVE_STATE) or {}
+    prop = _mnt_propagation()
+    if prop in ('slave', 'shared'):
+        if not st.get('done'):
+            st.update({'done': True, 'at': now, 'prop': prop})
+            _lic_write_json(MNT_RSLAVE_STATE, st)
+            log.info('/mnt : propagation %s, les nouveaux datasets sont visibles', prop)
+        return
+    if prop != 'private' or st.get('done'):
+        return
+    if st.get('launched_at') and now - int(st['launched_at']) < 900:
+        return   # recréation lancée il y a peu : le nouveau conteneur la constatera
+    if int(st.get('tries', 0)) >= 3 and now - int(st.get('tried_at', 0)) < 7 * 86400:
+        return
+    st.update({'tries': int(st.get('tries', 0)) + 1, 'tried_at': now, 'error': ''})
+
+    def fail(msg):
+        st['error'] = msg
+        _lic_write_json(MNT_RSLAVE_STATE, st)
+        log.warning('/mnt rslave : %s', msg)
+
+    out, err, code = _px_host("docker inspect --format '{{json .Config.Labels}}' desktroo-fileops", timeout=30)
+    try:
+        labels = json.loads((out or '').strip().splitlines()[-1])
+    except Exception:
+        return fail('conteneur desktroo-fileops introuvable (%s)' % (err or out or code))
+    project = str(labels.get('com.docker.compose.project') or '')
+    files = [f for f in str(labels.get('com.docker.compose.project.config_files') or '').split(',') if f]
+    wd = str(labels.get('com.docker.compose.project.working_dir') or '')
+    if not project:
+        return fail('conteneur sans projet compose')
+    # Le NAS accepte-t-il « rslave » pour /mnt ? Essai avec l'image déjà présente, sans rien changer.
+    out, err, code = _px_host('docker run --rm --entrypoint true -v /mnt:/mnt:rslave python:3.11-alpine', timeout=180)
+    if code != 0:
+        return fail('le NAS refuse /mnt:/mnt:rslave : ' + ((err or out or '').strip()[-300:]))
+    if project.startswith('ix-'):
+        app = project[3:]
+        out, err, code = _px_host('midclt call app.config ' + shq(app), timeout=60)
+        try:
+            cfg = json.loads(out)
+        except Exception:
+            return fail('configuration de la Custom App %s illisible' % app)
+        if not _mnt_rslave_compose_dict(cfg):
+            return fail('service fileops ou volume /mnt introuvable dans la Custom App %s' % app)
+        cmd = 'midclt call -j app.update %s %s' % (shq(app), shq(json.dumps({'custom_compose_config': cfg})))
+        st['mode'] = 'custom-app:' + app
+    else:
+        if not files:
+            return fail('fichier compose inconnu')
+        f = files[0]
+        try:
+            with open(f, encoding='utf-8') as fh:   # le dossier d'installation est sous /mnt, visible ici
+                text = fh.read()
+        except Exception as e:
+            return fail('compose illisible (%s) : %s' % (f, e))
+        new, changed = _mnt_rslave_compose_text(text)
+        if not changed:
+            return fail('volume /mnt introuvable dans le service fileops de ' + f)
+        try:
+            with open(f + '.avant-rslave', 'w', encoding='utf-8') as fh:
+                fh.write(text)
+            with open(f, 'w', encoding='utf-8') as fh:
+                fh.write(new)
+        except Exception as e:
+            return fail('compose non modifiable : %s' % e)
+        base = ('cd %s && ' % shq(wd) if wd else '') + 'docker compose -p %s -f %s ' % (shq(project), shq(f))
+        out, err, code = _px_host(base + 'config -q', timeout=60)
+        if code != 0:
+            try:
+                with open(f, 'w', encoding='utf-8') as fh:
+                    fh.write(text)
+            except Exception:
+                pass
+            return fail('compose refusé après modification, remis en état : ' + ((err or out or '').strip()[-300:]))
+        cmd = base + 'up -d fileops'
+        st['mode'] = 'compose:' + f
+    # Commande détachée sur le NAS : elle survit à l'arrêt de ce conteneur, qu'elle recrée.
+    _px_host('nohup setsid sh -c %s </dev/null >%s 2>&1 &' % (shq('sleep 5; ' + cmd), _MNT_RSLAVE_LOG), timeout=30)
+    st['launched_at'] = now
+    _lic_write_json(MNT_RSLAVE_STATE, st)
+    log.info('/mnt rslave : recréation lancée (%s)', st['mode'])
+
+
+def _mnt_rslave_boot():
+    _sh_time.sleep(90)   # laisser le service démarrer (et une mise à jour finir de redémarrer)
+    try:
+        _mnt_rslave_migrate()
+    except Exception as e:
+        log.warning('/mnt rslave : %s', e)
+
 _threading.Thread(target=_dkbk_loop, name='dkbackup', daemon=True).start()
+_threading.Thread(target=_mnt_rslave_boot, name='mnt-rslave', daemon=True).start()   # MDM-MNT-RSLAVE-V1
 _threading.Thread(target=_upd_sms_loop, name='update-sms', daemon=True).start()   # MDM-UPD-SMS-V1
 _threading.Thread(target=_cam_alert_loop, name='camera-alerts', daemon=True).start()   # SMS quand une caméra voit une personne
 

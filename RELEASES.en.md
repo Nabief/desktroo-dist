@@ -3,6 +3,16 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.5 — 28 October 2026
+
+### Fixed
+- **Jellyfin: a season's page shows its episodes.** Opened from the home screen, it had no episode list or play button, and showed “E2” instead of the season. It now lists the episodes, offers “Play next”, and a “See the series” button opens the series with all its seasons (also from an episode).
+- **Downloads: an interrupted extraction no longer stays on screen.** Cut off by a restart, it stayed “extracting” in the queue forever; it now moves to “Finished”, with a note to extract the archive from Files. A password-protected or incomplete archive no longer blocks extraction: it stops with an error.
+  > On load, the `extracting` state becomes `done`. The tools (7z, unrar, bsdtar, unar) run without input (`stdin` closed, `unrar -p-`), with a 6-hour limit.
+- **Task panel readable in the light theme.** Its background stayed dark blue, so the title and the names of running tasks, dark in the light theme, could hardly be read. It now follows the theme.
+- **A freshly created dataset can be used right away in Files.** Until now, Desktroo only saw a dataset created after its last start once it restarted: nothing could be dropped into it (“1 failed”) and it looked empty.
+  > Docker mounted /mnt as “rprivate” in the fileops container, so ZFS mounts created later did not show up there. The volume becomes “/mnt:/mnt:rslave”. New installations: wizard, install.sh and Custom App. Existing installations: one-time migration at startup (compose or Custom App updated, container recreated by the NAS, a few seconds of downtime), after a test that checks the NAS accepts “rslave”; state in data/mnt-rslave.json.
+
 ## 3.1.4 — October 26, 2026
 
 ### Fixed
