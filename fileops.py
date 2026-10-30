@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.1.5'
+APP_VERSION = '3.1.6'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -15673,9 +15673,9 @@ def store_jellyfin_api(body):
             with _JF_LOCK:
                 uid = _jf_sess.get('uid') or ''
             if _JF_ID.match(uid):
-                for x in soft(lambda: _jf_call('GET', '/Users/%s/Items/Latest' % uid, {'Limit': 24, 'Fields': 'PrimaryImageAspectRatio'}) or [], []):
+                for x in soft(lambda: _jf_call('GET', '/Users/%s/Items/Latest' % uid, {'Limit': 60, 'Fields': 'PrimaryImageAspectRatio'}) or [], []):
                     it = _jf_item(x) if isinstance(x, dict) else None
-                    if it and it['img']:
+                    if it and it['img'] and it['type'] != 'Episode':   # les nouveaux épisodes n'ont pas leur place ici
                         latest.append(it)
             libs = soft(lambda: _jf_libraries(scan.get('running')), [])
             rails = []
@@ -15683,8 +15683,13 @@ def store_jellyfin_api(body):
                 for l in libs[:5]:
                     if not _JF_ID.match(l.get('id') or '') or l.get('type') == 'music':
                         continue
-                    rows = soft(lambda l=l: _jf_call('GET', '/Users/%s/Items/Latest' % uid, {'ParentId': l['id'], 'Limit': 16, 'Fields': 'PrimaryImageAspectRatio'}) or [], [])
-                    its = [it for it in (_jf_item(x) for x in rows if isinstance(x, dict)) if it and it['img']]
+                    if l.get('type') == 'tvshows':   # séries : uniquement les nouvelles séries, jamais les épisodes
+                        rows = soft(lambda l=l: (_jf_call('GET', '/Items', {'userId': uid, 'ParentId': l['id'], 'Recursive': 'true', 'IncludeItemTypes': 'Series',
+                                                                            'SortBy': 'DateCreated', 'SortOrder': 'Descending', 'Limit': 16,
+                                                                            'Fields': 'PrimaryImageAspectRatio'}) or {}).get('Items') or [], [])
+                    else:
+                        rows = soft(lambda l=l: _jf_call('GET', '/Users/%s/Items/Latest' % uid, {'ParentId': l['id'], 'Limit': 40, 'Fields': 'PrimaryImageAspectRatio'}) or [], [])
+                    its = [it for it in (_jf_item(x) for x in rows if isinstance(x, dict)) if it and it['img'] and it['type'] != 'Episode']
                     if its:
                         rails.append({'id': l['id'], 'name': l['name'], 'type': l['type'], 'items': its[:16]})
             albums_new = []

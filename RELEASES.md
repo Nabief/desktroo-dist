@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.6 — 30 octobre 2026
+
+### Corrigé
+- **Jellyfin : « Derniers ajouts · Séries TV » ne montre plus les épisodes.** La rangée mélangeait les nouveaux épisodes et les nouvelles séries ; elle n'affiche désormais que les séries récemment ajoutées.
+
 ## 3.1.5 — 28 octobre 2026
 
 ### Corrigé

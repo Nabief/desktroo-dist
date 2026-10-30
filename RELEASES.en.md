@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.6 — October 30, 2026
+
+### Fixed
+- **Jellyfin: “Recently added · TV shows” no longer shows episodes.** The row mixed new episodes and new series; it now only lists recently added series.
+
 ## 3.1.5 — 28 October 2026
 
 ### Fixed
