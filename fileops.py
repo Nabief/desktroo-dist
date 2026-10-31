@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.1.6'
+APP_VERSION = '3.1.7'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -21230,6 +21230,120 @@ def _mnt_rslave_boot():
 
 _threading.Thread(target=_dkbk_loop, name='dkbackup', daemon=True).start()
 _threading.Thread(target=_mnt_rslave_boot, name='mnt-rslave', daemon=True).start()   # MDM-MNT-RSLAVE-V1
+
+
+# ── MDM-SHARE-BYPASS-V1 (3.1.7) : les liens de partage publics passent la barrière Authelia ──
+# Authelia protège tout le domaine du bureau : un lien /s/<jeton> envoyait le visiteur sur la page de connexion.
+# Une règle « bypass » en tête ne laisse passer que les adresses exactes des partages (/s/<jeton>, /s/<jeton>/download) :
+# ni « .. » ni « % », pour qu'aucune autre page du bureau ne passe par elle. Les installations d'avant la 3.1.7 la
+# reçoivent une fois au démarrage, si le conteneur desktroo-authelia existe sur le NAS.
+SHARE_BYPASS_STATE = os.path.join(ACCESS_DATA_DIR, 'authelia-share.json')
+SHARE_BYPASS_RES = '^/s/[A-Za-z0-9_-]+(/download)?([?].*)?$'
+
+
+def _authelia_share_rule_text(text):
+    """configuration.yml d'Authelia → (texte, état) ; état : 'added', 'present' ou la raison d'un refus."""
+    if "'^/s/" in text or '"^/s/' in text:
+        return text, 'present'
+    lines = text.split('\n')
+    ac = next((i for i, l in enumerate(lines) if re.match(r'^access_control:\s*$', l)), None)
+    if ac is None:
+        return text, 'section access_control introuvable'
+    ri = None
+    for i in range(ac + 1, len(lines)):
+        l = lines[i]
+        if l.strip() and not l[0].isspace() and not l.lstrip().startswith('#'):
+            break
+        if re.match(r'^\s+rules:\s*$', l):
+            ri = i
+            break
+    if ri is None:
+        return text, 'liste rules introuvable'
+    j = ri + 1
+    while j < len(lines) and (not lines[j].strip() or lines[j].lstrip().startswith('#')):
+        j += 1
+    m = re.match(r'^(\s*)-\s+domain:\s*(["\x27]?)([A-Za-z0-9.*_-]+)\2\s*$', lines[j]) if j < len(lines) else None
+    if not m:
+        return text, 'première règle non reconnue (domaine sur une seule ligne attendu)'
+    ind, dom = m.group(1), m.group(3)
+    lines[j:j] = [ind + "- domain: '%s'" % dom, ind + '  resources:', ind + "    - '%s'" % SHARE_BYPASS_RES,
+                  ind + "  policy: 'bypass'"]
+    return '\n'.join(lines), 'added'
+
+
+def _share_bypass_migrate():
+    now = int(_sh_time.time())
+    st = _lic_read_json(SHARE_BYPASS_STATE) or {}
+    if st.get('done'):
+        return
+    if int(st.get('tries', 0)) >= 3 and now - int(st.get('tried_at', 0)) < 7 * 86400:
+        return
+    st.update({'tries': int(st.get('tries', 0)) + 1, 'tried_at': now, 'error': ''})
+
+    def finish(**kw):
+        st.update(kw)
+        st['done'] = True
+        _lic_write_json(SHARE_BYPASS_STATE, st)
+
+    def fail(msg):
+        st['error'] = msg
+        _lic_write_json(SHARE_BYPASS_STATE, st)
+        log.warning('Authelia / partages : %s', msg)
+
+    out, err, code = _px_host('docker inspect --format \'{{range .Mounts}}{{if eq .Destination "/config"}}{{.Source}}{{end}}{{end}}\' desktroo-authelia', timeout=30)
+    if code != 0:
+        if re.search(r'No such (object|container)', (err or '') + (out or '')):
+            return finish(at=now, result='absent')   # pas d'Authelia sur ce NAS
+        return fail('docker inspect : ' + (err or out or str(code)).strip()[-200:])
+    src = (out or '').strip().splitlines()[-1].strip() if (out or '').strip() else ''
+    if not src.startswith('/'):
+        return finish(at=now, result='absent')
+    cfg = src.rstrip('/') + '/configuration.yml'
+    out, err, code = _px_host('cat ' + shq(cfg), timeout=30)
+    if code != 0:
+        return fail('configuration illisible (%s)' % cfg)
+    new, how = _authelia_share_rule_text(out)
+    if how == 'present':
+        return finish(at=now, result='present')
+    if how != 'added':
+        # Configuration écrite à la main : on ne la touche pas, la règle est décrite dans AUTHELIA.md.
+        log.warning('Authelia / partages : règle à ajouter à la main (%s)', how)
+        return finish(at=now, result='manual', reason=how)
+    b64 = _px_b64.b64encode(new.encode('utf-8')).decode('ascii')
+    out, err, code = _px_host('printf %%s %s | base64 -d > %s' % (shq(b64), shq(cfg + '.partage-new')), timeout=30)
+    if code != 0:
+        return fail('écriture impossible dans ' + src)
+    # Validation par Authelia lui-même, avec les secrets du conteneur en service.
+    out, err, code = _px_host('docker exec desktroo-authelia authelia validate-config --config /config/configuration.yml.partage-new', timeout=60)
+    txt = ((out or '') + (err or '')).strip()
+    if code != 0 and not re.search(r'unknown command|executable file not found', txt):
+        _px_host('rm -f ' + shq(cfg + '.partage-new'), timeout=30)
+        return fail('configuration refusée par Authelia : ' + txt[-300:])
+    out, err, code = _px_host('cp %s %s && cat %s > %s && rm -f %s && docker restart desktroo-authelia'
+                              % (shq(cfg), shq(cfg + '.avant-partage'), shq(cfg + '.partage-new'), shq(cfg), shq(cfg + '.partage-new')), timeout=120)
+    if code != 0:
+        return fail('mise en place : ' + (err or out or str(code)).strip()[-200:])
+    insp = "docker inspect --format '{{.State.Status}} {{.RestartCount}}' desktroo-authelia"
+    before = ((_px_host(insp, timeout=30)[0] or '').strip().split() + ['', ''])[1]
+    _sh_time.sleep(20)
+    out = (_px_host(insp, timeout=30)[0] or '').strip()
+    # Authelia s'arrête sur une configuration fausse : « running » sans redémarrage de plus en 20 s, sinon retour arrière.
+    if out != 'running ' + before:
+        _px_host('cat %s > %s && docker restart desktroo-authelia' % (shq(cfg + '.avant-partage'), shq(cfg)), timeout=120)
+        return fail('Authelia ne redémarrait pas avec la règle : ancienne configuration remise (%s)' % (out or '').strip())
+    log.info('Authelia : les liens de partage publics (/s/) passent sans connexion')
+    finish(at=now, result='added', config=cfg)
+
+
+def _share_bypass_boot():
+    _sh_time.sleep(150)   # après la migration /mnt (qui peut recréer ce conteneur) et le démarrage d'Authelia
+    try:
+        _share_bypass_migrate()
+    except Exception as e:
+        log.warning('Authelia / partages : %s', e)
+
+
+_threading.Thread(target=_share_bypass_boot, name='share-bypass', daemon=True).start()   # MDM-SHARE-BYPASS-V1
 _threading.Thread(target=_upd_sms_loop, name='update-sms', daemon=True).start()   # MDM-UPD-SMS-V1
 _threading.Thread(target=_cam_alert_loop, name='camera-alerts', daemon=True).start()   # SMS quand une caméra voit une personne
 

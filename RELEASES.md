@@ -3,6 +3,12 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.7 — 31 octobre 2026
+
+### Corrigé
+- **Les liens de partage publics s'ouvrent de nouveau avec la double authentification (Authelia).** Partagé depuis Fichiers, un lien renvoyait le destinataire vers la page de connexion du bureau. Seules les adresses exactes des partages passent sans connexion ; le reste du bureau reste protégé.
+  > Règle Authelia `bypass` en tête, `resources: '^/s/[A-Za-z0-9_-]+(/download)?([?].*)?$'` (ni « .. » ni « % »). Nouvelles installations : assistant. Installations existantes : ajout unique au démarrage si le conteneur desktroo-authelia existe (copie `configuration.yml.avant-partage`, validation par `authelia validate-config`, retour à l'ancienne configuration si Authelia ne redémarre pas) ; état dans data/authelia-share.json.
+
 ## 3.1.6 — 30 octobre 2026
 
 ### Corrigé

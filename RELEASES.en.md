@@ -3,6 +3,12 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.7 — 31 October 2026
+
+### Fixed
+- **Public share links open again with two-factor authentication (Authelia).** Shared from Files, a link sent the recipient to the desktop's login page. Only the exact share addresses get through without signing in; the rest of the desktop stays protected.
+  > Authelia `bypass` rule first, `resources: '^/s/[A-Za-z0-9_-]+(/download)?([?].*)?$'` (no “..” or “%”). New installs: setup wizard. Existing installs: added once at startup if the desktroo-authelia container exists (copy `configuration.yml.avant-partage`, checked with `authelia validate-config`, previous configuration restored if Authelia does not restart); state in data/authelia-share.json.
+
 ## 3.1.6 — October 30, 2026
 
 ### Fixed

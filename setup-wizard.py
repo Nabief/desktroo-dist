@@ -725,6 +725,8 @@ GITHUB_RAW={(config.get('github_raw') or GITHUB_RAW_DEFAULT).rstrip('/')}
                 "totp:\n  issuer: 'Desktroo'\n  period: 30\n"
                 "authentication_backend:\n  file:\n    path: '/config/users_database.yml'\n"
                 "access_control:\n  default_policy: 'deny'\n  rules:\n"
+                # Liens de partage publics : seules leurs adresses exactes passent sans connexion.
+                "    - domain: '%s'\n      resources:\n        - '^/s/[A-Za-z0-9_-]+(/download)?([?].*)?$'\n      policy: 'bypass'\n" % domain_desktop +
                 "    - domain: '%s'\n      policy: 'two_factor'\n" % domain_desktop +
                 "session:\n  cookies:\n"
                 "    - name: 'authelia_session'\n"
