@@ -21418,6 +21418,11 @@ function dkStoreLinksHtml(a) {
     return dkExtLinkHtml(l.icon, dkStoreName(l.label), dkStoreName(l.desc), dkStoreName(l.button), l.url);
   }).join('');
 }
+function dkJfZikmuPill() {
+  return '<a class="dk-xp" href="' + DK_ZIKMU + '" target="_blank" rel="noopener" onclick="return dkExtDl(event,this)" title="' + webEsc(T('Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).')) + '">'
+    + '<span class="dk-xp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 20h16"/></svg></span>'
+    + '<span class="dk-xp-t"><b>' + T('ZIKmu pour Android') + '</b><span>' + T('Télécharger l’APK') + '</span></span></a>';
+}
 function dkJfZikmuHtml() {
   return dkExtLinkHtml('android', T('ZIKmu pour Android'), T('Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).'), T('Télécharger l’APK'), DK_ZIKMU);
 }
@@ -23112,6 +23117,7 @@ function dkJfCss() {
   st.id = 'dkjf-css';
   st.textContent = '#win-dkjf .web-shell{position:relative;overflow:hidden;border-radius:0 0 var(--radius) var(--radius)}'
     + '.dk-xl{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-top:16px;max-width:680px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(14,165,233,.08))}.dk-xl-ic{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#22c55e,#0ea5e9);color:#fff}.dk-xl-ic svg{width:24px;height:24px}.dk-xl-t{flex:1;min-width:0}.dk-xl-t b{display:block;font-size:14px}.dk-xl-t span{display:block;font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px}@media(max-width:560px){.dk-xl{flex-wrap:wrap}}'
+    + '.dk-xp{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;margin:0 14px 0 auto;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(14,165,233,.08));white-space:nowrap;transition:border-color .15s,transform .15s}.dk-xp:hover{border-color:rgba(34,197,94,.55);transform:translateY(-1px)}.dk-xp-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#22c55e,#0ea5e9);color:#fff}.dk-xp-ic svg{width:15px;height:15px}.dk-xp-t{display:flex;flex-direction:column;line-height:1.2}.dk-xp-t b{font-size:12px}.dk-xp-t span{font-size:11px;color:var(--text-dim)}@media(max-width:760px){.dk-xp-t span{display:none}}@media(max-width:560px){.dk-xp-t{display:none}.dk-xp{padding:5px;margin-right:8px}}'
     + '.dkjf-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0 0 16px}'
     + '.dkjf-st{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.045);border:1px solid var(--glass-border)}'
     + '.dkjf-st b{display:block;font-size:22px;font-weight:700}.dkjf-st span{font-size:12px;color:var(--text-dim)}'
@@ -25298,7 +25304,7 @@ function dkJfHomeDrop(e) {
 }
 function dkJfRenderHome(body, r) {
   var c = r.counts || {}, libs = r.libraries || [];
-  wmHead('dkjf', 'Jellyfin', { sub: r.server && r.server.version ? 'Jellyfin ' + webEsc(r.server.version) : '',
+  wmHead('dkjf', 'Jellyfin', { mid: dkJfZikmuPill(), sub: r.server && r.server.version ? 'Jellyfin ' + webEsc(r.server.version) : '',
     actions: (dkKioskCanInstall('jellyfin') ? '<button class="fs-btn" onclick="dkKioskInstallOpen(\'jellyfin\')" title="' + webEsc(T('Ouvre Jellyfin seul dans sa fenêtre, avec son icône sur le bureau de l’ordinateur.')) + '">' + T('Installer sur l’ordinateur') + '</button> ' : '')
       + (libs.length ? (_dkJf.homeEdit ? '<button class="fs-btn" onclick="dkJfHomeReset()">' + T('Réinitialiser') + '</button><button class="web-open" onclick="dkJfHomeEdit(false)">' + T('Terminé') + '</button>'
         : '<button class="fs-btn" onclick="dkJfHomeEdit(true)">' + T('Personnaliser l’accueil') + '</button>') : '')
@@ -25341,7 +25347,6 @@ function dkJfRenderHome(body, r) {
         + '<button class="fs-btn" onclick="dkJfHomeHide(\'' + kq + '\')">' + (hid ? T('Afficher') : T('Masquer')) + '</button></div>' + bk.html + '</div>';
     });
   }
-  if (!_dkJf.homeEdit) h += dkJfZikmuHtml();
   body.innerHTML = h; dkJfImgs(body); dkJfPoll(r);
 }
 function dkJfRenderLibs(body) {
@@ -28850,7 +28855,7 @@ function wmHead(id, title, o) {
     + (o.back ? '<button class="web-crumb" onclick="' + o.back[1] + '">&lsaquo; ' + webEsc(o.back[0]) + '</button>' : '')
     + '<h4 class="web-title' + (o.mono ? ' snap-path' : '') + '">' + webEsc(title) + '</h4>'
     + (o.sub ? '<div class="web-sub">' + o.sub + '</div>' : '')
-    + '</div>' + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
+    + '</div>' + (o.mid || '') + (o.actions ? '<div class="web-head-actions">' + o.actions + '</div>' : '');
   var tabs = document.getElementById(id + '-tabs');
   if (tabs) tabs.innerHTML = o.tabs ? o.tabs.map(function(t) {
     return '<button class="web-tab' + (o.tab === t[0] ? ' active' : '') + '" onclick="' + o.tabCall + '(\'' + t[0] + '\')">' + t[1] + '</button>';
