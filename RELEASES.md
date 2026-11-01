@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.8 — 1er novembre 2026
+
+### Nouveau
+- **Jellyfin : téléchargez l'application Android ZIKmu.** Un bouton « Télécharger l'APK » apparaît en bas de l'accueil de la fenêtre Jellyfin et sur la fiche de Jellyfin dans Desktroo Apps. ZIKmu est un lecteur musical pour Jellyfin, sur téléphone, tablette et Android TV. Le lien mène toujours à la dernière version.
+
 ## 3.1.7 — 31 octobre 2026
 
 ### Corrigé

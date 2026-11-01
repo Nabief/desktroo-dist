@@ -10477,6 +10477,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Gérer cet élément": "Manage this item",
 "Changer la pochette": "Change cover",
 "Agrandir le lecteur": "Expand player",
+"ZIKmu pour Android": "ZIKmu for Android",
+"Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).": "The music player for Jellyfin on phone, tablet and Android TV. Download the APK, then install it (allow unknown sources if Android asks).",
+"Télécharger l’APK": "Download the APK",
 "Derniers albums ajoutés": "Latest albums added",
 "Lecture / pause": "Play / pause",
   "Tous les dossiers des bibliothèques sont accessibles.": "All library folders are reachable.",
@@ -16964,6 +16967,9 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Sous-titres": "Subtítulos",
 "incrusté": "incrustado",
 "Audio et sous-titres": "Audio y subtítulos",
+"ZIKmu pour Android": "ZIKmu para Android",
+"Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).": "El reproductor de música para Jellyfin en teléfono, tableta y Android TV. Descarga el APK e instálalo (permite fuentes desconocidas si Android lo pide).",
+"Télécharger l’APK": "Descargar el APK",
 "Derniers albums ajoutés": "Últimos álbumes añadidos",
 "Lecture / pause": "Reproducir / pausa",
 "Tous les dossiers des bibliothèques sont accessibles.": "Todas las carpetas de las bibliotecas están accesibles.",
@@ -21293,7 +21299,7 @@ function dkStoreRenderDetail(body, a) {
     if (!inst) {
       h += '<div class="web-group-title">' + T('Qui pourra l’utiliser') + '</div><div class="web-group dks-pad">' + dkStoreUsersHtml([currentUser]) + '</div>';
       if (a.nas_access) h += dkStoreNasHtml(a, null);
-      h += dkStoreFieldsHtml(a) + dkStoreNetHtml(a, false) + dkStoreLicenseHtml(a);
+      h += dkStoreFieldsHtml(a) + dkStoreNetHtml(a, false) + dkStoreLinksHtml(a) + dkStoreLicenseHtml(a);
       if (!a.compatible) h += '<p class="dks-tag" style="margin-top:12px;">' + webEsc(Tf('Cette app demande Desktroo {0} ou plus récent.', a.min_desktroo || '?')) + '</p>';
       else if (!gateOk) h += '<p class="dks-tag" style="margin-top:12px;">' + T('Installer une app demande une clé gratuite : demandez-la sur desktroo.fr, puis activez-la dans « À propos » › « Licence ».') + '</p>';
       if (a.id === 'adguard' && a.compatible && gateOk) h += dkAgRemoteHtml();
@@ -21333,7 +21339,7 @@ function dkStoreRenderDetail(body, a) {
         + (!window.DK_KIOSK && dkInstalled() ? '<dt>' + T('Application de l’ordinateur') + '</dt><dd>' + T('Pour installer cette app seule, ouvrez Desktroo dans le navigateur (et non dans l’application Desktroo).') + '</dd>' : '')
         + (dkKioskCanInstall(a.id) ? '<dt>' + T('Application de l’ordinateur') + '</dt><dd>' + T('Ouvre l’app seule dans sa fenêtre, avec son icône sur le bureau Windows ou dans la barre des tâches.') + ' <button class="web-mini" onclick="dkKioskInstallOpen(\'' + a.id + '\')">' + T('Installer') + '</button></dd>' : '')
         + (!(inst.standalone || a.standalone) && a.open_url ? '<dt>' + T('Adresse directe') + '</dt><dd><span class="mono">' + webEsc(dkStoreDirectUrl(a)) + '</span><button class="web-mini" onclick="dkStoreCopyDirect(\'' + a.id + '\')">' + T('Copier') + '</button></dd>' : '')
-        + '</dl>' + dkStoreIdleHtml(a, inst) + dkStoreNetHtml(a, true) + dkStoreLicenseHtml(a)
+        + '</dl>' + dkStoreIdleHtml(a, inst) + dkStoreNetHtml(a, true) + dkStoreLinksHtml(a) + dkStoreLicenseHtml(a)
         + (a.nas_access && a.nas_access.mode !== 'all' ? (_dkStore.nasEdit === a.id ? dkStoreNasHtml(a, a.nas) + '<div class="dks-acts"><button class="web-open" onclick="dkStoreAct(\'nas\',\'' + a.id + '\')">' + T('Enregistrer les accès aux dossiers') + '</button><button class="fs-btn" onclick="_dkStore.nasEdit=null;dkStoreRender()">' + T('Annuler') + '</button></div>' : '') : '')
         + '<div class="web-group-title">' + T('Gestion') + '</div><div class="web-group">'
         + (a.nas_access && a.nas_access.mode !== 'all' && _dkStore.nasEdit !== a.id ? wmRow('_dkStore.nasEdit=\'' + a.id + '\';dkStoreRender()', T('Changer les dossiers du NAS'), T('Le compte prêté à l’app et les dossiers qu’elle peut voir.')) : '')
@@ -21379,6 +21385,21 @@ function dkStoreNetHtml(a, installed) {
       + webEsc(dkStoreName(a.setup_note).replace('{ip}', dkNasHost(a))) + '</div>';
   }
   return h;
+}
+var DK_ZIKMU = 'https://github.com/Nabief/ZIKmu-releases/releases/latest';
+function dkExtLinkHtml(ic, title, desc, btn, url) {
+  if (!/^https:\/\//.test(url || '')) return '';
+  var svg = ic === 'android' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 20h16"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>';
+  return '<div class="dk-xl"><span class="dk-xl-ic">' + svg + '</span><span class="dk-xl-t"><b>' + webEsc(title) + '</b><span>' + webEsc(desc) + '</span></span>'
+    + '<a class="web-open" href="' + webEsc(url) + '" target="_blank" rel="noopener" style="text-decoration:none;white-space:nowrap;">' + webEsc(btn) + '</a></div>';
+}
+function dkStoreLinksHtml(a) {
+  return (a.extra_links || []).map(function(l) {
+    return dkExtLinkHtml(l.icon, dkStoreName(l.label), dkStoreName(l.desc), dkStoreName(l.button), l.url);
+  }).join('');
+}
+function dkJfZikmuHtml() {
+  return dkExtLinkHtml('android', T('ZIKmu pour Android'), T('Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).'), T('Télécharger l’APK'), DK_ZIKMU);
 }
 function dkStoreLicenseHtml(a) {
   if (!a.license || !a.license.name) return '';
@@ -23070,6 +23091,7 @@ function dkJfCss() {
   var st = document.createElement('style');
   st.id = 'dkjf-css';
   st.textContent = '#win-dkjf .web-shell{position:relative;overflow:hidden;border-radius:0 0 var(--radius) var(--radius)}'
+    + '.dk-xl{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-top:16px;max-width:680px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(14,165,233,.08))}.dk-xl-ic{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#22c55e,#0ea5e9);color:#fff}.dk-xl-ic svg{width:24px;height:24px}.dk-xl-t{flex:1;min-width:0}.dk-xl-t b{display:block;font-size:14px}.dk-xl-t span{display:block;font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px}@media(max-width:560px){.dk-xl{flex-wrap:wrap}}'
     + '.dkjf-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0 0 16px}'
     + '.dkjf-st{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.045);border:1px solid var(--glass-border)}'
     + '.dkjf-st b{display:block;font-size:22px;font-weight:700}.dkjf-st span{font-size:12px;color:var(--text-dim)}'
@@ -25299,6 +25321,7 @@ function dkJfRenderHome(body, r) {
         + '<button class="fs-btn" onclick="dkJfHomeHide(\'' + kq + '\')">' + (hid ? T('Afficher') : T('Masquer')) + '</button></div>' + bk.html + '</div>';
     });
   }
+  if (!_dkJf.homeEdit) h += dkJfZikmuHtml();
   body.innerHTML = h; dkJfImgs(body); dkJfPoll(r);
 }
 function dkJfRenderLibs(body) {
@@ -31386,7 +31409,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '3.1.5';
+var DK_PAGE_VERSION = '3.1.8';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
