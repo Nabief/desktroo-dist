@@ -21392,7 +21392,26 @@ function dkExtLinkHtml(ic, title, desc, btn, url) {
   if (!/^https:\/\//.test(url || '')) return '';
   var svg = ic === 'android' ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 20h16"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>';
   return '<div class="dk-xl"><span class="dk-xl-ic">' + svg + '</span><span class="dk-xl-t"><b>' + webEsc(title) + '</b><span>' + webEsc(desc) + '</span></span>'
-    + '<a class="web-open" href="' + webEsc(url) + '" target="_blank" rel="noopener" style="text-decoration:none;white-space:nowrap;">' + webEsc(btn) + '</a></div>';
+    + '<a class="web-open" href="' + webEsc(url) + '" target="_blank" rel="noopener" onclick="return dkExtDl(event,this)" style="text-decoration:none;white-space:nowrap;">' + webEsc(btn) + '</a></div>';
+}
+// Lien « dernière version » d'un dépôt GitHub : on cherche le fichier .apk de cette version pour le télécharger directement.
+// Sans réponse de GitHub (hors ligne, limite atteinte), le lien normal s'ouvre : la page de la version.
+async function dkExtDl(ev, el) {
+  var m = /^https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/releases\/latest\/?$/.exec(el.getAttribute('href') || '');
+  if (!m) return true;
+  ev.preventDefault();
+  var go = function(u, blank) { var a = document.createElement('a'); a.href = u; if (blank) { a.target = '_blank'; a.rel = 'noopener'; } else a.download = ''; document.body.appendChild(a); a.click(); a.remove(); };
+  try {
+    var ctl = new AbortController(), tm = setTimeout(function() { ctl.abort(); }, 6000);
+    var r = await fetch('https://api.github.com/repos/' + m[1] + '/' + m[2] + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' }, signal: ctl.signal });
+    clearTimeout(tm);
+    var j = await r.json(), as = (j.assets || []).filter(function(x) { return /\.apk$/i.test(x.name || '') && /^https:\/\/github\.com\//.test(x.browser_download_url || ''); });
+    var pick = as.filter(function(x) { return /release/i.test(x.name); })[0] || as[0];
+    if (!pick) throw new Error('no apk');
+    toast('⬇️ ' + pick.name);
+    go(pick.browser_download_url, false);
+  } catch (e) { go(el.getAttribute('href'), true); }
+  return false;
 }
 function dkStoreLinksHtml(a) {
   return (a.extra_links || []).map(function(l) {

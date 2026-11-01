@@ -6,7 +6,7 @@ the grey line underneath gives the technical detail, when there is one.
 ## 3.1.8 — November 1, 2026
 
 ### New
-- **Jellyfin: download the ZIKmu Android app.** A “Download the APK” button appears at the bottom of the home page of the Jellyfin window and on Jellyfin's page in Desktroo Apps. ZIKmu is a music player for Jellyfin, on phone, tablet and Android TV. The link always leads to the latest version.
+- **Jellyfin: download the ZIKmu Android app.** A “Download the APK” button appears at the bottom of the home page of the Jellyfin window and on Jellyfin's page in Desktroo Apps. ZIKmu is a music player for Jellyfin, on phone, tablet and Android TV. The button downloads the latest version directly.
 
 ## 3.1.7 — 31 October 2026
 
