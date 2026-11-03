@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.10 — 3 novembre 2026
+
+### Nouveau
+- **Authenticator : sur téléphone, les autres actions passent derrière une roue crantée.** Ajouter un compte, import en masse, groupes et favoris, sauvegarde, à propos et verrouillage s'ouvrent dans un menu, à côté de la liste des groupes, au lieu d'occuper l'écran. Sur ordinateur, rien ne change. Mettez l'app à jour depuis Desktroo Apps.
+
 ## 3.1.9 — 3 novembre 2026
 
 ### Nouveau

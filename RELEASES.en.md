@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.10 — November 3, 2026
+
+### New
+- **Authenticator: on a phone, the other actions move behind a gear icon.** Add an account, bulk import, groups and favorites, backup, about and lock open in a menu next to the group list instead of filling the screen. Nothing changes on a computer. Update the app from Desktroo Apps.
+
 ## 3.1.9 — November 3, 2026
 
 ### New
