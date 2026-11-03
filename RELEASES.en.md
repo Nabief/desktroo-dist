@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.9 — November 3, 2026
+
+### New
+- **Authenticator: on a phone, groups are picked from a dropdown list.** The group buttons filled the narrow screen; a single list (“All codes”, “Favorites”, your groups with their account count) replaces them. Nothing changes on a computer. Update the app from Desktroo Apps.
+
 ## 3.1.8 — November 1, 2026
 
 ### New

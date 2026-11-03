@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.9 — 3 novembre 2026
+
+### Nouveau
+- **Authenticator : sur téléphone, les groupes se choisissent dans une liste déroulante.** Les boutons de groupes envahissaient l'écran étroit ; une seule liste (« Tous les codes », « Favoris », vos groupes avec leur nombre de comptes) les remplace. Sur ordinateur, rien ne change. Mettez l'app à jour depuis Desktroo Apps.
+
 ## 3.1.8 — 1er novembre 2026
 
 ### Nouveau
