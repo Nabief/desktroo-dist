@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.11 — 4 novembre 2026
+
+### Corrigé
+- **L'extension Desktroo Téléchargements n'affiche plus d'avertissement dans Chrome.** Chrome signalait « 'background.scripts' requires manifest version of 2 or lower » dans la page des extensions ; il était sans effet, mais gênant. L'extension passe en 2.0.2, avec un manifeste propre pour Chrome et Edge. Pour Firefox, le dossier contient `manifest.firefox.json` : renommez-le en `manifest.json` avant de charger l'extension. Réinstallez l'extension depuis le nouveau fichier zip.
+
 ## 3.1.10 — 3 novembre 2026
 
 ### Nouveau

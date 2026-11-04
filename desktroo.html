@@ -7554,7 +7554,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Télécharger l'extension": "Download the extension",
 "Dans Chrome, Edge ou Brave, ouvre {0}, active le « Mode développeur », clique « Charger l'extension non empaquetée » et choisis ce dossier.": "In Chrome, Edge or Brave, open {0}, turn on “Developer mode”, click “Load unpacked” and choose that folder.",
 "Reviens sur cet onglet, clique sur l'icône Desktroo dans la barre du navigateur, puis « Relier à ce Desktroo ». Le navigateur te demande d'autoriser l'extension sur cette adresse : c'est la seule qu'elle pourra contacter.": "Come back to this tab, click the Desktroo icon in the browser toolbar, then “Link to this Desktroo”. The browser asks you to allow the extension on this address: it is the only one it will be able to contact.",
-"Firefox : {0}, « Ce Firefox », « Charger un module complémentaire temporaire », puis le fichier manifest.json du dossier. Chargée ainsi, l'extension est retirée à la fermeture de Firefox.": "Firefox: {0}, “This Firefox”, “Load Temporary Add-on”, then the manifest.json file in the folder. Loaded this way, the extension is removed when Firefox closes.",
+"Firefox : dans le dossier, remplacez manifest.json par manifest.firefox.json (renommé en manifest.json), puis ouvrez {0}, « Ce Firefox », « Charger un module complémentaire temporaire » et choisissez manifest.json. Chargée ainsi, l'extension est retirée à la fermeture de Firefox.": "Firefox: in the folder, replace manifest.json with manifest.firefox.json (renamed to manifest.json), then open {0}, “This Firefox”, “Load Temporary Add-on” and choose manifest.json. Loaded this way, the extension is removed when Firefox closes.",
 "Relier depuis un autre navigateur": "Link from another browser",
 "Si Desktroo n'est pas ouvert dans le navigateur où se trouve l'extension, copie ce code et colle-le dans ses réglages. Il contient ton jeton d'accès : ne le partage pas.": "If Desktroo is not open in the browser where the extension lives, copy this code and paste it into its settings. It contains your access token: do not share it.",
 "Copier le code de connexion": "Copy the connection code",
@@ -14089,7 +14089,7 @@ select option{ background:#101b2e; color:#e9eef7; }
 "Télécharger l'extension": "Descargar la extensión",
 "Dans Chrome, Edge ou Brave, ouvre {0}, active le « Mode développeur », clique « Charger l'extension non empaquetée » et choisis ce dossier.": "En Chrome, Edge o Brave, abre {0}, activa el «Modo de desarrollador», haz clic en «Cargar descomprimida» y elige esa carpeta.",
 "Reviens sur cet onglet, clique sur l'icône Desktroo dans la barre du navigateur, puis « Relier à ce Desktroo ». Le navigateur te demande d'autoriser l'extension sur cette adresse : c'est la seule qu'elle pourra contacter.": "Vuelve a esta pestaña, haz clic en el icono de Desktroo en la barra del navegador y luego en «Vincular con este Desktroo». El navegador te pide que autorices la extensión en esta dirección: es la única con la que podrá comunicarse.",
-"Firefox : {0}, « Ce Firefox », « Charger un module complémentaire temporaire », puis le fichier manifest.json du dossier. Chargée ainsi, l'extension est retirée à la fermeture de Firefox.": "Firefox: {0}, «Este Firefox», «Cargar complemento temporal» y luego el archivo manifest.json de la carpeta. Cargada así, la extensión se quita al cerrar Firefox.",
+"Firefox : dans le dossier, remplacez manifest.json par manifest.firefox.json (renommé en manifest.json), puis ouvrez {0}, « Ce Firefox », « Charger un module complémentaire temporaire » et choisissez manifest.json. Chargée ainsi, l'extension est retirée à la fermeture de Firefox.": "Firefox: en la carpeta, sustituye manifest.json por manifest.firefox.json (renombrado a manifest.json), luego abre {0}, «Este Firefox», «Cargar complemento temporal» y elige manifest.json. Cargada así, la extensión se quita al cerrar Firefox.",
 "Relier depuis un autre navigateur": "Vincular desde otro navegador",
 "Si Desktroo n'est pas ouvert dans le navigateur où se trouve l'extension, copie ce code et colle-le dans ses réglages. Il contient ton jeton d'accès : ne le partage pas.": "Si Desktroo no está abierto en el navegador donde está la extensión, copia este código y pégalo en sus ajustes. Contiene tu token de acceso: no lo compartas.",
 "Copier le code de connexion": "Copiar el código de conexión",
@@ -31434,7 +31434,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '3.1.10';
+var DK_PAGE_VERSION = '3.1.11';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
@@ -32357,7 +32357,7 @@ function dlBrowserPanel() {
     + step(2, Tf('Dans Chrome, Edge ou Brave, ouvre {0}, active le « Mode développeur », clique « Charger l\'extension non empaquetée » et choisis ce dossier.', code('chrome://extensions')))
     + step(3, T('Reviens sur cet onglet, clique sur l\'icône Desktroo dans la barre du navigateur, puis « Relier à ce Desktroo ». Le navigateur te demande d\'autoriser l\'extension sur cette adresse : c\'est la seule qu\'elle pourra contacter.'))
     + '</ol>'
-    + '<div class="tnd-hint" style="font-size:12px;line-height:1.6;margin-top:16px;">' + Tf('Firefox : {0}, « Ce Firefox », « Charger un module complémentaire temporaire », puis le fichier manifest.json du dossier. Chargée ainsi, l\'extension est retirée à la fermeture de Firefox.', code('about:debugging')) + '</div>'
+    + '<div class="tnd-hint" style="font-size:12px;line-height:1.6;margin-top:16px;">' + Tf('Firefox : dans le dossier, remplacez manifest.json par manifest.firefox.json (renommé en manifest.json), puis ouvrez {0}, « Ce Firefox », « Charger un module complémentaire temporaire » et choisissez manifest.json. Chargée ainsi, l\'extension est retirée à la fermeture de Firefox.', code('about:debugging')) + '</div>'
     + '</div>';
   // Autre poste : le code de connexion, et les deux valeurs pour qui préfère les saisir
   h += '<div class="tnd-panel" style="padding:18px 22px;">'
