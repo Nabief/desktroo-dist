@@ -86,7 +86,7 @@ VM_DIR     = os.environ.get('VM_DIR',  '/mnt/Truenas_Stockage/vms')
 ISO_DIR    = os.environ.get('ISO_DIR', '/mnt/Truenas_Stockage')
 
 # ── Version & mise à jour ─────────────────────────────────────────────────────
-APP_VERSION = '3.1.11'
+APP_VERSION = '3.1.12'
 APP_DIR     = os.environ.get('APP_DIR', '')  # dossier d'install (contient fileops.py, HTML…)
 GITHUB_RAW  = os.environ.get('GITHUB_RAW', 'https://raw.githubusercontent.com/Nabief/desktroo-dist/main').rstrip('/')
 
@@ -13979,6 +13979,7 @@ def _jf_item(x):
 
 
 _JF_CNT = {}
+_JF_RAILS = {}     # dernières rangées « Derniers ajouts » par bibliothèque, servies pendant une analyse
 _JF_IDENT = {}      # derniers résultats de recherche d'identification, par élément (le navigateur ne renvoie jamais leur contenu)
 
 
@@ -15679,8 +15680,11 @@ def store_jellyfin_api(body):
                         latest.append(it)
             libs = soft(lambda: _jf_libraries(scan.get('running')), [])
             rails = []
-            if not scan.get('running') and _JF_ID.match(uid):   # une rangée de nouveautés par bibliothèque (pas pendant une analyse)
-                for l in libs[:5]:
+            _rc = _JF_RAILS.get('v')
+            if scan.get('running') and _rc and _rc[1] == uid:   # pendant une analyse on ne harcèle pas Jellyfin : dernières rangées connues
+                rails = list(_rc[0])
+            elif _JF_ID.match(uid):   # une rangée de nouveautés par bibliothèque (une seule fois pendant une analyse, faute de mieux)
+                for l in libs[:8]:
                     if not _JF_ID.match(l.get('id') or '') or l.get('type') == 'music':
                         continue
                     if l.get('type') == 'tvshows':   # séries : uniquement les nouvelles séries, jamais les épisodes
@@ -15692,6 +15696,8 @@ def store_jellyfin_api(body):
                     its = [it for it in (_jf_item(x) for x in rows if isinstance(x, dict)) if it and it['img'] and it['type'] != 'Episode']
                     if its:
                         rails.append({'id': l['id'], 'name': l['name'], 'type': l['type'], 'items': its[:16]})
+                if rails:
+                    _JF_RAILS['v'] = (list(rails), uid)
             albums_new = []
             if _JF_ID.match(uid):   # derniers albums ajoutés (toutes bibliothèques musicales), même pendant une analyse
                 for x in soft(lambda: (_jf_call('GET', '/Items', {'userId': uid, 'Recursive': 'true', 'IncludeItemTypes': 'MusicAlbum',

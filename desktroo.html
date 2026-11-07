@@ -1100,6 +1100,10 @@ html:not(.dk-phone):not(.dk-kiosk) .window:has(.web-shell) { min-width:min(640px
     width:calc(100vw - var(--wa-l) - var(--wa-r)) !important; height:calc(100vh - var(--wa-t) - var(--wa-b)) !important;
     border-radius:0; animation:none;
   }
+  /* Fenêtres des apps (iframe) : la page de l'app peint son propre fond jusqu'aux bords ; sans cet arrondi, ses coins
+     carrés débordent des coins bas arrondis de la fenêtre. Rayon intérieur = rayon de la fenêtre moins sa bordure. */
+  .dk-app-win > .window-body { border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px); overflow:hidden; }
+  .window.maximized.dk-app-win > .window-body { border-radius:0; }
   @keyframes win-open {
     from { opacity:0; transform:scale(0.94) translateY(10px); }
     to   { opacity:1; transform:scale(1) translateY(0); }
@@ -31434,7 +31438,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '3.1.11';
+var DK_PAGE_VERSION = '3.1.12';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
