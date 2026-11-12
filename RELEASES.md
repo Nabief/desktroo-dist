@@ -3,6 +3,11 @@
 Ce qui change à chaque version. Chaque point est écrit pour ce qu'il vous apporte ;
 la ligne grise en dessous donne le détail technique, quand il y en a un.
 
+## 3.1.13 — 12 novembre 2026
+
+### Nouveau
+- **Jellyfin : téléchargez aussi l'application Android MOVmu.** Le bouton de l'en-tête de la fenêtre Jellyfin devient « Applications Android » et ouvre un petit menu : ZIKmu (musique) et MOVmu (films et séries), chacune avec son téléchargement direct de l'APK. MOVmu apparaît aussi sur la fiche de Jellyfin dans Desktroo Apps. Les liens suivent toujours la dernière version.
+
 ## 3.1.11 — 4 novembre 2026
 
 ### Corrigé

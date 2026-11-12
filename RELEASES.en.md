@@ -3,6 +3,11 @@
 What changes in every version. Each entry is written for what it brings you;
 the grey line underneath gives the technical detail, when there is one.
 
+## 3.1.13 — November 12, 2026
+
+### New
+- **Jellyfin: download the MOVmu Android app too.** The button in the Jellyfin window header becomes “Android apps” and opens a small menu: ZIKmu (music) and MOVmu (movies and shows), each with a direct APK download. MOVmu also appears on Jellyfin's page in Desktroo Apps. The links always follow the latest version.
+
 ## 3.1.11 — November 4, 2026
 
 ### Fixed

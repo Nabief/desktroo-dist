@@ -10484,6 +10484,11 @@ select option{ background:#101b2e; color:#e9eef7; }
 "ZIKmu pour Android": "ZIKmu for Android",
 "Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).": "The music player for Jellyfin on phone, tablet and Android TV. Download the APK, then install it (allow unknown sources if Android asks).",
 "Télécharger l’APK": "Download the APK",
+"Applications Android": "Android apps",
+"Applications Android pour Jellyfin : téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).": "Android apps for Jellyfin: download the APK, then install it (allow unknown sources if Android asks).",
+"Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV.": "The music player for Jellyfin on phone, tablet and Android TV.",
+"Films et séries de Jellyfin sur téléphone, tablette et Android TV.": "Jellyfin movies and shows on phone, tablet and Android TV.",
+"Autorisez les sources inconnues si Android le demande.": "Allow unknown sources if Android asks.",
 "Derniers albums ajoutés": "Latest albums added",
 "Lecture / pause": "Play / pause",
   "Tous les dossiers des bibliothèques sont accessibles.": "All library folders are reachable.",
@@ -16974,6 +16979,11 @@ select option{ background:#101b2e; color:#e9eef7; }
 "ZIKmu pour Android": "ZIKmu para Android",
 "Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).": "El reproductor de música para Jellyfin en teléfono, tableta y Android TV. Descarga el APK e instálalo (permite fuentes desconocidas si Android lo pide).",
 "Télécharger l’APK": "Descargar el APK",
+"Applications Android": "Apps Android",
+"Applications Android pour Jellyfin : téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).": "Apps Android para Jellyfin: descarga el APK e instálalo (permite fuentes desconocidas si Android lo pide).",
+"Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV.": "El reproductor de música para Jellyfin en teléfono, tableta y Android TV.",
+"Films et séries de Jellyfin sur téléphone, tablette et Android TV.": "Películas y series de Jellyfin en teléfono, tableta y Android TV.",
+"Autorisez les sources inconnues si Android le demande.": "Permite fuentes desconocidas si Android lo pide.",
 "Derniers albums ajoutés": "Últimos álbumes añadidos",
 "Lecture / pause": "Reproducir / pausa",
 "Tous les dossiers des bibliothèques sont accessibles.": "Todas las carpetas de las bibliotecas están accesibles.",
@@ -21422,10 +21432,39 @@ function dkStoreLinksHtml(a) {
     return dkExtLinkHtml(l.icon, dkStoreName(l.label), dkStoreName(l.desc), dkStoreName(l.button), l.url);
   }).join('');
 }
+// Applications Android de la famille « mu » (une page de versions GitHub par app). Pour en ajouter une : une ligne ici.
+var DK_ANDROID_APPS = [
+  { id: 'zikmu', name: 'ZIKmu', desc: 'Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV.', url: DK_ZIKMU },
+  { id: 'movmu', name: 'MOVmu', desc: 'Films et séries de Jellyfin sur téléphone, tablette et Android TV.', url: 'https://github.com/Nabief/MOVmu-releases/releases/latest' }
+];
 function dkJfZikmuPill() {
-  return '<a class="dk-xp" href="' + DK_ZIKMU + '" target="_blank" rel="noopener" onclick="return dkExtDl(event,this)" title="' + webEsc(T('Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).')) + '">'
+  return '<button type="button" class="dk-xp" id="dkxp-btn" onclick="dkJfAppsMenu(event)" aria-haspopup="true" aria-expanded="false" title="' + webEsc(T('Applications Android pour Jellyfin : téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).')) + '">'
     + '<span class="dk-xp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 20h16"/></svg></span>'
-    + '<span class="dk-xp-t"><b>' + T('ZIKmu pour Android') + '</b><span>' + T('Télécharger l’APK') + '</span></span></a>';
+    + '<span class="dk-xp-t"><b>' + T('Applications Android') + '</b><span>' + DK_ANDROID_APPS.map(function(a) { return a.name; }).join(' · ') + '</span></span>'
+    + '<svg class="dk-xp-ch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>';
+}
+function dkJfAppsClose() {
+  var m = document.getElementById('dkxp-menu'); if (m && m.parentNode) m.parentNode.removeChild(m);
+  var b = document.getElementById('dkxp-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('click', dkJfAppsOutside, true); document.removeEventListener('keydown', dkJfAppsKey, true);
+}
+function dkJfAppsOutside(e) { if (!e.target.closest || (!e.target.closest('#dkxp-menu') && !e.target.closest('#dkxp-btn'))) dkJfAppsClose(); }
+function dkJfAppsKey(e) { if (e.key === 'Escape') dkJfAppsClose(); }
+function dkJfAppsMenu(ev) {
+  ev.stopPropagation();
+  if (document.getElementById('dkxp-menu')) { dkJfAppsClose(); return; }
+  var btn = document.getElementById('dkxp-btn'); if (!btn) return;
+  var host = document.getElementById('win-dkjf') || document.body, r = btn.getBoundingClientRect(), hr = host.getBoundingClientRect();
+  var m = document.createElement('div'); m.id = 'dkxp-menu'; m.className = 'dk-xm';
+  m.innerHTML = DK_ANDROID_APPS.map(function(a) {
+    return '<a class="dk-xm-row" href="' + webEsc(a.url) + '" target="_blank" rel="noopener" onclick="dkJfAppsClose();return dkExtDl(event,this)">'
+      + '<span class="dk-xp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M4 20h16"/></svg></span>'
+      + '<span class="dk-xm-t"><b>' + webEsc(a.name) + '</b><span>' + webEsc(T(a.desc)) + '</span></span><span class="dk-xm-go">' + T('Télécharger l’APK') + '</span></a>';
+  }).join('') + '<div class="dk-xm-note">' + T('Autorisez les sources inconnues si Android le demande.') + '</div>';
+  host.style.position = host.style.position || 'relative';
+  m.style.top = (r.bottom - hr.top + 6) + 'px'; m.style.right = Math.max(8, hr.right - r.right) + 'px';
+  host.appendChild(m); btn.setAttribute('aria-expanded', 'true');
+  setTimeout(function() { document.addEventListener('click', dkJfAppsOutside, true); document.addEventListener('keydown', dkJfAppsKey, true); }, 0);
 }
 function dkJfZikmuHtml() {
   return dkExtLinkHtml('android', T('ZIKmu pour Android'), T('Le lecteur musical pour Jellyfin sur téléphone, tablette et Android TV. Téléchargez l’APK, puis installez-le (autorisez les sources inconnues si Android le demande).'), T('Télécharger l’APK'), DK_ZIKMU);
@@ -23121,7 +23160,7 @@ function dkJfCss() {
   st.id = 'dkjf-css';
   st.textContent = '#win-dkjf .web-shell{position:relative;overflow:hidden;border-radius:0 0 var(--radius) var(--radius)}'
     + '.dk-xl{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-top:16px;max-width:680px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(14,165,233,.08))}.dk-xl-ic{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#22c55e,#0ea5e9);color:#fff}.dk-xl-ic svg{width:24px;height:24px}.dk-xl-t{flex:1;min-width:0}.dk-xl-t b{display:block;font-size:14px}.dk-xl-t span{display:block;font-size:12px;color:var(--text-dim);line-height:1.45;margin-top:2px}@media(max-width:560px){.dk-xl{flex-wrap:wrap}}'
-    + '.dk-xp{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;margin:0 14px 0 auto;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(14,165,233,.08));white-space:nowrap;transition:border-color .15s,transform .15s}.dk-xp:hover{border-color:rgba(34,197,94,.55);transform:translateY(-1px)}.dk-xp-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#22c55e,#0ea5e9);color:#fff}.dk-xp-ic svg{width:15px;height:15px}.dk-xp-t{display:flex;flex-direction:column;line-height:1.2}.dk-xp-t b{font-size:12px}.dk-xp-t span{font-size:11px;color:var(--text-dim)}@media(max-width:760px){.dk-xp-t span{display:none}}@media(max-width:560px){.dk-xp-t{display:none}.dk-xp{padding:5px;margin-right:8px}}'
+    + '.dk-xp{display:inline-flex;align-items:center;gap:9px;padding:5px 12px 5px 6px;margin:0 14px 0 auto;border:1px solid var(--border);border-radius:999px;text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(14,165,233,.08));white-space:nowrap;transition:border-color .15s,transform .15s}.dk-xp:hover{border-color:rgba(34,197,94,.55);transform:translateY(-1px)}.dk-xp-ic{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#22c55e,#0ea5e9);color:#fff}.dk-xp-ic svg{width:15px;height:15px}.dk-xp-t{display:flex;flex-direction:column;line-height:1.2}.dk-xp-t b{font-size:12px}.dk-xp-t span{font-size:11px;color:var(--text-dim)}@media(max-width:760px){.dk-xp-t span{display:none}}@media(max-width:560px){.dk-xp-t{display:none}.dk-xp{padding:5px;margin-right:8px}}.dk-xp{font:inherit;cursor:pointer;text-align:left}.dk-xp-ch{width:14px;height:14px;flex:none;opacity:.6;transition:transform .15s}.dk-xp[aria-expanded="true"] .dk-xp-ch{transform:rotate(180deg)}.dk-xm{position:absolute;z-index:60;width:min(360px,calc(100% - 16px));padding:8px;border:1px solid var(--border);border-radius:14px;background:var(--surface,#fff);box-shadow:0 14px 34px rgba(0,0,0,.28)}.dk-xm-row{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;text-decoration:none;color:inherit}.dk-xm-row:hover{background:rgba(var(--accent-rgb),.12)}.dk-xm-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}.dk-xm-t b{font-size:13px}.dk-xm-t span{font-size:11.5px;color:var(--text-dim)}.dk-xm-go{flex:none;font-size:11.5px;font-weight:700;color:var(--accent2)}.dk-xm-note{padding:6px 10px 2px;font-size:11px;color:var(--text-dim)}'
     + '.dkjf-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0 0 16px}'
     + '.dkjf-st{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.045);border:1px solid var(--glass-border)}'
     + '.dkjf-st b{display:block;font-size:22px;font-weight:700}.dkjf-st span{font-size:12px;color:var(--text-dim)}'
@@ -31438,7 +31477,7 @@ async function tndDoUpdate() {
 // nouvelle alors que le service met encore quelques dizaines de secondes à redémarrer : c'est l'ancien qui répond,
 // et il annonce comme « disponible » la version qu'on vient d'installer. La page ne le croit donc que si la version
 // annoncée est plus récente qu'elle-même, et revérifie jusqu'à ce que le nouveau service réponde.
-var DK_PAGE_VERSION = '3.1.12';
+var DK_PAGE_VERSION = '3.1.13';
 function dkVerCmp(a, b) {   // « 2.54.0b » (bêta) précède « 2.54.0 » (stable)
   function key(v) {   // « 2.58.1b2 » : 2.58.1, bêta n° 2 — avant la stable 2.58.1, après la bêta 1
     v = String(v || '').trim();
